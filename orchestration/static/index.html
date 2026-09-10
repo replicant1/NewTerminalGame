@@ -1,0 +1,1005 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Orchestration monitor</title>
+<style>
+:root{
+  --bg:#11131a; --panel:#181b24; --panel2:#1e222d; --line:#2a2f3d;
+  --ink:#e6e9f0; --dim:#9aa3b5; --faint:#6b7385;
+  --ask:#ffb457; --warn:#f0a0a0; --good:#7fd1a3; --verify:#7cc4f0;
+  --decide:#c9a6ff; --weigh:#8fb2d9; --trace:#9fd0c0; --accent:#6ea8fe;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);height:100vh;
+     display:flex;flex-direction:column;overflow:hidden;
+     font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+header{display:flex;gap:16px;align-items:center;padding:10px 16px;flex:0 0 auto;
+       background:var(--panel);border-bottom:1px solid var(--line);flex-wrap:wrap}
+h1{font-size:14px;margin:0;font-weight:600;letter-spacing:.02em}
+.head-meta{color:var(--dim);font-size:12px}
+.spacer{flex:1}
+button{background:var(--panel2);color:var(--ink);border:1px solid var(--line);
+       border-radius:6px;padding:5px 11px;font:inherit;font-size:12px;cursor:pointer}
+button:hover{border-color:var(--accent)}
+button.primary{background:#1d3a6b;border-color:#2f5ea8}
+button.danger{background:#4a1f24;border-color:#7d3038}
+label{font-size:12px;color:var(--dim);display:inline-flex;gap:5px;align-items:center}
+/* flex:1 rather than a calc against an assumed header height: the header wraps
+   once there are several agent chips, and the old calc pushed the pane area --
+   and its horizontal scrollbar -- below the bottom of the window. */
+/* overflow:hidden is the guarantee: whatever the bar's contents do, they
+   cannot paint outside this block and over the panes below it. The lanes size
+   the bar in normal flow, so in practice there is nothing to clip. */
+#progress{padding:9px 16px 13px;background:var(--panel);border-bottom:1px solid var(--line);
+          flex:0 0 auto;position:relative;z-index:1;overflow:hidden}
+#progress .pbtop{display:flex;align-items:baseline;gap:10px;margin-bottom:6px}
+#progress .pbpct{font-size:20px;font-weight:700;color:var(--ink);line-height:1;
+                 font-variant-numeric:tabular-nums}
+#progress .pblab{font-size:12px;color:var(--dim)}
+#progress .pbnext{font-size:12px;color:var(--dim)}
+/* Each label in the same colour as the segment it names, so the header and
+   the bar can be read against each other without a legend. */
+#progress .pbnext .n-active{color:var(--ask);font-weight:600}
+#progress .pbnext .n-next{color:var(--accent);font-weight:600}
+/* A timeline, not a strip: x is the plan's own schedule, so items that run in
+   parallel sit at the same place in different lanes. */
+/* Height comes from the lanes themselves. An earlier version computed it and
+   got it short, and main -- a later sibling with an opaque background --
+   painted over the overflow, so the bottom lane vanished under the panes. */
+#pbar{position:relative;width:100%;display:flow-root}
+#pbar .lane{position:relative;height:17px;margin-bottom:2px}
+#pbar .lane:last-of-type{margin-bottom:0}
+/* Pending segments were #252b3a on a #181b24 panel, near enough invisible.
+   What is left to do is the larger half of what this bar is for. */
+#pbar .seg{position:absolute;top:0;height:17px;border-radius:3px;
+           background:#39415a;border:1px solid #4b5570;box-sizing:border-box;
+           display:flex;align-items:center;justify-content:center;overflow:hidden}
+#pbar .seg.done,#pbar .seg.next,#pbar .seg.active{border-color:transparent}
+#pbar .seg.active{background:var(--ask);animation:pulse 1.4s ease-in-out infinite}
+#pbar .seg.done{background:var(--good)}
+/* Steady, not pulsing: only the item actually being worked on moves, so the
+   movement means something. */
+#pbar .seg.next{background:var(--accent)}
+#pbar .seg span{font-size:9.5px;font-weight:700;color:#0d1017;letter-spacing:.01em;
+                white-space:nowrap;padding:0 3px}
+#pbar .seg:not(.done):not(.next) span{color:#cbd3e4}
+#pbar .msec{position:absolute;top:0;bottom:0;border-left:1px solid var(--line);
+            pointer-events:auto}
+#pbar .msec b{position:absolute;top:-12px;left:3px;font-size:9px;font-weight:600;
+              color:var(--dim);white-space:nowrap}
+#pbar .secrow{position:relative;height:14px}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.55}}
+main{display:grid;grid-template-columns:1fr 5px var(--side,320px);gap:0;
+     flex:1 1 auto;min-height:0}
+#grip{cursor:col-resize;background:var(--line);position:relative}
+#grip::after{content:"";position:absolute;inset:0 -4px}
+#grip:hover,#grip.drag{background:var(--accent)}
+body.resizing{cursor:col-resize;user-select:none}
+/* min-width:0 is load-bearing: a grid item defaults to min-width:auto, so this
+   column grows to fit every pane instead of scrolling, and shoves the side
+   panel off the screen. The overflow-x below does nothing without it. */
+/* Two rows of equal height. Panes wrap, so the top row fills first and the
+   rest fall to the bottom row; a pane is half the area high whichever row it
+   lands in. More than two rows' worth and the area scrolls. */
+#panes{display:flex;flex-wrap:wrap;gap:10px;padding:10px;overflow:auto;
+       align-content:flex-start;min-width:0;min-height:0}
+#panes::-webkit-scrollbar{height:11px;width:11px}
+#panes::-webkit-scrollbar-thumb{background:#3a4152;border-radius:6px}
+#panes::-webkit-scrollbar-thumb:hover{background:#4a5468}
+#panes::-webkit-scrollbar-track{background:transparent}
+.pane{flex:0 0 auto;width:var(--w,420px);min-width:240px;
+      height:calc(50% - 5px);min-height:180px;          /* 5px = half the 10px gap */
+      display:flex;flex-direction:column;
+      position:relative;background:var(--panel);border:1px solid var(--line);
+      border-radius:8px;overflow:hidden}
+.pgrip{position:absolute;top:0;right:-6px;width:11px;height:100%;cursor:col-resize;z-index:3}
+.pgrip::after{content:"";position:absolute;top:0;bottom:0;left:4px;width:3px;border-radius:2px;background:transparent}
+.pgrip:hover::after,.pgrip.drag::after{background:var(--accent)}
+.pane.dead,.pane.donepane{opacity:.6}
+.pane h2{margin:0;padding:8px 11px;font-size:12px;font-weight:600;
+         border-bottom:1px solid var(--line);display:flex;gap:8px;align-items:baseline}
+.age{font-weight:400;font-size:11px;color:var(--dim)}
+/* One glyph for every agent, solid rather than stroked so it reads at 13px.
+   State is carried by the icon itself: dimmed when finished, struck through
+   when the agent has gone quiet. */
+.ico{width:16px;height:16px;flex:0 0 16px;vertical-align:-3px;color:var(--accent)}
+.ico .eye{fill:var(--panel)}
+.ico.gone{opacity:.42}
+.tg .ico{width:13px;height:13px;flex:0 0 13px;margin-right:4px;vertical-align:-3px}
+.tg .ico .eye{fill:var(--panel2)}
+.age.fresh{color:var(--good)}
+.age.stale{color:var(--ask)}
+#session{font-size:11.5px;color:var(--dim);display:inline-flex;gap:6px;align-items:center}
+#session .dot{width:7px;height:7px;border-radius:99px;background:var(--faint)}
+#session.up .dot{background:var(--good)} #session.down .dot{background:var(--warn)}
+.pane.stale h2{background:#3a2c12}
+.role{color:var(--dim);font-weight:400;font-size:11px}
+.pane .src{color:var(--dim);font-size:11px;padding:5px 11px;border-bottom:1px solid var(--line)}
+.log{flex:1;overflow-y:auto;padding:6px 0}
+/* Two lines per entry: a dim header of time + kind, then the message itself
+   below it and indented, so the eye runs down the message text rather than
+   hopping over a column of labels. */
+.row{display:block;padding:4px 11px 5px;border-left:2px solid transparent}
+.rhead{display:flex;gap:8px;align-items:baseline}
+.ts{font-size:11px;color:var(--dim);font-variant-numeric:tabular-nums;flex:0 0 auto}
+.ts.seen{color:var(--dim)}          /* inferred: readable, but not the accent */
+.ts.log{color:var(--verify)}        /* written by the agent itself */
+body.nots .ts{display:none}
+.row:hover{background:#ffffff08}
+.k{font-size:10.5px;letter-spacing:.04em;color:var(--dim);flex:0 0 auto}
+.t{white-space:pre-wrap;word-break:break-word;padding-left:16px;margin-top:1px;
+   font-size:12px;line-height:1.45}
+.ask{border-left-color:var(--ask);background:#ffb4570f}
+.assume{border-left-color:#6b5a33}
+.assume .k{color:#c9a86a}
+.askcard .assumed{margin-top:5px;padding:5px 7px;border-left:2px solid #6b5a33;
+                  background:#ffffff08;color:var(--dim);font-size:11.5px}
+.ask .k{color:var(--ask)} .warn .k{color:var(--warn)} .good .k{color:var(--good)}
+.verify .k{color:var(--verify)} .decide .k{color:var(--decide)}
+.weigh .k{color:var(--weigh)} .trace .k{color:var(--trace)}
+.item{color:var(--dim)}
+aside{border-left:1px solid var(--line);background:var(--panel);
+      display:flex;flex-direction:column;overflow:hidden}
+/* Hidden side panel: collapse its column and its grip, so the agent area
+   takes the whole window rather than leaving a gap where it was. */
+body.noside main{grid-template-columns:1fr 0 0}
+body.noside aside,body.noside #grip{display:none}
+.tabs{display:flex;border-bottom:1px solid var(--line)}
+.tabs button{border:0;border-radius:0;flex:1;padding:8px 0;background:transparent;color:var(--dim)}
+.tabs button.on{color:var(--ink);box-shadow:inset 0 -2px 0 var(--accent)}
+#sidehide{flex:0 0 36px;color:var(--ink);font-size:17px;line-height:1;padding:6px 0;
+          border-left:1px solid var(--line)}
+#sidehide:hover{color:var(--accent);background:#ffffff10}
+.side{flex:1;overflow-y:auto;padding:10px 12px;display:none}
+.side.on{display:block}
+.side h3{font-size:11px;color:var(--dim);margin:14px 0 6px;font-weight:600;
+         letter-spacing:.06em;text-transform:uppercase}
+.side h3:first-child{margin-top:0}
+.askcard{border:1px solid #52401f;background:#241c0d;border-radius:6px;padding:9px;margin-bottom:9px}
+.askcard.done{opacity:.45;border-color:var(--line);background:transparent}
+.askhead{display:flex;gap:6px;align-items:center;margin:0 0 8px}
+.askhead h3{margin:0;flex:1}
+.mini{font-size:11px;padding:2px 8px;border-radius:5px;border:1px solid var(--line);
+      background:var(--panel2);color:var(--dim);cursor:pointer}
+.mini:hover{border-color:var(--accent);color:var(--ink)}
+.askcard .clear-x{border:0;background:transparent;color:var(--dim);cursor:pointer;
+                  font-size:13px;padding:0 3px;font-family:inherit}
+.askcard .clear-x:hover{color:var(--ask)}
+.askcard .who{color:var(--ask);font-size:11px;margin-bottom:4px;display:flex;align-items:center}
+.askcard textarea{width:100%;background:var(--bg);color:var(--ink);border:1px solid var(--line);
+                  border-radius:4px;font:inherit;font-size:12px;padding:5px;margin-top:6px;resize:vertical}
+.f{display:block;width:100%;text-align:left;border:0;background:transparent;color:var(--ink);
+   padding:3px 5px;border-radius:4px;font:inherit;font-size:12px;cursor:pointer}
+.f:hover{background:#ffffff10}
+.f .meta{color:var(--dim);font-size:11px}
+.gitline{font-size:11.5px;color:var(--dim);padding:1px 0;white-space:pre-wrap;word-break:break-all}
+.pill{display:inline-block;font-size:10px;padding:1px 6px;border-radius:99px;
+      border:1px solid var(--line);color:var(--dim);margin-left:6px}
+.pill.merged{color:var(--good);border-color:#2f5f47}
+#toggles{display:flex;gap:5px;flex-wrap:wrap;align-items:center}
+.tg{font-size:11px;padding:2px 9px;border-radius:99px;border:1px solid var(--line);
+    background:var(--panel2);color:var(--ink);cursor:pointer;user-select:none}
+.tg:hover{border-color:var(--accent)}
+.tg.off{color:var(--faint);background:transparent;text-decoration:line-through}
+.tg .dot{display:inline-block;width:6px;height:6px;border-radius:99px;margin-right:5px;
+         background:var(--faint);vertical-align:middle}
+.tg.fresh .dot{background:var(--good)}
+.tg.stale .dot{background:var(--ask)}
+.hide-x{border:0;background:transparent;color:var(--dim);cursor:pointer;
+        font-size:14px;line-height:1;padding:0 2px;font-family:inherit}
+.hide-x:hover{color:var(--ask)}
+dialog{background:var(--panel);color:var(--ink);border:1px solid var(--line);
+       border-radius:10px;max-width:min(980px,92vw);width:100%;padding:0}
+dialog::backdrop{background:#000a}
+dialog header{background:var(--panel2)}
+dialog pre#vbody{margin:0;padding:14px 18px;max-height:72vh;overflow:auto;white-space:pre-wrap;
+           word-break:break-word;font-size:12.5px;line-height:1.6}
+#vmd{padding:18px 26px;max-height:72vh;overflow:auto;line-height:1.65;font-size:13.5px;
+     font-family:ui-sans-serif,-apple-system,"Helvetica Neue",sans-serif}
+#vmd h1,#vmd h2,#vmd h3,#vmd h4{line-height:1.3;margin:1.5em 0 .5em;font-weight:650}
+#vmd h1{font-size:1.55em;border-bottom:1px solid var(--line);padding-bottom:.25em}
+#vmd h2{font-size:1.28em;border-bottom:1px solid var(--line);padding-bottom:.2em}
+#vmd h3{font-size:1.1em} #vmd h4{font-size:1em;color:var(--dim)}
+#vmd h1:first-child,#vmd h2:first-child{margin-top:0}
+#vmd p{margin:.7em 0}
+#vmd ul,#vmd ol{margin:.6em 0;padding-left:1.5em}
+#vmd li{margin:.25em 0}
+#vmd code{background:#ffffff12;padding:.1em .35em;border-radius:3px;
+          font-family:ui-monospace,Menlo,monospace;font-size:.88em}
+#vmd pre{background:var(--bg);border:1px solid var(--line);border-radius:6px;
+         padding:10px 13px;overflow-x:auto;margin:.8em 0}
+#vmd pre code{background:none;padding:0;font-size:12px;line-height:1.5}
+#vmd blockquote{margin:.8em 0;padding:.1em 0 .1em 14px;border-left:3px solid var(--accent);
+                color:var(--dim)}
+#vmd table{border-collapse:collapse;margin:.9em 0;font-size:12.5px;display:block;overflow-x:auto}
+#vmd th,#vmd td{border:1px solid var(--line);padding:5px 10px;text-align:left;vertical-align:top}
+#vmd th{background:var(--panel2);font-weight:600}
+#vmd tr:nth-child(even) td{background:#ffffff06}
+#vmd a{color:var(--accent)}
+#vmd hr{border:0;border-top:1px solid var(--line);margin:1.4em 0}
+.gantt{margin:1em 0;border:1px solid var(--line);border-radius:8px;overflow-x:auto;
+       background:var(--bg);padding:10px 12px 14px}
+.gantt .g-title{font-size:12.5px;color:var(--dim);margin-bottom:8px}
+.gantt text{font-family:ui-monospace,Menlo,monospace}
+.gantt .g-lbl{fill:var(--ink);font-size:11px}
+.gantt .g-sec{fill:var(--accent);font-size:11px;font-weight:700}
+.gantt .g-day{fill:var(--dim);font-size:9.5px}
+.gantt .g-grid{stroke:var(--line);stroke-width:1}
+.gantt .g-grid.week{stroke:#39415a}
+.gantt .g-bar{fill:#4f7ec4}
+.gantt .g-bar.crit{fill:#d8a53c}
+.gantt .g-ms{fill:#b48ce8}
+.gantt .g-band{fill:#ffffff05}
+#vmd strong{color:#fff;font-weight:650}
+.hidden{display:none!important}
+.empty{color:var(--dim);padding:18px;text-align:center}
+</style>
+</head>
+<body>
+<header>
+  <h1>Orchestration monitor</h1>
+  <span class="head-meta" id="head"></span>
+  <div id="toggles" title="Click to show or hide an agent's pane"></div>
+  <span class="tg" id="sideshow" onclick="toggleSide()" style="display:none">panel</span>
+  <span class="spacer"></span>
+  <label><input type="checkbox" id="local" checked> local mode</label>
+  <button class="primary" onclick="req('start')">Start conducter</button>
+  <button class="danger" onclick="req('stop')">Stop run</button>
+  <label title="Show panes for agents that have finished or been stopped"><input type="checkbox" id="showdone" onchange="setShowDone(this.checked)"> finished</label>
+  <label title="Keep the two rows holding the same number of panes, resizing them to fit"><input type="checkbox" id="balance" onchange="setBalance(this.checked)"> balance rows</label>
+  <button class="mini" onclick="fitPanes()" title="Give every visible pane the same width, filling the area">Fit panes</button>
+  <label><input type="checkbox" id="auto" checked> auto-scroll</label>
+  <label><input type="checkbox" id="ts" checked onchange="document.body.classList.toggle('nots', !this.checked)"> times</label>
+  <span id="session" title="Whether the Claude session hosting the run is alive. There is no per-agent liveness signal; panes report how long since each agent wrote."><span class="dot"></span><span id="sessiontext"></span></span>
+  <span class="head-meta" id="tick"></span>
+</header>
+
+<div id="progress">
+  <div class="pbtop">
+    <span class="pbpct" id="pbpct">—</span>
+    <span class="pblab" id="pblab"></span>
+    <span class="spacer"></span>
+    <span class="pbnext" id="pbnext"></span>
+  </div>
+  <div id="pbar"></div>
+</div>
+
+<main>
+  <div id="panes"></div>
+  <div id="grip" title="Drag to resize · double-click to reset"></div>
+  <aside>
+    <div class="tabs">
+      <button class="on" data-tab="asks">Asks</button>
+      <button data-tab="files">Files</button>
+      <button data-tab="git">Git</button>
+      <button id="sidehide" title="Hide this panel" onclick="toggleSide()">›</button>
+    </div>
+    <div class="side on" id="tab-asks"></div>
+    <div class="side" id="tab-files"></div>
+    <div class="side" id="tab-git"></div>
+  </aside>
+</main>
+
+<dialog id="viewer">
+  <header style="display:flex;gap:12px;align-items:center;padding:9px 14px;border-bottom:1px solid var(--line)">
+    <strong id="vtitle" style="font-size:12px"></strong><span class="spacer"></span>
+    <button id="vtoggle" onclick="toggleRaw()">Raw</button>
+    <button onclick="document.getElementById('viewer').close()">Close</button>
+  </header>
+  <div id="vmd"></div>
+  <pre id="vbody" class="hidden"></pre>
+</dialog>
+
+<script>
+const $ = s => document.querySelector(s);
+let scrollPos = {};
+
+// The side panel hides like an agent pane does, and is remembered the same way.
+function applySide() {
+  const off = localStorage.getItem('sideHidden') === '1';
+  document.body.classList.toggle('noside', off);
+  const chip = $('#sideshow');
+  if (chip) chip.style.display = off ? '' : 'none';
+}
+function toggleSide() {
+  try {
+    localStorage.setItem('sideHidden',
+      localStorage.getItem('sideHidden') === '1' ? '0' : '1');
+  } catch (e) {}
+  applySide();
+}
+try { applySide(); } catch (e) {}
+window.addEventListener('resize', () => balanceRows());
+
+document.querySelectorAll('.tabs button[data-tab]').forEach(b => b.onclick = () => {
+  document.querySelectorAll('.tabs button[data-tab]').forEach(x => x.classList.toggle('on', x === b));
+  document.querySelectorAll('.side').forEach(s =>
+    s.classList.toggle('on', s.id === 'tab-' + b.dataset.tab));
+});
+
+async function req(kind, extra) {
+  const body = Object.assign({kind, mode: $('#local').checked ? 'local' : 'non-local'}, extra || {});
+  await fetch('/api/request', {method:'POST', headers:{'Content-Type':'application/json'},
+                               body: JSON.stringify(body)});
+  refresh();
+}
+
+// A small Markdown renderer. Deliberately self-contained: the monitor is a
+// local tool and must keep working with no network. It escapes everything
+// first, so file content can never inject markup.
+function md(src) {
+  const blocks = [];
+  let t = esc(src).replace(/\r\n/g, '\n');
+
+  // fenced code first, so nothing inside it is processed as markdown.
+  // A mermaid gantt block is drawn rather than printed.
+  t = t.replace(/```([\w-]*)\n([\s\S]*?)```/g, (m, lang, code) => {
+    const body = code.replace(/\n$/, '');
+    const drawn = (lang === 'mermaid' && /^\s*gantt\b/m.test(body)) ? gantt(unesc(body)) : null;
+    return '\u0000B' + (blocks.push(drawn || ('<pre><code>' + body + '</code></pre>')) - 1) + '\u0000';
+  });
+
+  const inline = x => x
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/(^|[^*])\*([^*\n]+)\*/g, '$1<em>$2</em>')
+    .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+
+  const out = [];
+  const lines = t.split('\n');
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i];
+
+    if (/^\s*$/.test(line)) { i++; continue; }
+
+    if (/^\u0000B\d+\u0000$/.test(line.trim())) { out.push(line.trim()); i++; continue; }
+
+    let m = line.match(/^(#{1,6})\s+(.*)$/);
+    if (m) { out.push('<h' + m[1].length + '>' + inline(m[2]) + '</h' + m[1].length + '>'); i++; continue; }
+
+    if (/^\s*(---+|\*\*\*+|___+)\s*$/.test(line)) { out.push('<hr>'); i++; continue; }
+
+    // table: a header row followed by a |---|---| separator
+    if (/^\s*\|/.test(line) && i + 1 < lines.length && /^\s*\|?[\s:|-]+\|[\s:|-]*$/.test(lines[i + 1])) {
+      const cells = r => r.trim().replace(/^\||\|$/g, '').split('|').map(c => c.trim());
+      let html = '<table><thead><tr>' +
+        cells(line).map(c => '<th>' + inline(c) + '</th>').join('') + '</tr></thead><tbody>';
+      i += 2;
+      while (i < lines.length && /^\s*\|/.test(lines[i])) {
+        html += '<tr>' + cells(lines[i]).map(c => '<td>' + inline(c) + '</td>').join('') + '</tr>';
+        i++;
+      }
+      out.push(html + '</tbody></table>');
+      continue;
+    }
+
+    if (/^\s*&gt;/.test(line)) {          // esc() ran first, so '>' is '&gt;'
+      const buf = [];
+      while (i < lines.length && /^\s*&gt;/.test(lines[i])) { buf.push(lines[i].replace(/^\s*&gt;\s?/, '')); i++; }
+      out.push('<blockquote>' + md(buf.join('\n')) + '</blockquote>');
+      continue;
+    }
+
+    m = line.match(/^\s*([-*+]|\d+\.)\s+/);
+    if (m) {
+      const ordered = /\d/.test(m[1]);
+      const items = [];
+      while (i < lines.length && /^\s*([-*+]|\d+\.)\s+/.test(lines[i])) {
+        let text = lines[i].replace(/^\s*([-*+]|\d+\.)\s+/, '');
+        i++;
+        // a wrapped continuation line belongs to the item above it
+        while (i < lines.length && /^\s{2,}\S/.test(lines[i]) &&
+               !/^\s*([-*+]|\d+\.)\s+/.test(lines[i])) { text += ' ' + lines[i].trim(); i++; }
+        items.push('<li>' + inline(text) + '</li>');
+      }
+      out.push((ordered ? '<ol>' : '<ul>') + items.join('') + (ordered ? '</ol>' : '</ul>'));
+      continue;
+    }
+
+    const para = [];
+    while (i < lines.length && !/^\s*$/.test(lines[i]) &&
+           !/^(#{1,6}\s|\s*&gt;|\s*([-*+]|\d+\.)\s|\s*\|)/.test(lines[i]) &&
+           !/^\u0000B\d+\u0000$/.test(lines[i].trim())) { para.push(lines[i]); i++; }
+    if (para.length) out.push('<p>' + inline(para.join(' ')) + '</p>');
+  }
+
+  return out.join('\n').replace(/\u0000B(\d+)\u0000/g, (m, n) => blocks[+n]);
+}
+
+function unesc(x) {
+  return x.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"')
+          .replace(/&#39;/g, "'").replace(/&amp;/g, '&');
+}
+
+// A Mermaid gantt block, drawn as SVG. Supports the subset the plans use:
+// title, dateFormat, section, "label :[tags,] id, start, duration" and
+// milestones. Written out rather than pulling in mermaid, for the same reason
+// as the Markdown renderer: this tool must work with no network.
+function gantt(src) {
+  const lines = src.split('\n');
+  let title = '';
+  const rows = [];
+  let section = null;
+
+  const day = 86400000;
+  const parseDate = d => {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(d.trim());
+    return m ? Date.UTC(+m[1], +m[2] - 1, +m[3]) : null;
+  };
+  const parseDur = d => {
+    const m = /^([\d.]+)\s*([dhw]?)$/.exec((d || '').trim());
+    if (!m) return day;
+    const n = parseFloat(m[1]);
+    return m[2] === 'h' ? n * day / 24 : m[2] === 'w' ? n * 7 * day : n * day;
+  };
+
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (!line || /^(gantt|dateFormat|axisFormat|excludes|tickInterval|todayMarker)\b/.test(line)) {
+      const t = /^title\s+(.*)$/.exec(line);
+      if (t) title = t[1];
+      continue;
+    }
+    let m = /^title\s+(.*)$/.exec(line);
+    if (m) { title = m[1]; continue; }
+    m = /^section\s+(.*)$/.exec(line);
+    if (m) { section = m[1]; rows.push({section: m[1]}); continue; }
+    m = /^(.*?):(.*)$/.exec(line);
+    if (!m) continue;
+    const label = m[1].trim();
+    const parts = m[2].split(',').map(x => x.trim()).filter(Boolean);
+    const tags = [];
+    while (parts.length && /^(crit|done|active|milestone)$/.test(parts[0])) tags.push(parts.shift());
+    // what remains: [id,] start, duration  -- or for a milestone, [id,] date, 0d
+    let start = null, dur = day;
+    for (const part of parts) {
+      if (parseDate(part) !== null && start === null) start = parseDate(part);
+      else if (/^[\d.]+\s*[dhw]$/.test(part)) dur = parseDur(part);
+    }
+    if (start === null) continue;
+    rows.push({label, start, dur, section,
+               crit: tags.includes('crit'), milestone: tags.includes('milestone')});
+  }
+
+  const bars = rows.filter(r => r.label);
+  if (!bars.length) return null;
+  const min = Math.min(...bars.map(b => b.start));
+  const max = Math.max(...bars.map(b => b.start + b.dur));
+  const days = Math.max(1, Math.round((max - min) / day));
+
+  const LBL = 330, ROW = 21, HEAD = 26, PAD = 8, DAYW = Math.max(26, Math.min(46, 620 / days));
+  const W = LBL + days * DAYW + PAD * 2;
+  const H = HEAD + rows.length * ROW + PAD * 2;
+  const x = t => LBL + ((t - min) / day) * DAYW;
+
+  let svg = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">`;
+
+  // day grid and dates along the top
+  for (let d = 0; d <= days; d++) {
+    const gx = LBL + d * DAYW;
+    const date = new Date(min + d * day);
+    const dow = date.getUTCDay();
+    svg += `<line class="g-grid${dow === 1 ? ' week' : ''}" x1="${gx}" y1="${HEAD - 14}" x2="${gx}" y2="${H - PAD}"/>`;
+    if (d < days && (DAYW > 32 || d % 2 === 0)) {
+      svg += `<text class="g-day" x="${gx + 3}" y="${HEAD - 17}">${date.getUTCDate()}</text>`;
+    }
+  }
+
+  rows.forEach((r, i) => {
+    const y = HEAD + i * ROW;
+    if (r.section !== undefined && !r.label) {
+      svg += `<rect class="g-band" x="0" y="${y - 3}" width="${W}" height="${ROW}"/>`;
+      svg += `<text class="g-sec" x="4" y="${y + 11}">${esc(r.section)}</text>`;
+      return;
+    }
+    svg += `<text class="g-lbl" x="12" y="${y + 11}">${esc(r.label)}</text>`;
+    if (r.milestone) {
+      const cx = x(r.start), cy = y + 7;
+      svg += `<polygon class="g-ms" points="${cx},${cy - 6} ${cx + 6},${cy} ${cx},${cy + 6} ${cx - 6},${cy}"/>`;
+    } else {
+      const bx = x(r.start), bw = Math.max(3, (r.dur / day) * DAYW - 2);
+      svg += `<rect class="g-bar${r.crit ? ' crit' : ''}" x="${bx + 1}" y="${y + 1}"
+               width="${bw}" height="${ROW - 7}" rx="3"/>`;
+    }
+  });
+
+  return `<div class="gantt">${title ? '<div class="g-title">' + esc(title) + '</div>' : ''}${svg}</svg></div>`;
+}
+
+let rawMode = false, currentName = '';
+function toggleRaw() {
+  rawMode = !rawMode;
+  $('#vmd').classList.toggle('hidden', rawMode);
+  $('#vbody').classList.toggle('hidden', !rawMode);
+  $('#vtoggle').textContent = rawMode ? 'Preview' : 'Raw';
+}
+
+async function openFile(path, name) {
+  const text = await (await fetch('/api/artifact?path=' + encodeURIComponent(path))).text();
+  currentName = name;
+  $('#vtitle').textContent = name;
+  $('#vbody').textContent = text;
+  const renderable = /\.md$/i.test(name);
+  if (renderable) {
+    $('#vmd').innerHTML = md(text);
+  } else if (/\.json$/i.test(name)) {
+    let pretty = text;
+    try { pretty = JSON.stringify(JSON.parse(text), null, 2); } catch (e) {}
+    $('#vmd').innerHTML = '<pre><code>' + esc(pretty) + '</code></pre>';
+  }
+  rawMode = !renderable && !/\.json$/i.test(name);
+  $('#vmd').classList.toggle('hidden', rawMode);
+  $('#vbody').classList.toggle('hidden', !rawMode);
+  $('#vtoggle').textContent = rawMode ? 'Preview' : 'Raw';
+  $('#vtoggle').classList.toggle('hidden', rawMode && !renderable);
+  $('#vmd').scrollTop = 0;
+  $('#viewer').showModal();
+}
+
+// Which panes are hidden, remembered between sessions.
+let hidden = new Set();
+try { hidden = new Set(JSON.parse(localStorage.getItem('hidden') || '[]')); } catch (e) {}
+function saveHidden() { try { localStorage.setItem('hidden', JSON.stringify([...hidden])); } catch (e) {} }
+function togglePane(id) { hidden.has(id) ? hidden.delete(id) : hidden.add(id); saveHidden(); refresh(); }
+function showAllPanes() { hidden.clear(); saveHidden(); refresh(); }
+
+function renderToggles(panes) {
+  const host = $('#toggles');
+  const done = panes.filter(p => p.state === 'gone').length;
+  let h = '';
+  for (const p of panes) {
+    if (!showDone && p.state === 'gone') continue;
+    const age = p.mtime ? (Date.now() / 1000 - p.mtime) : 0;
+    const heat = !p.mtime ? '' : (age < 30 ? ' fresh' : (p.live && age > 180 ? ' stale' : ''));
+    h += `<span class="tg${hidden.has(p.id) ? ' off' : ''}${heat}" onclick="togglePane('${esc(p.id)}')"
+           title="${esc(p.title)} — ${p.lines.length} lines">
+           <span class="dot"></span>${icon(p.role, p.state)}${esc(p.title)}</span>`;
+  }
+  if (hidden.size) h += `<span class="tg" onclick="showAllPanes()">show all (${hidden.size} hidden)</span>`;
+  if (done && !showDone) h += `<span class="tg off" onclick="setShowDone(true)">+${done} finished</span>`;
+  host.innerHTML = h;
+}
+
+// Finished agents keep their logs, but a run leaves a lot of them and they
+// crowd out whatever is actually working. Off by default.
+let showDone = false;
+try { showDone = localStorage.getItem('showDone') === '1'; } catch (e) {}
+function setShowDone(on) {
+  showDone = on;
+  try { localStorage.setItem('showDone', on ? '1' : '0'); } catch (e) {}
+  const box = $('#showdone');
+  if (box) box.checked = on;      // the chip and the checkbox are one setting
+  refresh();
+}
+
+function renderPanes(panes) {
+  const host = $('#panes');
+  renderToggles(panes);
+  panes = panes.filter(p => !hidden.has(p.id) && (showDone || p.state !== 'gone'));
+  // remember scroll offsets so a refresh does not yank the reader around
+  host.querySelectorAll('.log').forEach(l => scrollPos[l.dataset.id] = l.scrollTop);
+  host.innerHTML = panes.length ? ''
+    : (hidden.size ? '<div class="empty">Every pane is hidden.<br>Use the chips in the header to bring one back.</div>'
+                   : '<div class="empty">No agent has written a progress log yet.<br>The architect writes the first one.</div>');
+  for (const p of panes) {
+    const el = document.createElement('section');
+    el.className = 'pane' + (p.live ? '' : ' dead');
+    el.dataset.pane = p.id;
+    if (paneW[p.id]) el.style.setProperty('--w', paneW[p.id] + 'px');
+    const age = p.mtime ? (Date.now() / 1000 - p.mtime) : 0;
+    const stale = p.live && age > 180 && p.state !== 'done';
+    if (stale) el.classList.add('stale');
+    if (p.state === 'done') el.classList.add('donepane');
+    // The role is only worth showing when it says something the title does not:
+    // a developer's title is its branch, but the architect's title IS its role.
+    const role = (p.role && p.role !== p.title) ? `<span class="role">${esc(p.role)}</span>` : '';
+    el.innerHTML = `<div class="pgrip" title="Drag to resize this pane · double-click to reset"></div><h2>${icon(p.role, p.state)} ${esc(p.title)} ${role}
+        <span class="spacer"></span>
+        <span class="age ${age < 30 ? 'fresh' : (stale ? 'stale' : '')}"
+              title="How long since this agent wrote a line. It is silence, not death: an agent can be alive and quiet for many minutes."
+              >${(p.state === 'gone' || p.state === 'done') ? '' : (p.mtime ? ago(age) : '')}</span>
+        <span class="role">${p.lines.length} lines</span>
+        <button class="hide-x" title="Hide this pane" onclick="togglePane('${esc(p.id)}')">×</button></h2>
+      <div class="src">${esc(p.source)}</div>
+      <div class="log" data-id="${esc(p.id)}"></div>`;
+    const log = el.querySelector('.log');
+    for (const ln of p.lines) {
+      const row = document.createElement('div');
+      row.className = 'row ' + ln.kind;
+      row.innerHTML = `<div class="rhead">
+          <span class="ts ${ln.tsSource}" title="${ln.tsSource === 'log'
+            ? 'timestamp written by the agent' : 'first seen by the monitor (±3s)'}">${clock(ln.ts)}</span>
+          <span class="k">${esc(ln.label)}</span>
+          ${ln.item ? '<span class="item">' + esc(ln.item) + '</span>' : ''}
+        </div>
+        ${ln.text ? '<div class="t">' + esc(ln.text) + '</div>' : ''}`;
+      log.appendChild(row);
+    }
+    host.appendChild(el);
+    if ($('#auto').checked) log.scrollTop = log.scrollHeight;
+    else if (scrollPos[p.id] !== undefined) log.scrollTop = scrollPos[p.id];
+  }
+  balanceRows();
+}
+
+// Drafts survive re-renders, keyed by the question they answer. Without this
+// the 3s poll rebuilds the panel with innerHTML and destroys whatever you were
+// typing, along with the focus and the caret.
+const drafts = {};
+
+let showCleared = false;
+
+async function ack(body) {
+  await fetch('/api/ack', {method: 'POST', headers: {'Content-Type': 'application/json'},
+                           body: JSON.stringify(body)});
+  refresh();
+}
+
+function renderAsks(asks, requests) {
+  const t = $('#tab-asks');
+  // Never rebuild the panel out from under someone who is typing in it.
+  if (t.contains(document.activeElement) &&
+      /^(TEXTAREA|INPUT)$/.test(document.activeElement.tagName)) return;
+
+  const clearedCount = asks.filter(a => a.cleared).length;
+  const shown = asks.filter(a => showCleared || !a.cleared);
+  const open = asks.filter(a => !a.cleared && !a.answered).length;
+
+  let h = `<div class="askhead"><h3>Questions from agents${open ? ' · ' + open + ' open' : ''}</h3>
+    ${asks.length ? `<button class="mini" onclick="ack({all:true})">Clear all</button>` : ''}
+    ${clearedCount ? `<button class="mini" onclick="showCleared=!showCleared;refresh()">
+        ${showCleared ? 'hide' : 'show'} cleared (${clearedCount})</button>` : ''}
+    ${clearedCount && showCleared ? `<button class="mini" onclick="ack({none:true})">Restore</button>` : ''}
+  </div>`;
+  if (!shown.length) h += `<div class="empty">${clearedCount ? 'All questions cleared.' : 'Nothing is waiting on you.'}</div>`;
+  for (const [i, a] of asks.entries()) {
+    if (!showCleared && a.cleared) continue;
+    h += `<div class="askcard ${a.answered || a.cleared ? 'done' : ''}">
+      <div class="who">${esc(a.from)}${a.item ? ' · ' + esc(a.item) : ''}${a.answered ? ' · answered' : (a.cleared ? ' · cleared' : '')}
+        <span class="spacer"></span>
+        <button class="clear-x" title="Clear this question" onclick="ack({keys:['${esc(a.key)}']})">×</button></div>
+      <div>${esc(a.text)}</div>
+      ${a.assumption ? `<div class="assumed"><strong>proceeding on:</strong> ${esc(a.assumption)}</div>` : ''}
+      ${a.answered || a.cleared ? '' : `<textarea id="ans${i}" rows="3" data-key="${esc(a.text.slice(0,120))}"
+        oninput="drafts[this.dataset.key]=this.value"
+        placeholder="Your answer, relayed to the agent…">${esc(drafts[a.text.slice(0,120)] || '')}</textarea>
+      <button onclick="answer(${i})">Send answer</button>`}</div>`;
+  }
+  h += `<div class="askhead"><h3>Queued for the Claude session</h3>
+    ${requests.length ? '<button class="mini" onclick="dismissAll()">Clear all</button>' : ''}</div>`;
+  if (!requests.length) h += '<div class="empty">No pending requests.</div>';
+  for (const r of requests) {
+    h += `<div class="gitline">${esc(r.kind)}${r.mode ? ' (' + esc(r.mode) + ')' : ''}
+      — ${new Date(r.at * 1000).toLocaleTimeString()}
+      <button onclick="dismiss('${esc(r.file)}')">dismiss</button></div>`;
+  }
+  t.innerHTML = h;
+  t.asks = asks;
+}
+
+async function answer(i) {
+  const a = $('#tab-asks').asks[i];
+  const box = $('#ans' + i);
+  const text = (box.value || '').trim();
+  if (!text) { box.focus(); return; }
+  box.disabled = true;
+  await req('answer', {question: a.text, from: a.from, answer: text});
+  delete drafts[a.text.slice(0, 120)];
+}
+async function dismissAll() {
+  await fetch('/api/dismiss', {method: 'POST', headers: {'Content-Type': 'application/json'},
+                               body: JSON.stringify({all: true})});
+  refresh();
+}
+async function dismiss(file) {
+  await fetch('/api/dismiss', {method:'POST', headers:{'Content-Type':'application/json'},
+                               body: JSON.stringify({file})});
+  refresh();
+}
+
+async function renderFiles() {
+  const items = await (await fetch('/api/artifacts')).json();
+  const groups = {};
+  for (const it of items) (groups[it.group] ||= []).push(it);
+  let h = '';
+  for (const g of Object.keys(groups)) {
+    h += `<h3>${esc(g)}</h3>`;
+    for (const it of groups[g].sort((a, b) => b.mtime - a.mtime)) {
+      h += `<button class="f" onclick="openFile('${esc(it.path)}','${esc(it.name)}')">
+        ${esc(it.name)} <span class="meta">· ${esc(it.kind)} · ${(it.size/1024).toFixed(1)}k</span></button>`;
+    }
+  }
+  $('#tab-files').innerHTML = h || '<div class="empty">No artifacts yet.</div>';
+}
+
+function renderProgress(pr) {
+  if (!pr) return;
+  $('#pbpct').textContent = pr.total ? pr.percent + '%' : '—';
+  $('#pblab').textContent = pr.label;
+  const act = pr.active || [];
+  const nx = pr.next || [];
+  const parts = [];
+  if (act.length) parts.push('in progress: <span class="n-active">' + act.map(esc).join(' + ') + '</span>');
+  if (nx.length) {
+    parts.push((act.length ? 'next: ' : (nx.length > 1 ? 'next, in parallel: ' : 'next up: '))
+               + '<span class="n-next">' + nx.map(esc).join(' + ') + '</span>');
+  }
+  $('#pbnext').innerHTML = parts.length ? parts.join('&nbsp; · &nbsp;')
+                                        : (pr.total ? 'all work items merged' : '');
+  // Laid out on the plan's schedule. Items are packed into lanes so that two
+  // items running on the same days appear one above the other rather than one
+  // after the other -- WI-8 and WI-9 both start on day 7, and a left-to-right
+  // strip asserted an order the plan never gave.
+  const next = new Set(pr.next || []);
+  const items = (pr.items || []).filter(i => i.start);
+  if (!items.length) { $('#pbar').innerHTML = ''; return; }
+
+  const day = 86400000;
+  const t0 = Math.min(...items.map(i => Date.parse(i.start)));
+  const t1 = Math.max(...items.map(i => Date.parse(i.start) + Math.max(i.days || 1, 0.5) * day));
+  const span = Math.max(1, (t1 - t0) / day);
+  const pc = t => ((t - t0) / day) / span * 100;
+
+  // greedy lane packing, in schedule order
+  const sorted = [...items].sort((a, b) => Date.parse(a.start) - Date.parse(b.start));
+  const lanes = [];
+  for (const i of sorted) {
+    const s0 = Date.parse(i.start), s1 = s0 + Math.max(i.days || 1, 0.5) * day;
+    let lane = lanes.find(L => L.end <= s0);
+    if (!lane) { lane = {end: 0, items: []}; lanes.push(lane); }
+    lane.end = s1; lane.items.push(i);
+  }
+
+  // iteration boundaries, drawn as ticks across every lane
+  let secs = '', seen = new Set();
+  for (const i of sorted) {
+    if (!i.section || seen.has(i.section)) continue;
+    seen.add(i.section);
+    secs += `<div class="msec" style="left:${pc(Date.parse(i.start))}%"
+               title="${esc(i.section)}"><b>${esc(i.section.split(' ')[0])}</b></div>`;
+  }
+
+  const active = new Set(pr.active || []);
+  $('#pbar').innerHTML = '<div class="secrow"></div>' + lanes.map(L =>
+    `<div class="lane">${L.items.map(i => {
+      const s0 = Date.parse(i.start), w = Math.max(i.days || 1, 0.5);
+      const status = i.done ? 'merged into main'
+                    : (active.has(i.id) ? 'in progress — a developer is on it now'
+                    : (next.has(i.id) ? 'next up — not started' : 'not started'));
+      const tip = `${i.id} — ${i.title}\n${i.section || ''}\n` +
+                  `plan: day ${Math.round((s0 - t0) / day) + 1}, ${w} developer-day${w === 1 ? '' : 's'}\n` +
+                  `status: ${status}`;
+      const cls = i.done ? 'done' : (active.has(i.id) ? 'active' : (next.has(i.id) ? 'next' : ''));
+      return `<div class="seg ${cls}"
+        style="left:${pc(s0)}%;width:${(w / span) * 100}%"
+        title="${esc(tip)}"
+        ><span>${esc(i.id)}</span></div>`;
+    }).join('')}</div>`).join('') +
+    `<div style="position:absolute;left:0;right:0;top:14px;bottom:0;pointer-events:none">${secs}</div>`;
+}
+
+function renderGit(g) {
+  let h = `<h3>HEAD</h3><div class="gitline">${esc(g.head)}</div>`;
+  h += '<h3>Branches</h3>';
+  for (const b of g.branches) {
+    h += `<div class="gitline">${esc(b.name)} <span class="meta">${esc(b.sha)}</span>
+      ${b.merged ? '<span class="pill merged">merged</span>'
+                 : (b.ahead !== '0' ? `<span class="pill">+${esc(b.ahead)}</span>` : '')}</div>`;
+  }
+  if (g.status.length) {
+    h += '<h3>Working tree</h3>';
+    for (const s of g.status) h += `<div class="gitline">${esc(s)}</div>`;
+  }
+  h += '<h3>Worktrees</h3>';
+  for (const w of g.worktrees) h += `<div class="gitline">${esc(w)}</div>`;
+  h += '<h3>Recent commits (all branches)</h3>';
+  for (const c of g.commits) h += `<div class="gitline">${esc(c)}</div>`;
+  $('#tab-git').innerHTML = h;
+}
+
+// One agent glyph, drawn inline so the tool still works with no network.
+// Solid, because a 1.7px stroke at this size was barely there.
+const AGENT_BODY =
+  '<path d="M12 1.9a1.9 1.9 0 0 1 .95 3.55V7h2.9A3.4 3.4 0 0 1 19.25 10.4v5.2' +
+  'A3.4 3.4 0 0 1 15.85 19H8.15A3.4 3.4 0 0 1 4.75 15.6v-5.2A3.4 3.4 0 0 1 8.15 7' +
+  'h2.9V5.45A1.9 1.9 0 0 1 12 1.9Z" fill="currentColor"/>' +
+  '<circle class="eye" cx="9.6" cy="12.7" r="1.45"/>' +
+  '<circle class="eye" cx="14.4" cy="12.7" r="1.45"/>';
+
+// What the icon's appearance means, said in words for the tooltip. Silence is
+// never reported as death: there is no per-agent liveness signal, so all any
+// of this measures is how long since the agent wrote.
+// Two states only: working, or finished. There is deliberately no mark for
+// "silent" -- silence means nothing has been written for a few minutes, which
+// says nothing about whether the agent is working. Striking the icon through
+// asserted a death the evidence does not support. How long since it wrote is
+// still shown as an age, which is the honest form of the same fact.
+function icon(role, state) {
+  const tip = (role ? role + ' — ' : '') + (state === 'gone'
+    ? 'finished; its log is archived'
+    : state === 'done'
+    ? 'finished — it wrote DONE; its worktree has not been tidied away yet'
+    : 'working — the age beside this says how long since it last wrote, which is '
+      + 'not the same as whether it is busy');
+  return `<svg class="ico ${(state === 'gone' || state === 'done') ? 'gone' : ''}" viewBox="0 0 24 24"
+     fill="none" role="img" aria-label="${esc(tip)}"
+     ><title>${esc(tip)}</title>${AGENT_BODY}</svg>`;
+}
+
+function ago(sec) {
+  if (sec < 45) return Math.round(sec) + 's ago';
+  if (sec < 3600) return Math.round(sec / 60) + 'm ago';
+  return Math.round(sec / 3600) + 'h ago';
+}
+
+function clock(ts) {
+  if (!ts) return '';
+  const d = new Date(ts * 1000);
+  return String(d.getHours()).padStart(2, '0') + ':' +
+         String(d.getMinutes()).padStart(2, '0') + ':' +
+         String(d.getSeconds()).padStart(2, '0');
+}
+
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g,
+    c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+async function refresh() {
+  try {
+    const s = await (await fetch('/api/state')).json();
+    renderPanes(s.panes);
+    renderAsks(s.asks, s.requests);
+    renderGit(s.git);
+    renderProgress(s.progress);
+    const waiting = s.asks.filter(a => !a.answered && !a.cleared).length;
+    $('#head').textContent = s.root + (waiting ? '  ·  ' + waiting + ' question(s) waiting' : '');
+    document.title = (waiting ? '(' + waiting + ') ' : '') + 'Orchestration monitor';
+    // The header controls are the state's only visible form; re-assert them
+    // each poll so no path can leave a box disagreeing with what is shown.
+    if ($('#showdone')) $('#showdone').checked = showDone;
+    if ($('#balance')) $('#balance').checked = balance;
+    const sess = s.session || {};
+    const el = $('#session');
+    el.className = sess.alive === true ? 'up' : (sess.alive === false ? 'down' : '');
+    $('#sessiontext').textContent = sess.pid
+      ? (sess.alive ? 'session ' + sess.pid + ' alive' : 'session ' + sess.pid + ' GONE')
+      : 'no run detected';
+    $('#tick').textContent = new Date().toLocaleTimeString();
+  } catch (e) {
+    $('#tick').textContent = 'server not responding';
+  }
+}
+
+// Per-pane widths. Panes are rebuilt on every poll, so the width lives here
+// and is reapplied on render rather than on the element.
+const PANE_MIN = 240, PANE_MAX = 1200, PANE_DEFAULT = 420;
+let paneW = {};
+try { paneW = JSON.parse(localStorage.getItem('paneW') || '{}'); } catch (e) {}
+function savePaneW() { try { localStorage.setItem('paneW', JSON.stringify(paneW)); } catch (e) {} }
+
+// Balance: keep the top and bottom rows holding the same number of panes, by
+// sizing every pane so exactly ceil(n/2) fit across. An odd count puts the
+// extra one on the top row, which is where the eye starts.
+let balance = true;
+try { balance = localStorage.getItem('balance') !== '0'; } catch (e) {}
+
+function setBalance(on) {
+  balance = on;
+  try { localStorage.setItem('balance', on ? '1' : '0'); } catch (e) {}
+  const box = $('#balance');
+  if (box) box.checked = on;
+  if (on) fitPanes(); else refresh();
+}
+
+function balanceRows() {
+  if (!balance) return;
+  const host = $('#panes');
+  const shown = [...host.querySelectorAll('.pane')];
+  if (!shown.length) return;
+  const style = getComputedStyle(host);
+  const pad = parseFloat(style.paddingLeft) + parseFloat(style.paddingRight);
+  const gapPx = parseFloat(style.gap || 10);
+  const perRow = shown.length > 1 ? Math.ceil(shown.length / 2) : 1;
+  const each = Math.max(PANE_MIN,
+    Math.floor((host.clientWidth - pad - gapPx * (perRow - 1)) / perRow));
+  for (const el of shown) el.style.setProperty('--w', each + 'px');
+}
+
+// Give every visible pane the same width, filling the area exactly. If they
+// will not fit at the minimum width, use the minimum and let it scroll --
+// squeezing eight panes into one screen would make them all useless.
+function fitPanes() {
+  if (!balance) setBalance(true);
+  const host = $('#panes');
+  const shown = [...host.querySelectorAll('.pane')];
+  if (!shown.length) return;
+  const style = getComputedStyle(host);
+  const pad = parseFloat(style.paddingLeft) + parseFloat(style.paddingRight);
+  const gapPx = parseFloat(style.gap || 10);
+  // Two rows: size for the busier one, so both rows use the same width and the
+  // top row fills first. One pane stays one row; three panes give two then one.
+  const perRow = Math.ceil(shown.length / (shown.length > 1 ? 2 : 1));
+  const gap = gapPx * (perRow - 1);
+  const each = Math.max(PANE_MIN, Math.floor((host.clientWidth - pad - gap) / perRow));
+  for (const el of shown) {
+    el.style.setProperty('--w', each + 'px');
+    paneW[el.dataset.pane] = each;
+  }
+  savePaneW();
+}
+
+$('#panes').addEventListener('pointerdown', e => {
+  const grip = e.target.closest('.pgrip');
+  if (!grip) return;
+  e.preventDefault();
+  const pane = grip.closest('.pane');
+  const id = pane.dataset.pane;
+  const startX = e.clientX, startW = pane.getBoundingClientRect().width;
+  if (balance) setBalance(false);      // a deliberate drag overrides balancing
+  grip.classList.add('drag');
+  document.body.classList.add('resizing');
+  const set = x => {
+    const w = Math.max(PANE_MIN, Math.min(PANE_MAX, Math.round(startW + (x - startX))));
+    pane.style.setProperty('--w', w + 'px');
+    paneW[id] = w;
+  };
+  const move = ev => set(ev.clientX);
+  const up = ev => {
+    set(ev.clientX); savePaneW();
+    grip.classList.remove('drag');
+    document.body.classList.remove('resizing');
+    window.removeEventListener('pointermove', move);
+    window.removeEventListener('pointerup', up);
+  };
+  window.addEventListener('pointermove', move);
+  window.addEventListener('pointerup', up);
+});
+
+$('#panes').addEventListener('dblclick', e => {
+  const grip = e.target.closest('.pgrip');
+  if (!grip) return;
+  const pane = grip.closest('.pane');
+  delete paneW[pane.dataset.pane];
+  pane.style.removeProperty('--w');
+  savePaneW();
+});
+
+// Side panel width: dragged with the grip, remembered between sessions.
+const SIDE_MIN = 240, SIDE_MAX = 900, SIDE_DEFAULT = 320;
+function setSide(px, save) {
+  const w = Math.max(SIDE_MIN, Math.min(SIDE_MAX, Math.round(px)));
+  document.documentElement.style.setProperty('--side', w + 'px');
+  if (save) try { localStorage.setItem('side', w); } catch (e) {}
+}
+try { setSide(parseInt(localStorage.getItem('side'), 10) || SIDE_DEFAULT, false); } catch (e) {}
+
+$('#grip').addEventListener('pointerdown', e => {
+  e.preventDefault();
+  $('#grip').classList.add('drag');
+  document.body.classList.add('resizing');
+  const move = ev => setSide(window.innerWidth - ev.clientX, false);
+  const up = ev => {
+    setSide(window.innerWidth - ev.clientX, true);
+    $('#grip').classList.remove('drag');
+    document.body.classList.remove('resizing');
+    window.removeEventListener('pointermove', move);
+    window.removeEventListener('pointerup', up);
+  };
+  window.addEventListener('pointermove', move);
+  window.addEventListener('pointerup', up);
+});
+$('#grip').addEventListener('dblclick', () => setSide(SIDE_DEFAULT, true));
+
+$('#viewer').addEventListener('close', () => {});
+document.querySelector('[data-tab="files"]').addEventListener('click', renderFiles);
+if ($('#balance')) $('#balance').checked = balance;
+if ($('#showdone')) $('#showdone').checked = showDone;
+refresh(); renderFiles();
+setInterval(refresh, 3000);
+</script>
+</body>
+</html>

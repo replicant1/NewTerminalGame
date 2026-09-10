@@ -2,3 +2,25 @@
 *.swp
 *.swo
 *~
+
+# Python bytecode. There is no build step, no virtualenv and no packaging
+# here (ARCHITECTURE.md §2), so this is the whole of it.
+__pycache__/
+*.py[cod]
+
+# macOS
+.DS_Store
+
+# Scratch left behind by a spike or a manual run.
+/spikes/*.out
+/spikes/*.log
+
+# Agent worktrees created by Claude Code
+.claude/worktrees/
+
+# macOS
+.DS_Store
+
+# Orchestration monitor: run-local state, not project source
+orchestration/archive/
+orchestration/requests/
