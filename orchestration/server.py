@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Orchestration monitor: watch a conducter run from a browser.
+"""Orchestration monitor: watch a conductor run from a browser.
 
     /usr/bin/python3 orchestration/server.py [--port 8765]
 
@@ -271,7 +271,7 @@ def finished_by_log(lines):
     """An agent that has written DONE has said so itself.
 
     Worktree removal is the other signal, but it lags: a developer reports,
-    writes DONE, and its worktree sits there until the conducter tidies up. In
+    writes DONE, and its worktree sits there until the conductor tidies up. In
     between, the monitor was still showing it as working.
     """
     for line in reversed(lines):
@@ -304,7 +304,7 @@ def panes():
     """One pane per agent, in workflow order: architect, lead, then developers."""
     result = []
 
-    for name, filename in (("conducter", "conducter.md"),
+    for name, filename in (("conductor", "conductor.md"),
                            ("architect", "architect.md"),
                            ("technical-lead", "technical-lead.md")):
         p = ROOT / "docs" / "progress" / filename
@@ -378,16 +378,16 @@ def in_hand():
     """What is actually being worked on right now.
 
     The progress bar says how far through the plan the project is; this says
-    where the work is at this moment: which iteration the conducter opened,
+    where the work is at this moment: which iteration the conductor opened,
     which items are out with a developer, and the last thing each of them said.
     """
     all_panes = panes()
     by_id = {p["id"]: p for p in all_panes}
 
     iteration = ""
-    conducter = by_id.get("conducter")
-    if conducter:
-        for line in reversed(conducter["lines"]):
+    conductor = by_id.get("conductor")
+    if conductor:
+        for line in reversed(conductor["lines"]):
             if line["label"] == "PLAN":
                 iteration = line["text"]
                 break
@@ -410,8 +410,8 @@ def in_hand():
 
     waiting = sum(1 for a in asks() if not a["answered"] and not a["cleared"])
     last_merge = ""
-    if conducter:
-        for line in reversed(conducter["lines"]):
+    if conductor:
+        for line in reversed(conductor["lines"]):
             if line["label"] == "MERGE":
                 last_merge = line["text"]
                 break

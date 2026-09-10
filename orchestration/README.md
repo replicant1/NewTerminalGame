@@ -1,6 +1,6 @@
 # Orchestration monitor
 
-A browser view of a conducter run: what each agent is doing, what it is waiting
+A browser view of a conductor run: what each agent is doing, what it is waiting
 on you for, and every document it has produced.
 
 ```
