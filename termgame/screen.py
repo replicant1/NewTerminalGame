@@ -7,7 +7,7 @@ lives in the pure renderer. What is left here is entering and leaving curses
 safely, turning a :class:`~termgame.model.Frame` into ``addstr`` calls, and
 turning ``getch`` into a key code.
 
-Two things in here are not obvious and both were measured.
+Three things in here are not obvious.
 
 **The bottom-right cell.** ``addstr(LINES-1, COLS-1, ch)`` raises
 ``addwstr() returned ERR``: ncurses writes the character and then cannot
@@ -22,21 +22,46 @@ deciding whether an escape sequence follows, which looks to a player like the
 game has frozen. ``set_escdelay(25)`` cuts that to 25 ms. Arrow keys are
 unaffected — they arrive as one burst. (ARCHITECTURE.md C10.)
 
+**Pixels left behind by a glyph that overspills its cell.** A player reported
+a single row of pixels surviving at the bottom of the square an entity had
+just left, most visible moving *up*. The character grid is not at fault: the
+renderer was diffed across a move in all four directions and leaves no stale
+glyph anywhere. The cause is one layer down. ncurses emits only the cells
+that changed, so the row *below* a vacated square is never re-sent, and any
+pixels the old glyph painted outside its own cell box are never cleaned up --
+``U+2588`` FULL BLOCK, which both entities are built from, rasterises taller
+than its cell in some fonts and sizes. :meth:`Screen.paint` therefore calls
+``redrawln`` over the band of rows touched by a change, plus one row either
+side of it.
+
+``redrawln`` is the right call and ``touchline`` is not. ``touchline`` only
+re-copies the window into ncurses' virtual screen; ``doupdate`` then diffs
+that against its record of the physical screen and emits nothing at all when
+the characters are identical, which is exactly the case here. ``redrawln``
+declares those lines **corrupt on the physical screen**, which is what junk
+pixels are, and forces them out again.
+
 The repaint is deliberately naive: one ``addstr`` per cell, then one
 ``refresh``. ncurses diffs its virtual screen against the physical one, which
 is what makes the redraw flicker-free (SCRN-7), and the whole frame was
 measured at 0.25 ms against a 143 ms tick. Dirty-rectangle tracking would be
 the first thing to introduce a rendering bug and the last thing to be needed
-(ARCHITECTURE.md C5).
+(ARCHITECTURE.md C5). The spill repair above is not that: it never *narrows*
+what is drawn, it only widens what is re-sent, so a bug in it can cost a
+repaint but cannot lose a cell.
 """
 
 import contextlib
 import curses
 import importlib
-from typing import Callable, Dict, Iterator, NamedTuple, Optional
+from typing import Callable, Dict, Iterator, NamedTuple, Optional, Tuple
 
 from termgame import controls
 from termgame.model import STYLE_DEFAULT, Frame
+
+#: One painted cell as :meth:`Screen.paint` records it: the character and
+#: the curses attribute it went out with.
+PaintedCell = Tuple[str, int]
 
 #: How long ncurses waits after a bare ESC, in milliseconds (C10).
 ESCAPE_DELAY_MS = 25
@@ -122,6 +147,10 @@ class Screen(object):
         self._window = window
         self._attributes = {} if attributes is None else dict(attributes)
         self._default = self._attributes.get(STYLE_DEFAULT, 0)
+        #: What :meth:`paint` last wrote, row by row, as ``(char, attribute)``
+        #: pairs -- the record :meth:`_repair_spill` needs to know which rows
+        #: changed. ``None`` until the first paint.
+        self._painted = None  # type: Optional[Tuple[Tuple[PaintedCell, ...], ...]]
 
     # -- painting ----------------------------------------------------------
 
@@ -141,17 +170,48 @@ class Screen(object):
         cols = min(width, frame.width)
         last_row = height - 1
         last_col = width - 1
+        painted = []
         for row in range(rows):
+            line = []
             for col in range(cols):
                 cell = frame.cell(row, col)
                 attribute = self.attribute(cell.style)
+                line.append((cell.char, attribute))
                 if row == last_row and col == last_col:
                     # C1: addstr here raises; insstr does not move the cursor
                     # and so succeeds.
                     window.insstr(row, col, cell.char, attribute)
                 else:
                     window.addstr(row, col, cell.char, attribute)
+            painted.append(tuple(line))
+        self._repair_spill(tuple(painted), rows)
         window.refresh()
+
+    def _repair_spill(self, painted, rows: int) -> None:
+        """Force out the rows a changed glyph may have leaked pixels into.
+
+        ``painted`` is what :meth:`paint` has just written. Every row that
+        differs from the last paint, **and one row either side of it**, is
+        handed to ``redrawln`` so that ncurses rewrites it whether or not its
+        characters changed. See the module docstring for why this is needed
+        and why ``touchline`` would not do it.
+
+        The first paint repairs nothing: there is nothing on the physical
+        screen yet for a glyph to have spilled onto.
+        """
+        previous = self._painted
+        self._painted = painted
+        if previous is None or len(previous) != rows:
+            return
+        band = set()
+        for row in range(rows):
+            if painted[row] == previous[row]:
+                continue
+            for neighbour in (row - 1, row, row + 1):
+                if 0 <= neighbour < rows:
+                    band.add(neighbour)
+        for row in sorted(band):
+            self._window.redrawln(row, 1)
 
     # -- reading -----------------------------------------------------------
 

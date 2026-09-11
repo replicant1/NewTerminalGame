@@ -31,6 +31,7 @@ class FakeWindow(object):
         self.timeouts = []
         self.keys = []
         self.keypads = []
+        self.redrawn = []    # (beg_line, num_lines) from redrawln
 
     def getmaxyx(self):
         return (self.height, self.width)
@@ -46,6 +47,9 @@ class FakeWindow(object):
 
     def refresh(self):
         self.refreshes += 1
+
+    def redrawln(self, beg_line, num_lines):
+        self.redrawn.append((beg_line, num_lines))
 
     def timeout(self, milliseconds):
         self.timeouts.append(milliseconds)
@@ -539,6 +543,107 @@ class CursesConstantsTest(unittest.TestCase):
         self.assertNotEqual(0, curses.A_BOLD)
         self.assertNotEqual(0, curses.A_DIM)
 
+
+class TheSpillRepairTest(unittest.TestCase):
+    """``paint`` forces out the rows a changed glyph may have leaked into.
+
+    A player reported a row of pixels surviving at the bottom of the square an
+    entity had just left. The character grid is provably clean across a move,
+    so the cause is a glyph rasterising outside its own cell box and ncurses
+    never re-sending the untouched row below it. ``paint`` answers that by
+    calling ``redrawln`` over every changed row plus one either side.
+
+    ``redrawln`` and not ``touchline``: ``touchline`` only re-copies into the
+    virtual screen, and ``doupdate`` then emits nothing when the characters
+    are identical -- which is exactly this case.
+    """
+
+    def painted(self, window, *pictures):
+        screen = screen_module.Screen(window, {STYLE_DEFAULT: 7})
+        for picture in pictures:
+            window.redrawn = []
+            screen.paint(a_picture(picture))
+        return window.redrawn
+
+    def test_the_first_paint_repairs_nothing(self):
+        # Nothing is on the physical screen yet for a glyph to have spilled on.
+        window = FakeWindow(height=4, width=4)
+        self.assertEqual([], self.painted(window, ("ab", "cd", "ef", "gh")))
+
+    def test_an_unchanged_repaint_repairs_nothing(self):
+        window = FakeWindow(height=4, width=4)
+        same = ("ab", "cd", "ef", "gh")
+        self.assertEqual([], self.painted(window, same, same))
+
+    def test_a_change_redraws_the_row_and_one_either_side(self):
+        window = FakeWindow(height=4, width=4)
+        redrawn = self.painted(
+            window, ("ab", "cd", "ef", "gh"), ("ab", "cd", "eX", "gh")
+        )
+        # row 2 changed -> rows 1, 2 and 3 are declared corrupt
+        self.assertEqual([(1, 1), (2, 1), (3, 1)], redrawn)
+
+    def test_the_band_is_clipped_at_the_top(self):
+        window = FakeWindow(height=4, width=4)
+        redrawn = self.painted(
+            window, ("ab", "cd", "ef", "gh"), ("Xb", "cd", "ef", "gh")
+        )
+        self.assertEqual([(0, 1), (1, 1)], redrawn)
+
+    def test_the_band_is_clipped_at_the_bottom(self):
+        window = FakeWindow(height=4, width=4)
+        redrawn = self.painted(
+            window, ("ab", "cd", "ef", "gh"), ("ab", "cd", "ef", "gX")
+        )
+        self.assertEqual([(2, 1), (3, 1)], redrawn)
+
+    def test_two_changed_rows_produce_one_band_with_no_row_twice(self):
+        # An entity moving up changes the row it left and the row it arrived
+        # at; the bands overlap and each row must still be redrawn once.
+        window = FakeWindow(height=5, width=4)
+        redrawn = self.painted(
+            window,
+            ("ab", "cd", "ef", "gh", "ij"),
+            ("ab", "cX", "eY", "gh", "ij"),
+        )
+        self.assertEqual([(0, 1), (1, 1), (2, 1), (3, 1)], redrawn)
+        self.assertEqual(len(redrawn), len(set(redrawn)))
+
+    def test_a_style_change_alone_is_a_change(self):
+        # Same characters, different colour: the old attribute could have been
+        # painted outside the cell just as readily as the old character.
+        window = FakeWindow(height=3, width=4)
+        screen = screen_module.Screen(window, {STYLE_DEFAULT: 7, "other": 9})
+        screen.paint(a_picture(("ab", "cd", "ef")))
+        window.redrawn = []
+        screen.paint(a_picture(("ab", "cd", "ef"), style="other"))
+        self.assertEqual([(0, 1), (1, 1), (2, 1)], window.redrawn)
+
+    def test_the_repair_happens_before_the_refresh_that_shows_it(self):
+        # redrawln after refresh would leave the junk on screen for a frame.
+        order = []
+        window = FakeWindow(height=3, width=4)
+        window.redrawln = lambda beg, num: order.append(("redrawln", beg))
+        window.refresh = lambda: order.append(("refresh", None))
+        screen = screen_module.Screen(window, {STYLE_DEFAULT: 7})
+        screen.paint(a_picture(("ab", "cd", "ef")))
+        screen.paint(a_picture(("ab", "cd", "eX")))
+        self.assertEqual(("refresh", None), order[-1])
+        self.assertIn(("redrawln", 1), order)
+        self.assertLess(order.index(("redrawln", 1)), len(order) - 1)
+
+    def test_it_never_narrows_what_is_drawn(self):
+        # The repair may only widen what is re-sent. Every cell is still
+        # written on every paint, changed or not.
+        window = FakeWindow(height=3, width=4)
+        screen = screen_module.Screen(window, {STYLE_DEFAULT: 7})
+        screen.paint(a_picture(("ab", "cd", "ef")))
+        window.added = []
+        window.inserted = []
+        screen.paint(a_picture(("ab", "cd", "eX")))
+        # three rows of the picture's own two columns; paint clips to the
+        # smaller of window and picture, and the window here is wider.
+        self.assertEqual(3 * 2, len(window.added) + len(window.inserted))
 
 if __name__ == "__main__":
     unittest.main()
