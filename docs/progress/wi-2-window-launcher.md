@@ -27,3 +27,4 @@
 01:07:39Z  WI-2 NOTE    final Terminal census: all windows 367, 2486, 2420, 2440 — the exact four ids held before this run; visible 367, 2486. Every window I opened is closed.
 01:07:39Z  WI-2 TEST    90 passed, 0 failed, 2 skipped on /usr/bin/python3 3.9.6; same counts on /opt/homebrew/bin/python3 3.14.7
 01:07:39Z  WI-2 NOTE    PR #4 body updated and marked ready for review. Not merged, not approved, not closed — that is the conductor's.
+01:07:56Z  WI-2 DONE    WI-2 wi-2-window-launcher 5402514
