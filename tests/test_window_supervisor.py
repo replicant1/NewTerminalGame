@@ -41,7 +41,7 @@ class FakeTerminal(object):
             raise window.WindowError("deliberate failure: " + self.raise_on)
         if "tty of tab 1" in script:
             return self.tty_position
-        if "position of front window" in script:
+        if "set p to position of w" in script:
             return self.front_position
         if "return id of newWindow" in script:
             return str(NEW_WINDOW_ID)
@@ -65,7 +65,7 @@ class FakeTerminal(object):
         for script in self.scripts:
             if "tty of tab 1" in script:
                 labels.append("reference-tty")
-            elif "position of front window" in script:
+            elif "set p to position of w" in script:
                 labels.append("reference-front")
             elif "do script" in script:
                 labels.append("open")
@@ -85,17 +85,17 @@ class FakeTerminal(object):
 class SupervisorTest(unittest.TestCase):
     def setUp(self):
         self.real_run = window.run_osascript
-        self.real_screen_size = window.screen_size
+        self.real_displays = window.displays
         self.real_tty = window.controlling_tty
         self.reports = []
         self.real_sleep = window.time.sleep
         window.time.sleep = lambda seconds: None
-        window.screen_size = lambda: (1512, 982)
+        window.displays = lambda: [(0, 0, 1512, 982)]
         window.controlling_tty = lambda: "/dev/ttys009"
 
     def tearDown(self):
         window.run_osascript = self.real_run
-        window.screen_size = self.real_screen_size
+        window.displays = self.real_displays
         window.controlling_tty = self.real_tty
         window.time.sleep = self.real_sleep
 

@@ -198,14 +198,20 @@ class MoveTest(unittest.TestCase):
 class ReadOnlyQueryTest(unittest.TestCase):
     """The two reference queries run *before* a window of ours exists."""
 
-    def test_the_front_window_query_is_the_only_script_that_mentions_it(self):
-        self.assertIn("front window", window.script_front_position())
+    def test_the_front_window_query_takes_the_frontmost_visible_window(self):
+        # Measured: `front window` answered with a hidden window parked at
+        # (-898, 76), which is on none of this machine's three displays.
+        script = window.script_front_position()
+        self.assertIn("if visible of w then", script)
+        self.assertIn("set p to position of w", script)
 
     def test_the_front_window_query_only_reads(self):
         script = window.script_front_position()
         self.assertNotIn("set position", script)
         self.assertNotIn("close", script)
-        self.assertIn("position of front window", script)
+
+    def test_the_front_window_query_says_none_when_nothing_is_visible(self):
+        self.assertIn('return "none"', window.script_front_position())
 
     def test_the_tty_query_only_reads(self):
         script = window.script_reference_position("/dev/ttys004")

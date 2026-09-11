@@ -53,8 +53,13 @@ OFFSET = (30, 30)
 #: Used when Terminal has no window at all to take a reference from.
 FALLBACK_POSITION = (60, 60)
 
-#: Used when the main display's size cannot be read.
-FALLBACK_SCREEN = (1440, 900)
+#: A display, as ``(left, top, width, height)`` in the screen coordinate space
+#: AppleScript and CoreGraphics share: the origin is the top-left of the main
+#: display and y increases downwards, so a display above or to the left of the
+#: main one has negative coordinates. Measured on this machine: the main
+#: display is (0, 0, 1512, 982) and there are two more at (-3509, -1440) and
+#: (-949, -1440), each 2560 x 1440.
+FALLBACK_SCREEN_BOUNDS = (0, 0, 1440, 900)
 
 #: The menu bar (and, on this machine, the notch) occupy the top of the screen;
 #: a window title bar placed above this is not reachable with the mouse.
@@ -125,29 +130,91 @@ def choose_reference(tty_position, front_position, fallback=FALLBACK_POSITION):
     return (tuple(fallback), "fallback")
 
 
+def applescript_display_bounds(cg_displays):
+    """CoreGraphics display rects, moved into the space AppleScript uses. Pure.
+
+    **They are not the same space, and assuming they were put the game window
+    on the wrong screen.** Measured on this machine, writing three positions to
+    a window of our own and reading the same window's frame back out of
+    ``CGWindowListCopyWindowInfo``:
+
+    ==========================  ===========================
+    written via AppleScript     CoreGraphics says
+    ==========================  ===========================
+    ``(600, 300)``              ``y = -1140``
+    ``(-898, 76)``              ``y = -1364``
+    ``(-3000, -1000)``          ``y = -1410`` (AppleScript
+                                clamped the write to 30)
+    ==========================  ===========================
+
+    A constant offset of 1440 in y, none in x: AppleScript's origin is the top
+    of the *topmost* display, CoreGraphics' is the top of the *main* one, and
+    here the topmost display is 1440 px above it. So the shift is "move the
+    topmost display's top to y = 0, leave x alone".
+
+    AppleScript also refuses to place a window above y = 30 and clamps the
+    write silently, which is why the game's own minimum is well below that.
+    """
+    if not cg_displays:
+        return [FALLBACK_SCREEN_BOUNDS]
+    topmost = min(top for (_, top, _, _) in cg_displays)
+    return [
+        (left, top - topmost, width, height)
+        for (left, top, width, height) in cg_displays
+    ]
+
+
+def choose_display(reference, displays):
+    """The display the reference window is on (WIN-4). Pure.
+
+    *displays* must already be in AppleScript's space; see
+    ``applescript_display_bounds``.
+
+    "Somewhere visible" means visible *on the screen the player is looking
+    at*, so the window is clamped within the reference's own display, not
+    always within the main one. Measured: this machine has three displays and
+    the one the reference window was on is not the main one, so clamping to
+    the main display moved the game to a screen the player was not using.
+
+    Falls back to the first display -- CoreGraphics lists the main display
+    first -- when the reference is on no display at all.
+    """
+    if not displays:
+        return FALLBACK_SCREEN_BOUNDS
+    ref_x, ref_y = reference
+    for bounds in displays:
+        left, top, width, height = bounds
+        if left <= ref_x < left + width and top <= ref_y < top + height:
+            return bounds
+    return displays[0]
+
+
 def offset_position(
     reference,
-    screen_size=FALLBACK_SCREEN,
+    screen_bounds=FALLBACK_SCREEN_BOUNDS,
     window_size=GAME_WINDOW_PIXELS,
     offset=OFFSET,
-    min_y=MENU_BAR_HEIGHT,
+    menu_bar=MENU_BAR_HEIGHT,
 ):
     """Where the game window goes: below and right of *reference* (WIN-4).
 
-    Pure. The offset is clamped so the whole window stays on the screen -- a
-    reference near the bottom-right corner would otherwise put most of the
-    game off the edge, which is exactly what WIN-4 exists to prevent.
+    Pure. The offset is clamped so the whole window stays on *screen_bounds* --
+    a reference near the bottom-right corner would otherwise put most of the
+    game off the edge, which is exactly what WIN-4 exists to prevent -- and so
+    that its title bar stays clear of the menu bar.
     """
     ref_x, ref_y = reference
     win_w, win_h = window_size
-    screen_w, screen_h = screen_size
+    left, top, width, height = screen_bounds
     x = int(ref_x) + offset[0]
     y = int(ref_y) + offset[1]
 
-    max_x = max(0, int(screen_w) - int(win_w))
-    max_y = max(min_y, int(screen_h) - int(win_h))
+    min_x = int(left)
+    min_y = int(top) + menu_bar
+    max_x = max(min_x, int(left) + int(width) - int(win_w))
+    max_y = max(min_y, int(top) + int(height) - int(win_h))
 
-    x = min(max(0, x), max_x)
+    x = min(max(min_x, x), max_x)
     y = min(max(min_y, y), max_y)
     return (x, y)
 
@@ -215,17 +282,26 @@ def script_reference_position(tty):
 
 
 def script_front_position():
-    """Read the position of Terminal's frontmost window.
+    """Read the position of Terminal's frontmost *visible* window.
 
     This is the ONLY script in the project that mentions the front window, it
     is a read, and it runs before the game window exists. Nothing is ever
     written to, or closed by, the front window.
+
+    Visible matters: measured, ``front window`` answered with a hidden window
+    parked at (-898, 76), a position on none of this machine's three displays.
+    Terminal's window list is in front-to-back order, so the first visible one
+    is the frontmost window the player can actually see.
     """
     return (
         'tell application "Terminal"\n'
-        '\tif (count of windows) is 0 then return "none"\n'
-        "\tset p to position of front window\n"
-        '\treturn ((item 1 of p) as text) & " " & ((item 2 of p) as text)\n'
+        "\trepeat with w in windows\n"
+        "\t\tif visible of w then\n"
+        "\t\t\tset p to position of w\n"
+        '\t\t\treturn ((item 1 of p) as text) & " " & ((item 2 of p) as text)\n'
+        "\t\tend if\n"
+        "\tend repeat\n"
+        '\treturn "none"\n'
         "end tell"
     )
 
@@ -432,11 +508,25 @@ def run_osascript(script, timeout=20.0):
     return (completed.stdout or "").strip()
 
 
-def screen_size():
-    """The main display's size in points, for the WIN-4 clamp.
+class _CGPoint(ctypes.Structure):
+    _fields_ = [("x", ctypes.c_double), ("y", ctypes.c_double)]
+
+
+class _CGSize(ctypes.Structure):
+    _fields_ = [("width", ctypes.c_double), ("height", ctypes.c_double)]
+
+
+class _CGRect(ctypes.Structure):
+    _fields_ = [("origin", _CGPoint), ("size", _CGSize)]
+
+
+def displays():
+    """Every active display as ``(left, top, width, height)``, main first.
 
     CoreGraphics through ctypes: no TCC permission, no subprocess, no
-    third-party module. Falls back to a conservative size.
+    third-party module, and none of the AppleScript-to-Finder tricks that
+    would raise a permission prompt on the player's screen. Returns a
+    single conservative display if it cannot be read.
     """
     try:
         path = (
@@ -444,19 +534,38 @@ def screen_size():
             or "/System/Library/Frameworks/CoreGraphics.framework/CoreGraphics"
         )
         core_graphics = ctypes.cdll.LoadLibrary(path)
-        core_graphics.CGMainDisplayID.restype = ctypes.c_uint32
-        core_graphics.CGDisplayPixelsWide.restype = ctypes.c_size_t
-        core_graphics.CGDisplayPixelsHigh.restype = ctypes.c_size_t
-        core_graphics.CGDisplayPixelsWide.argtypes = [ctypes.c_uint32]
-        core_graphics.CGDisplayPixelsHigh.argtypes = [ctypes.c_uint32]
-        display = core_graphics.CGMainDisplayID()
-        width = int(core_graphics.CGDisplayPixelsWide(display))
-        height = int(core_graphics.CGDisplayPixelsHigh(display))
-        if width > 0 and height > 0:
-            return (width, height)
+        core_graphics.CGGetActiveDisplayList.argtypes = [
+            ctypes.c_uint32,
+            ctypes.POINTER(ctypes.c_uint32),
+            ctypes.POINTER(ctypes.c_uint32),
+        ]
+        core_graphics.CGGetActiveDisplayList.restype = ctypes.c_int32
+        core_graphics.CGDisplayBounds.argtypes = [ctypes.c_uint32]
+        core_graphics.CGDisplayBounds.restype = _CGRect
+
+        count = ctypes.c_uint32(0)
+        identifiers = (ctypes.c_uint32 * 16)()
+        if core_graphics.CGGetActiveDisplayList(
+            16, identifiers, ctypes.byref(count)
+        ) != 0:
+            return [FALLBACK_SCREEN_BOUNDS]
+        found = []
+        for index in range(count.value):
+            rect = core_graphics.CGDisplayBounds(identifiers[index])
+            if rect.size.width > 0 and rect.size.height > 0:
+                found.append(
+                    (
+                        int(rect.origin.x),
+                        int(rect.origin.y),
+                        int(rect.size.width),
+                        int(rect.size.height),
+                    )
+                )
+        if found:
+            return found
     except Exception:  # pragma: no cover - depends on the machine
         pass
-    return FALLBACK_SCREEN
+    return [FALLBACK_SCREEN_BOUNDS]
 
 
 def controlling_tty():
@@ -628,7 +737,8 @@ def supervise(
         report = _stderr_report
 
     reference, source = reference_position()
-    target = offset_position(reference, screen_size())
+    screens = applescript_display_bounds(displays())
+    target = offset_position(reference, choose_display(reference, screens))
 
     window_id = open_game_window(child_command(root))
     game_ended = False
