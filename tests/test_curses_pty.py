@@ -102,12 +102,11 @@ with open(%(out)r, "w") as handle:
 #: are already in its input queue when ``getch`` first asks: no timing, no
 #: synchronisation, nothing to be flaky about.
 PLAY = r'''
-import curses, json, sys, time
+import json, random, sys
 sys.path.insert(0, %(root)r)
 from termgame import maze as mazelib, screen as screen_module, standins
 from termgame.loop import run_loop
 from termgame.model import GameState, Outcome, Position, UP
-import random
 
 BOARD = "\n".join(["#######", "#.....#", "#.###.#", "#.....#", "#######"])
 maze = mazelib.from_text(BOARD)

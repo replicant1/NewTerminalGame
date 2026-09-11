@@ -74,10 +74,10 @@ ARROW_KEYS: Dict[int, Direction] = {
 QUIT_KEYS: FrozenSet[int] = frozenset({ord("q"), ord("Q")})
 
 #: What a decided key can be: a direction, the quit command, or nothing.
-Command_or_direction = Optional[Union[Direction, Command]]
+Decision = Optional[Union[Direction, Command]]
 
 
-def command_for_key(key: Optional[int]) -> Command_or_direction:
+def command_for_key(key: Optional[int]) -> Decision:
     """What ``key`` means: a :class:`~termgame.model.Direction`, :data:`QUIT`,
     or ``None``.
 
@@ -100,12 +100,12 @@ def command_for_key(key: Optional[int]) -> Command_or_direction:
     return None
 
 
-def is_quit(command: Command_or_direction) -> bool:
+def is_quit(command: Decision) -> bool:
     """Whether a decided command is the one that leaves the game."""
     return command is QUIT
 
 
-def as_direction(command: Command_or_direction) -> Optional[Direction]:
+def as_direction(command: Decision) -> Optional[Direction]:
     """The direction a decided command carries, or ``None`` if it carries none.
 
     This exists so the loop needs no ``isinstance`` of its own: nothing about
