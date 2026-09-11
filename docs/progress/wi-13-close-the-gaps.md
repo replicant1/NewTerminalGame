@@ -24,3 +24,6 @@
 05:15:25Z  WI-13 BROKE   theme status 51 -> 39: RED in the pty run too — "b'\x1b[38;5;51m' not found in ... : the terminal was never asked for colour 51, the cyan status line (SCRN-6)"
 05:15:25Z  WI-13 BROKE   controls: z added to QUIT_KEYS. With the z moved second: 5 RED including "the unmapped key did not quit" ("Lists differ: [2, 5] != [1, 2]"). With the z put back second-to-last where WI-12 found it: 21 passed, 0 failed — WI-12 finding 8 confirmed empirically.
 05:15:25Z  WI-13 TEST    full suite 774 passed, 0 failed, 2 skipped (/usr/bin/python3 -m unittest discover -s tests, 12.367s, OK)
+05:17:43Z  WI-13 BROKE   supervise() opening two windows: RED "1 != 2 : expected exactly one open, got [... open, open, ...]" — the tautology at test_window_supervisor.py:112 replaced with a once-each count, which the old line could not have caught
+05:17:43Z  WI-13 NOTE    test_maze.py MAZE-4 naming: brought the sweep up to the name rather than the name down to the sweep — 1000 seeds measured at 0.74s and all 1000 distinct
+05:17:43Z  WI-13 TEST    full suite 774 passed, 0 failed, 2 skipped (was 749 on main; 25 added)
