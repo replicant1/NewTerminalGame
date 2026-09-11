@@ -13,3 +13,6 @@
 01:53:02Z  TEST    whole suite: Ran 408 tests — OK (skipped=2). main was 373 + 35 new = 408, same two skips
 01:53:02Z  NOTE    relay from the lead: the lowest-(row,col) tie-break for BOTH placements is settled in the plan §5 WI-5 — not an assumption. A2 (the metric) stays an ASSUME
 01:53:02Z  NOTE    the exact middle (14,9) is a lattice LINK cell, so it is a wall on many seeds and the two node squares above and below it tie at distance 1 — the tie-break is exercised on most generated boards, not a rare edge case
+01:54:57Z  COMMIT  c009741 WI-5: tests — placement by exhaustive recount over the board
+01:54:57Z  NOTE    measured: standins.new_game and rules.new_game agree on player and ghost on all 200 seeds; headings differ on 99/200 because randrange vs choice consume the rng differently. A difference, not a disagreement — WI-9 removes the standin
+01:54:57Z  TEST    whole suite: Ran 409 tests — OK (skipped=2)
