@@ -29,3 +29,5 @@
 05:17:43Z  WI-13 TEST    full suite 774 passed, 0 failed, 2 skipped (was 749 on main; 25 added)
 05:20:12Z  WI-13 NOTE    Terminal census, read-only: all [367, 2486, 2420, 2440], visible [367, 2486] — the established values. No window opened by this work at all; every test here is pty-based.
 05:20:12Z  WI-13 WROTE   docs/prs/PR-WI-13-close-the-gaps.md (final body) and docs/completions/COMPLETION-M3-DEV-A.md
+05:21:31Z  WI-13 PR      #16 body updated and marked ready for review. Base main, head wi-13-close-the-gaps, OPEN, not draft. NOT merged — the lead merges.
+05:21:31Z  WI-13 DONE    WI-13 wi-13-close-the-gaps e2d7778
