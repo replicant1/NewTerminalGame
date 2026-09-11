@@ -596,9 +596,26 @@ def source_files(base, label, only_changed=False):
     """
     wanted = None
     if only_changed:
-        changed = sh(["git", "diff", "--name-only", "main...HEAD"], cwd=base).splitlines()
-        untracked = sh(["git", "ls-files", "--others", "--exclude-standard"], cwd=base).splitlines()
-        wanted = {c.strip() for c in changed + untracked if c.strip()}
+        # What this work item wrote, which must survive its branch being merged.
+        # "Changed against main" answers a different question and goes empty the
+        # moment the conductor merges: by then the branch and main agree.
+        #
+        # Developers are required to start every commit subject with the work
+        # item code, so the item's own commits are findable by that code however
+        # the branch is later merged or rebased.
+        branch = sh(["git", "rev-parse", "--abbrev-ref", "HEAD"], cwd=base)
+        m = re.match(r"((?:wi|s|hv)-\d+[a-z]?)", branch, re.I)
+        names = set()
+        if m:
+            out = sh(["git", "log", branch, "-i", "--grep=^" + m.group(1),
+                      "--name-only", "--format="], cwd=base)
+            names |= {l.strip() for l in out.splitlines() if l.strip()}
+        # plus anything uncommitted right now -- work in flight exists nowhere else
+        for cmd in (["git", "diff", "--name-only"],
+                    ["git", "diff", "--name-only", "--cached"],
+                    ["git", "ls-files", "--others", "--exclude-standard"]):
+            names |= {l.strip() for l in sh(cmd, cwd=base).splitlines() if l.strip()}
+        wanted = names
         if not wanted:
             return []
 
@@ -651,7 +668,7 @@ def artifact_tree():
     for name, path in worktrees():
         branch = sh(["git", "rev-parse", "--abbrev-ref", "HEAD"], cwd=path) or name
         add(path, branch)
-        items.extend(source_files(path, branch + " — changed", only_changed=True))
+        items.extend(source_files(path, branch + " — its files", only_changed=True))
     if ARCHIVE.is_dir():
         live = {n for n, _ in worktrees()}
         for d in sorted(ARCHIVE.iterdir()):
