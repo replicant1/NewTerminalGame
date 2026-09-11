@@ -15,3 +15,4 @@
 01:24:35Z  NOTE    WI-3 golden fixture tests/fixtures/spec_picture.txt passes: the spec picture renders back as exactly those 30 rows of 40 columns
 01:24:35Z  ASK     SCRN-5 gives each entity three characters on a two-column pitch, so two entities on horizontally adjacent corridor cells must share one picture column; the spec never draws that case and does not say what should happen
 01:24:41Z  ASSUME  proceeding with the draw order the plan specifies — the ghost is last, so the ghost keeps the shared column and the player loses its right-hand edge for that one frame. Affects only view.draw_entity and TestTwoEntitiesSideBySide in tests/test_view.py; a ruling either way is a few lines
+01:25:57Z  NOTE    WI-3 PR summary written to docs/prs/PR-WI-3-glyphs-picture.md
