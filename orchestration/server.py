@@ -579,8 +579,51 @@ def git_state():
     }
 
 
+#: Source the agents write. Listed alongside the documents, because a tool for
+#: watching a build that shows only the reports and never the code is missing
+#: the product.
+SOURCE_SUFFIXES = (".py", ".sh", ".txt", ".cfg", ".toml", ".ini")
+SOURCE_SKIP = ("/.git/", "/.claude/", "/orchestration/", "/__pycache__/", "/.venv/")
+
+
+def source_files(base, label, only_changed=False):
+    """Source files under `base`, excluding the tool's own directories.
+
+    For a worktree, `only_changed` lists just what that developer has touched
+    against main. A worktree holds a whole checkout, so listing all of it
+    repeats the project once per developer and buries the few files that are
+    the point -- the work that exists nowhere else yet.
+    """
+    wanted = None
+    if only_changed:
+        changed = sh(["git", "diff", "--name-only", "main...HEAD"], cwd=base).splitlines()
+        untracked = sh(["git", "ls-files", "--others", "--exclude-standard"], cwd=base).splitlines()
+        wanted = {c.strip() for c in changed + untracked if c.strip()}
+        if not wanted:
+            return []
+
+    out = []
+    for path in sorted(base.rglob("*")):
+        if not path.is_file():
+            continue
+        rel = str(path.relative_to(base))
+        if any(skip in "/" + rel + "/" for skip in SOURCE_SKIP):
+            continue
+        if wanted is not None and rel not in wanted:
+            continue
+        if path.suffix in SOURCE_SUFFIXES or path.name in ("play", "Makefile"):
+            try:
+                st = path.stat()
+            except OSError:
+                continue
+            out.append({"group": label, "name": rel, "kind": "source",
+                        "path": str(path.resolve()), "size": st.st_size,
+                        "mtime": st.st_mtime})
+    return out
+
+
 def artifact_tree():
-    """Every agent-produced document, live or archived."""
+    """Every agent-produced document and source file, live or archived."""
     items = []
 
     def add(base, label):
@@ -604,8 +647,11 @@ def artifact_tree():
                           "path": str(f.resolve()), "size": f.stat().st_size,
                           "mtime": f.stat().st_mtime})
     add(ROOT, "main")
+    items.extend(source_files(ROOT, "main — source"))
     for name, path in worktrees():
-        add(path, name)
+        branch = sh(["git", "rev-parse", "--abbrev-ref", "HEAD"], cwd=path) or name
+        add(path, branch)
+        items.extend(source_files(path, branch + " — changed", only_changed=True))
     if ARCHIVE.is_dir():
         live = {n for n, _ in worktrees()}
         for d in sorted(ARCHIVE.iterdir()):
