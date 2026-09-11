@@ -20,3 +20,6 @@
 04:24:43Z  NOTE    WI-10a live check PASSED, exit 0. 4 windows opened and reaped, each closed by its captured id after wait_until_idle confirmed the child exited. Visible census before [367, 2486] == after [367, 2486]; no user window went missing. All-ids grew to include 4632, the lingering-invisible closed id WI-2 measured.
 04:24:43Z  NOTE    WI-10a HONEST LIMIT: the old repeat-loop census did NOT fail in these 4 rounds. It is a race; WI-10 hit it, I did not reproduce it live. What I could prove live is that the new census agrees with the old one every round and reconciles across every close.
 04:26:02Z  TEST    749 passed, 0 failed, 2 skipped (final) -- /usr/bin/python3 -m unittest discover -s tests
+04:26:51Z  NOTE    WI-10a PR #14 body updated from docs/prs/PR-WI-10a-census-race.md and marked ready for review; base main, MERGEABLE, not merged (the technical lead merges).
+04:26:51Z  NOTE    WI-10a final visible census 367, 2486 -- identical to the baseline taken at 04:16:06Z. No window opened by this work item is left on the screen.
+04:26:51Z  DONE    WI-10a wi-10a-census-race 1153a98
