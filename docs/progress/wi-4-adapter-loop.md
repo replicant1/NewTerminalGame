@@ -33,3 +33,4 @@
 01:41:56Z  COMMIT  e15bbb2 WI-4: PR body and the M0 lane completion note brought up to date
 01:42:31Z  COMMIT  d42110d WI-4: tidy — a clearer name for the key-decision type, and two unused imports
 01:42:50Z  NOTE    Terminal census, read-only: visible [367, 2486], full [367, 2420, 2440, 2486] — identical to what WI-2 reported and left. This item opened and closed nothing
+01:43:06Z  DONE    WI-4 wi-4-adapter-loop 2715ad2 — 373 passed, 0 failed, 2 skipped on both interpreters; PR 7 about to be marked ready
