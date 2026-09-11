@@ -44,3 +44,7 @@
 04:43:14Z  WI-12 PLAN    all five sweeps in, 49 of 49 audited. Writing docs/completions/COMPLETION-M3-DEV-B.md now: 37 codes carried by tests alone, 8 test-plus-human, 2 human-check-only, 2 with a clause nothing demonstrates.
 04:46:29Z  WI-12 WROTE   docs/completions/COMPLETION-M3-DEV-B.md — 49 of 49 codes, each with the test or the human check that demonstrates it, plus 4 tests that do not hold up, 2 undemonstrated requirement clauses, 4 contradictions in the plan/architecture, and the still-unverified list.
 04:46:51Z  WI-12 TEST    749 passed, 0 failed, 2 skipped — re-run on the branch with all documents in place. Unchanged from main, as expected: this item adds no code.
+04:48:01Z  WI-12 COMMIT  45b06e0 the traceability confirmation, 49 of 49, and what does not hold up — pushed
+04:48:14Z  WI-12 PR      PR #15 body updated and marked ready for review. Base main, head wi-12-final-gate, OPEN, not draft. NOT merged — the lead merges.
+04:48:28Z  WI-12 NOTE    final census: visible [367, 2486] and all [367, 2486, 2420, 2440] — both back to exactly the values I found at 04:31. Terminal has since reaped the two stale window objects (4656, 4660). Nothing of the user s left open, nothing of the user s closed.
+04:48:28Z  WI-12 DONE    WI-12 wi-12-final-gate (head sha in the commit that carries this line)
