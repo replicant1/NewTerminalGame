@@ -39,6 +39,8 @@ label{font-size:12px;color:var(--dim);display:inline-flex;gap:5px;align-items:ce
                  font-variant-numeric:tabular-nums}
 #progress .pblab{font-size:12px;color:var(--dim)}
 #progress .pbnext{font-size:12px;color:var(--dim)}
+#elapsed{font-size:12px;color:var(--dim);font-variant-numeric:tabular-nums;white-space:nowrap}
+#elapsed b{color:var(--ink);font-weight:600}
 /* Each label in the same colour as the segment it names, so the header and
    the bar can be read against each other without a legend. */
 #progress .pbnext .n-active{color:var(--ask);font-weight:600}
@@ -260,6 +262,8 @@ dialog pre#vbody{margin:0;padding:14px 18px;max-height:72vh;overflow:auto;white-
   <div class="pbtop">
     <span class="pbpct" id="pbpct">—</span>
     <span class="pblab" id="pblab"></span>
+    <span class="spacer"></span>
+    <span id="elapsed" title="Time since the first line any agent wrote in this run. Not the age of this page, and not the age of the monitor."></span>
     <span class="spacer"></span>
     <span class="pbnext" id="pbnext"></span>
   </div>
@@ -720,6 +724,25 @@ async function renderFiles() {
   $('#tab-files').innerHTML = h || '<div class="empty">No artifacts yet.</div>';
 }
 
+// Elapsed time of the run, anchored to the first line an agent wrote. Held
+// here and ticked locally every second so the seconds advance smoothly
+// between three-second polls.
+let runStart = null, runSource = '';
+function hms(sec) {
+  sec = Math.max(0, Math.floor(sec));
+  const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), ss = sec % 60;
+  return (h ? h + 'h ' : '') + (h || m ? String(m).padStart(h ? 2 : 1, '0') + 'm ' : '')
+         + String(ss).padStart(h || m ? 2 : 1, '0') + 's';
+}
+function tickElapsed() {
+  const el = $('#elapsed');
+  if (!el) return;
+  if (!runStart) { el.innerHTML = ''; return; }
+  el.innerHTML = 'run elapsed <b>' + hms(Date.now() / 1000 - runStart) + '</b>'
+    + (runSource ? ' <span style="opacity:.75">since ' + esc(runSource) + '</span>' : '');
+}
+setInterval(tickElapsed, 1000);
+
 function renderProgress(pr) {
   if (!pr) return;
   $('#pbpct').textContent = pr.total ? pr.percent + '%' : '—';
@@ -877,6 +900,11 @@ async function refresh() {
     renderAsks(s.asks, s.requests);
     renderGit(s.git);
     renderProgress(s.progress);
+    if (s.run && s.run.start) {
+      runStart = s.run.start;
+      runSource = s.run.source ? s.run.source.replace(/\s+START$/, "'s first line") : '';
+    }
+    tickElapsed();
     const waiting = s.asks.filter(a => !a.answered && !a.cleared).length;
     $('#head').textContent = s.root + (waiting ? '  ·  ' + waiting + ' question(s) waiting' : '');
     document.title = (waiting ? '(' + waiting + ') ' : '') + 'Orchestration monitor';

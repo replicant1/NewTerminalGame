@@ -374,6 +374,25 @@ def panes():
     return result
 
 
+def run_clock():
+    """When this run began, taken from the agents' own logs.
+
+    The earliest timestamp any agent wrote is the honest anchor: it is when
+    work started, not when this monitor was launched or when the page was
+    opened. Those three differ by hours and conflating them would make the
+    figure meaningless.
+    """
+    earliest, source = None, ""
+    for pane in panes():
+        for line in pane["lines"]:
+            ts = line.get("ts")
+            if not ts:
+                continue
+            if earliest is None or ts < earliest:
+                earliest, source = ts, "%s %s" % (pane["title"], line["label"])
+    return {"start": earliest, "source": source, "now": time.time()}
+
+
 def in_hand():
     """What is actually being worked on right now.
 
@@ -643,7 +662,7 @@ class Handler(BaseHTTPRequestHandler):
             return self._send(200, json.dumps({
                 "root": str(ROOT), "now": time.time(),
                 "panes": panes(), "git": git_state(), "session": session_health(),
-                "progress": progress(), "now": in_hand(),
+                "progress": progress(), "now": in_hand(), "run": run_clock(),
                 "asks": asks(), "requests": pending_requests(),
             }))
 
