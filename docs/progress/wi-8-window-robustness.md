@@ -40,3 +40,6 @@
 02:23:53Z  WI-8 NOTE    wrote docs/findings/WI-8-close-grace-timeout.md and docs/findings/WI-8-title-settling-race.md
 02:25:19Z  WI-8 TEST    479 passed, 0 failed, 2 skipped (whole suite, final)
 02:25:19Z  WI-8 NOTE    PR body written to docs/prs/PR-WI-8-window-robustness.md
+02:25:51Z  WI-8 NOTE    final census: visible Terminal windows [367, 2486] — unchanged from the start of this work item. No osascript, launch-smoke or `Terminal Game` process is running. Nothing of mine is left on the user's screen.
+02:25:51Z  WI-8 NOTE    PR #9 marked ready for review, base main, MERGEABLE. NOT merged, not approved, not closed — that is the conductor's.
+02:25:51Z  WI-8 DONE    WI-8 wi-8-window-robustness c81b35f
