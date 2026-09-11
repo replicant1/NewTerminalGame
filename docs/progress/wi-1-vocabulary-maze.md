@@ -8,3 +8,5 @@
 00:43:59Z  NOTE    pushed wi-1-vocabulary-maze; draft PR #3 opened on the remote
 00:43:59Z  PLAN    now the tests: test_model.py, test_maze.py, test_purity.py
 00:45:03Z  TEST    42 passed, 0 failed, 0 skipped  (tests/test_model.py only)
+00:46:39Z  TEST    84 passed, 0 failed, 0 skipped  (test_model + test_maze)
+00:46:39Z  NOTE    spec mock-up: 126 nodes + 138 links = 264 corridors; joiner-column invariant (architecture C9) holds across all 29 rows
