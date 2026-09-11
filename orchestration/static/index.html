@@ -738,18 +738,34 @@ function renderProgress(pr) {
   if (!items.length) { $('#pbar').innerHTML = ''; return; }
 
   const day = 86400000;
-  const t0 = Math.min(...items.map(i => Date.parse(i.start)));
-  const t1 = Math.max(...items.map(i => Date.parse(i.start) + Math.max(i.days || 1, 0.5) * day));
-  const span = Math.max(1, (t1 - t0) / day);
-  const pc = t => ((t - t0) / day) / span * 100;
+
+  // A plan may say "excludes weekends", in which case its durations are in
+  // working days: a 3d item starting Thursday ends Tuesday. Laying that on a
+  // plain calendar axis opens a hole at every weekend and makes contiguous
+  // work look like it has gaps in it.
+  const skipWeekends = !!pr.excludesWeekends;
+  const isWeekend = t => { const d = new Date(t).getUTCDay(); return d === 0 || d === 6; };
+  const t0raw = Math.min(...items.map(i => Date.parse(i.start)));
+  // index of a date on the axis: calendar days, or working days when excluded
+  const axisPos = t => {
+    if (!skipWeekends) return (t - t0raw) / day;
+    const sign = t < t0raw ? -1 : 1;
+    let n = 0;
+    for (let d = Math.min(t0raw, t); d < Math.max(t0raw, t); d += day) if (!isWeekend(d)) n++;
+    return sign * n;
+  };
+  const t1 = Math.max(...items.map(i => axisPos(Date.parse(i.start)) + Math.max(i.days || 1, 0.5)));
+  const span = Math.max(1, t1);
+  const pc = t => (axisPos(t) / span) * 100;
 
   // greedy lane packing, in schedule order
   const sorted = [...items].sort((a, b) => Date.parse(a.start) - Date.parse(b.start));
   const lanes = [];
   for (const i of sorted) {
-    const s0 = Date.parse(i.start), s1 = s0 + Math.max(i.days || 1, 0.5) * day;
-    let lane = lanes.find(L => L.end <= s0);
-    if (!lane) { lane = {end: 0, items: []}; lanes.push(lane); }
+    // pack in axis units, so weekend-excluded plans pack the same way they draw
+    const s0 = axisPos(Date.parse(i.start)), s1 = s0 + Math.max(i.days || 1, 0.5);
+    let lane = lanes.find(L => L.end <= s0 + 1e-9);
+    if (!lane) { lane = {end: -Infinity, items: []}; lanes.push(lane); }
     lane.end = s1; lane.items.push(i);
   }
 
@@ -766,15 +782,16 @@ function renderProgress(pr) {
   $('#pbar').innerHTML = '<div class="secrow"></div>' + lanes.map(L =>
     `<div class="lane">${L.items.map(i => {
       const s0 = Date.parse(i.start), w = Math.max(i.days || 1, 0.5);
+      const widthPc = (w / span) * 100;
       const status = i.done ? 'merged into main'
                     : (active.has(i.id) ? 'in progress — a developer is on it now'
                     : (next.has(i.id) ? 'next up — not started' : 'not started'));
       const tip = `${i.id} — ${i.title}\n${i.section || ''}\n` +
-                  `plan: day ${Math.round((s0 - t0) / day) + 1}, ${w} developer-day${w === 1 ? '' : 's'}\n` +
+                  `plan: day ${Math.round(axisPos(s0)) + 1}, ${w} developer-day${w === 1 ? '' : 's'}\n` +
                   `status: ${status}`;
       const cls = i.done ? 'done' : (active.has(i.id) ? 'active' : (next.has(i.id) ? 'next' : ''));
       return `<div class="seg ${cls}"
-        style="left:${pc(s0)}%;width:${(w / span) * 100}%"
+        style="left:${pc(s0)}%;width:${widthPc}%"
         title="${esc(tip)}"
         ><span>${esc(i.id)}</span></div>`;
     }).join('')}</div>`).join('') +
