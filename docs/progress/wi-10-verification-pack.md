@@ -17,3 +17,5 @@
 03:06:25Z  NOTE    corner stage run live twice — windows 4318 and 4321, both landed at (-868, 106) from reference (-898, 76), i.e. exactly +30/+30, and no display-layout fallback either time. In a REAL 40x30 window: addstr(29,39) raises "addwstr() returned ERR", insstr does not, the adapter paints the whole picture without raising, and the screen reads back identical to the picture. **No fix needed** — architecture C1 holds against a real window exactly as WI-4 measured it on a pty
 03:06:25Z  NOTE    census unchanged across all three live windows: visible [367, 2486] before and after every one. The closed ids linger in "id of every window" and go invisible, which is WI-2 finding §6 reproduced
 03:06:58Z  TEST    666 passed, 0 failed, 2 skipped — and the whole ./verify run green in 23.1s: suite 12.5s, launch smoke 9.8s (window 4324, title settled in 0.8s, tab 40 x 30 Menlo-Regular 18, census unchanged), play-through 0.1s
+03:07:19Z  COMMIT  667f6c5 WI-10: --verbose, so a measurement taken by a passing stage can be read
+03:11:27Z  TEST    701 passed, 0 failed, 2 skipped — the human-check pack and its 35 staleness tests, plus the bottom-right findings note
