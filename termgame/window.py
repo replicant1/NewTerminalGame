@@ -24,6 +24,7 @@ of it into pure functions -- ``choose_reference``, ``offset_position`` and the
 import ctypes
 import ctypes.util
 import os
+import signal
 import subprocess
 import sys
 import time
@@ -67,13 +68,63 @@ MENU_BAR_HEIGHT = 38
 
 #: How long the supervisor waits, on the failure path, for the child to exit
 #: before giving up and leaving the window open rather than forcing it.
+#:
+#: **Why ten seconds.** Two transitions were measured (WI-2's findings, §3):
+#: the tab goes from ``do script`` returning to holding the child's processes
+#: in **0.25 s**, and from the child exiting to holding none in **0.19 s**.
+#: Ten seconds is forty times the larger of those, so no amount of ordinary
+#: AppleScript latency or machine load can trip it, and a child that crashed
+#: a moment ago is always reaped inside it. It is also short enough that a
+#: player who has just been shown an error is not left staring at a ``./play``
+#: that appears to have hung. If it *does* expire, the game really is still
+#: running, and the window is then deliberately left open -- forcing a close
+#: on a busy tab raises the modal sheet (§2.6 rule 3), which is strictly worse
+#: than one window the player can close themselves.
 CLOSE_GRACE_SECONDS = 10.0
+
+#: How long an empty tab is not yet read as "the game has ended". The tab is
+#: momentarily process-free between ``do script`` returning and the child
+#: appearing (measured at 0.25 s); this is eight times that.
+STARTUP_GRACE_SECONDS = 2.0
+
+#: How often the supervisor asks Terminal whether the game is still running.
+POLL_SECONDS = 0.2
+
+#: How long any single AppleScript is given. A modal sheet on a Terminal
+#: window blocks every AppleScript call in the system, and this is what turns
+#: that into a message instead of a process that never returns.
+OSASCRIPT_TIMEOUT_SECONDS = 20.0
+
+#: What ``./play`` exits with when it was interrupted rather than played.
+#: 128 + SIGINT, the shell convention.
+INTERRUPTED_EXIT_STATUS = 130
+
+#: The answer every script that addresses our window gives when there is no
+#: such window any more -- the player closed it themselves, or Terminal quit.
+#: It is not an error: the goal state of the close is "that window is not on
+#: the screen", and a window that is gone is already in it.
+GONE = "gone"
+
+#: The signals that must still end with the game window closed. ``SIGINT`` is
+#: ^C in the terminal the player typed ``./play`` into; ``SIGTERM`` is a plain
+#: ``kill``; ``SIGHUP`` is that terminal being closed out from under us.
+INTERRUPT_SIGNALS = ("SIGINT", "SIGTERM", "SIGHUP")
 
 OSASCRIPT = "/usr/bin/osascript"
 
 
 class WindowError(RuntimeError):
     """An AppleScript call failed, or returned something unusable."""
+
+
+class SupervisorInterrupted(RuntimeError):
+    """A signal arrived while the supervisor was watching the game.
+
+    Raised out of the signal handler so that the ``finally`` which closes the
+    game window runs. A handler that merely set a flag would not: the
+    supervisor spends its life inside ``osascript``, and nothing would look at
+    the flag until the game ended on its own.
+    """
 
 
 class WindowSettings(object):
@@ -371,12 +422,23 @@ def script_tab_state(window_id):
     ``busy`` is still read, and still gates the close, because it is what
     Terminal itself uses to decide whether to raise the modal confirmation
     sheet, and it *is* briefly true while the exec happens.
+
+    The read is wrapped so that a window which is *gone* answers ``gone``
+    rather than raising. A player may close the game window themselves, and
+    every script that addresses a window id that no longer exists fails with
+    ``Can't get window 1 whose id = N. Invalid index. (-1719)`` (measured, WI-2
+    findings §7). Letting that out of the poll would turn "the player closed
+    the window" into a traceback from ``./play``.
     """
     return (
         'tell application "Terminal"\n'
-        "\tset gameTab to tab 1 of %s\n"
-        '\treturn ((busy of gameTab) as text) & " " & '
+        "\ttry\n"
+        "\t\tset gameTab to tab 1 of %s\n"
+        '\t\treturn ((busy of gameTab) as text) & " " & '
         "((count of processes of gameTab) as text)\n"
+        "\ton error\n"
+        '\t\treturn "gone"\n'
+        "\tend try\n"
         "end tell" % _window(window_id)
     )
 
@@ -388,12 +450,23 @@ def script_close_window(window_id):
     by anything happening in between. Both halves matter: no process left means
     the game has really ended (``busy`` alone does not -- see
     ``script_tab_state``), and ``busy`` false is what stops Terminal raising
-    the modal confirmation sheet. Returns ``closed`` or ``busy``.
+    the modal confirmation sheet. Returns ``closed``, ``busy`` or ``gone``.
+
+    ``gone`` is the third answer and it is not an error: the window id no
+    longer resolves, because the player closed the window themselves or
+    Terminal quit. The goal state of a close is "that window is not on the
+    screen", and a window that is gone is already in it. Only the *addressing*
+    is wrapped -- if the tab is busy the script still returns ``busy`` and
+    still does not close anything.
     """
     return (
         'tell application "Terminal"\n'
-        "\tset gameWindow to %s\n"
-        "\tset gameTab to tab 1 of gameWindow\n"
+        "\ttry\n"
+        "\t\tset gameWindow to %s\n"
+        "\t\tset gameTab to tab 1 of gameWindow\n"
+        "\ton error\n"
+        '\t\treturn "gone"\n'
+        "\tend try\n"
         "\tif busy of gameTab is false and (count of processes of gameTab) is 0 then\n"
         "\t\tclose gameWindow\n"
         '\t\treturn "closed"\n'
@@ -423,6 +496,23 @@ def script_window_name(window_id):
     return (
         'tell application "Terminal"\n'
         "\treturn name of %s\n"
+        "end tell" % _window(window_id)
+    )
+
+
+def script_tab_geometry(window_id):
+    """Read our tab's size and font back (WIN-2). A read, by id.
+
+    Returns ``"<columns> <rows> <font name> <font size>"``. The launch smoke
+    uses this to check the window it opened really is 40 x 30 in Menlo 18,
+    rather than trusting that the write it issued took effect.
+    """
+    return (
+        'tell application "Terminal"\n'
+        "\tset gameTab to tab 1 of %s\n"
+        '\treturn ((number of columns of gameTab) as text) & " " & '
+        '((number of rows of gameTab) as text) & " " & '
+        '(font name of gameTab) & " " & ((font size of gameTab) as text)\n'
         "end tell" % _window(window_id)
     )
 
@@ -482,7 +572,7 @@ def parse_window_ids(text):
 # --------------------------------------------------------------------------
 
 
-def run_osascript(script, timeout=20.0):
+def run_osascript(script, timeout=OSASCRIPT_TIMEOUT_SECONDS):
     """Run one AppleScript and return its stdout, stripped."""
     try:
         completed = subprocess.run(
@@ -508,6 +598,23 @@ def run_osascript(script, timeout=20.0):
     return (completed.stdout or "").strip()
 
 
+def _sleep(seconds):
+    """The one place this module waits, and the one place a test replaces it.
+
+    An indirection rather than ``time.sleep`` bound as a default argument: a
+    default is captured when the function is defined, so a test could only
+    reach it by mutating the standard library's ``time`` module for the whole
+    process. Going through a module-level name keeps that blast radius inside
+    this module.
+    """
+    time.sleep(seconds)
+
+
+def _now():
+    """Monotonic seconds. Replaceable for the same reason as ``_sleep``."""
+    return time.monotonic()
+
+
 class _CGPoint(ctypes.Structure):
     _fields_ = [("x", ctypes.c_double), ("y", ctypes.c_double)]
 
@@ -520,14 +627,27 @@ class _CGRect(ctypes.Structure):
     _fields_ = [("origin", _CGPoint), ("size", _CGSize)]
 
 
-def displays():
+def displays(report=None):
     """Every active display as ``(left, top, width, height)``, main first.
 
     CoreGraphics through ctypes: no TCC permission, no subprocess, no
     third-party module, and none of the AppleScript-to-Finder tricks that
     would raise a permission prompt on the player's screen. Returns a
     single conservative display if it cannot be read.
+
+    **It says so when it falls back.** Measured during WI-8: this returned the
+    fallback on one run out of several, on a machine whose three displays
+    ``CGGetActiveDisplayList`` reported perfectly well a moment later. The
+    consequence is not cosmetic -- the fallback rectangle is 1440 x 900 and
+    starts at the origin, so a reference position on one of the real displays
+    is "on no display", the clamp moves the game window to the main screen,
+    and WIN-4 quietly stops holding. Falling back is still the right
+    behaviour, because the game must start either way; falling back in silence
+    is not, for the same reason an ``osascript`` error is surfaced rather than
+    swallowed.
     """
+    if report is None:
+        report = _stderr_report
     try:
         path = (
             ctypes.util.find_library("CoreGraphics")
@@ -545,10 +665,13 @@ def displays():
 
         count = ctypes.c_uint32(0)
         identifiers = (ctypes.c_uint32 * 16)()
-        if core_graphics.CGGetActiveDisplayList(
+        status = core_graphics.CGGetActiveDisplayList(
             16, identifiers, ctypes.byref(count)
-        ) != 0:
-            return [FALLBACK_SCREEN_BOUNDS]
+        )
+        if status != 0:
+            return _fallback_displays(
+                report, "CGGetActiveDisplayList failed (%d)" % status
+            )
         found = []
         for index in range(count.value):
             rect = core_graphics.CGDisplayBounds(identifiers[index])
@@ -563,8 +686,22 @@ def displays():
                 )
         if found:
             return found
-    except Exception:  # pragma: no cover - depends on the machine
-        pass
+        return _fallback_displays(
+            report, "CGGetActiveDisplayList reported %d display(s), none usable"
+            % count.value
+        )
+    except Exception as error:  # never stop the game starting
+        return _fallback_displays(report, "CoreGraphics is unreadable: %s" % error)
+
+
+def _fallback_displays(report, why):
+    """One conservative display, and a line saying why it came to that."""
+    report(
+        "could not read the screen layout (%s); assuming one %d x %d display. "
+        "The game window may land on the wrong screen." % (
+            (why,) + FALLBACK_SCREEN_BOUNDS[2:]
+        )
+    )
     return [FALLBACK_SCREEN_BOUNDS]
 
 
@@ -580,16 +717,44 @@ def controlling_tty():
         return None
 
 
-def reference_position(tty=None):
-    """The position the game window is offset from, and where it came from."""
+def _read_position(script, what, report):
+    """One reference query, which is allowed to fail.
+
+    The reference position is a nicety: WIN-4 wants the window *near* the one
+    the player was looking at, and when that cannot be discovered the fixed
+    fallback is a perfectly good answer. So a failure here must not stop the
+    game from starting -- but it is *reported with its text*, never swallowed
+    silently, because a query that has begun failing is worth knowing about.
+
+    This is where "Terminal is not running", "the game was launched from
+    something that is not Terminal" and "automation was refused" all land.
+    """
+    try:
+        return parse_position(run_osascript(script))
+    except WindowError as error:
+        report("could not read %s (%s); falling back" % (what, error))
+        return None
+
+
+def reference_position(tty=None, report=None):
+    """The position the game window is offset from, and where it came from.
+
+    Neither query is allowed to stop the game starting; see ``_read_position``.
+    """
+    if report is None:
+        report = _stderr_report
     if tty is None:
         tty = controlling_tty()
     tty_position = None
     if tty:
-        tty_position = parse_position(run_osascript(script_reference_position(tty)))
+        tty_position = _read_position(
+            script_reference_position(tty), "the launching window's position", report
+        )
     front_position = None
     if tty_position is None:
-        front_position = parse_position(run_osascript(script_front_position()))
+        front_position = _read_position(
+            script_front_position(), "Terminal's front window position", report
+        )
     return choose_reference(tty_position, front_position)
 
 
@@ -618,7 +783,16 @@ def move_window(window_id, x, y):
 
 
 def parse_tab_state(text):
-    """``"false 2"`` -> ``(False, 2)``. Pure."""
+    """``"false 2"`` -> ``(False, 2)``. Pure.
+
+    ``"gone"`` -- the window no longer exists -- reads as ``(False, 0)``, i.e.
+    *not running*, and so does anything else unparseable. That direction is
+    chosen deliberately and it is the safe one: reading an unparseable answer
+    as "still running" would leave the player's window open for ever, while
+    reading it as "ended" only ever leads to a close, and the close has its own
+    busy guard inside the AppleScript (``script_close_window``) which is what
+    actually keeps the modal sheet away.
+    """
     parts = (text or "").split()
     busy = bool(parts) and parts[0].strip().lower() == "true"
     count = 0
@@ -650,6 +824,22 @@ def window_name(window_id):
     return run_osascript(script_window_name(window_id))
 
 
+def tab_geometry(window_id):
+    """WIN-2, read back by id: ``(columns, rows, font name, font size)``."""
+    parts = run_osascript(script_tab_geometry(window_id)).rsplit(" ", 1)
+    if len(parts) != 2:
+        raise WindowError("could not read the tab's geometry from %r" % parts)
+    head, size = parts
+    head_parts = head.split(" ", 2)
+    if len(head_parts) != 3:
+        raise WindowError("could not read the tab's geometry from %r" % head)
+    columns, rows, font_name = head_parts
+    try:
+        return (int(columns), int(rows), font_name, int(float(size)))
+    except ValueError:
+        raise WindowError("could not read the tab's geometry from %r" % head)
+
+
 def window_is_visible(window_id):
     """After a close, Terminal keeps a stale window object: ask ``visible``."""
     answer = run_osascript(script_window_visible(window_id)).strip().lower()
@@ -657,7 +847,12 @@ def window_is_visible(window_id):
 
 
 def wait_until_idle(
-    window_id, timeout=None, poll=0.2, startup=2.0, sleep=time.sleep
+    window_id,
+    timeout=None,
+    poll=None,
+    startup=None,
+    sleep=None,
+    clock=None,
 ):
     """Poll our window's tab until the game has ended (WIN-5).
 
@@ -670,16 +865,32 @@ def wait_until_idle(
     as "the game has ended" once the game has been seen running, or once the
     startup grace has passed (which is what lets a child that exits instantly
     still be waited on).
+
+    *poll* and *startup* default to ``None`` meaning "read the module constant
+    now", rather than binding the constant at definition time. That is what
+    lets a test shorten the grace without changing what ``./play`` does.
+
+    *sleep* and *clock* are the seam that lets a test watch ten seconds pass
+    without spending ten seconds. They are injected together because a fake
+    sleep that does not advance a fake clock would spin.
     """
-    deadline = None if timeout is None else time.monotonic() + timeout
-    began = time.monotonic()
+    if poll is None:
+        poll = POLL_SECONDS
+    if startup is None:
+        startup = STARTUP_GRACE_SECONDS
+    if sleep is None:
+        sleep = _sleep
+    if clock is None:
+        clock = _now
+    deadline = None if timeout is None else clock() + timeout
+    began = clock()
     seen_running = False
     while True:
         if is_running(window_id):
             seen_running = True
-        elif seen_running or time.monotonic() - began >= startup:
+        elif seen_running or clock() - began >= startup:
             return True
-        if deadline is not None and time.monotonic() >= deadline:
+        if deadline is not None and clock() >= deadline:
             return False
         sleep(poll)
 
@@ -688,13 +899,20 @@ def close_window(window_id):
     """Close our window by id -- and only if the game has really ended.
 
     The condition is checked inside the AppleScript; see
-    ``script_close_window``. Returns True when it closed.
+    ``script_close_window``. Returns True when the window is off the screen --
+    which covers both ``closed`` and ``gone``, a window that was already
+    closed by the player. False means the tab was still busy and the window
+    has deliberately been left alone.
     """
-    return run_osascript(script_close_window(window_id)).strip() == "closed"
+    return run_osascript(script_close_window(window_id)).strip() in ("closed", GONE)
 
 
 def close_when_idle(
-    window_id, timeout=CLOSE_GRACE_SECONDS, startup=0.0, sleep=time.sleep
+    window_id,
+    timeout=None,
+    startup=0.0,
+    sleep=None,
+    clock=None,
 ):
     """Wait for the game to end, confirm it has, then close the window.
 
@@ -707,9 +925,14 @@ def close_when_idle(
 
     Returns True when the window was closed; False -- leaving the window open
     rather than forcing it -- when the game was still running.
+
+    ``timeout=None`` means ``CLOSE_GRACE_SECONDS``, read now rather than bound
+    at definition time.
     """
+    if timeout is None:
+        timeout = CLOSE_GRACE_SECONDS
     if not wait_until_idle(
-        window_id, timeout=timeout, startup=startup, sleep=sleep
+        window_id, timeout=timeout, startup=startup, sleep=sleep, clock=clock
     ):
         return False
     return close_window(window_id)
@@ -719,52 +942,180 @@ def repo_root():
     return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
-def supervise(
-    root=None,
-    settings=DEFAULT_SETTINGS,
-    report=None,
-    close_grace=CLOSE_GRACE_SECONDS,
-):
-    """The whole of ``./play``: WIN-1..5, in order.
+class _InterruptsRaise(object):
+    """While this is entered, an interrupting signal raises an exception.
 
-    Reads the reference position, opens the window, captures its id, applies
-    the settings, positions it, waits for the game to end, and closes that
-    window by that id -- on the failure path too.
+    That is the whole trick behind "the supervisor itself is interrupted ->
+    the window is still closed". ``finally`` blocks run when an exception
+    passes through them and do not run when the process is killed outright, so
+    every signal that can reasonably be recovered from is turned into an
+    exception and the existing clean-up does the rest.
+
+    Handlers are installed on entry and the previous ones put back on exit, so
+    importing this module never changes the process's signal disposition and
+    ``play`` behaves normally once the game is over.
+
+    ``signal.signal`` only works on the main thread of the main interpreter;
+    off it, it raises ``ValueError`` and this quietly does nothing. That is
+    correct rather than merely convenient -- a supervisor running on a worker
+    thread (the launch smoke does exactly that) has no business rewiring the
+    whole process's signal handling, and its window is closed by the same
+    ``finally`` regardless.
     """
-    if root is None:
-        root = repo_root()
-    if report is None:
-        report = _stderr_report
 
-    reference, source = reference_position()
-    screens = applescript_display_bounds(displays())
-    target = offset_position(reference, choose_display(reference, screens))
+    def __init__(self, signal_names=INTERRUPT_SIGNALS):
+        self.signal_names = tuple(signal_names)
+        self.installed = []
 
-    window_id = open_game_window(child_command(root))
-    game_ended = False
+    def _handler(self, number, frame):
+        raise SupervisorInterrupted("signal %d" % number)
+
+    def __enter__(self):
+        for name in self.signal_names:
+            number = getattr(signal, name, None)
+            if number is None:  # pragma: no cover - every POSIX has all three
+                continue
+            try:
+                previous = signal.signal(number, self._handler)
+            except (ValueError, OSError, RuntimeError):
+                continue
+            self.installed.append((number, previous))
+        return self
+
+    def __exit__(self, kind, value, traceback):
+        while self.installed:
+            number, previous = self.installed.pop()
+            try:
+                signal.signal(number, previous)
+            except (ValueError, OSError, RuntimeError):  # pragma: no cover
+                pass
+        return False
+
+
+def close_after_the_game(window_id, game_ended, close_grace, report):
+    """Close the game window, by id, whatever brought us here.
+
+    This is the one clean-up, shared by the success path, the failure path and
+    the interrupt path, and it is careful about three things:
+
+    * **It never raises.** It runs inside a ``finally``; an exception escaping
+      it would replace the error that actually caused the failure with a
+      complaint about the clean-up, and the player would never learn what went
+      wrong. AppleScript failures are reported with their text instead.
+    * **It never forces a busy tab.** ``close_window`` returns False when the
+      game is still running, and the answer to that is to say so and leave the
+      window alone -- the modal sheet is worse than an open window (§2.6).
+    * **It confirms with ``visible``, not ``exists``.** Terminal keeps a stale
+      window object after a close (measured, WI-2 findings §6), so ``exists``
+      is true for a window that is not on the screen and proves nothing.
+
+    Returns True when the window is confirmed off the screen.
+    """
     try:
-        configure_window(window_id, settings)
-        move_window(window_id, target[0], target[1])
-        report(
-            "game window %d at %s (reference %s from %s)"
-            % (window_id, target, reference, source)
-        )
-        game_ended = wait_until_idle(window_id, timeout=None)
-        return 0
-    finally:
-        # On the way out of a finished game the wait above has already proved
-        # the game is gone, so close at once -- WIN-5 is "as soon as the game
+        # On the way out of a finished game the wait has already proved the
+        # game is gone, so close at once -- WIN-5 is "as soon as the game
         # ends". Any other way out waits the grace period first.
         if game_ended:
             closed = close_window(window_id)
         else:
             closed = close_when_idle(window_id, timeout=close_grace)
-        if not closed:
+    except WindowError as error:
+        report(
+            "could not close Terminal window id %d: %s. If it is still on "
+            "screen, close it yourself." % (window_id, error)
+        )
+        return False
+
+    if not closed:
+        report(
+            "the game is still running in Terminal window id %d, so it has "
+            "been left open. Quit the game with q and close it yourself."
+            % window_id
+        )
+        return False
+
+    try:
+        if window_is_visible(window_id):
             report(
-                "the game is still running in Terminal window id %d, so it has "
-                "been left open. Quit the game with q and close it yourself."
-                % window_id
+                "Terminal window id %d was closed but still reports itself "
+                "visible. Close it yourself." % window_id
             )
+            return False
+    except WindowError as error:
+        report(
+            "could not confirm Terminal window id %d has gone: %s"
+            % (window_id, error)
+        )
+        return False
+    return True
+
+
+def supervise(
+    root=None,
+    settings=DEFAULT_SETTINGS,
+    report=None,
+    close_grace=None,
+    on_window_opened=None,
+    on_window_ready=None,
+):
+    """The whole of ``./play``: WIN-1..5, in order.
+
+    Reads the reference position, opens the window, captures its id, applies
+    the settings, positions it, waits for the game to end, and closes that
+    window by that id -- on the failure path, and on the interrupt path, too.
+
+    Two optional hooks exist for the launch smoke, and both are there for the
+    same reason: a caller must be able to learn about *our* window from the
+    supervisor itself, never by enumerating Terminal's windows and guessing
+    which one is new.
+
+    * *on_window_opened* is handed the id the instant it is captured, before
+      anything at all has been done with it. That is the earliest a caller
+      could know which window to clean up, which is exactly when it needs to.
+    * *on_window_ready* is handed the same id once the window has been sized,
+      titled and positioned. A caller reading the title or the tab size back
+      must wait for this: between the two hooks the tab is still whatever
+      Terminal opened it as, which is not 40 x 30.
+
+    Returns 0, or ``INTERRUPTED_EXIT_STATUS`` if a signal ended the game
+    rather than the player.
+    """
+    if root is None:
+        root = repo_root()
+    if report is None:
+        report = _stderr_report
+    if close_grace is None:
+        close_grace = CLOSE_GRACE_SECONDS
+
+    reference, source = reference_position(report=report)
+    screens = applescript_display_bounds(displays(report=report))
+    target = offset_position(reference, choose_display(reference, screens))
+
+    window_id = open_game_window(child_command(root))
+    game_ended = False
+    status = 0
+    with _InterruptsRaise():
+        try:
+            if on_window_opened is not None:
+                on_window_opened(window_id)
+            configure_window(window_id, settings)
+            move_window(window_id, target[0], target[1])
+            report(
+                "game window %d at %s (reference %s from %s)"
+                % (window_id, target, reference, source)
+            )
+            if on_window_ready is not None:
+                on_window_ready(window_id)
+            game_ended = wait_until_idle(window_id, timeout=None)
+        except SupervisorInterrupted as error:
+            report(
+                "interrupted (%s); closing Terminal window id %d"
+                % (error, window_id)
+            )
+            status = INTERRUPTED_EXIT_STATUS
+        finally:
+            close_after_the_game(window_id, game_ended, close_grace, report)
+    return status
 
 
 def _stderr_report(message):

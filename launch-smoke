@@ -1,0 +1,407 @@
+#!/usr/bin/python3
+"""The launch smoke — one command that proves the window still works.
+
+    ./launch-smoke              run it once
+    ./launch-smoke --repeat 2   run it twice in a row, which is the gate
+
+**Read IMPLEMENTATION_PLAN.md §2.6 before changing anything here.** This opens
+a real window on a real person's screen while they are sitting at it.
+
+What it checks, in order:
+
+1. Terminal's **visible** windows are censused before anything happens.
+2. ``window.supervise`` is run for real -- the whole of ``./play``: the
+   reference query, the window, the settings, the position, the wait and the
+   close. It is given a temporary directory as its repo root.
+3. The window id is learned **from the supervisor itself**, through
+   ``on_window_opened``, at the instant it was captured. Never by enumerating
+   Terminal's windows and guessing which one is new.
+4. While the child is alive, the window's **title** and the tab's **columns,
+   rows, font and size** are read back by that id (WIN-2, WIN-3).
+5. The child exits by itself; the supervisor waits for that and closes the
+   window by the captured id (WIN-5).
+6. The window is confirmed gone with ``visible``, never ``exists`` -- Terminal
+   keeps a stale window object after a close.
+7. The census is taken again and must equal the first one.
+
+**The child is a stand-in, and that is deliberate.** It is a Python script
+named literally ``Terminal Game``, written into a temporary directory, which
+does the one thing the real game does that WIN-3 depends on (clear the
+working-directory title prefix) and then **exits by itself** after a few
+seconds. The real game blocks until a person presses ``q``; launching it here
+would mean launching something this script cannot end, and §2.6 rule 4 forbids
+exactly that -- a window whose process will not exit cannot be closed without
+Terminal's modal confirmation sheet, which only a human can dismiss and which
+blocks every later AppleScript call in the system. A person pressing ``q`` is
+**human check H2** and no agent can stand in for it.
+
+**Safe to run while the user has other Terminal windows open.** Every command
+it issues addresses the window it created, by the id it captured. The census
+is a read; nothing is ever acted on as a result of it. If it fails partway, or
+is interrupted, the ``finally`` reaps the window it opened -- and if the window
+is somehow still busy, it says so and leaves it rather than forcing it.
+"""
+
+import argparse
+import os
+import shutil
+import sys
+import tempfile
+import threading
+import time
+
+REPO_ROOT = os.path.dirname(os.path.realpath(__file__))
+if REPO_ROOT not in sys.path:
+    sys.path.insert(0, REPO_ROOT)
+
+from termgame import window
+
+#: How long the stand-in child stays alive. It has to outlast the read-backs
+#: in step 4, and those are gated by ``TITLE_SECONDS`` below, so this must be
+#: comfortably longer than that.
+CHILD_SECONDS = 8.0
+
+#: How long the title is given to settle on ``Terminal Game``.
+#:
+#: **Measured, and it is not zero.** ``do script`` opens a window running the
+#: user's *login shell*, which sources their startup files before our ``exec``
+#: line runs; Terminal's active-process title component shows whatever that
+#: shell is doing until then. On this machine the first read, about half a
+#: second after the window appeared, returned
+#: ``rodneybailey - ssh-add --apple-use-keychain ~/.ssh/id_ed25519`` -- the
+#: user's own profile, not a WIN-3 failure. WI-2 did not see this because it
+#: read the title a full second after creating the window.
+#:
+#: So the title is polled rather than sampled once, and the smoke reports how
+#: long it took to settle. Five seconds is long enough for a slow profile and
+#: short enough that a genuinely wrong title is still reported promptly.
+TITLE_SECONDS = 5.0
+
+#: How often the title is re-read while it settles.
+TITLE_POLL_SECONDS = 0.2
+
+#: The whole run's deadline. It covers the reference query, the open, the
+#: settings, the position, ``CHILD_SECONDS`` of child, the close and the
+#: confirmation. WI-2 measured that whole sequence at about 3.9 s with a child
+#: that lived 3 s; forty-five seconds is ten times that, so it can only expire
+#: if something is genuinely wedged -- which, on this API, almost always means
+#: a modal sheet is blocking AppleScript and a person needs to dismiss it.
+SMOKE_SECONDS = 45.0
+
+#: How long the clean-up waits for a child to go away before giving up and
+#: leaving the window open. The same reasoning as
+#: ``window.CLOSE_GRACE_SECONDS``, and the same value, deliberately: the smoke
+#: should not be more patient or more forceful than ``./play`` itself.
+CLEANUP_SECONDS = window.CLOSE_GRACE_SECONDS
+
+#: What the tab must read back as. WIN-2 and WIN-3.
+EXPECTED_GEOMETRY = (window.COLUMNS, window.ROWS, window.FONT_NAME, window.FONT_SIZE)
+EXPECTED_TITLE = window.CHILD_NAME
+
+
+def child_source(seconds=CHILD_SECONDS):
+    """The stand-in child, as source. Pure.
+
+    It reproduces the two things about the real child that WIN-3 rests on --
+    the ``\\033]7;\\007`` first write that clears the working-directory prefix,
+    and being a shebang script invoked with no arguments so that Terminal's
+    active-process component *is* the title -- and then ends by itself.
+
+    There is no ``input()``, no ``read``, no ``cat`` and no unbounded sleep:
+    a child this script could not end is a window it could not close.
+    """
+    return (
+        "#!/usr/bin/python3\n"
+        '"""A stand-in for the game: same name, same first write, exits by '
+        'itself."""\n'
+        "import sys, time\n"
+        'sys.stdout.write("\\033]7;\\007")\n'
+        'sys.stdout.write("launch-smoke stand-in; exiting in %s s\\n")\n'
+        "sys.stdout.flush()\n"
+        "time.sleep(%s)\n"
+        % (seconds, seconds)
+    )
+
+
+class Check(object):
+    """One line of the smoke's report."""
+
+    def __init__(self, name, ok, detail=""):
+        self.name = name
+        self.ok = bool(ok)
+        self.detail = detail
+
+    def __str__(self):
+        # The detail says what went wrong, so it is printed only when
+        # something did. Printing it beside "ok" reads as a contradiction:
+        # "ok  the window is no longer visible -- it is still on the screen".
+        if self.ok:
+            return "ok   " + self.name
+        return "FAIL %s%s" % (self.name, (" -- " + self.detail) if self.detail else "")
+
+
+class SmokeResult(object):
+    def __init__(self):
+        self.checks = []
+        self.window_id = None
+        self.before = []
+        self.after = []
+        self.notes = []
+
+    def check(self, name, ok, detail=""):
+        self.checks.append(Check(name, ok, detail))
+        return ok
+
+    @property
+    def passed(self):
+        return bool(self.checks) and all(check.ok for check in self.checks)
+
+
+def run_once(out=None, child_seconds=CHILD_SECONDS, timeout=SMOKE_SECONDS):
+    """One launch, one close, one census. Returns a ``SmokeResult``."""
+    if out is None:
+        out = sys.stdout
+    result = SmokeResult()
+    directory = tempfile.mkdtemp(prefix="termgame-smoke-")
+    child = os.path.join(directory, window.CHILD_NAME)
+    with open(child, "w") as handle:
+        handle.write(child_source(child_seconds))
+    os.chmod(child, 0o755)
+
+    opened = threading.Event()
+    ready = threading.Event()
+    captured = []
+    reports = []
+    supervisor = {"status": None, "error": None}
+
+    def on_window_opened(window_id):
+        # The id, from the supervisor, at the instant it captured it. This is
+        # the earliest the clean-up below could know which window is ours,
+        # which is exactly when it needs to.
+        captured.append(window_id)
+        opened.set()
+
+    def on_window_ready(window_id):
+        # Sized, titled and positioned. Reading the title or the tab size
+        # before this would read whatever Terminal opened the window as.
+        ready.set()
+
+    def body():
+        try:
+            supervisor["status"] = window.supervise(
+                directory,
+                report=reports.append,
+                on_window_opened=on_window_opened,
+                on_window_ready=on_window_ready,
+            )
+        except BaseException as error:  # reported, never swallowed
+            supervisor["error"] = error
+        finally:
+            opened.set()
+            ready.set()
+
+    try:
+        result.before = window.visible_window_ids()
+        out.write("visible Terminal windows before: %s\n" % (result.before,))
+
+        thread = threading.Thread(target=body, name="launch-smoke-supervisor")
+        thread.daemon = True
+        thread.start()
+
+        opened.wait(timeout)
+        if not result.check(
+            "the supervisor reported the window id it captured",
+            bool(captured),
+            "no id arrived within %.0fs; supervisor error: %r"
+            % (timeout, supervisor["error"]),
+        ):
+            return result
+        result.window_id = captured[0]
+        out.write("game window id (from the supervisor): %d\n" % result.window_id)
+
+        result.check(
+            "the new window is not one that was already open",
+            result.window_id not in result.before,
+            "id %d was in the census before we opened anything"
+            % result.window_id,
+        )
+
+        ready.wait(timeout)
+        if result.check(
+            "the window was sized, titled and positioned",
+            ready.is_set() and supervisor["error"] is None,
+            "supervisor error: %r" % (supervisor["error"],),
+        ):
+            _check_the_live_window(result, out)
+
+        thread.join(timeout)
+        result.check(
+            "the supervisor finished", not thread.is_alive(), "still running"
+        )
+        result.check(
+            "the supervisor raised nothing",
+            supervisor["error"] is None,
+            repr(supervisor["error"]),
+        )
+        result.check(
+            "the supervisor exited 0",
+            supervisor["status"] == 0,
+            "status %r" % (supervisor["status"],),
+        )
+
+        _check_the_window_is_gone(result, out)
+    finally:
+        _reap(result, out)
+        shutil.rmtree(directory, ignore_errors=True)
+
+    result.notes.extend(reports)
+    return result
+
+
+def settled_title(window_id, deadline=None, poll=None):
+    """Poll the window's title until it is the game's. Returns (title, seconds).
+
+    Not a fixed sleep and not a single sample: see ``TITLE_SECONDS``. The
+    window runs the user's login shell for a moment before our ``exec`` takes
+    over, and Terminal's title follows whatever that shell is doing.
+
+    *deadline* and *poll* default to ``None`` meaning "read the constant now",
+    so a test can shorten them without changing what the smoke does.
+    """
+    if deadline is None:
+        deadline = TITLE_SECONDS
+    if poll is None:
+        poll = TITLE_POLL_SECONDS
+    began = time.time()
+    title = ""
+    while True:
+        title = window.window_name(window_id)
+        if title == EXPECTED_TITLE:
+            break
+        if time.time() - began >= deadline:
+            break
+        time.sleep(poll)
+    return title, time.time() - began
+
+
+def _check_the_live_window(result, out):
+    """WIN-2 and WIN-3, read back by the captured id while the child runs."""
+    try:
+        title, took = settled_title(result.window_id)
+    except window.WindowError as error:
+        result.check("the window's title reads back", False, str(error))
+        return
+    result.check(
+        "the window is titled %r" % EXPECTED_TITLE,
+        title == EXPECTED_TITLE,
+        "after %.1fs it still reads %r" % (took, title),
+    )
+    out.write("window name: %r (settled in %.1fs)\n" % (title, took))
+
+    try:
+        geometry = window.tab_geometry(result.window_id)
+    except window.WindowError as error:
+        result.check("the tab's size and font read back", False, str(error))
+        return
+    result.check(
+        "the tab is %d x %d in %s %d" % EXPECTED_GEOMETRY,
+        geometry == EXPECTED_GEOMETRY,
+        "it reads %r" % (geometry,),
+    )
+    out.write("tab: %d x %d | %s %d\n" % geometry)
+
+
+def _check_the_window_is_gone(result, out):
+    """WIN-5, confirmed with ``visible`` -- never with ``exists``."""
+    try:
+        still_visible = window.window_is_visible(result.window_id)
+    except window.WindowError as error:
+        result.check("the window's visibility reads back", False, str(error))
+        return
+    result.check(
+        "the window we opened is no longer visible",
+        not still_visible,
+        "window %d is still on the screen" % result.window_id,
+    )
+    result.after = window.visible_window_ids()
+    out.write("visible Terminal windows after:  %s\n" % (result.after,))
+    result.check(
+        "every other Terminal window is exactly as it was",
+        sorted(result.after) == sorted(result.before),
+        "before %s, after %s" % (result.before, result.after),
+    )
+
+
+def _reap(result, out):
+    """Unconditional clean-up: a failed check must not leave a window behind.
+
+    Never forces a busy tab. If the window will not close, the id is printed
+    so the person at the screen knows exactly which one to deal with.
+    """
+    if result.window_id is None:
+        return
+    try:
+        if not window.window_is_visible(result.window_id):
+            return
+    except window.WindowError:
+        return
+    out.write(
+        "cleaning up: Terminal window %d is still open\n" % result.window_id
+    )
+    try:
+        closed = window.close_when_idle(result.window_id, timeout=CLEANUP_SECONDS)
+    except window.WindowError as error:
+        closed = False
+        out.write("clean-up could not close it: %s\n" % error)
+    if not closed:
+        out.write(
+            "LEFT OPEN: Terminal window id %d is still running something. It "
+            "has deliberately not been forced -- closing a busy tab raises a "
+            "modal sheet that only you can dismiss, and that sheet blocks "
+            "every later AppleScript call. Please close it yourself.\n"
+            % result.window_id
+        )
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(
+        description="Open a real Terminal window, prove it closes, and prove "
+        "nothing else on the screen moved."
+    )
+    parser.add_argument(
+        "--repeat",
+        type=int,
+        default=1,
+        help="run the whole smoke this many times in a row (the gate is 2)",
+    )
+    parser.add_argument(
+        "--child-seconds",
+        type=float,
+        default=CHILD_SECONDS,
+        help="how long the stand-in child stays alive",
+    )
+    arguments = parser.parse_args(argv)
+
+    failures = 0
+    for run in range(1, max(1, arguments.repeat) + 1):
+        sys.stdout.write("\n=== launch smoke, run %d ===\n" % run)
+        began = time.time()
+        result = run_once(child_seconds=arguments.child_seconds)
+        for check in result.checks:
+            sys.stdout.write("  %s\n" % check)
+        for note in result.notes:
+            sys.stdout.write("  (play said: %s)\n" % note)
+        sys.stdout.write(
+            "run %d: %s in %.1fs\n"
+            % (run, "PASS" if result.passed else "FAIL", time.time() - began)
+        )
+        if not result.passed:
+            failures += 1
+    sys.stdout.write(
+        "\nlaunch smoke: %d run(s), %d failed\n" % (max(1, arguments.repeat), failures)
+    )
+    return 0 if failures == 0 else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())
