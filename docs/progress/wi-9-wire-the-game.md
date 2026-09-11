@@ -38,3 +38,5 @@
 03:09:12Z  NOTE    WI-9 wrote docs/findings/WI-9-the-running-game.md and docs/completions/COMPLETION-M2-DEV-A.md, and rewrote docs/prs/PR-WI-9-wire-the-game.md in full.
 03:09:44Z  TEST    606 passed, 0 failed, 2 skipped  (re-run after the docs commit; unchanged)
 03:09:44Z  NOTE    WI-9 WI-1's AST purity guard did not fire: test_purity ran 12 tests, OK. Still exactly one curses importer (screen.py) and one subprocess importer (window.py), and deleting a core module did not disturb it because it discovers the core from the filesystem.
+03:10:03Z  NOTE    WI-9 PR #12 body updated and marked ready for review. Not merged, not approved, not closed — the conductor merges.
+03:10:03Z  DONE    WI-9 wi-9-wire-the-game a13636f
