@@ -1,0 +1,32 @@
+#!/usr/bin/python3
+"""PROCESS A -- the supervisor. This is what the player types.
+
+``./play`` does not become the game. It opens a Terminal window of the game's
+own (WIN-1), sizes and titles it (WIN-2, WIN-3), places it below and right of
+the window the player was last looking at (WIN-4), waits for the game to end,
+and then closes that window -- and only that window -- by the id it captured
+when it created it (WIN-5).
+
+Takes no arguments.
+"""
+
+import os
+import sys
+
+REPO_ROOT = os.path.dirname(os.path.realpath(__file__))
+if REPO_ROOT not in sys.path:
+    sys.path.insert(0, REPO_ROOT)
+
+from termgame import window
+
+
+def main():
+    try:
+        return window.supervise(REPO_ROOT)
+    except window.WindowError as error:
+        sys.stderr.write("play: %s\n" % error)
+        return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())
