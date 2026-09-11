@@ -101,10 +101,15 @@ with open(%(out)r, "w") as handle:
 #: The keys are written into the terminal *before* the child starts, so they
 #: are already in its input queue when ``getch`` first asks: no timing, no
 #: synchronisation, nothing to be flaky about.
+#:
+#: WI-9 note: the transitions and the renderer here are the **real** ones.
+#: WI-4 wrote this against the stand-ins because the rules had not landed;
+#: now that they have, this run is the real game through real ncurses and
+#: the only fake left in it is the pty.
 PLAY = r'''
 import json, random, sys
 sys.path.insert(0, %(root)r)
-from termgame import maze as mazelib, screen as screen_module, standins
+from termgame import maze as mazelib, rules, screen as screen_module, view
 from termgame.loop import run_loop
 from termgame.model import GameState, Outcome, Position, UP
 
@@ -125,14 +130,16 @@ try:
         final = run_loop(
             scr,
             state,
-            standins.render,
-            standins.move_player,
-            standins.move_ghost,
+            view.render,
+            rules.move_player,
+            rules.move_ghost,
             random.Random(0),
             tick=1000.0,          # far away: this run is about the keys
         )
     result["player"] = list(final.player)
     result["score"] = final.score
+    result["outcome"] = final.outcome.name
+    result["status"] = view.render_rows(final)[-1].rstrip()
     result["returned"] = True
 except Exception as error:
     result["error"] = "%%s: %%s" %% (type(error).__name__, error)
@@ -361,3 +368,17 @@ class ScriptedGameThroughRealCursesTest(unittest.TestCase):
         # would have returned before the `q` was ever read.
         self.assertEqual([2, 5], PLAYED["player"])
         self.assertEqual(3, PLAYED["score"])
+
+    def test_the_game_was_still_in_play_when_the_player_quit(self):
+        # WI-9: the transitions are now the real ones, so the outcome is a
+        # real verdict rather than a stand-in's untouched field. One dot at
+        # (3, 1) is left uneaten and the ghost was never due, so a game that
+        # came back CLEARED or CAUGHT would mean the rules had been wired in
+        # wrongly.
+        self.assertEqual("PLAYING", PLAYED["outcome"])
+
+    def test_the_real_status_line_was_what_the_real_renderer_drew(self):
+        # WI-9: the picture is view.render's, not a stand-in's. STAT-2 with
+        # the score kept up to date, through the whole stack. The leading
+        # blank column is WI-3's STATUS_INDENT, assumption A3.
+        self.assertEqual(" score 3    arrows, q quits", PLAYED["status"])
