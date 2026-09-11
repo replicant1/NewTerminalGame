@@ -9,3 +9,9 @@
 04:58:47Z  WI-13 BROKE   rules.starting_ghost -> Manhattan: RED, "Position(row=1, col=6) != Position(row=4, col=4) : START-2 is not being measured by squared Euclidean distance..." — rules.py restored from backup, working tree clean
 04:58:47Z  WI-13 BROKE   rules.starting_ghost -> Chebyshev: RED, "Position(row=5, col=5) != Position(row=1, col=6) : START-2 is not being measured by squared Euclidean distance..." plus the pre-existing hand-written-board test WI-12 predicted — rules.py restored, working tree clean
 04:58:47Z  WI-13 TEST    tests.test_rules_start: 39 passed, 0 failed, 0 skipped
+04:59:46Z  WI-13 COMMIT  9529deb pin START-2 metric so WI-11 change can be seen
+04:59:46Z  WI-13 PR      draft PR #16 opened against main (replicant1/NewTerminalGame/pull/16)
+04:59:46Z  WI-13 PLAN    next: the colours. Assert what the code requests for every style, and tie the number to the word in the requirement (51 -> the cyan corner of the xterm cube) so SCRN-6 has something behind it.
+05:01:55Z  WI-13 BROKE   theme STYLE_STATUS 51 -> 39 (a near-cyan blue): 4 RED — "51 != 39 : the status style no longer asks for colour 51, cyan (SCRN-6)"; "5 != 3 : the status line is not full green, so not cyan"; "51 != 39" in the adapter; "39 != 51 : the fallback's status has drifted from theme.py". theme.py restored.
+05:01:55Z  WI-13 BROKE   screen.build_attributes init_pair(pair, 7, -1) instead of spec.colour: 2 RED — "33 != 7 : the wall style reaches curses as 7, not as the theme's 33". screen.py restored, working tree carries only the three test/log files.
+05:01:55Z  WI-13 TEST    tests.test_theme + tests.test_screen_adapter: 74 passed, 0 failed, 0 skipped
