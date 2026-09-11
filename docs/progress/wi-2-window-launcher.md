@@ -28,3 +28,8 @@
 01:07:39Z  WI-2 TEST    90 passed, 0 failed, 2 skipped on /usr/bin/python3 3.9.6; same counts on /opt/homebrew/bin/python3 3.14.7
 01:07:39Z  WI-2 NOTE    PR #4 body updated and marked ready for review. Not merged, not approved, not closed — that is the conductor's.
 01:07:56Z  WI-2 DONE    WI-2 wi-2-window-launcher 5402514
+01:08:45Z  WI-2 START   bringing wi-2-window-launcher up to date with main (WI-1 merged); merge, not rebase
+01:10:17Z  WI-2 NOTE    merged origin/main (6167524, the WI-1 merge): NO text conflicts. termgame/__init__.py auto-merged — mine was deliberately empty, WI-1's has a docstring, so WI-1's survived.
+01:10:17Z  WI-2 NOTE    one real cross-item failure: test_purity.test_the_poison_really_bites. It pops only 'curses' from sys.modules before asserting BOTH poisoned imports raise. subprocess is absent at interpreter startup, so it passed on WI-1's branch alone; once anything imports termgame.window (or subprocess) the cached module is returned without sys.meta_path being consulted, and no ImportError is raised.
+01:10:17Z  WI-2 NOTE    resolved by popping both POISONED names in that test, exactly as _import_core_with_poison in the same file already does. The assertion is unchanged: both imports must still raise. No guard loosened — at-most-one-curses, at-most-one-subprocess and never-both all pass untouched (window.py is the sole subprocess importer; nothing imports curses yet).
+01:10:17Z  WI-2 TEST    186 passed, 0 failed, 2 skipped on /usr/bin/python3 3.9.6 (WI-1 96 + WI-2 90); same counts on 3.14.7; test_purity on its own 12 passed

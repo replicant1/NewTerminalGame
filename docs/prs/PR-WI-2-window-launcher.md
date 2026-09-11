@@ -146,12 +146,39 @@ architect's assumption — **the last picture stays, `q` exits the child, the
 supervisor then closes the window**. If the user answers the other way it is one
 wait removed from the supervisor, and WI-11 applies it.
 
-## Merge note for the conductor
+## Merge note for the conductor — `main` has been merged in
 
-`termgame/__init__.py` is added by this branch and by WI-1. Mine is **empty**, so
-if WI-1's is empty too git merges the add cleanly; if WI-1 gave it a docstring,
-the conflict is one file, trivially resolved in WI-1's favour. Nothing else in
-this branch is in a file WI-1 touches.
+`origin/main` at `6167524` (the WI-1 merge) was merged into this branch with
+`git merge`, not a rebase. **No text conflicted.** `termgame/__init__.py` was
+added by both branches; mine was deliberately empty and git took WI-1's
+docstring.
+
+One test did fail on the combined suite, and it is worth reading rather than
+skimming:
+
+```
+FAIL: test_the_poison_really_bites (test_purity.TestTheCoreImportsCleanlyWithoutTheShell)
+  File "tests/test_purity.py", line 149, in test_the_poison_really_bites
+    importlib.import_module("subprocess")
+AssertionError: ImportError not raised
+```
+
+WI-1's purity self-check pops **only `curses`** from `sys.modules` before
+asserting that *both* poisoned imports raise. `subprocess` is not in
+`sys.modules` at interpreter startup, so on WI-1's branch alone the assertion
+held; but a module already in `sys.modules` is returned from cache without
+`sys.meta_path` ever being consulted, so as soon as anything in the suite
+imports `subprocess` — and the architecture *requires* `termgame/window.py` to
+— the poison is never asked and no `ImportError` is raised. It is an
+order-dependency in the self-check, not a disagreement between the two work
+items.
+
+**Resolved** by popping both `POISONED` names there, exactly as
+`_import_core_with_poison` in the same file already does. The assertion is
+unchanged: both imports must still raise. **No guard was loosened** —
+at-most-one-`curses`, at-most-one-`subprocess` and never-both all pass
+untouched, `window.py` being the sole `subprocess` importer and nothing
+importing `curses` yet.
 
 ## What was observed live, and what an agent cannot observe
 
@@ -178,9 +205,12 @@ verification of WIN-2's font size, WIN-3's title bar, WIN-4 or WIN-5**.
 
 ```
 /usr/bin/python3 -m unittest discover -s tests
-Ran 90 tests in 1.692s
+Ran 186 tests in 4.525s
 OK (skipped=2)
 ```
+
+186 is the combined suite with WI-1 merged in (WI-1's 96 plus this branch's
+90). The same counts on `/opt/homebrew/bin/python3` 3.14.7.
 
 The two skips are the live smoke: it is skipped without a controlling tty, so
 it skips in every agent session. Its body was run once with the skip lifted
