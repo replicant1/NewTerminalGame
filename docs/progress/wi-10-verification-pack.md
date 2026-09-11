@@ -9,3 +9,6 @@
 02:53:14Z  NOTE    baseline confirmed and the shape settled; writing ./verify now — stages suite / smoke / play, with --corner for the real-window bottom-right measurement
 02:58:11Z  NOTE    branch pushed; draft PR #13 open against main (replicant1/NewTerminalGame pull 13)
 03:01:20Z  TEST    644 passed, 0 failed, 2 skipped — 77 new tests for ./verify (567 on main + 77)
+03:01:53Z  COMMIT  71a6166 WI-10: 77 tests for the harness, most of them breaking a stage on purpose
+03:04:36Z  NOTE    broke the harness twice on purpose, live: a deliberately failing test file made stage 1 of 2 report "FAILED at stage 1 of 2: the test suite ... exited 1 -- Ran 645 tests; FAILED (failures=1, skipped=2)" with the traceback under it; a doctored recording made the play stage report "row 3 differs from the recorded picture, first at column 1" with both rows quoted. Both artefacts removed afterwards
+03:04:36Z  TEST    664 passed, 0 failed, 2 skipped — ./check-window-placement and its 20 tests added

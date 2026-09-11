@@ -1,0 +1,260 @@
+#!/usr/bin/python3
+"""``./check-window-placement`` -- the one step of human check H1.
+
+    ./check-window-placement
+
+**Type it in a Terminal window you have deliberately moved somewhere
+awkward** -- near the bottom-right corner of a screen is the interesting
+place, and if you have more than one screen, use one that is not your main
+one.
+
+It runs ``./play`` for you, catches the line the launcher already prints
+saying where it put the game window and where it measured from, does the
+arithmetic, and tells you what to look at. The game window should appear
+**about 30 pixels down and to the right of the window you typed this in, on
+that same screen**, and it should be entirely on the screen.
+
+You still have to look at the screen -- that is the whole reason this is a
+human check. No agent working on this project has a controlling terminal, so
+none of them has a "window the player was last looking at" to be offset from,
+and none of them can see where anything landed. What this script removes is
+the arithmetic and the guessing, not the looking.
+
+**It opens no window of its own.** ``./play`` opens exactly one, and closes
+that same one by the id it captured when it created it. When the game window
+appears, play it or don't, then press ``q`` in it; ``./play`` closes it and
+this script prints its verdict.
+"""
+
+import argparse
+import os
+import re
+import subprocess
+import sys
+
+REPO_ROOT = os.path.dirname(os.path.realpath(__file__))
+if REPO_ROOT not in sys.path:
+    sys.path.insert(0, REPO_ROOT)
+
+from termgame import window
+
+#: The line ``./play`` already prints. Parsed rather than re-measured: the
+#: launcher's own report is the only place that knows which window it treated
+#: as the reference, and asking Terminal again afterwards would answer about a
+#: different moment.
+REPORT = re.compile(
+    r"game window (?P<id>\d+) at \((?P<x>-?\d+), (?P<y>-?\d+)\)"
+    r" \(reference \((?P<rx>-?\d+), (?P<ry>-?\d+)\) from (?P<source>\S+?)\)"
+)
+
+#: The first words of the line the launcher prints when it could not read the
+#: display layout. Matched on the prefix, so the rest of the sentence can be
+#: reworded without breaking this.
+LAYOUT_TROUBLE = "could not read the screen layout"
+
+PREAMBLE = """\
+Human check H1 -- where the game window lands (requirement WIN-4)
+================================================================
+
+Before you go on, make sure this window -- the one you just typed in -- is
+somewhere you will recognise. Near the bottom-right of a screen is the useful
+place, because that is where a launcher that gets the arithmetic wrong puts
+the game half off the edge. If you have more than one screen, put this window
+on one that is NOT your main one.
+
+About to run ./play. A new Terminal window will open, titled Terminal Game,
+40 columns by 30 rows. Look at where it appears, then press q in it to quit.
+
+Watch for:
+  * it appears just below and to the right of THIS window
+  * it is on the SAME screen as this window
+  * all four of its edges are on the screen
+
+"""
+
+
+def verdict(report, layout_trouble, status, offset=window.OFFSET):
+    """What to tell the person, given what ``./play`` said. Pure.
+
+    Returns ``(headline, lines)``. The headline is one of ``LANDED_RIGHT``,
+    ``LANDED_SHIFTED``, ``LAYOUT_UNREADABLE`` or ``NO_REPORT`` -- a name rather
+    than a pass/fail, because two of the four are things only the person
+    looking at the screen can settle.
+    """
+    lines = []
+    if report is None:
+        lines.append(
+            "./play never said where it put its window, so there is nothing "
+            "to check the offset against."
+        )
+        if status != 0:
+            lines.append("It exited with status %s." % status)
+        lines.append(
+            "This is worth reporting as it stands: the launcher prints that "
+            "line on every successful run."
+        )
+        return "NO_REPORT", lines
+
+    got = (report["x"], report["y"])
+    reference = (report["rx"], report["ry"])
+    actual = (got[0] - reference[0], got[1] - reference[1])
+
+    lines.append(
+        "The window you launched from was at %s (the launcher found it %s)."
+        % (reference, report["source"])
+    )
+    lines.append("The game window was put at %s." % (got,))
+    lines.append(
+        "That is %d across and %d down from the window you launched from."
+        % actual
+    )
+
+    if layout_trouble:
+        lines.append("")
+        lines.append(
+            "*** The launcher could not read your display layout, and said "
+            "so. ***"
+        )
+        lines.append(
+            "When that happens it assumes a single 1440 x 900 screen, and the "
+            "game window can end up on your MAIN screen instead of the one "
+            "you launched from. This is a known intermittent fault on this "
+            "machine: it was seen once, was not reproducible on demand, and "
+            "the line the launcher printed is the only evidence it leaves."
+        )
+        lines.append(
+            "If the game opened on the wrong screen, that line is why, and "
+            "both facts are worth reporting together."
+        )
+        return "LAYOUT_UNREADABLE", lines
+
+    if actual == tuple(offset):
+        lines.append("")
+        lines.append(
+            "That is exactly the %d across and %d down it is supposed to be."
+            % tuple(offset)
+        )
+        lines.append(
+            "H1 passes if -- and only if -- the game window was also on the "
+            "same screen as this one and entirely on that screen. Only you "
+            "can see that."
+        )
+        return "LANDED_RIGHT", lines
+
+    lines.append("")
+    lines.append(
+        "It is supposed to be %d across and %d down, so it was moved." % tuple(offset)
+    )
+    lines.append(
+        "That is not automatically wrong. The launcher pushes the game back "
+        "on screen when the offset would have hung it over an edge, which is "
+        "exactly what should happen when you launch from near a corner."
+    )
+    lines.append(
+        "So: if the game window was fully visible on the same screen as this "
+        "one, H1 passes. If it landed on a different screen, or half off the "
+        "edge, H1 fails -- and the numbers above are what to report."
+    )
+    return "LANDED_SHIFTED", lines
+
+
+def parse(text):
+    """Pull the launcher's report out of its output. ``None`` if it is not
+    there."""
+    found = REPORT.search(text)
+    if found is None:
+        return None
+    return {
+        "id": int(found.group("id")),
+        "x": int(found.group("x")),
+        "y": int(found.group("y")),
+        "rx": int(found.group("rx")),
+        "ry": int(found.group("ry")),
+        "source": found.group("source"),
+    }
+
+
+def mentions_layout_trouble(text):
+    return LAYOUT_TROUBLE in text
+
+
+def run_play(root=REPO_ROOT, out=None, runner=None):
+    """Run ``./play``, echoing what it says as it says it.
+
+    Returns ``(status, everything it printed)``. ``./play`` writes its report
+    to stderr, so stderr is what is read; stdout is left alone because the
+    game itself is in another window entirely and this process's stdout is the
+    person's own terminal.
+    """
+    if out is None:
+        out = sys.stdout
+    if runner is not None:
+        return runner(root)
+    process = subprocess.Popen(
+        [os.path.join(root, "play")],
+        cwd=root,
+        stderr=subprocess.PIPE,
+    )
+    collected = []
+    try:
+        for raw in process.stderr:
+            line = raw.decode("utf-8", "replace")
+            collected.append(line)
+            out.write(line)
+            out.flush()
+    finally:
+        process.stderr.close()
+        status = process.wait()
+    return status, "".join(collected)
+
+
+def main(argv=None, out=None, runner=None, require_a_terminal=True):
+    parser = argparse.ArgumentParser(
+        description="Human check H1: run ./play from a window you have "
+        "deliberately positioned, and be told where the game window landed "
+        "relative to it."
+    )
+    parser.add_argument(
+        "--anyway",
+        action="store_true",
+        help="run even without a terminal. Do not: ./play waits for somebody "
+        "to press q in the window it opens, and nobody will be there.",
+    )
+    arguments = parser.parse_args([] if argv is None else argv)
+    if out is None:
+        out = sys.stdout
+
+    if require_a_terminal and not arguments.anyway and not sys.stdin.isatty():
+        sys.stderr.write(
+            "check-window-placement: this is not a terminal.\n"
+            "\n"
+            "This check exists because ./play offsets its window from the "
+            "window you\ntyped in, and there is no such window here. Worse, "
+            "./play waits for somebody\nto press q in the window it opens, so "
+            "running it with nobody at the screen\nleaves a window open with "
+            "nothing to close it.\n"
+            "\n"
+            "Open Terminal, move the window somewhere you will recognise, and "
+            "type\n    ./check-window-placement\nin it.\n"
+        )
+        return 2
+
+    out.write(PREAMBLE)
+    out.flush()
+    status, text = run_play(REPO_ROOT, out=out, runner=runner)
+    headline, lines = verdict(parse(text), mentions_layout_trouble(text), status)
+
+    out.write("\n%s\n" % ("=" * 66))
+    out.write("%s\n" % headline)
+    out.write("%s\n" % ("=" * 66))
+    for line in lines:
+        out.write("%s\n" % line)
+    out.write(
+        "\nWrite down what you saw. The person who asked you to run this "
+        "wants\nyour words, not a pass or a fail.\n"
+    )
+    return 0 if headline in ("LANDED_RIGHT", "LANDED_SHIFTED") else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())
