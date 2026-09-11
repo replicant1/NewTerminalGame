@@ -20,3 +20,7 @@
 01:01:37Z  WI-2 NOTE    probe 5: AppleScript window positions and CGDisplayBounds are NOT the same space. Measured 3 points: AS(600,300)=CG y -1140; AS(-898,76)=CG y -1364; AS(-3000,-1000) clamped by AppleScript itself to y 30 = CG -1410. AS y = CG y + 1440, x unchanged — i.e. AS y origin is the top of the topmost display, AS x origin is the main display's left.
 01:01:37Z  WI-2 NOTE    probe 5 consequence: the reference (-898,76) IS on a real display (the 2560x1440 to the left) once converted; without the conversion the clamp moved the game to the main display, i.e. to a screen the player was not looking at. AppleScript also refuses y below 30 and clamps silently.
 01:02:39Z  WI-2 TEST    88 passed, 0 failed, 0 skipped; supervisor re-run places the window at (-868,106) = reference+30 on the player's own display
+01:05:27Z  WI-2 NOTE    live smoke body run once with the tty skip lifted: 2 tests OK against the real Terminal, visible census [367, 2486] before and after
+01:05:27Z  WI-2 NOTE    probe 6: ./play itself — window 3984 at (-868,106), name 'Terminal Game', play exited 0 within 0.24s of q, window gone, census unchanged
+01:05:27Z  WI-2 NOTE    findings written to docs/findings/WI-2-terminal-window-id.md
+01:05:37Z  WI-2 TEST    90 passed, 0 failed, 2 skipped (the live smoke, no controlling tty)

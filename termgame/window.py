@@ -53,12 +53,12 @@ OFFSET = (30, 30)
 #: Used when Terminal has no window at all to take a reference from.
 FALLBACK_POSITION = (60, 60)
 
-#: A display, as ``(left, top, width, height)`` in the screen coordinate space
-#: AppleScript and CoreGraphics share: the origin is the top-left of the main
-#: display and y increases downwards, so a display above or to the left of the
-#: main one has negative coordinates. Measured on this machine: the main
-#: display is (0, 0, 1512, 982) and there are two more at (-3509, -1440) and
-#: (-949, -1440), each 2560 x 1440.
+#: A display, as ``(left, top, width, height)``. Displays are read from
+#: CoreGraphics and then moved into AppleScript's coordinate space, which is
+#: *not* the same one -- see ``applescript_display_bounds``. Measured on this
+#: machine: CoreGraphics reports (0, 0, 1512, 982) for the main display and two
+#: more at (-3509, -1440) and (-949, -1440), each 2560 x 1440. This constant is
+#: the conservative stand-in used when nothing can be read at all.
 FALLBACK_SCREEN_BOUNDS = (0, 0, 1440, 900)
 
 #: The menu bar (and, on this machine, the notch) occupy the top of the screen;
@@ -227,10 +227,10 @@ def child_command(repo_root, child_name=CHILD_NAME):
     process name and break WIN-3.
     """
     path = os.path.join(repo_root, child_name)
-    return "exec " + _shell_single_quote(path)
+    return "exec " + shell_quote(path)
 
 
-def _shell_single_quote(text):
+def shell_quote(text):
     return "'" + text.replace("'", "'\\''") + "'"
 
 
