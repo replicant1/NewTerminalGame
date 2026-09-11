@@ -13,3 +13,5 @@
 02:41:51Z  COMMIT  8532124 WI-7: the ghost's tests — GHOST-2, GHOST-3, GHOST-4, SCORE-4, END-1, END-5
 02:43:03Z  NOTE    merged origin/main (WI-6). Three conflict hunks in termgame/rules.py, all mechanical: module docstring header, two __all__ entries, and both new sections landing at the end of the file. Kept both sides everywhere; move_player first, then the ghost pair, matching ARCHITECTURE 5.4's order. No disagreement between the two transitions.
 02:43:05Z  TEST    567 passed, 0 failed, 2 skipped (whole suite, post-merge) — main's 515 plus my 52
+02:43:19Z  COMMIT  c7810d1 WI-7: merge origin/main (WI-6) — the shared-module conflict, resolved
+02:44:49Z  TEST    567 passed, 0 failed, 2 skipped (whole suite, final)
