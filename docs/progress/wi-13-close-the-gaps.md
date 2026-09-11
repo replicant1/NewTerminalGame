@@ -27,3 +27,5 @@
 05:17:43Z  WI-13 BROKE   supervise() opening two windows: RED "1 != 2 : expected exactly one open, got [... open, open, ...]" — the tautology at test_window_supervisor.py:112 replaced with a once-each count, which the old line could not have caught
 05:17:43Z  WI-13 NOTE    test_maze.py MAZE-4 naming: brought the sweep up to the name rather than the name down to the sweep — 1000 seeds measured at 0.74s and all 1000 distinct
 05:17:43Z  WI-13 TEST    full suite 774 passed, 0 failed, 2 skipped (was 749 on main; 25 added)
+05:20:12Z  WI-13 NOTE    Terminal census, read-only: all [367, 2486, 2420, 2440], visible [367, 2486] — the established values. No window opened by this work at all; every test here is pty-based.
+05:20:12Z  WI-13 WROTE   docs/prs/PR-WI-13-close-the-gaps.md (final body) and docs/completions/COMPLETION-M3-DEV-A.md
