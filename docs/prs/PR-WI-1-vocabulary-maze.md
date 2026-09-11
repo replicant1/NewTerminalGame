@@ -80,17 +80,59 @@ on both sides.
 
 | | |
 |---|---|
-| 1000 seeds, all invariants | **0 failures**, 1.61 s |
+| 1000 seeds, all invariants | **0 failures** |
+| generating 1000 mazes | **0.767 s** (0.77 ms each; architecture §7 measured 0.642 ms) |
+| checking 1000 mazes (border, dead ends, 2×2, flood fill) | **0.938 s** |
 | mean corridors per maze | **265.4** (architecture §7 measured 265.3) |
-| the spec's mock-up decoded | **264 corridors**, `check()` returns `()` (architecture §7: 264, 0 dead ends, all reachable) |
+| the spec's mock-up decoded | **264 corridors** = 126 nodes + 138 links, `check()` returns `()` (architecture §7: 264, 0 dead ends, all reachable) |
+| the joiner-column invariant (architecture C9) in the mock-up | holds on all 29 rows × 18 joiner columns |
 
 ## Suite
 
+The whole suite, from the root of the worktree:
+
 ```
-/usr/bin/python3 -m unittest discover -s tests
+$ /usr/bin/python3 -m unittest discover -s tests
+Ran 96 tests in 2.819s
+
+OK
 ```
 
-<!-- SUITE RESULT -->
+Cross-checked on the other interpreter, which is not the gate:
+
+```
+$ /opt/homebrew/bin/python3 -m unittest discover -s tests
+Ran 96 tests in 1.724s
+
+OK
+```
+
+There is no `tests/__init__.py` and no nested test module; all three test
+files sit flat in `tests/`, and `tests/fixtures/` holds one data file.
+
+**Mutation checks:** not applicable — not part of this workflow.
+
+## Each thing the plan said the tests must establish, and where it is
+
+| The plan's bullet | Test |
+|---|---|
+| solid border over 1000 seeds (MAZE-3) | `test_maze.TestGeneratedMazeInvariants.test_every_maze_has_a_solid_wall_border` |
+| no corridor cell with fewer than two corridor neighbours (MAZE-5) | `…test_no_corridor_square_has_fewer_than_two_ways_on` |
+| all corridors mutually reachable by flood fill (MAZE-6) | `…test_every_corridor_square_is_reachable_from_every_other` |
+| no 2 × 2 block of corridor (MAZE-2) | `…test_no_maze_has_a_two_by_two_block_of_corridor` |
+| 29 × 19 (MAZE-1) | `…test_every_maze_is_twenty_nine_by_nineteen` |
+| two seeds, two mazes (MAZE-4) | `TestRandomness.test_two_different_seeds_produce_two_different_mazes`, and `…test_a_thousand_seeds_produce_hundreds_of_distinct_mazes` (200 seeds, 200 distinct) |
+| the same seed twice | `TestRandomness.test_the_same_seed_produces_the_identical_maze_twice` |
+| the spec's picture decoded and loaded satisfies every invariant | `TestTheSpecificationsOwnMaze` — six tests, including the 264 count |
+| the state type is frozen | `test_model.TestGameState.test_the_state_is_frozen` |
+| the neighbour query agrees with a naive recount | `test_model.TestNeighbourQuery.test_open_directions_agrees_with_a_naive_recount` |
+| every core module imports with `curses` and `subprocess` unavailable | `test_purity.TestTheCoreImportsCleanlyWithoutTheShell` |
+
+Two of those are worth a second look. `test_the_poison_really_bites` asserts
+the poison itself raises, because the import test proves nothing if it does
+not. And `test_generation_draws_only_from_the_rng_it_was_given` reseeds the
+*global* `random` between two identical seeded calls and asserts the result
+does not move — C7 asserted as a consequence rather than by inspection.
 
 ## Deviations from the plan, for a ruling
 
@@ -119,11 +161,43 @@ on both sides.
    test file means WI-10's verification harness can call them too, and
    `reachable_from` is a flood fill that WI-5 may want for START-2. Additive.
 
+5. **`tests/test_purity.py` guards more than §2.4's "cheap way".** The plan
+   suggests one test that imports every core module with `curses` and
+   `subprocess` poisoned. That one is here, and so are four more, because the
+   plan says "whoever builds WI-1 should write it; it then protects everyone":
+
+   - a static AST scan refusing a *direct* import of `curses`, `time`,
+     `subprocess`, `os`, `sys`, `pathlib` and nine more, which catches the ones
+     that cannot be poisoned because the test runner has already imported them;
+   - the core never imports `screen`, `loop` or `window` — arrows inward only;
+   - **at most one** module in `termgame/` imports `curses`, at most one
+     imports `subprocess`, and no module does both (§2.4, third and fourth
+     paragraphs);
+   - no core module calls `random.*` or does `from random import …` — C7.
+
+   Both guards **discover the modules by listing `termgame/`** and subtracting
+   the three the architecture declares impure, so `theme.py`, `view.py` and
+   `rules.py` are covered the moment they land, without WI-3, WI-5, WI-6 or
+   WI-7 touching this file. The "at most one" tests pass vacuously today; they
+   are there to fail on the day WI-4 or a later item slips.
+
+   This is additive and it constrains other people's work items, so it needs a
+   ruling more than the rest of this does.
+
 ## Contradictions found
 
-None between the plan and the architecture on this item. Two measurements were
-re-run rather than trusted, and both reproduced: the mean corridor count and
-the spec mock-up's 264 corridors.
+None between the plan and the architecture on this item. Three measurements
+were re-run rather than trusted, and all three reproduced: the mean corridor
+count (265.4 against 265.3), the spec mock-up's 264 corridors with no broken
+invariant, and the joiner-column rule of C9.
+
+One number came out slightly worse than the architecture's, and it is worth
+recording rather than hiding: architecture §7 measured **0.642 ms** per maze;
+this generator measures **0.767 ms** on the pinned 3.9.6 interpreter. That is
+0.125 ms on a 143 ms tick and generation happens once per game, so it changes
+nothing — but it is not the same number, and the difference is most likely the
+`Maze` constructor deriving its neighbour lookup up front, which the
+prototype did not do.
 
 ## What needs a human
 

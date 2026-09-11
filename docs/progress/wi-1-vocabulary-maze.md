@@ -13,3 +13,5 @@
 00:48:05Z  TEST    96 passed, 0 failed, 0 skipped  (test_model + test_maze + test_purity) — the whole suite
 00:48:05Z  NOTE    AST scanners verified against a deliberately impure snippet: they report curses/os/pathlib and random.shuffle
 00:48:15Z  NOTE    cross-check on /opt/homebrew/bin/python3 (3.14.7): Ran 96 tests ... OK — the gate remains /usr/bin/python3
+00:49:47Z  TEST    96 passed, 0 failed, 0 skipped  — "Ran 96 tests in 2.846s / OK"
+00:49:47Z  NOTE    generation profiled separately: 1000 mazes in 0.767s (0.77ms each) vs architecture §7 0.642ms — recorded in the PR summary
