@@ -1,7 +1,9 @@
-"""The rules of the game: **starting** a game, and what a **move** does.
+"""The rules of the game: **starting** a game, what a **move** does,
+and what the **ghost** does.
 
-START-1..5 say where everything begins; :func:`move_player` says what one
-press of an arrow key changes.
+START-1..5 say where everything begins; :func:`move_player` says what
+one press of an arrow key changes; :func:`move_ghost` says where the
+ghost goes next (GHOST-2..4, SCORE-4, END-1, END-5).
 
 It is part of the pure core: it imports nothing impure, reads no file, reads
 no clock, and takes every scrap of randomness it needs as a
@@ -98,6 +100,8 @@ __all__ = [
     "starting_state",
     "new_game",
     "move_player",
+    "ghost_heading",
+    "move_ghost",
 ]
 
 
@@ -293,4 +297,100 @@ def move_player(state: GameState, direction: Direction) -> GameState:
         dots=dots,
         score=score,
         outcome=outcome,
+    )
+
+
+# --------------------------------------------------------------------------
+# Where the ghost goes next — GHOST-2, GHOST-3, GHOST-4
+# --------------------------------------------------------------------------
+#
+# Three clauses, in the order they are tried, and nothing else:
+#
+#   GHOST-2   if the square straight ahead is open, carry on — same heading,
+#             one square on. This is tried *first*, so a ghost running
+#             through a junction with side arms keeps going straight and
+#             never consults the random source at all.
+#   GHOST-3   otherwise choose uniformly at random from the open directions
+#             **other than the reverse** of the current heading.
+#   GHOST-3   and only if that leaves nothing — a cul-de-sac, which a
+#   (last)    generated maze never contains because MAZE-5 keeps every
+#             corridor square at degree two or more — turn back the way it
+#             came.
+#
+# GHOST-4 is a statement about what is *absent*: neither function below
+# takes the player's position, reads ``state.player``, or could be made to
+# depend on it. :func:`ghost_heading` is not handed the state at all, so
+# there is no player for it to notice; :func:`move_ghost` touches
+# ``state.player`` exactly once, in the equality test that decides END-1,
+# and by then the move is already chosen.
+
+
+def ghost_heading(
+    maze: Maze,
+    ghost: Tuple[int, int],
+    heading: Direction,
+    rng: random.Random,
+) -> Direction:
+    """Which way the ghost faces after one tick — GHOST-2 and GHOST-3.
+
+    It is handed a maze, a square and a heading, and **not** a game state:
+    the player is not among its arguments, so it cannot hunt (GHOST-4).
+
+    The random draw is over :meth:`Maze.open_directions`, which returns its
+    answer in the canonical ``DIRECTIONS`` order, so a seeded run is
+    reproducible.
+
+    Raises :exc:`ValueError` if ``ghost`` has no way on at all — a walled-in
+    square, or a square that is not corridor. A generated maze cannot
+    produce one (MAZE-5), so this is reachable only from a hand-written
+    board; it raises rather than returning a direction that would walk the
+    ghost into a wall, exactly as :func:`starting_heading` does.
+    """
+    if maze.is_open(ghost, heading):
+        return heading                                          # GHOST-2
+    ways_on = maze.open_directions(ghost)
+    if not ways_on:
+        raise ValueError(
+            "the ghost's square %r has no way on, so it cannot move"
+            % (Position(ghost[0], ghost[1]),)
+        )
+    back = heading.opposite()
+    options = tuple(d for d in ways_on if d != back)
+    if options:
+        return rng.choice(options)                              # GHOST-3
+    return back                                   # GHOST-3, the last clause
+
+
+def move_ghost(state: GameState, rng: random.Random) -> GameState:
+    """One tick of the ghost — GHOST-2..4, SCORE-4, END-1, END-5.
+
+    A total function from a state and a random source to a **new** state;
+    the one handed in is never touched.
+
+    * If the game has already ended, the state comes back unchanged — and
+      unchanged by identity, not merely by equality (END-5). The random
+      source is not drawn from either, so a finished game consumes no
+      randomness.
+    * The ghost moves one square, by the policy in :func:`ghost_heading`.
+    * Landing on the player loses the game (END-1). This is the only place
+      the player's position is read, and it is read after the move is
+      already decided.
+    * ``dots`` and ``score`` are carried across untouched — the ghost
+      neither eats a dot nor clears one by standing on it, so a dot under
+      the ghost is still there to be taken (SCORE-4).
+    """
+    if state.outcome is not Outcome.PLAYING:
+        return state                                            # END-5
+    heading = ghost_heading(state.maze, state.ghost, state.ghost_dir, rng)
+    ghost = state.ghost.shifted(heading)
+    return GameState(
+        maze=state.maze,
+        player=state.player,
+        ghost=ghost,
+        ghost_dir=heading,
+        dots=state.dots,        # SCORE-4 — the ghost does not eat dots
+        score=state.score,      # SCORE-4 — nor does moving score anything
+        outcome=(
+            Outcome.CAUGHT if ghost == state.player else Outcome.PLAYING
+        ),                      # END-1 — the ghost walked into the player
     )
