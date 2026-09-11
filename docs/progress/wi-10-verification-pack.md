@@ -7,3 +7,5 @@
 02:50:13Z  PLAN    three deliverables: (1) top-level ./verify with named stages — suite, launch smoke, scripted play-through against the REAL rules+renderer, plus an opt-in --corner stage that measures the bottom-right cell in a real 40x30 Terminal window; (2) ./check-window-placement, the single step for H1, which prints the reference position, runs ./play and does the offset arithmetic for the user; (3) docs/findings/WI-10-human-checks.md, the pack for H1-H6, written for someone who has not read the plan
 02:50:32Z  TEST    567 passed, 0 failed, 2 skipped — baseline on main before any change
 02:53:14Z  NOTE    baseline confirmed and the shape settled; writing ./verify now — stages suite / smoke / play, with --corner for the real-window bottom-right measurement
+02:58:11Z  NOTE    branch pushed; draft PR #13 open against main (replicant1/NewTerminalGame pull 13)
+03:01:20Z  TEST    644 passed, 0 failed, 2 skipped — 77 new tests for ./verify (567 on main + 77)

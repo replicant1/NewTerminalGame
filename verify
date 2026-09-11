@@ -538,10 +538,19 @@ def fixture_path(name):
 
 
 def read_fixture(name):
+    """The rows of a recorded picture, exactly as many as the file holds.
+
+    The trailing newline every text file ends with is dropped, and nothing is
+    truncated to thirty: a recording of the wrong height should be reported as
+    the wrong height, not quietly cut to fit.
+    """
     import io
 
     with io.open(fixture_path(name), encoding="utf-8") as handle:
-        return tuple(handle.read().split("\n")[:SCREEN_ROWS])
+        rows = handle.read().split("\n")
+    if rows and rows[-1] == "":
+        rows.pop()
+    return tuple(rows)
 
 
 def write_fixture(name, rows):
@@ -726,9 +735,9 @@ first thing it writes is the escape that clears the working-directory prefix,
 exactly as the real game does.
 
 It **exits by itself**, in about %(hold).1f seconds plus however long the
-window takes to reach 40 x 30. There is no input(), no read, and no unbounded
-sleep anywhere in it: a child this script could not end is a window that could
-not be closed without Terminal's modal confirmation sheet.
+window takes to reach 40 x 30. Nothing in it waits on a person and no wait in
+it is unbounded: a child this script could not end is a window that could not
+be closed without Terminal's modal confirmation sheet.
 """
 
 import json
