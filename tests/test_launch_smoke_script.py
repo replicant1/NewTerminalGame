@@ -36,6 +36,7 @@ from test_window_failure_paths import (  # the fake Terminal, and §2.6 rule 1
     RecordingTerminal,
     SOMEBODY_ELSES_WINDOW_IDS,
     assert_addresses_only_our_window,
+    classify,
 )
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -242,10 +243,15 @@ class TheSmokeRun(unittest.TestCase):
 
         def answer(script):
             value = real_answer(script)
-            if "set out to" in script and terminal.closed:
+            if classify(script) == "census" and terminal.closed:
                 # One of the user's windows vanished during the run. Whatever
                 # caused that, the smoke must not report PASS.
-                return "\n".join(str(each) for each in terminal.census[1:])
+                #
+                # Recognised through ``classify`` rather than by a substring of
+                # the census script: WI-10a rewrote that script and a literal
+                # here silently stopped matching, which turned this test green
+                # against a smoke that was no longer being lied to at all.
+                return ", ".join(str(each) for each in terminal.census[1:])
             return value
 
         terminal._answer = answer

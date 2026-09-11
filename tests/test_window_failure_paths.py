@@ -71,6 +71,12 @@ INVALID_INDEX_ERROR = (
 #: * ``repeat with w in windows`` -- enumerating, in a read, in order to
 #:   *count* or to find a reference position. Nothing is ever acted on as a
 #:   result.
+#: * ``every window whose visible is true`` -- the same kind of read, asked as
+#:   one query rather than as a loop. WI-10 measured why it has to be: a
+#:   ``repeat`` over windows resolves to ``item N of every window`` on each
+#:   iteration, and the census is taken straight after a close, so a window
+#:   really does vanish out from under the index. Still a read; still nothing
+#:   acted on.
 #: The fourth entry is not a window reference at all: ``title displays window
 #: size`` is the name of one of the tab's title components, and turning it off
 #: is part of the WIN-3 recipe. It is listed here so that the check below can
@@ -80,6 +86,7 @@ ADDRESSING_ALLOWLIST = (
     re.compile(r"first window whose id is \d+"),
     re.compile(r"first window whose tabs contains newTab"),
     re.compile(r"repeat with w in windows"),
+    re.compile(r"every window whose visible is true"),
     re.compile(r"title displays window size"),
 )
 
@@ -254,7 +261,15 @@ class RecordingTerminal(object):
         if kind == "geometry":
             return self.geometry
         if kind == "census":
-            return "\n".join(str(each) for each in self.census)
+            # The shape ``osascript`` really prints for a *list* result, as
+            # measured on 2026-09-11 against Terminal: ``"367, 2486"`` on one
+            # line, and the empty string when nothing matches. The census used
+            # to accumulate a linefeed-separated string, so the fake used to
+            # answer with linefeeds; keeping that here after WI-10a would have
+            # made the fake the only place in the project where the old shape
+            # still existed, and the parser would never have been exercised on
+            # the shape it now actually receives.
+            return ", ".join(str(each) for each in self.census)
         return ""
 
     def _next_state(self):
@@ -288,7 +303,7 @@ def classify(script):
     """A short label for one of the scripts ``window.py`` composes."""
     if "tty of tab 1" in script:
         return "reference-tty"
-    if "if visible of w then" in script and "set out to" in script:
+    if "every window whose visible is true" in script:
         return "census"
     if "set p to position of w" in script:
         return "reference-front"

@@ -527,15 +527,25 @@ def script_visible_window_ids():
 
     This enumerates in order to *count*. Nothing is ever acted on as a result
     of this list.
+
+    **One query, deliberately, and not a loop.** The first version of this
+    walked ``repeat with w in windows`` and read ``visible of w`` each time
+    round. AppleScript resolves such a loop variable lazily -- every iteration
+    is really ``item N of every window`` -- so a window that goes away while
+    the loop is running invalidates the index and the whole script fails::
+
+        osascript failed (1): execution error: Terminal got an error:
+        Can't get item 5 of every window. Invalid index. (-1719)
+
+    That is not hypothetical: it was observed (WI-10, 2026-09-11) on the
+    census taken **immediately after a close**, which is precisely when a
+    window is disappearing out from under the loop. A ``whose`` clause is
+    evaluated by Terminal in one step and has no index to go stale, so the
+    race has nowhere to happen.
     """
     return (
-        'tell application "Terminal"\n'
-        '\tset out to ""\n'
-        "\trepeat with w in windows\n"
-        "\t\tif visible of w then set out to out & (id of w as text) & linefeed\n"
-        "\tend repeat\n"
-        "\treturn out\n"
-        "end tell"
+        'tell application "Terminal" to get id of every window '
+        "whose visible is true"
     )
 
 

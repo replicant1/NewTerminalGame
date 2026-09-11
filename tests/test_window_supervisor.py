@@ -253,5 +253,94 @@ class WaitAndCloseTest(unittest.TestCase):
         self.assertTrue([s for s in self.sent if "close gameWindow" in s])
 
 
+#: The verbatim failure WI-10 measured, on the census taken immediately after
+#: a close. ``repeat with w in windows`` resolves its loop variable lazily --
+#: every iteration is really ``item N of every window`` -- so a window that
+#: goes away mid-loop leaves the index pointing at nothing.
+INVALID_INDEX_MID_CENSUS = (
+    "osascript failed (1): execution error: Terminal got an error: "
+    "Can’t get item 5 of every window. Invalid index. (-1719)"
+)
+
+
+class TerminalLosingAWindow(object):
+    """Terminal as it behaves *while a window is disappearing*, as measured.
+
+    A census that walks an index gets part-way through and then finds the
+    index invalid. A census asked as a single ``whose`` query is evaluated in
+    one step and has no index to go stale, so it simply answers.
+
+    Distinguishing the two on the words ``repeat`` and ``item`` is exactly the
+    distinction Terminal itself makes: those are the two ways to write a
+    script that resolves window references one at a time.
+    """
+
+    def __init__(self, answer):
+        self.answer = answer
+        self.scripts = []
+
+    def __call__(self, script, timeout=20.0):
+        self.scripts.append(script)
+        if "repeat" in script or "item " in script:
+            raise window.WindowError(INVALID_INDEX_MID_CENSUS)
+        return self.answer
+
+
+class CensusAcrossAVanishingWindowTest(unittest.TestCase):
+    """WI-10a. The census runs on every close path, so it must survive the
+    close it is measuring."""
+
+    def setUp(self):
+        self.real_run = window.run_osascript
+
+    def tearDown(self):
+        window.run_osascript = self.real_run
+
+    def test_the_fake_really_does_reject_a_census_that_walks_an_index(self):
+        # Guard on the double itself. Without this the test below would pass
+        # against a fake that had quietly stopped objecting to anything.
+        terminal = TerminalLosingAWindow("367, 2486")
+        old_census = (
+            'tell application "Terminal"\n'
+            '\tset out to ""\n'
+            "\trepeat with w in windows\n"
+            "\t\tif visible of w then set out to out & (id of w as text) & linefeed\n"
+            "\tend repeat\n"
+            "\treturn out\n"
+            "end tell"
+        )
+        with self.assertRaises(window.WindowError) as caught:
+            terminal(old_census)
+        self.assertIn("Invalid index", str(caught.exception))
+
+    def test_the_census_survives_a_window_vanishing_mid_census(self):
+        # The property that carries the weight: not "the script has no
+        # `repeat` in it", but "the census still answers when Terminal is
+        # losing a window underneath it".
+        terminal = TerminalLosingAWindow("367, 2486")
+        window.run_osascript = terminal
+        self.assertEqual([367, 2486], window.visible_window_ids())
+        self.assertEqual(1, len(terminal.scripts))
+
+    def test_the_census_parses_every_shape_osascript_prints_for_a_list(self):
+        # Measured against the real Terminal, 2026-09-11. The old census built
+        # a linefeed-separated string by hand; `get id of every window whose
+        # visible is true` returns a *list*, which osascript prints its own
+        # way. The empty case matters most: an empty list is not an empty
+        # accumulator string, and the census must read it as "no windows"
+        # rather than raising or inventing one.
+        for printed, expected in (
+            ("367, 2486", [367, 2486]),  # two visible windows
+            ("367", [367]),  # one
+            ("", []),  # none -- osascript prints a bare newline, rc 0
+        ):
+            window.run_osascript = TerminalLosingAWindow(printed)
+            self.assertEqual(
+                expected,
+                window.visible_window_ids(),
+                "census misread osascript's output %r" % printed,
+            )
+
+
 if __name__ == "__main__":
     unittest.main()
