@@ -6,3 +6,6 @@
 00:39:31Z  WI-2 ASSUME  proceeding on the architect's assumption: q exits the child, the supervisor then closes the window. Affects one wait in the supervisor's close path, WI-8, WI-9, human check H2. Cheap to flip.
 00:39:45Z  WI-2 NOTE    Terminal window census BEFORE: ids 367, 2486, 2420, 2440 (4 windows). tty reports 'not a tty', os.isatty(0) False — the live smoke will skip for me.
 00:44:36Z  WI-2 NOTE    child with stdin not a tty: first bytes ESC]7;BEL then the static screen, exit 0 — cannot block forever without a terminal
+00:45:52Z  WI-2 NOTE    draft PR #4 open against main (repo replicant1/NewTerminalGame). Now writing the tests.
+00:46:59Z  WI-2 TEST    41 passed, 0 failed, 0 skipped (geometry + script text)
+00:49:13Z  WI-2 TEST    69 passed, 0 failed, 0 skipped (adds executables, supervisor sequence, placeholder screen)

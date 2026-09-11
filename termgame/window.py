@@ -531,7 +531,12 @@ def repo_root():
     return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
-def supervise(root=None, settings=DEFAULT_SETTINGS, report=None):
+def supervise(
+    root=None,
+    settings=DEFAULT_SETTINGS,
+    report=None,
+    close_grace=CLOSE_GRACE_SECONDS,
+):
     """The whole of ``./play``: WIN-1..5, in order.
 
     Reads the reference position, opens the window, captures its id, applies
@@ -557,7 +562,7 @@ def supervise(root=None, settings=DEFAULT_SETTINGS, report=None):
         wait_until_idle(window_id, timeout=None)
         return 0
     finally:
-        if not close_when_idle(window_id):
+        if not close_when_idle(window_id, timeout=close_grace):
             report(
                 "the game is still running in Terminal window id %d, so it has "
                 "been left open. Quit the game with q and close it yourself."
