@@ -110,7 +110,7 @@ def run_loop(
 # --------------------------------------------------------------------------
 
 
-def run_game(open_screen=None, out=None) -> int:
+def run_game(open_screen=None, out=None, stdin=None) -> int:
     """Play one game, from a maze nobody has seen before. Returns the exit code.
 
     This is the whole of the wiring, and it is four names long: a fresh game
@@ -135,6 +135,12 @@ def run_game(open_screen=None, out=None) -> int:
     path is also how an agent — which has no tty at all — can see the picture
     the game would have drawn.
 
+    ``stdin`` is the stream whose tty-ness decides that, and defaults to the
+    real one. It is a parameter rather than a fixed reference to
+    ``sys.stdin`` because a test that could not say "there is no terminal
+    here" would, when the suite happens to be run from a real terminal,
+    open curses and block the whole suite on a key nobody is there to press.
+
     It returns **only** after :func:`run_loop` returns, and :func:`run_loop`
     returns only on ``q`` (CTRL-4, END-6). Winning or losing does not end the
     process: the last picture stays on the screen until the player leaves
@@ -143,7 +149,7 @@ def run_game(open_screen=None, out=None) -> int:
     """
     rng = random.Random()
     state = rules.new_game(rng)
-    if open_screen is None and not _has_a_terminal():
+    if open_screen is None and not _has_a_terminal(stdin):
         _write_plainly(view.render(state), stream=out)
         return 0
     opener = screen_module.session if open_screen is None else open_screen
