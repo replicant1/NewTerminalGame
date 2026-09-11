@@ -68,9 +68,22 @@ class ChildBehaviourTest(unittest.TestCase):
             "the child's first write was %r" % completed.stdout[:16],
         )
 
-    def test_the_child_paints_something_after_that(self):
+    def test_the_child_paints_the_game_after_that(self):
+        # WI-2's placeholder said "TERMINAL GAME" here; WI-4 replaced it with
+        # the game. With no terminal the child paints one frame as plain text
+        # and returns, so what comes back is a real picture of a real maze.
         completed = self.run_child()
-        self.assertIn(b"TERMINAL GAME", completed.stdout)
+        self.assertIn(b"arrows, q quits", completed.stdout)
+
+    def test_what_the_child_paints_is_the_size_of_the_window(self):
+        # 30 rows of 40 columns (WIN-2, SCRN-1). The status line is the last.
+        completed = self.run_child()
+        picture = completed.stdout.decode("utf-8").split("\x07", 1)[-1]
+        rows = picture.rstrip("\n").split("\n")
+        self.assertEqual(30, len(rows))
+        for row in rows:
+            self.assertEqual(40, len(row), repr(row))
+        self.assertIn("q quits", rows[29])
 
     def test_the_child_exits_cleanly_when_there_is_no_terminal_to_read_from(self):
         # Rule 4 of section 2.6: never leave a process in a window that can
