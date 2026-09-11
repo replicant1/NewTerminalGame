@@ -43,6 +43,21 @@ Two separate things keep you off `main`, and it is worth knowing which is which.
 
 If the technical lead has told you that you are **not** in a worktree and are sharing a working directory with another developer, then say so in your report and ask how merges should be handled before you make any: two agents merging into one checked-out branch will collide.
 
+## When your branch conflicts with main
+
+Your branch was cut from `main` at some moment, and `main` moves while you work — the technical lead merges other work items as they land. If someone else's merge touched what you touched, your branch will conflict and cannot be merged until it is resolved.
+
+**The conflict is yours to resolve.** You wrote the change; you are the only one who knows what it was for. Nobody else can safely choose which side survives.
+
+When you are told your branch conflicts:
+
+1. Bring your branch up to date: `git merge main` from your branch. Do not rebase — your branch may already be public, and rewriting it invalidates a pull request and anything stacked on top of it.
+2. Resolve each conflict on its merits. Read both sides. The other side is not noise to be discarded: it is another work item that has already landed and is now part of the project.
+3. Run the **whole** suite, not just your own tests. A resolution that satisfies your half and breaks theirs is the most common way this goes wrong.
+4. Commit the merge, report the branch as ready, and note in your progress log what conflicted and how you resolved it — `NOTE` is the line for that. The next person to touch those files will want to know.
+
+**If the resolution is not obvious, say so rather than guessing.** Two changes that collide sometimes mean the two work items disagreed about something real — a shared helper, an interface, where a responsibility belongs. That is worth an `ASK` and an `ASSUME`, not a quiet decision that buries the disagreement in a merge commit.
+
 ## Working with real pull requests (non-local mode)
 
 When the technical lead has *not* put you in local mode, your branch goes to the remote and becomes a real pull request. Everything above still holds; this is only the mechanics.
