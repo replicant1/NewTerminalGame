@@ -548,10 +548,10 @@ function showAllPanes() { hidden.clear(); saveHidden(); refresh(); }
 
 function renderToggles(panes) {
   const host = $('#toggles');
-  const done = panes.filter(p => p.state === 'gone').length;
+  const done = panes.filter(isFinished).length;
   let h = '';
   for (const p of panes) {
-    if (!showDone && p.state === 'gone') continue;
+    if (!showDone && isFinished(p)) continue;
     const age = p.mtime ? (Date.now() / 1000 - p.mtime) : 0;
     const heat = !p.mtime ? '' : (age < 30 ? ' fresh' : (p.live && age > 180 ? ' stale' : ''));
     h += `<span class="tg${hidden.has(p.id) ? ' off' : ''}${heat}" onclick="togglePane('${esc(p.id)}')"
@@ -562,6 +562,11 @@ function renderToggles(panes) {
   if (done && !showDone) h += `<span class="tg off" onclick="setShowDone(true)">+${done} finished</span>`;
   host.innerHTML = h;
 }
+
+// An agent is finished either because it said so (DONE, worktree still there)
+// or because its worktree has gone. The checkbox governs both: filtering only
+// on 'gone' made it look broken, since a just-finished agent is 'done'.
+const isFinished = p => p.state === 'gone' || p.state === 'done';
 
 // Finished agents keep their logs, but a run leaves a lot of them and they
 // crowd out whatever is actually working. Off by default.
@@ -578,7 +583,7 @@ function setShowDone(on) {
 function renderPanes(panes) {
   const host = $('#panes');
   renderToggles(panes);
-  panes = panes.filter(p => !hidden.has(p.id) && (showDone || p.state !== 'gone'));
+  panes = panes.filter(p => !hidden.has(p.id) && (showDone || !isFinished(p)));
   // remember scroll offsets so a refresh does not yank the reader around
   host.querySelectorAll('.log').forEach(l => scrollPos[l.dataset.id] = l.scrollTop);
   host.innerHTML = panes.length ? ''
