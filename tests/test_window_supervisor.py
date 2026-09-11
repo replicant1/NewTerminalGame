@@ -109,7 +109,18 @@ class SupervisorTest(unittest.TestCase):
         terminal = FakeTerminal()
         self.assertEqual(0, self.supervise(terminal))
         kinds = terminal.kinds()
-        self.assertEqual("open", kinds[kinds.index("open")])
+        # WI-12 found a tautology here: assertEqual("open",
+        # kinds[kinds.index("open")]) cannot fail, and if "open" were missing
+        # it would raise rather than report. What is worth asserting is that
+        # the window is opened, configured, placed and closed **once each** --
+        # a supervisor that opened two windows would leave one of them on the
+        # user's screen, and the ordering assertions below would not notice.
+        for once in ("open", "configure", "move", "close"):
+            self.assertEqual(
+                1,
+                kinds.count(once),
+                "expected exactly one %r, got %r" % (once, kinds),
+            )
         self.assertLess(kinds.index("open"), kinds.index("configure"))
         self.assertLess(kinds.index("configure"), kinds.index("move"))
         self.assertLess(kinds.index("move"), kinds.index("poll"))

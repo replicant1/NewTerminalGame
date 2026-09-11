@@ -315,6 +315,203 @@ class GhostPlacementTests(unittest.TestCase):
 
 
 # --------------------------------------------------------------------------
+# START-2's metric — the discriminating boards WI-11 needs
+# --------------------------------------------------------------------------
+
+
+class GhostMetricDiscriminationTests(unittest.TestCase):
+    """**Whoever runs WI-11 should read this class first.**
+
+    Everything else that carries START-2 is measured on *generated* boards,
+    and on a generated board the three candidate metrics cannot be told
+    apart. Measured over seeds 0..199: squared Euclidean, Manhattan and
+    Chebyshev choose the **identical** corridor square on all 200. So the
+    exhaustive recount above is blind to which metric the code uses, and
+    before this class existed the whole suite stayed green whichever of the
+    three ``starting_ghost`` computed.
+
+    That matters because open question A2 (plan §9) asks the user which
+    metric START-2's *"measured across the grid"* means, and WI-11 exists to
+    apply the answer by changing one expression in :func:`rules.starting_ghost`.
+    Without a test that discriminates, nobody could tell whether WI-11's
+    change had taken.
+
+    So the two boards below are hand-built for exactly that. On each of them
+    the three metrics genuinely disagree, and each test asserts the
+    disagreement first — so if a later edit to a board destroyed it, the test
+    would say so rather than quietly proving nothing.
+
+    **These tests are written against assumption A2, not a ruling.** They
+    assert squared Euclidean because that is what the code does today. If the
+    user answers Manhattan or Chebyshev, the expected square in the matching
+    test below changes with the expression in ``rules`` — and, unlike every
+    other START-2 test, this one will *notice*.
+
+    The metrics are written out longhand here, never imported from
+    ``termgame.rules``.
+    """
+
+    #: Corridor at (1, 1), (1, 6) and (4, 4), and nothing else.
+    #:
+    #: Offsets from the player at (1, 1):
+    #:
+    #: ===========  =========  ===========  ===========
+    #: square       Euclidean  Manhattan    Chebyshev
+    #: ===========  =========  ===========  ===========
+    #: (1, 6)       **25**     5            **5**
+    #: (4, 4)       18         **6**        3
+    #: ===========  =========  ===========  ===========
+    #:
+    #: So squared Euclidean and Chebyshev say (1, 6) and Manhattan says
+    #: (4, 4).
+    EUCLIDEAN_AGAINST_MANHATTAN = "\n".join(
+        [
+            "########",
+            "#.####.#",
+            "########",
+            "########",
+            "####.###",
+        ]
+    )
+
+    #: Corridor at (1, 1), (1, 6) and (5, 5), and nothing else.
+    #:
+    #: Offsets from the player at (1, 1):
+    #:
+    #: ===========  =========  ===========  ===========
+    #: square       Euclidean  Manhattan    Chebyshev
+    #: ===========  =========  ===========  ===========
+    #: (1, 6)       25         5            **5**
+    #: (5, 5)       **32**     **8**        4
+    #: ===========  =========  ===========  ===========
+    #:
+    #: So squared Euclidean and Manhattan say (5, 5) and Chebyshev says
+    #: (1, 6).
+    EUCLIDEAN_AGAINST_CHEBYSHEV = "\n".join(
+        [
+            "########",
+            "#.####.#",
+            "########",
+            "########",
+            "########",
+            "#####.##",
+        ]
+    )
+
+    #: Where the player stands on both boards.
+    PLAYER = (1, 1)
+
+    @staticmethod
+    def _furthest_by(maze, player, distance):
+        """The corridor square ``distance`` calls furthest, ties by lowest cell.
+
+        Walked by index over the whole grid, so it never borrows
+        ``maze.corridors()``'s ordering, and ``distance`` is written out
+        longhand by each caller rather than taken from ``termgame.rules``.
+        """
+        best = None
+        for row in range(maze.height):
+            for col in range(maze.width):
+                if not maze.is_corridor((row, col)):
+                    continue
+                here = (-distance(row, col), row, col)
+                if best is None or here < best:
+                    best = here
+        return Position(best[1], best[2])
+
+    def _three_metrics(self, text):
+        """``(maze, euclidean, manhattan, chebyshev)`` for a hand-built board."""
+        maze = mazelib.from_text(text)
+        player_row, player_col = self.PLAYER
+        self.assertTrue(
+            maze.is_corridor(self.PLAYER),
+            "the board's player square is not corridor",
+        )
+        return (
+            maze,
+            self._furthest_by(
+                maze,
+                self.PLAYER,
+                lambda r, c: (r - player_row) ** 2 + (c - player_col) ** 2,
+            ),
+            self._furthest_by(
+                maze,
+                self.PLAYER,
+                lambda r, c: abs(r - player_row) + abs(c - player_col),
+            ),
+            self._furthest_by(
+                maze,
+                self.PLAYER,
+                lambda r, c: max(abs(r - player_row), abs(c - player_col)),
+            ),
+        )
+
+    def test_a_board_on_which_manhattan_would_choose_a_different_square(self):
+        maze, euclidean, manhattan, chebyshev = self._three_metrics(
+            self.EUCLIDEAN_AGAINST_MANHATTAN
+        )
+        # The board is only worth anything if the two metrics disagree on it.
+        self.assertNotEqual(
+            euclidean,
+            manhattan,
+            "the board no longer separates squared Euclidean from Manhattan, "
+            "so this test proves nothing",
+        )
+        self.assertEqual(Position(1, 6), euclidean)
+        self.assertEqual(Position(4, 4), manhattan)
+        self.assertEqual(Position(1, 6), chebyshev)
+        self.assertEqual(
+            euclidean,
+            rules.starting_ghost(maze, self.PLAYER),
+            "START-2 is not being measured by squared Euclidean distance. If "
+            "this is WI-11 applying the user's answer to question A2, this is "
+            "the test that was built to notice, and the expected square above "
+            "changes with the metric.",
+        )
+
+    def test_a_board_on_which_chebyshev_would_choose_a_different_square(self):
+        maze, euclidean, manhattan, chebyshev = self._three_metrics(
+            self.EUCLIDEAN_AGAINST_CHEBYSHEV
+        )
+        self.assertNotEqual(
+            euclidean,
+            chebyshev,
+            "the board no longer separates squared Euclidean from Chebyshev, "
+            "so this test proves nothing",
+        )
+        self.assertEqual(Position(5, 5), euclidean)
+        self.assertEqual(Position(5, 5), manhattan)
+        self.assertEqual(Position(1, 6), chebyshev)
+        self.assertEqual(
+            euclidean,
+            rules.starting_ghost(maze, self.PLAYER),
+            "START-2 is not being measured by squared Euclidean distance. If "
+            "this is WI-11 applying the user's answer to question A2, this is "
+            "the test that was built to notice, and the expected square above "
+            "changes with the metric.",
+        )
+
+    def test_the_two_boards_between_them_rule_out_both_rival_metrics(self):
+        """Neither board alone is enough, and this says why in one place.
+
+        The first board cannot see the difference between squared Euclidean
+        and Chebyshev; the second cannot see the difference between squared
+        Euclidean and Manhattan. Both together pin the metric to exactly one
+        of the three.
+        """
+        _m1, euclidean1, manhattan1, chebyshev1 = self._three_metrics(
+            self.EUCLIDEAN_AGAINST_MANHATTAN
+        )
+        _m2, euclidean2, manhattan2, chebyshev2 = self._three_metrics(
+            self.EUCLIDEAN_AGAINST_CHEBYSHEV
+        )
+        self.assertEqual(euclidean1, chebyshev1)   # board 1 is blind to this
+        self.assertEqual(euclidean2, manhattan2)   # board 2 is blind to this
+        self.assertNotEqual(euclidean1, manhattan1)
+        self.assertNotEqual(euclidean2, chebyshev2)
+
+
+# --------------------------------------------------------------------------
 # START-3 — a dot on every corridor square but the player's
 # --------------------------------------------------------------------------
 
