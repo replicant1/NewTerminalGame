@@ -139,8 +139,12 @@ class TheSmokeRun(unittest.TestCase):
         window._sleep = self.clock.sleep
         window._now = self.clock.monotonic
         window.STARTUP_GRACE_SECONDS = 0.0
-        window.displays = lambda: [(0, 0, 1512, 982)]
+        window.displays = lambda report=None: [(0, 0, 1512, 982)]
         window.controlling_tty = lambda: "/dev/ttys009"
+        self.real_title_seconds = smoke.TITLE_SECONDS
+        self.real_title_poll = smoke.TITLE_POLL_SECONDS
+        smoke.TITLE_SECONDS = 0.0
+        smoke.TITLE_POLL_SECONDS = 0.0
         self.out = io.StringIO()
 
     def tearDown(self):
@@ -150,6 +154,8 @@ class TheSmokeRun(unittest.TestCase):
         window._sleep = self.real_sleep
         window._now = self.real_now
         window.STARTUP_GRACE_SECONDS = self.real_startup
+        smoke.TITLE_SECONDS = self.real_title_seconds
+        smoke.TITLE_POLL_SECONDS = self.real_title_poll
 
     def run_smoke(self, terminal, timeout=20.0):
         window.run_osascript = terminal
@@ -288,11 +294,77 @@ class TheSmokeRun(unittest.TestCase):
         self.assertEqual(window.CLOSE_GRACE_SECONDS, smoke.CLEANUP_SECONDS)
 
 
+class TheTitleHasToSettle(unittest.TestCase):
+    """Measured on the real machine, and it cost this item a red run.
+
+    ``do script`` opens a window running the user's *login shell*, which
+    sources their startup files before our ``exec`` line runs, and Terminal's
+    title follows whatever that shell is doing meanwhile. The first read --
+    about half a second after the window appeared -- returned
+
+        'rodneybailey — ssh-add --apple-use-keychain ~/.ssh/id_ed25519'
+
+    which is the user's own profile, not a WIN-3 failure. WI-2 never saw it
+    because it read the title a full second after creating the window. So the
+    title is polled, not sampled once.
+    """
+
+    SHELL_TITLE = "rodneybailey — ssh-add --apple-use-keychain ~/.ssh/id_ed25519"
+
+    def setUp(self):
+        self.real_run = window.run_osascript
+        self.reads = []
+
+    def tearDown(self):
+        window.run_osascript = self.real_run
+
+    def answer(self, titles):
+        remaining = list(titles)
+
+        def fake(script, timeout=20.0):
+            self.reads.append(script)
+            return remaining.pop(0) if len(remaining) > 1 else remaining[0]
+
+        window.run_osascript = fake
+
+    def test_a_shell_still_starting_up_is_waited_out_not_failed(self):
+        self.answer([self.SHELL_TITLE, self.SHELL_TITLE, "Terminal Game"])
+        title, took = smoke.settled_title(NEW_WINDOW_ID, deadline=5.0, poll=0.0)
+        self.assertEqual("Terminal Game", title)
+        self.assertEqual(3, len(self.reads))
+        self.assertLess(took, 5.0)
+
+    def test_a_title_that_never_settles_is_reported_with_what_it_read(self):
+        self.answer(["rodneybailey — bash"])
+        title, took = smoke.settled_title(NEW_WINDOW_ID, deadline=0.0, poll=0.0)
+        self.assertEqual("rodneybailey — bash", title)
+
+    def test_every_read_addresses_the_window_we_opened(self):
+        self.answer(["Terminal Game"])
+        smoke.settled_title(NEW_WINDOW_ID, deadline=0.0, poll=0.0)
+        assert_addresses_only_our_window(self, self.reads, NEW_WINDOW_ID)
+
+    def test_the_child_outlives_the_time_the_title_is_given_to_settle(self):
+        # Otherwise the child exits mid-poll and the title reverts to the
+        # shell's, and the smoke fails for a reason that is not WIN-3.
+        self.assertGreater(smoke.CHILD_SECONDS, smoke.TITLE_SECONDS)
+
+
 class TheSmokeReport(unittest.TestCase):
     def test_a_failed_check_prints_FAIL_and_a_passed_one_does_not(self):
         self.assertTrue(str(smoke.Check("x", False, "why")).startswith("FAIL"))
         self.assertIn("why", str(smoke.Check("x", False, "why")))
         self.assertTrue(str(smoke.Check("x", True)).startswith("ok"))
+
+    def test_the_detail_is_printed_only_when_the_check_failed(self):
+        # A detail beside "ok" reads as a contradiction: the real run printed
+        # "ok  the window is no longer visible -- it is still on the screen".
+        passed = smoke.Check("the window is no longer visible", True, "still there")
+        self.assertNotIn("still there", str(passed))
+        self.assertIn(
+            "still there",
+            str(smoke.Check("the window is no longer visible", False, "still there")),
+        )
 
     def test_a_result_with_no_checks_at_all_is_not_a_pass(self):
         # Otherwise a smoke that died before checking anything reports PASS.

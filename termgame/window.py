@@ -627,14 +627,27 @@ class _CGRect(ctypes.Structure):
     _fields_ = [("origin", _CGPoint), ("size", _CGSize)]
 
 
-def displays():
+def displays(report=None):
     """Every active display as ``(left, top, width, height)``, main first.
 
     CoreGraphics through ctypes: no TCC permission, no subprocess, no
     third-party module, and none of the AppleScript-to-Finder tricks that
     would raise a permission prompt on the player's screen. Returns a
     single conservative display if it cannot be read.
+
+    **It says so when it falls back.** Measured during WI-8: this returned the
+    fallback on one run out of several, on a machine whose three displays
+    ``CGGetActiveDisplayList`` reported perfectly well a moment later. The
+    consequence is not cosmetic -- the fallback rectangle is 1440 x 900 and
+    starts at the origin, so a reference position on one of the real displays
+    is "on no display", the clamp moves the game window to the main screen,
+    and WIN-4 quietly stops holding. Falling back is still the right
+    behaviour, because the game must start either way; falling back in silence
+    is not, for the same reason an ``osascript`` error is surfaced rather than
+    swallowed.
     """
+    if report is None:
+        report = _stderr_report
     try:
         path = (
             ctypes.util.find_library("CoreGraphics")
@@ -652,10 +665,13 @@ def displays():
 
         count = ctypes.c_uint32(0)
         identifiers = (ctypes.c_uint32 * 16)()
-        if core_graphics.CGGetActiveDisplayList(
+        status = core_graphics.CGGetActiveDisplayList(
             16, identifiers, ctypes.byref(count)
-        ) != 0:
-            return [FALLBACK_SCREEN_BOUNDS]
+        )
+        if status != 0:
+            return _fallback_displays(
+                report, "CGGetActiveDisplayList failed (%d)" % status
+            )
         found = []
         for index in range(count.value):
             rect = core_graphics.CGDisplayBounds(identifiers[index])
@@ -670,8 +686,22 @@ def displays():
                 )
         if found:
             return found
-    except Exception:  # pragma: no cover - depends on the machine
-        pass
+        return _fallback_displays(
+            report, "CGGetActiveDisplayList reported %d display(s), none usable"
+            % count.value
+        )
+    except Exception as error:  # never stop the game starting
+        return _fallback_displays(report, "CoreGraphics is unreadable: %s" % error)
+
+
+def _fallback_displays(report, why):
+    """One conservative display, and a line saying why it came to that."""
+    report(
+        "could not read the screen layout (%s); assuming one %d x %d display. "
+        "The game window may land on the wrong screen." % (
+            (why,) + FALLBACK_SCREEN_BOUNDS[2:]
+        )
+    )
     return [FALLBACK_SCREEN_BOUNDS]
 
 
@@ -1058,7 +1088,7 @@ def supervise(
         close_grace = CLOSE_GRACE_SECONDS
 
     reference, source = reference_position(report=report)
-    screens = applescript_display_bounds(displays())
+    screens = applescript_display_bounds(displays(report=report))
     target = offset_position(reference, choose_display(reference, screens))
 
     window_id = open_game_window(child_command(root))

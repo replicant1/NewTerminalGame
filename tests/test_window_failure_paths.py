@@ -333,7 +333,7 @@ class SupervisorPathTestCase(unittest.TestCase):
         # test; shortening it here keeps the suite quick without changing what
         # ./play does.
         window.STARTUP_GRACE_SECONDS = 0.0
-        window.displays = lambda: [(0, 0, 1512, 982)]
+        window.displays = lambda report=None: [(0, 0, 1512, 982)]
         window.controlling_tty = lambda: "/dev/ttys009"
         self.reports = []
 
@@ -645,6 +645,82 @@ class ThePlayerClosedTheWindowThemselves(SupervisorPathTestCase):
     def test_gone_reads_as_a_tab_that_is_not_running(self):
         self.assertEqual((False, 0), window.parse_tab_state("gone"))
         self.assertFalse(window.parse_tab_state("gone")[0])
+
+
+class TheScreenLayoutCannotBeRead(SupervisorPathTestCase):
+    """``displays()`` falls back -- but it may not do so in silence.
+
+    Measured during WI-8: on one call out of several, on this machine,
+    ``displays()`` returned the 1440 x 900 fallback while
+    ``CGGetActiveDisplayList`` reported all three real displays correctly a
+    few seconds later. The consequence is not cosmetic. The reference window
+    sat at (-898, 76); against the fallback rectangle that point is on no
+    display at all, so the clamp moved the game window to the main screen and
+    it landed at (0, 106) instead of (-868, 106) -- WIN-4 quietly not holding,
+    with nothing said.
+    """
+
+    def test_a_reference_on_no_display_is_clamped_onto_the_first_one(self):
+        # This is the consequence the silent fallback produced.
+        fallback = [window.FALLBACK_SCREEN_BOUNDS]
+        self.assertEqual(
+            window.FALLBACK_SCREEN_BOUNDS,
+            window.choose_display((-898, 76), fallback),
+        )
+        self.assertEqual(
+            (0, 106),
+            window.offset_position((-898, 76), window.FALLBACK_SCREEN_BOUNDS),
+        )
+
+    def test_the_real_layout_puts_the_window_next_to_the_reference(self):
+        # The same reference, against what the machine actually has.
+        real = window.applescript_display_bounds(
+            [(0, 0, 1512, 982), (-3509, -1440, 2560, 1440), (-949, -1440, 2560, 1440)]
+        )
+        self.assertEqual(
+            (-868, 106),
+            window.offset_position((-898, 76), window.choose_display((-898, 76), real)),
+        )
+
+    def test_an_unreadable_layout_is_reported_with_the_reason(self):
+        said = []
+        real_ctypes = window.ctypes.cdll.LoadLibrary
+
+        def explode(path):
+            raise OSError("image not found")
+
+        window.ctypes.cdll.LoadLibrary = explode
+        try:
+            # self.real_displays, not window.displays: setUp has stubbed the
+            # latter, and it is the real one that has to report.
+            self.assertEqual(
+                [window.FALLBACK_SCREEN_BOUNDS],
+                self.real_displays(report=said.append),
+            )
+        finally:
+            window.ctypes.cdll.LoadLibrary = real_ctypes
+        self.assertTrue(said, "the fallback happened in silence")
+        self.assertIn("image not found", said[0])
+        self.assertIn("wrong screen", said[0])
+
+    def test_the_supervisor_passes_its_own_report_to_the_layout_query(self):
+        terminal = RecordingTerminal(states=[ENDED])
+        window.displays = lambda report=None: (
+            report("could not read the screen layout (test)") or
+            [window.FALLBACK_SCREEN_BOUNDS]
+        )
+        self.supervise(terminal)
+        self.assertTrue(
+            self.said("could not read the screen layout"),
+            "the layout fallback never reached the player: %r" % self.reports,
+        )
+
+    def test_the_game_still_starts_when_the_layout_cannot_be_read(self):
+        # Reporting it must not become a reason not to play.
+        terminal = RecordingTerminal(states=[ENDED])
+        window.displays = lambda report=None: [window.FALLBACK_SCREEN_BOUNDS]
+        self.assertEqual(0, self.supervise(terminal))
+        self.assert_closed_our_window(terminal)
 
 
 class TheCapturedIdReachesTheCaller(SupervisorPathTestCase):

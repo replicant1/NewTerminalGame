@@ -90,7 +90,7 @@ class SupervisorTest(unittest.TestCase):
         self.reports = []
         self.real_sleep = window.time.sleep
         window.time.sleep = lambda seconds: None
-        window.displays = lambda: [(0, 0, 1512, 982)]
+        window.displays = lambda report=None: [(0, 0, 1512, 982)]
         window.controlling_tty = lambda: "/dev/ttys009"
 
     def tearDown(self):

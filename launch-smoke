@@ -57,11 +57,28 @@ if REPO_ROOT not in sys.path:
 from termgame import window
 
 #: How long the stand-in child stays alive. It has to outlast the read-backs
-#: in step 4 -- two osascript round trips, each measured at roughly 0.2 s --
-#: with room to spare, and it is the whole of what the smoke waits for, so it
-#: should not be generous for its own sake. Three seconds is about ten round
-#: trips.
-CHILD_SECONDS = 3.0
+#: in step 4, and those are gated by ``TITLE_SECONDS`` below, so this must be
+#: comfortably longer than that.
+CHILD_SECONDS = 8.0
+
+#: How long the title is given to settle on ``Terminal Game``.
+#:
+#: **Measured, and it is not zero.** ``do script`` opens a window running the
+#: user's *login shell*, which sources their startup files before our ``exec``
+#: line runs; Terminal's active-process title component shows whatever that
+#: shell is doing until then. On this machine the first read, about half a
+#: second after the window appeared, returned
+#: ``rodneybailey - ssh-add --apple-use-keychain ~/.ssh/id_ed25519`` -- the
+#: user's own profile, not a WIN-3 failure. WI-2 did not see this because it
+#: read the title a full second after creating the window.
+#:
+#: So the title is polled rather than sampled once, and the smoke reports how
+#: long it took to settle. Five seconds is long enough for a slow profile and
+#: short enough that a genuinely wrong title is still reported promptly.
+TITLE_SECONDS = 5.0
+
+#: How often the title is re-read while it settles.
+TITLE_POLL_SECONDS = 0.2
 
 #: The whole run's deadline. It covers the reference query, the open, the
 #: settings, the position, ``CHILD_SECONDS`` of child, the close and the
@@ -115,11 +132,12 @@ class Check(object):
         self.detail = detail
 
     def __str__(self):
-        return "%s %s%s" % (
-            "ok  " if self.ok else "FAIL",
-            self.name,
-            (" -- " + self.detail) if self.detail else "",
-        )
+        # The detail says what went wrong, so it is printed only when
+        # something did. Printing it beside "ok" reads as a contradiction:
+        # "ok  the window is no longer visible -- it is still on the screen".
+        if self.ok:
+            return "ok   " + self.name
+        return "FAIL %s%s" % (self.name, (" -- " + self.detail) if self.detail else "")
 
 
 class SmokeResult(object):
@@ -240,19 +258,45 @@ def run_once(out=None, child_seconds=CHILD_SECONDS, timeout=SMOKE_SECONDS):
     return result
 
 
+def settled_title(window_id, deadline=None, poll=None):
+    """Poll the window's title until it is the game's. Returns (title, seconds).
+
+    Not a fixed sleep and not a single sample: see ``TITLE_SECONDS``. The
+    window runs the user's login shell for a moment before our ``exec`` takes
+    over, and Terminal's title follows whatever that shell is doing.
+
+    *deadline* and *poll* default to ``None`` meaning "read the constant now",
+    so a test can shorten them without changing what the smoke does.
+    """
+    if deadline is None:
+        deadline = TITLE_SECONDS
+    if poll is None:
+        poll = TITLE_POLL_SECONDS
+    began = time.time()
+    title = ""
+    while True:
+        title = window.window_name(window_id)
+        if title == EXPECTED_TITLE:
+            break
+        if time.time() - began >= deadline:
+            break
+        time.sleep(poll)
+    return title, time.time() - began
+
+
 def _check_the_live_window(result, out):
     """WIN-2 and WIN-3, read back by the captured id while the child runs."""
     try:
-        title = window.window_name(result.window_id)
+        title, took = settled_title(result.window_id)
     except window.WindowError as error:
         result.check("the window's title reads back", False, str(error))
         return
     result.check(
         "the window is titled %r" % EXPECTED_TITLE,
         title == EXPECTED_TITLE,
-        "it reads %r" % title,
+        "after %.1fs it still reads %r" % (took, title),
     )
-    out.write("window name: %r\n" % title)
+    out.write("window name: %r (settled in %.1fs)\n" % (title, took))
 
     try:
         geometry = window.tab_geometry(result.window_id)
