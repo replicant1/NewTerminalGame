@@ -1,0 +1,33 @@
+04:52:05Z  START   WI-13 close the gaps the final gate found; branch wi-13-close-the-gaps cut from origin/main
+04:52:18Z  WI-13 READ    docs/progress/wi-12-final-gate.md (50 lines) — all five findings plus the three smaller ones located
+04:52:18Z  WI-13 NOTE    origin/main is d49f046 (merge of PR #15), not 04065b0 as the brief said; 04065b0 is presumably local main carrying the unpushed orchestration commits. Branching from origin/main as instructed.
+04:55:22Z  WI-13 READ    screen.py, rules.py, theme.py, model.Maze, maze.from_text, test_curses_pty.py — findings 1,2,4 confirmed by my own reading
+04:55:22Z  WI-13 NOTE    session() calls noecho() then cbreak() (not raw()), so ECHO is turned off by that one call and nothing else — a termios ECHO assertion inside the live session discriminates for CTRL-5
+04:55:22Z  WI-13 NOTE    corridors() includes isolated corridor squares (model.py:165 fills _open for every corridor cell), so a hand-built START-2 board can place candidate squares freely
+04:56:57Z  WI-13 CONFIRM all eight findings reproduced by my own reading/measurement. START-2: I recomputed the three metrics over seeds 0..199 myself — 0 of 200 disagree, so the sweep is metric-blind exactly as WI-12 said.
+04:56:57Z  WI-13 PLAN    five gaps + three small ones, all assertion-only: START-2 discriminating boards, colour assertions (theme hue + adapter init_pair), pty WIN-2 constants / SCRN-7 cursor / CTRL-5 termios ECHO / move the z earlier, ARCHITECTURE.md:642 correction, test_maze name, supervisor tautology.
+04:58:47Z  WI-13 BROKE   rules.starting_ghost -> Manhattan: RED, "Position(row=1, col=6) != Position(row=4, col=4) : START-2 is not being measured by squared Euclidean distance..." — rules.py restored from backup, working tree clean
+04:58:47Z  WI-13 BROKE   rules.starting_ghost -> Chebyshev: RED, "Position(row=5, col=5) != Position(row=1, col=6) : START-2 is not being measured by squared Euclidean distance..." plus the pre-existing hand-written-board test WI-12 predicted — rules.py restored, working tree clean
+04:58:47Z  WI-13 TEST    tests.test_rules_start: 39 passed, 0 failed, 0 skipped
+04:59:46Z  WI-13 COMMIT  9529deb pin START-2 metric so WI-11 change can be seen
+04:59:46Z  WI-13 PR      draft PR #16 opened against main (replicant1/NewTerminalGame/pull/16)
+04:59:46Z  WI-13 PLAN    next: the colours. Assert what the code requests for every style, and tie the number to the word in the requirement (51 -> the cyan corner of the xterm cube) so SCRN-6 has something behind it.
+05:01:55Z  WI-13 BROKE   theme STYLE_STATUS 51 -> 39 (a near-cyan blue): 4 RED — "51 != 39 : the status style no longer asks for colour 51, cyan (SCRN-6)"; "5 != 3 : the status line is not full green, so not cyan"; "51 != 39" in the adapter; "39 != 51 : the fallback's status has drifted from theme.py". theme.py restored.
+05:01:55Z  WI-13 BROKE   screen.build_attributes init_pair(pair, 7, -1) instead of spec.colour: 2 RED — "33 != 7 : the wall style reaches curses as 7, not as the theme's 33". screen.py restored, working tree carries only the three test/log files.
+05:01:55Z  WI-13 TEST    tests.test_theme + tests.test_screen_adapter: 74 passed, 0 failed, 0 skipped
+05:03:05Z  WI-13 COMMIT  6daadc3 assert the colours, so SCRN-6 has something behind it — pushed
+05:03:05Z  WI-13 PLAN    now the pty file: WIN-2 against the project constants, SCRN-7 by probing the visibility session() left behind, CTRL-5 by reading the terminal ECHO bit inside the live session with ECHO forced on beforehand, and the z moved second so "did not quit" can fail.
+05:10:24Z  WI-13 FOUND   the CTRL-5 assertion I first wrote could not fail, and I caught it by breaking noecho on purpose. Two measurements: (1) curses.initscr() clears the tty ECHO bit by itself and curses.echo() never sets it back, so the termios bit says nothing about the game; (2) with a full 30x40 paint behind it the echoed character lands on the bottom-right cell, where the C1 hazard swallows it — so in the scripted game the z is not echoed even with curses.echo() forced on. Rewriting the test against screen.session() with no paint in front of it, where the echo IS observable.
+05:15:25Z  WI-13 NOTE    trap worth recording: this python3 uses sys.pycache_prefix under ~/Library/Caches/com.apple.python, and a same-size edit made within the same second as the cached .pyc is not invalidated. My 51 -> 39 restore silently did not take and five colour tests failed against stale bytecode. Purged the cache for this worktree; every break/restore re-verified.
+05:15:25Z  WI-13 BROKE   removed curses.noecho() from session(): RED — "b'z' unexpectedly found in ... \x1b[H\x1b[2Jzzz ... : the keystrokes the player typed were echoed back into the window: `z` appears 3 times in what the game wrote to the terminal (CTRL-5)"
+05:15:25Z  WI-13 BROKE   window.COLUMNS 40 -> 41: RED "Lists differ: [30, 41] != [30, 40]"; model.SCREEN_ROWS 30 -> 29: RED "Lists differ: [30, 40] != [29, 40]" — the WIN-2 test now breaks from both sides
+05:15:25Z  WI-13 BROKE   theme status 51 -> 39: RED in the pty run too — "b'\x1b[38;5;51m' not found in ... : the terminal was never asked for colour 51, the cyan status line (SCRN-6)"
+05:15:25Z  WI-13 BROKE   controls: z added to QUIT_KEYS. With the z moved second: 5 RED including "the unmapped key did not quit" ("Lists differ: [2, 5] != [1, 2]"). With the z put back second-to-last where WI-12 found it: 21 passed, 0 failed — WI-12 finding 8 confirmed empirically.
+05:15:25Z  WI-13 TEST    full suite 774 passed, 0 failed, 2 skipped (/usr/bin/python3 -m unittest discover -s tests, 12.367s, OK)
+05:17:43Z  WI-13 BROKE   supervise() opening two windows: RED "1 != 2 : expected exactly one open, got [... open, open, ...]" — the tautology at test_window_supervisor.py:112 replaced with a once-each count, which the old line could not have caught
+05:17:43Z  WI-13 NOTE    test_maze.py MAZE-4 naming: brought the sweep up to the name rather than the name down to the sweep — 1000 seeds measured at 0.74s and all 1000 distinct
+05:17:43Z  WI-13 TEST    full suite 774 passed, 0 failed, 2 skipped (was 749 on main; 25 added)
+05:20:12Z  WI-13 NOTE    Terminal census, read-only: all [367, 2486, 2420, 2440], visible [367, 2486] — the established values. No window opened by this work at all; every test here is pty-based.
+05:20:12Z  WI-13 WROTE   docs/prs/PR-WI-13-close-the-gaps.md (final body) and docs/completions/COMPLETION-M3-DEV-A.md
+05:21:31Z  WI-13 PR      #16 body updated and marked ready for review. Base main, head wi-13-close-the-gaps, OPEN, not draft. NOT merged — the lead merges.
+05:21:31Z  WI-13 DONE    WI-13 wi-13-close-the-gaps e2d7778

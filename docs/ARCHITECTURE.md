@@ -639,7 +639,7 @@ sequenceDiagram
 | CTRL-2 | one `move_player` per key event; no auto-repeat state exists | unit |
 | CTRL-3 | wall target → `return state` unchanged | unit |
 | CTRL-4 | `q`/`Q` → `QUIT` → return from `loop`, checked before outcome | unit |
-| CTRL-5 | every other key → `None`; `curses.noecho()` | unit; **measured**: `noecho` set in `Screen.__enter__` |
+| CTRL-5 | every other key → `None`; `curses.noecho()` in `screen.session()` | unit on the mapping; **measured** (WI-13): a `z` typed into a real session never reaches the terminal, and does if `noecho` is removed — `tests/test_curses_pty.py::NothingTypedIsEchoedTest`, method in `docs/findings/WI-13-curses-echo.md` |
 | GHOST-1 | `loop` deadline `next_tick += 1/7` | **measured**: 6.997 ticks/s, max drift 5.08 ms |
 | GHOST-2 | `move_ghost` takes `forward` whenever open | unit: corridor run keeps direction |
 | GHOST-3 | random non-reverse choice; reverse only when empty | unit with a seeded rng and a hand-built T-junction and a cul-de-sac |
@@ -658,6 +658,15 @@ sequenceDiagram
 | STAT-1 | `view.status_line` is the only writer of row 29 | unit |
 | STAT-2 | `"score {n}    arrows, q quits"` | unit (see Assumption A3) |
 | STAT-3 | `"CAUGHT  score {n}   q quits"` / `"CLEARED  score {n}  q quits"` | unit (see Assumption A3) |
+
+> **Correction, WI-13.** Until WI-13 the CTRL-5 row above read *"**measured**:
+> `noecho` set in `Screen.__enter__`"*. That was wrong twice over: there is no
+> `Screen.__enter__` anywhere in `termgame/screen.py` — the adapter uses a
+> `session()` context manager — and nothing had been measured, since no test in
+> the suite contained the string "echo". WI-12's audit found it; WI-13 supplied
+> the measurement and rewrote the row to describe it. A false record of
+> verification is worse than a missing one, so it is corrected here in place
+> rather than quietly dropped.
 
 ---
 

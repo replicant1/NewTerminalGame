@@ -342,6 +342,184 @@ class TheRealThemeTest(unittest.TestCase):
         self.assertNotIn("invented", palette)
 
 
+class _StubCurses(object):
+    """Just enough of ``curses`` to watch what ``build_attributes`` asks for.
+
+    ``build_attributes`` is the last place a colour number exists as a
+    *number*: after it, every style is an opaque curses attribute and the
+    colour cannot be read back out. So this is the only seam at which "the
+    status line is painted cyan" can be asserted at all without a terminal,
+    and before WI-13 nothing stood here.
+    """
+
+    A_BOLD = 1 << 8
+    A_DIM = 1 << 9
+
+    class error(Exception):
+        pass
+
+    def __init__(self, coloured=True):
+        self._coloured = coloured
+        self.pairs = []          # (pair number, foreground, background)
+        self.started = 0
+        self.defaults = 0
+
+    def start_color(self):
+        self.started += 1
+
+    def use_default_colors(self):
+        self.defaults += 1
+
+    def has_colors(self):
+        return self._coloured
+
+    def init_pair(self, number, foreground, background):
+        self.pairs.append((number, foreground, background))
+
+    def color_pair(self, number):
+        return number << 16
+
+    def colour_asked_for(self, pair_number):
+        for number, foreground, _background in self.pairs:
+            if number == pair_number:
+                return foreground
+        raise AssertionError("no colour pair %d was ever allocated" % pair_number)
+
+
+class BuildAttributesTest(unittest.TestCase):
+    """What colour number actually reaches curses — SCRN-3, SCRN-4, SCRN-5, SCRN-6.
+
+    ``TheRealThemeTest`` above asserts that the palette the adapter resolves
+    carries the theme's colours. That is half the chain. This is the other
+    half: the numbers in that palette are the numbers handed to
+    ``curses.init_pair``, so a translation step that dropped or transposed a
+    colour would be caught here rather than by a person looking at a screen.
+    """
+
+    def setUp(self):
+        self.real_curses = screen_module.curses
+        self.stub = _StubCurses()
+        screen_module.curses = self.stub
+
+    def tearDown(self):
+        screen_module.curses = self.real_curses
+
+    def _colours_by_style(self, palette):
+        """``{style: the colour number curses was asked for}``.
+
+        Recovered through the attribute each style ended up with, so it maps
+        the style the *caller* named to the colour *curses* received, and a
+        transposition between two styles would show up as swapped values.
+        """
+        attributes = screen_module.build_attributes(palette)
+        colours = {}
+        for style, attribute in attributes.items():
+            pair_number = attribute >> 16
+            if pair_number:
+                colours[style] = self.stub.colour_asked_for(pair_number)
+        return colours
+
+    def test_the_theme_s_own_colours_are_the_ones_handed_to_curses(self):
+        from termgame import theme
+
+        colours = self._colours_by_style(screen_module.resolve_palette())
+        for name, style in theme.STYLES.items():
+            self.assertEqual(
+                style.colour,
+                colours.get(name),
+                "the %s style reaches curses as %r, not as the theme's %r"
+                % (name, colours.get(name), style.colour),
+            )
+
+    def test_the_status_line_reaches_curses_as_cyan(self):
+        """SCRN-6, end to end as far as a test without a terminal can go."""
+        from termgame import theme
+
+        colours = self._colours_by_style(screen_module.resolve_palette())
+        self.assertEqual(51, colours[theme.STYLE_STATUS])
+        self.assertEqual(
+            (0, 5, 5),
+            _rgb_levels(colours[theme.STYLE_STATUS]),
+            "the colour curses is asked for on the status line is not cyan",
+        )
+
+    def test_each_colour_gets_its_own_pair_against_the_default_background(self):
+        # -1 is "whatever the terminal's own background is", which is what
+        # use_default_colors buys and is why the game does not paint a
+        # rectangle of black over the user's window.
+        self._colours_by_style(screen_module.resolve_palette())
+        self.assertEqual(1, self.stub.started)
+        self.assertEqual(1, self.stub.defaults)
+        numbers = [number for number, _fg, _bg in self.stub.pairs]
+        self.assertEqual(sorted(numbers), sorted(set(numbers)))
+        for _number, _fg, background in self.stub.pairs:
+            self.assertEqual(-1, background)
+
+    def test_bold_and_dim_survive_the_translation_alongside_the_colour(self):
+        # SCRN-4's "dim" and SCRN-5's "bright" are carried in the same int as
+        # the colour pair, so a translation that lost one would be invisible.
+        palette = {
+            "plain": screen_module.StyleSpec(colour=33),
+            "loud": screen_module.StyleSpec(colour=178, bold=True),
+            "quiet": screen_module.StyleSpec(colour=51, dim=True),
+        }
+        attributes = screen_module.build_attributes(palette)
+        self.assertFalse(attributes["plain"] & self.stub.A_BOLD)
+        self.assertFalse(attributes["plain"] & self.stub.A_DIM)
+        self.assertTrue(attributes["loud"] & self.stub.A_BOLD)
+        self.assertFalse(attributes["loud"] & self.stub.A_DIM)
+        self.assertTrue(attributes["quiet"] & self.stub.A_DIM)
+        self.assertFalse(attributes["quiet"] & self.stub.A_BOLD)
+
+    def test_a_terminal_with_no_colour_still_gets_a_playable_picture(self):
+        # The one way this can fail, and it must cost colour and not the game.
+        screen_module.curses = self.stub = _StubCurses(coloured=False)
+        attributes = screen_module.build_attributes(screen_module.resolve_palette())
+        self.assertEqual([], self.stub.pairs)
+        self.assertTrue(attributes)
+
+
+def _rgb_levels(index):
+    """``index`` as ``(red, green, blue)`` on 0..5 in the xterm colour cube."""
+    if not 16 <= index <= 231:
+        raise ValueError("%r is not in the 6x6x6 colour cube" % (index,))
+    offset = index - 16
+    return (offset // 36, (offset // 6) % 6, offset % 6)
+
+
+class TheFallbackPaletteTest(unittest.TestCase):
+    """The fallback is a copy of the theme, and copies go stale.
+
+    It is only reached when ``theme.py`` cannot be imported at all, which is
+    to say almost never — which is exactly why a colour changed in one place
+    and not the other would sit there unnoticed until the day it mattered.
+    """
+
+    def test_the_fallback_asks_for_the_same_colour_as_the_theme_for_every_style(self):
+        from termgame import theme
+
+        for name in theme.STYLE_NAMES:
+            if name == STYLE_DEFAULT:
+                # Deliberately different: the theme names the terminal's own
+                # foreground by number, the fallback says "leave it alone".
+                self.assertIsNone(screen_module.FALLBACK_PALETTE[name].colour)
+                continue
+            self.assertEqual(
+                theme.STYLES[name].colour,
+                screen_module.FALLBACK_PALETTE[name].colour,
+                "the fallback's %s has drifted from theme.py" % name,
+            )
+
+    def test_the_fallback_carries_the_same_bold_and_dim_as_the_theme(self):
+        from termgame import theme
+
+        for name in theme.STYLE_NAMES:
+            spec = screen_module.FALLBACK_PALETTE[name]
+            attributes = theme.STYLES[name].attributes
+            self.assertEqual("bold" in attributes, spec.bold, name)
+            self.assertEqual("dim" in attributes, spec.dim, name)
+
+
 class CursesConstantsTest(unittest.TestCase):
     """The adapter may import curses; this checks what it relies on exists."""
 

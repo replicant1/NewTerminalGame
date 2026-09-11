@@ -31,10 +31,23 @@ import tempfile
 import unittest
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, ROOT)
+
+from termgame.model import SCREEN_COLS, SCREEN_ROWS  # noqa: E402
+from termgame.window import COLUMNS as WINDOW_COLUMNS  # noqa: E402
+from termgame.window import ROWS as WINDOW_ROWS  # noqa: E402
 
 #: 40 columns, 30 rows — the window the game really runs in (WIN-2).
-COLUMNS = 40
-LINES = 30
+#:
+#: **Taken from the project's own constants and not typed again here.** Until
+#: WI-13 these were two literals, which made the size test below a closed
+#: loop: it sized a pty to 40 x 30 and then asserted curses saw 40 x 30, and
+#: no change anywhere in the product could make it fail. Sizing the pty from
+#: ``termgame.model`` and asserting against ``termgame.window`` means the
+#: terminal really is the one the picture is drawn for, and that the two
+#: independent copies of WIN-2's numbers still agree.
+COLUMNS = SCREEN_COLS
+LINES = SCREEN_ROWS
 
 PROBE = r'''
 import curses, json, os, sys
@@ -64,8 +77,10 @@ try:
     from termgame import screen as screen_module
     from termgame.model import frame_from_rows
     rows = []
-    for r in range(30):
-        rows.append("".join(chr(ord("a") + ((r + c) %% 26)) for c in range(40)))
+    for r in range(%(rows)d):
+        rows.append(
+            "".join(chr(ord("a") + ((r + c) %% 26)) for c in range(%(cols)d))
+        )
     frame = frame_from_rows(rows)
     scr = screen_module.Screen(window, screen_module.build_attributes())
     try:
@@ -76,13 +91,13 @@ try:
 
     # 4. Read the virtual screen back and compare it with what went in.
     read_back = []
-    for r in range(30):
+    for r in range(%(rows)d):
         read_back.append(
-            "".join(chr(window.inch(r, c) & 0xFF) for c in range(40))
+            "".join(chr(window.inch(r, c) & 0xFF) for c in range(%(cols)d))
         )
     result["matches"] = (read_back == rows)
-    result["last_row_in"] = rows[29]
-    result["last_row_out"] = read_back[29]
+    result["last_row_in"] = rows[-1]
+    result["last_row_out"] = read_back[-1]
 
     # 5. The cursor really does hide, and escape delay really is settable.
     result["curs_set"] = curses.curs_set(0)
@@ -107,7 +122,7 @@ with open(%(out)r, "w") as handle:
 #: now that they have, this run is the real game through real ncurses and
 #: the only fake left in it is the pty.
 PLAY = r'''
-import json, random, sys
+import curses, json, random, sys
 sys.path.insert(0, %(root)r)
 from termgame import maze as mazelib, rules, screen as screen_module, view
 from termgame.loop import run_loop
@@ -127,6 +142,17 @@ state = GameState(
 result = {}
 try:
     with screen_module.session() as scr:
+        # SCRN-7. curs_set returns the *previous* visibility, so asking for
+        # "hidden" -- which is what the game has already asked for -- changes
+        # nothing and hands back what the game left behind. 0 means the game
+        # hid it; 1 or 2 means it did not.
+        try:
+            result["cursor_the_game_left_behind"] = curses.curs_set(0)
+        except Exception as error:
+            result["cursor_the_game_left_behind"] = "%%s: %%s" %% (
+                type(error).__name__,
+                error,
+            )
         final = run_loop(
             scr,
             state,
@@ -147,6 +173,39 @@ except Exception as error:
 with open(%(out)r, "w") as handle:
     json.dump(result, handle)
 '''
+
+
+#: CTRL-5's second clause: **nothing typed is echoed into the maze.**
+#:
+#: This enters the game's own :func:`termgame.screen.session` and reads three
+#: keystrokes through the adapter's own :meth:`Screen.read_key`, and does
+#: nothing else. No picture is painted first, and that is the point.
+#: ``docs/findings/WI-13-curses-echo.md`` has the measurements; the short
+#: version is that ncurses echoes in software, from inside ``wgetch``, at
+#: wherever the cursor happens to be — and after a full 30 x 40 repaint the
+#: cursor is parked on the bottom-right cell, where C1's hazard swallows the
+#: echo. So the scripted game above cannot see this clause even when echo is
+#: forced on, and only a session with no painting in front of it can.
+ECHO = r'''
+import json, sys
+sys.path.insert(0, %(root)r)
+from termgame import screen as screen_module
+
+result = {}
+try:
+    with screen_module.session() as scr:
+        result["keys"] = [scr.read_key(500) for _ in range(3)]
+    result["returned"] = True
+except Exception as error:
+    result["error"] = "%%s: %%s" %% (type(error).__name__, error)
+
+with open(%(out)r, "w") as handle:
+    json.dump(result, handle)
+'''
+
+#: Three of a character that appears nowhere in any picture the game draws.
+ECHO_KEYSTROKES = b"zzz"
+
 
 def arrow_bytes():
     """What a terminal really sends for the arrow keys, read off terminfo.
@@ -177,16 +236,24 @@ def arrow_bytes():
 
 ARROWS = arrow_bytes()
 
-#: Right, **down into a wall**, right, right, right, down, an unmapped key,
+#: Right, **an unmapped key**, down into a wall, right, right, right, down,
 #: then `q`. Five requirements in one real run of the real thing.
+#:
+#: **Why the `z` is second and not second-to-last.** It used to sit between
+#: the last arrow and the `q`, and WI-12 found that the half of its test
+#: which claims "the `z` did not quit" could not fail there: a `z` that quit
+#: would have ended the loop one keystroke early, at the same square with the
+#: same score, and every recorded field would have been byte-identical. Here,
+#: a `z` that quit ends the game after one move — at (1, 2) with a score of
+#: 1, three moves and two dots short of the recorded ending.
 KEYSTROKES = (
     ARROWS["right"]
+    + b"z"               # CTRL-5, nothing happens -- and see above
     + ARROWS["down"]     # (2, 2) is wall: CTRL-3, nothing happens
     + ARROWS["right"]
     + ARROWS["right"]
     + ARROWS["right"]
     + ARROWS["down"]     # (2, 5) is corridor, and holds a dot
-    + b"z"               # CTRL-5, nothing happens
     + b"q"               # CTRL-4, END-6
 )
 
@@ -194,6 +261,11 @@ KEYSTROKES = (
 def run_play_on_a_pty():
     """Play a scripted game through real ncurses. ``None`` if impossible."""
     return run_probe_on_a_pty(source=PLAY, keystrokes=KEYSTROKES)
+
+
+def run_echo_probe_on_a_pty():
+    """Read three keys through the real session. ``None`` if impossible."""
+    return run_probe_on_a_pty(source=ECHO, keystrokes=ECHO_KEYSTROKES)
 
 
 def run_probe_on_a_pty(source=None, keystrokes=b""):
@@ -214,6 +286,7 @@ def run_probe_on_a_pty(source=None, keystrokes=b""):
     handle, path = tempfile.mkstemp(suffix=".json", prefix="termgame-pty-")
     os.close(handle)
     master, slave = pty.openpty()
+    slave_is_open = True
     drained = []
 
     def drain():
@@ -232,6 +305,26 @@ def run_probe_on_a_pty(source=None, keystrokes=b""):
         fcntl.ioctl(
             slave, termios.TIOCSWINSZ, struct.pack("HHHH", LINES, COLUMNS, 0, 0)
         )
+        # CTRL-5, and the whole reason its assertion can fail. **The echo
+        # that CTRL-5 is about is ncurses', not the kernel's.** Measured
+        # here, on this machine: `curses.initscr()` clears the tty's own ECHO
+        # bit by itself and `curses.echo()` never sets it back -- ncurses
+        # echoes in software, from inside `wgetch`, straight into the window.
+        # So the tty's ECHO bit says nothing at all about whether the game
+        # echoes, and a test that read it would pass whatever the game did.
+        #
+        # What does say so is whether a typed character ever reaches the
+        # terminal. Clearing ECHO on the pty before the keystrokes are
+        # written stops the line discipline echoing them itself, so a `z`
+        # found in what the terminal received can only have been put there by
+        # the game. Measured: with `curses.echo()` the three `z`s of a
+        # throwaway probe came back three times; with `noecho`, not at all.
+        settings = termios.tcgetattr(slave)
+        settings[3] &= ~termios.ECHO
+        termios.tcsetattr(slave, termios.TCSANOW, settings)
+        line_discipline_echo_was_off = not (
+            termios.tcgetattr(slave)[3] & termios.ECHO
+        )
         environment = dict(os.environ)
         environment["TERM"] = "xterm-256color"
         environment["LINES"] = str(LINES)
@@ -239,6 +332,8 @@ def run_probe_on_a_pty(source=None, keystrokes=b""):
         text_source = (PROBE if source is None else source) % {
             "root": ROOT,
             "out": path,
+            "rows": LINES,
+            "cols": COLUMNS,
         }
         if keystrokes:
             os.write(master, keystrokes)
@@ -251,13 +346,27 @@ def run_probe_on_a_pty(source=None, keystrokes=b""):
             env=environment,
             timeout=60,
         )
+        # The child has gone, so closing this end lets the reader see EOF and
+        # finish. Without that the tail of the last repaint is still in
+        # flight when `drained` is read, and the terminal output below would
+        # be however much of it happened to have arrived.
+        os.close(slave)
+        slave_is_open = False
+        reader.join(timeout=5)
         with open(path) as reading:
             text = reading.read()
         if not text:
-            return {"failed": completed.stderr.decode("utf-8", "replace")}
-        return json.loads(text)
+            data = {"failed": completed.stderr.decode("utf-8", "replace")}
+        else:
+            data = json.loads(text)
+        # Measured on this side of the pty: everything the game wrote to its
+        # terminal, and the state of the line discipline before it started.
+        data["terminal_output"] = b"".join(drained)
+        data["line_discipline_echo_was_off"] = line_discipline_echo_was_off
+        return data
     finally:
-        os.close(slave)
+        if slave_is_open:
+            os.close(slave)
         os.close(master)
         if reader.is_alive():
             reader.join(timeout=5)
@@ -274,6 +383,7 @@ def once(runner):
 
 RESULT = once(run_probe_on_a_pty)
 PLAYED = once(run_play_on_a_pty)
+ECHOED = once(run_echo_probe_on_a_pty)
 
 
 @unittest.skipIf(RESULT is None, "a pseudo-terminal could not be made here")
@@ -282,8 +392,32 @@ class RealCursesTest(unittest.TestCase):
         if RESULT is not None and "failed" in RESULT:
             self.fail("the curses probe did not run:\n%s" % RESULT["failed"])
 
-    def test_curses_sees_the_forty_by_thirty_window(self):
-        self.assertEqual([LINES, COLUMNS], RESULT["size"])
+    def test_curses_sees_the_window_the_project_says_the_game_runs_in(self):
+        """WIN-2, against the project's own constants.
+
+        Until WI-13 this asserted ``[LINES, COLUMNS]`` where ``LINES`` and
+        ``COLUMNS`` were two literals in this file and the pty had been sized
+        to them a few lines earlier. It imported neither
+        ``window.COLUMNS/ROWS`` nor ``model.SCREEN_COLS/ROWS``, so nothing
+        that could be changed in the product could make it fail; it proved
+        that curses reads back the size it was given, which is a fact about
+        curses.
+
+        Now the pty is sized from ``termgame.model`` -- the shape the
+        renderer draws -- and checked against ``termgame.window`` -- the
+        shape the AppleScript asks Terminal for. Those are two independent
+        copies of WIN-2's numbers, and the picture and the window disagreeing
+        is exactly the failure this is for. The literal 40 x 30 is pinned as
+        well, since both could drift together.
+        """
+        self.assertEqual(
+            [WINDOW_ROWS, WINDOW_COLUMNS],
+            RESULT["size"],
+            "the terminal the picture is drawn for is not the terminal the "
+            "game asks Terminal.app to open",
+        )
+        self.assertEqual((30, 40), (SCREEN_ROWS, SCREEN_COLS))
+        self.assertEqual((30, 40), (WINDOW_ROWS, WINDOW_COLUMNS))
 
     def test_writing_at_the_bottom_right_cell_really_does_raise(self):
         # ARCHITECTURE.md C1, re-measured. If this ever says "no error" the
@@ -306,9 +440,20 @@ class RealCursesTest(unittest.TestCase):
         self.assertEqual(40, len(RESULT["last_row_out"]))
         self.assertEqual(RESULT["last_row_in"][39], RESULT["last_row_out"][39])
 
-    def test_the_cursor_can_be_hidden(self):
-        # SCRN-7's "the text cursor is never visible". curs_set returns the
-        # previous visibility, so anything but an exception is success.
+    def test_this_terminal_can_hide_its_cursor_at_all(self):
+        """The guard on the guard, and it is **not** SCRN-7.
+
+        This asserts that ``curs_set`` works on this terminal, which is what
+        the probe's own call measures. Before WI-13 this test was named for
+        SCRN-7 and asserted ``isinstance(RESULT["curs_set"], int)`` -- a
+        value the probe script had set itself, so no change to the game could
+        make it fail, and SCRN-7's "the text cursor is never visible" was
+        left with nothing behind it at all. What actually covers SCRN-7 is
+        ``ScriptedGameThroughRealCursesTest`` below, which reads back the
+        visibility the *game* left behind. This one is only here so that a
+        terminal which cannot hide a cursor is told apart from a game which
+        does not.
+        """
         self.assertIsInstance(RESULT["curs_set"], int)
 
     def test_the_escape_delay_can_be_set(self):
@@ -329,10 +474,14 @@ class ScriptedGameThroughRealCursesTest(unittest.TestCase):
     ncurses' own keypad handling, reaching the same key mapping and moving
     the player the same way.
 
-    The script is right, down-into-a-wall, right, right, right, down, an
-    unmapped key, then `q`. The player starts at (1, 1) on a board whose top
+    The script is right, an unmapped key, down-into-a-wall, right, right,
+    right, down, then `q`. The player starts at (1, 1) on a board whose top
     corridor runs east, so it ends at (2, 5) having eaten three of the four
     dots -- and the press towards the wall and the `z` both did nothing.
+
+    It also carries the two clauses WI-12 found nothing behind: SCRN-7's
+    hidden cursor and CTRL-5's echo, both read off the real terminal from
+    inside the real session.
     """
 
     def setUp(self):
@@ -363,11 +512,67 @@ class ScriptedGameThroughRealCursesTest(unittest.TestCase):
         self.assertTrue(PLAYED["returned"])
 
     def test_the_unmapped_key_did_not_quit_and_did_not_move_anything(self):
-        # CTRL-5: a `z` sits between the last arrow and the `q`. If it moved
-        # the player, the final square would be wrong; if it quit, the loop
-        # would have returned before the `q` was ever read.
+        """CTRL-5's first clause: an unmapped key does nothing.
+
+        The `z` is the **second** keystroke, immediately after the first
+        arrow. If it moved the player the final square would be wrong; if it
+        quit, the loop would have returned right there, at (1, 2) with a
+        score of 1.
+
+        It used to be second-to-last, and WI-12 found that the "did not quit"
+        half could not fail in that position: quitting at the `z` and
+        quitting at the `q` that followed it left every recorded field
+        byte-identical.
+        """
         self.assertEqual([2, 5], PLAYED["player"])
         self.assertEqual(3, PLAYED["score"])
+        self.assertEqual("PLAYING", PLAYED["outcome"])
+
+    def test_the_colours_the_theme_names_reach_the_real_terminal(self):
+        """SCRN-3, SCRN-4, SCRN-5, SCRN-6 — as bytes on a real terminal.
+
+        ``tests/test_theme.py`` asserts which colour the game asks for and
+        ``tests/test_screen_adapter.py`` asserts which colour reaches
+        ``init_pair``. This is the end of that chain: the escape sequence a
+        terminal actually receives. ``ESC [ 38 ; 5 ; n m`` is "foreground is
+        256-colour index n", which is what ncurses emits for a colour pair
+        whose background is ``-1``.
+
+        A test cannot say whether cyan *looks* cyan on the user's screen —
+        that is human check H6 — but it can say that the byte stream asks for
+        it, and nothing did before WI-13.
+        """
+        output = PLAYED["terminal_output"]
+        for colour, what in (
+            (33, "blue walls (SCRN-3)"),
+            (178, "gold dots (SCRN-4)"),
+            (226, "the bright yellow player (SCRN-5)"),
+            (213, "the pink ghost (SCRN-5)"),
+            (51, "the cyan status line (SCRN-6)"),
+        ):
+            self.assertIn(
+                b"\x1b[38;5;%dm" % colour,
+                output,
+                "the terminal was never asked for colour %d, %s"
+                % (colour, what),
+            )
+
+    def test_the_text_cursor_is_not_visible_while_the_game_is_running(self):
+        """SCRN-7's "the text cursor is never visible", at last.
+
+        Read back from inside the real session: ``curs_set`` returns the
+        previous visibility, so asking for "hidden" -- which the game has
+        already asked for -- hands back what the game left behind and changes
+        nothing. 0 is hidden; 1 and 2 are the two visible settings.
+
+        Before WI-13 the only test that claimed this asserted that the
+        *probe's own* ``curs_set(0)`` returned an int.
+        """
+        self.assertEqual(
+            0,
+            PLAYED["cursor_the_game_left_behind"],
+            "the game left the text cursor visible in the maze (SCRN-7)",
+        )
 
     def test_the_game_was_still_in_play_when_the_player_quit(self):
         # WI-9: the transitions are now the real ones, so the outcome is a
@@ -382,3 +587,69 @@ class ScriptedGameThroughRealCursesTest(unittest.TestCase):
         # the score kept up to date, through the whole stack. The leading
         # blank column is WI-3's STATUS_INDENT, assumption A3.
         self.assertEqual(" score 3    arrows, q quits", PLAYED["status"])
+
+
+@unittest.skipIf(ECHOED is None, "a pseudo-terminal could not be made here")
+class NothingTypedIsEchoedTest(unittest.TestCase):
+    """CTRL-5's second clause — *"nothing typed is echoed into the maze"*.
+
+    **Nothing in this project asserted this before WI-13.** WI-12 found that
+    the string "echo" did not occur anywhere in the suite;
+    ``curses.noecho()`` sat in :func:`termgame.screen.session` with a comment
+    naming CTRL-5 and nothing behind it, and ``ARCHITECTURE.md`` recorded the
+    clause as *measured* in a ``Screen.__enter__`` that has never existed.
+
+    Two things had to be got right for this to be a test rather than another
+    claim, and both are written up in ``docs/findings/WI-13-curses-echo.md``:
+
+    1. **The tty's own ECHO bit is the wrong thing to read.** ``initscr``
+       clears it unasked and ``curses.echo()`` never sets it back, so an
+       assertion on it passes whatever the game does. The first version of
+       this test read it, and breaking ``noecho`` on purpose is what caught
+       that.
+    2. **A painted screen hides the answer.** ncurses echoes in software at
+       wherever the cursor is; after a full repaint the cursor is parked on
+       the bottom-right cell, where C1's hazard swallows the echo. So this
+       enters the game's real ``session()`` and reads keys through the real
+       ``Screen.read_key`` with no painting in front of it, which is where
+       what ``session()`` establishes is visible.
+
+    The pty's own line-discipline echo is turned off before the keystrokes
+    are written, so a `z` reaching the terminal can only be the game's doing.
+    """
+
+    def setUp(self):
+        if "failed" in ECHOED:
+            self.fail("the echo probe did not run:\n%s" % ECHOED["failed"])
+        if "error" in ECHOED:
+            self.fail("the echo probe raised: %s" % ECHOED["error"])
+
+    def test_the_three_keystrokes_really_did_reach_the_game(self):
+        """The guard on the guard: an unread keystroke cannot be echoed.
+
+        If the probe read nothing, "no `z` came back" would be free.
+        """
+        self.assertEqual([ord("z")] * 3, ECHOED["keys"])
+        self.assertTrue(ECHOED["returned"])
+
+    def test_the_pty_was_not_echoing_on_its_own_account(self):
+        self.assertTrue(
+            ECHOED["line_discipline_echo_was_off"],
+            "the pty was echoing the keystrokes itself, so a `z` in the "
+            "output would not be the game's doing",
+        )
+
+    def test_the_terminal_output_was_captured_at_all(self):
+        # session() writes the terminfo entry/exit sequences whatever else
+        # happens, so an empty capture means the plumbing, not the game.
+        self.assertGreater(len(ECHOED["terminal_output"]), 0)
+
+    def test_nothing_typed_is_echoed_into_the_maze(self):
+        output = ECHOED["terminal_output"]
+        self.assertNotIn(
+            b"z",
+            output,
+            "the keystrokes the player typed were echoed back into the "
+            "window: `z` appears %d times in what the game wrote to the "
+            "terminal (CTRL-5)" % output.count(b"z"),
+        )
