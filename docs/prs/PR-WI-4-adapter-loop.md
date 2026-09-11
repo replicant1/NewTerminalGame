@@ -86,6 +86,37 @@ The hazard being re-measured matters as much as the guard being tested: if
 `addstr` there ever stopped raising, the guard would quietly become dead code
 and nobody would find out.
 
+## A whole scripted game, through real ncurses, with no fakes anywhere
+
+The same harness runs the real loop through the real adapter, driven by the
+bytes a real terminal really sends:
+
+```
+right, down-into-a-wall, right, right, right, down, z, q
+  -> the player (1,1) ends at (2,5), three of the four dots eaten,
+     and the loop returned
+```
+
+That is CTRL-1 (both axes), CTRL-3, CTRL-4, CTRL-5 and END-6 in one run of the
+real thing. Every other test of the loop drives it with a fake screen, which
+is the only way to assert what it does; this one shows the real thing agrees.
+
+Three things were learned making it work, and all three are in
+**`docs/findings/WI-4-curses-on-a-pty.md`** because WI-10 will want this
+harness and none of them gives an error message:
+
+1. **Arrow keys are `ESC O C`, not `ESC [ C`.** `keypad(True)` emits `smkx`,
+   which puts the terminal into *application cursor* mode. Feeding `ESC [ C`
+   to the pty returns `27, 91, 67` as three separate key codes and the arrows
+   look completely broken for a reason that has nothing to do with the game.
+   The test reads the four sequences out of terminfo so it cannot go stale.
+2. **The pty master must be drained while the child runs.** A full repaint is
+   bigger than a pty's buffer; without a reader thread the child blocks in
+   `write` and the probe hangs until its timeout with no output and no error.
+3. **Keystrokes can be queued before the child starts**, so there is no timing
+   to get right — and a driven game that has already been told how it ends
+   cannot be left blocking with no way to end it (plan §2.6, rule 4).
+
 ## Two things the two halves of M0 had to agree on
 
 **The style identifiers.** WI-3 owns the vocabulary and WI-4 paints it, and
@@ -147,6 +178,15 @@ asserted here against the stand-ins and is named in `loop.py`'s docstring.
 
 ## What needs a human
 
+- **The game has not been run in a real window by me, and I am not going to.**
+  `./play` opens a Terminal window whose game then waits for `q`, and I have no
+  way to press it: I have no controlling tty, and typing into another
+  application's window needs Accessibility, which this design deliberately
+  does not require. Closing that window while its process was still running
+  would raise the modal sheet that blocks every later AppleScript call. So the
+  live run is a person's, and what I did instead was drive the real adapter and
+  the real loop through real ncurses on a pseudo-terminal, where no window is
+  involved at all. **No Terminal window was opened by this work item.**
 - **H5 — no flicker while the ghost moves.** Perceptual; I cannot judge it and
   do not claim it. What I can say is what the design rests on: one `addstr`
   per cell and one `refresh`, with ncurses diffing its virtual screen against
@@ -159,12 +199,12 @@ asserted here against the stand-ins and is named in `loop.py`'s docstring.
 
 ```
 /usr/bin/python3 -m unittest discover -s tests
-Ran 368 tests in 6.980s
+Ran 373 tests in 7.029s
 OK (skipped=2)
 ```
 
 `main` stood at **258 / 2** after WI-3 merged. This branch merges `main` in —
-no conflicts; WI-3 touched no file of mine — adds 119 tests, and removes WI-2's
+no conflicts; WI-3 touched no file of mine — adds 124 tests, and removes WI-2's
 nine placeholder ones. The same 368 / 2 on `/opt/homebrew/bin/python3` 3.14.7,
 as the plan's cross-check.
 

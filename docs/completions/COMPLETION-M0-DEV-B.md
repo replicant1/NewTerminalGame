@@ -106,20 +106,27 @@ tested.
 
 ```
 /usr/bin/python3 -m unittest discover -s tests
-Ran 368 tests in 6.980s
+Ran 373 tests in 7.029s
 OK (skipped=2)
 ```
 
-The same 368 / 2 on `/opt/homebrew/bin/python3` 3.14.7, as the cross-check.
+The same 373 / 2 on `/opt/homebrew/bin/python3` 3.14.7, as the cross-check.
 The two skips are `tests/test_launch_smoke.py`, guarded on a controlling tty,
 exactly as WI-2 left them. `main` stood at **258 / 2** after WI-3; this branch
-adds 119 tests and removes WI-2's nine placeholder ones.
+adds 124 tests and removes WI-2's nine placeholder ones.
 
 Nothing in this branch opens a window when it runs. **No Terminal window was
 opened by this work item at all**, so the census is unchanged by construction.
 
 ### The two things worth keeping from it
 
+0. **A whole scripted game runs through real ncurses with no fakes** — right,
+   down-into-a-wall, right, right, right, down, an unmapped key, `q` — on a
+   pseudo-terminal, no window involved. `docs/findings/WI-4-curses-on-a-pty.md`
+   says how, including the one that costs an hour and shows nothing: **arrow
+   keys are `ESC O C`, not `ESC [ C`**, because `keypad(True)` puts the
+   terminal into application cursor mode. WI-10 can extend the same harness to
+   a full win and a full loss.
 1. **C1 is now measured rather than trusted.** `tests/test_curses_pty.py`
    runs the adapter against real ncurses on a real 40 × 30 pseudo-terminal:
    `addstr(29, 39, ch)` raises `addwstr() returned ERR`, `insstr` at the same

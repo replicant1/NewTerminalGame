@@ -27,3 +27,6 @@
 01:37:05Z  COMMIT  1ef1add WI-4: merge main WI-3, and the tests that only WI-3 being here makes possible
 01:39:56Z  NOTE    found: keypad(True) sends smkx, so a terminal in application-cursor mode sends ESC O C for right, not ESC [ C. Feeding ESC [ C to a pty gives back 27, 91, 67 as three separate codes and the arrows look broken. The scripted pty game now reads the four sequences out of terminfo
 01:40:00Z  TEST    373 passed, 0 failed, 2 skipped (whole suite with the scripted real-ncurses game added)
+01:40:41Z  COMMIT  f80cf0b WI-4: play a whole scripted game through real ncurses, and write up the how
+01:41:38Z  TEST    373 passed, 0 failed, 2 skipped on /opt/homebrew/bin/python3 3.14.7 — cross-check agrees exactly
+01:41:44Z  NOTE    no Terminal window opened by this work item at any point — the live run needs a person to press q, and typing into another app needs Accessibility which this design does not require. Real-ncurses coverage came from the pty instead
