@@ -96,7 +96,101 @@ with open(%(out)r, "w") as handle:
 '''
 
 
-def run_probe_on_a_pty():
+#: The real loop, driven by real arrow keys through real ncurses.
+#:
+#: The keys are written into the terminal *before* the child starts, so they
+#: are already in its input queue when ``getch`` first asks: no timing, no
+#: synchronisation, nothing to be flaky about.
+PLAY = r'''
+import curses, json, sys, time
+sys.path.insert(0, %(root)r)
+from termgame import maze as mazelib, screen as screen_module, standins
+from termgame.loop import run_loop
+from termgame.model import GameState, Outcome, Position, UP
+import random
+
+BOARD = "\n".join(["#######", "#.....#", "#.###.#", "#.....#", "#######"])
+maze = mazelib.from_text(BOARD)
+state = GameState(
+    maze=maze,
+    player=Position(1, 1),
+    ghost=Position(3, 5),
+    ghost_dir=UP,
+    dots=frozenset([Position(1, 2), Position(1, 3), Position(2, 5), Position(3, 1)]),
+    score=0,
+    outcome=Outcome.PLAYING,
+)
+result = {}
+try:
+    with screen_module.session() as scr:
+        final = run_loop(
+            scr,
+            state,
+            standins.render,
+            standins.move_player,
+            standins.move_ghost,
+            random.Random(0),
+            tick=1000.0,          # far away: this run is about the keys
+        )
+    result["player"] = list(final.player)
+    result["score"] = final.score
+    result["returned"] = True
+except Exception as error:
+    result["error"] = "%%s: %%s" %% (type(error).__name__, error)
+
+with open(%(out)r, "w") as handle:
+    json.dump(result, handle)
+'''
+
+def arrow_bytes():
+    """What a terminal really sends for the arrow keys, read off terminfo.
+
+    **Not** ``ESC [ C`` and friends. ``keypad(True)`` makes ncurses send
+    ``smkx``, which puts the terminal into *application cursor* mode, and from
+    then on it sends ``ESC O C``. Measured: feed ``ESC [ C`` to a pty and
+    ncurses hands back 27, 91, 67 as three separate key codes rather than
+    ``KEY_RIGHT``, and the arrows look broken for a reason that has nothing to
+    do with the game.
+
+    Reading the four sequences out of terminfo rather than typing them means
+    this cannot go stale against a different ``TERM``.
+    """
+    import curses
+
+    curses.setupterm("xterm-256color")
+    return dict(
+        (name, curses.tigetstr(capability))
+        for name, capability in (
+            ("up", "kcuu1"),
+            ("down", "kcud1"),
+            ("left", "kcub1"),
+            ("right", "kcuf1"),
+        )
+    )
+
+
+ARROWS = arrow_bytes()
+
+#: Right, **down into a wall**, right, right, right, down, an unmapped key,
+#: then `q`. Five requirements in one real run of the real thing.
+KEYSTROKES = (
+    ARROWS["right"]
+    + ARROWS["down"]     # (2, 2) is wall: CTRL-3, nothing happens
+    + ARROWS["right"]
+    + ARROWS["right"]
+    + ARROWS["right"]
+    + ARROWS["down"]     # (2, 5) is corridor, and holds a dot
+    + b"z"               # CTRL-5, nothing happens
+    + b"q"               # CTRL-4, END-6
+)
+
+
+def run_play_on_a_pty():
+    """Play a scripted game through real ncurses. ``None`` if impossible."""
+    return run_probe_on_a_pty(source=PLAY, keystrokes=KEYSTROKES)
+
+
+def run_probe_on_a_pty(source=None, keystrokes=b""):
     """Run the probe with a 40 x 30 pty for a terminal. ``None`` if impossible.
 
     **The master end has to be drained while the child runs.** A full 30 x 40
@@ -136,10 +230,15 @@ def run_probe_on_a_pty():
         environment["TERM"] = "xterm-256color"
         environment["LINES"] = str(LINES)
         environment["COLUMNS"] = str(COLUMNS)
-        source = PROBE % {"root": ROOT, "out": path}
+        text_source = (PROBE if source is None else source) % {
+            "root": ROOT,
+            "out": path,
+        }
+        if keystrokes:
+            os.write(master, keystrokes)
         reader.start()
         completed = subprocess.run(
-            [sys.executable, "-c", source],
+            [sys.executable, "-c", text_source],
             stdin=slave,
             stdout=slave,
             stderr=subprocess.PIPE,
@@ -160,14 +259,15 @@ def run_probe_on_a_pty():
             os.remove(path)
 
 
-def probe_once():
+def once(runner):
     try:
-        return run_probe_on_a_pty()
+        return runner()
     except (OSError, ImportError, subprocess.SubprocessError, ValueError):
         return None
 
 
-RESULT = probe_once()
+RESULT = once(run_probe_on_a_pty)
+PLAYED = once(run_play_on_a_pty)
 
 
 @unittest.skipIf(RESULT is None, "a pseudo-terminal could not be made here")
@@ -211,3 +311,54 @@ class RealCursesTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+@unittest.skipIf(PLAYED is None, "a pseudo-terminal could not be made here")
+class ScriptedGameThroughRealCursesTest(unittest.TestCase):
+    """The loop, the adapter and ncurses together, with no fakes anywhere.
+
+    Every other test of the loop drives it with a fake screen, which is the
+    only way to assert what it does. This one asserts that the real thing
+    agrees: real escape sequences arriving at a real terminal, decoded by
+    ncurses' own keypad handling, reaching the same key mapping and moving
+    the player the same way.
+
+    The script is right, down-into-a-wall, right, right, right, down, an
+    unmapped key, then `q`. The player starts at (1, 1) on a board whose top
+    corridor runs east, so it ends at (2, 5) having eaten three of the four
+    dots -- and the press towards the wall and the `z` both did nothing.
+    """
+
+    def setUp(self):
+        if PLAYED is not None and "failed" in PLAYED:
+            self.fail("the scripted game did not run:\n%s" % PLAYED["failed"])
+        if PLAYED is not None and "error" in PLAYED:
+            self.fail("the scripted game raised: %s" % PLAYED["error"])
+
+    def test_the_arrow_keys_moved_the_player_through_real_ncurses(self):
+        # CTRL-1, end to end: the bytes a terminal really sends for an arrow
+        # key, through keypad(True), through the key mapping, to a move. Both
+        # axes, so a mapping that sent everything one way would be caught.
+        self.assertEqual([2, 5], PLAYED["player"])
+
+    def test_the_dots_along_the_way_were_eaten(self):
+        self.assertEqual(3, PLAYED["score"])
+
+    def test_the_press_towards_a_wall_did_nothing_at_all(self):
+        # CTRL-3. The second key is a down arrow with a wall below; had it
+        # moved, the player would have ended somewhere else entirely, and had
+        # it been swallowed, the fourth dot would be gone too.
+        self.assertEqual([2, 5], PLAYED["player"])
+        self.assertEqual(3, PLAYED["score"])
+
+    def test_q_returned_from_the_loop(self):
+        # CTRL-4 and END-6 against the real thing. If it had not returned,
+        # the probe would have hit its timeout and reported nothing at all.
+        self.assertTrue(PLAYED["returned"])
+
+    def test_the_unmapped_key_did_not_quit_and_did_not_move_anything(self):
+        # CTRL-5: a `z` sits between the last arrow and the `q`. If it moved
+        # the player, the final square would be wrong; if it quit, the loop
+        # would have returned before the `q` was ever read.
+        self.assertEqual([2, 5], PLAYED["player"])
+        self.assertEqual(3, PLAYED["score"])

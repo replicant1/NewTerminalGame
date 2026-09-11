@@ -24,3 +24,6 @@
 01:34:34Z  NOTE    draft PR 7 open against main; merging main in now that WI-3 has landed
 01:36:05Z  TEST    368 passed, 0 failed, 2 skipped (whole suite, after merging main with WI-3, /usr/bin/python3 3.9.6)
 01:36:09Z  TEST    368 passed, 0 failed, 2 skipped on /opt/homebrew/bin/python3 3.14.7 too — the cross-check agrees
+01:37:05Z  COMMIT  1ef1add WI-4: merge main WI-3, and the tests that only WI-3 being here makes possible
+01:39:56Z  NOTE    found: keypad(True) sends smkx, so a terminal in application-cursor mode sends ESC O C for right, not ESC [ C. Feeding ESC [ C to a pty gives back 27, 91, 67 as three separate codes and the arrows look broken. The scripted pty game now reads the four sequences out of terminfo
+01:40:00Z  TEST    373 passed, 0 failed, 2 skipped (whole suite with the scripted real-ncurses game added)
