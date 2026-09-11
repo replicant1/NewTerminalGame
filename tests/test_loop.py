@@ -544,11 +544,10 @@ class TheRendererTheLoopDrawsWithTest(unittest.TestCase):
         # written. If it comes back, the loop has grown a second renderer.
         self.assertFalse(hasattr(loop, "resolve_render"))
 
-    def test_the_stand_ins_are_gone(self):
-        import importlib
-
-        with self.assertRaises(ImportError):
-            importlib.import_module("termgame.standins")
+    # The stand-ins themselves are checked for by
+    # tests/test_scripted_game.py's TheStandInsAreGoneTest, which also
+    # checks the file is off disk. Asserting it twice would only mean two
+    # places to update.
 
     def test_the_picture_the_loop_paints_is_the_size_of_the_window(self):
         import random as random_module
