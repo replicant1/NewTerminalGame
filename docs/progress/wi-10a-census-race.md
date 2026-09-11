@@ -14,3 +14,9 @@
 04:21:16Z  PLAN    WI-10a add the test that carries the weight (census survives a window vanishing mid-census, driven through visible_window_ids with a fake run_osascript that raises the measured -1719 for a loop-shaped script) plus a parse test over the three measured output shapes
 04:22:41Z  TEST    749 passed, 0 failed, 2 skipped (3 new tests in tests/test_window_supervisor.py)
 04:22:41Z  NOTE    WI-10a discrimination check: with script_visible_window_ids swapped back to the old repeat-loop text, visible_window_ids() raises the measured -1719 WindowError against the same fake the new test passes against. The behavioural test tells the two apart.
+04:23:14Z  COMMIT  d5acdf7 WI-10a: test the census against a Terminal that is losing a window (pushed)
+04:23:14Z  PLAN    WI-10a live verification next: open one window, capture its id at creation, let its child exit and confirm, census across the close with BOTH script forms, then close by the captured id and reap. Full census before and after.
+04:24:16Z  NOTE    WI-10a starting live check: opens up to 4 windows one at a time, each with a 2s sh child, each closed by its captured id after the child is confirmed exited
+04:24:43Z  NOTE    WI-10a live check PASSED, exit 0. 4 windows opened and reaped, each closed by its captured id after wait_until_idle confirmed the child exited. Visible census before [367, 2486] == after [367, 2486]; no user window went missing. All-ids grew to include 4632, the lingering-invisible closed id WI-2 measured.
+04:24:43Z  NOTE    WI-10a HONEST LIMIT: the old repeat-loop census did NOT fail in these 4 rounds. It is a race; WI-10 hit it, I did not reproduce it live. What I could prove live is that the new census agrees with the old one every round and reconciles across every close.
+04:26:02Z  TEST    749 passed, 0 failed, 2 skipped (final) -- /usr/bin/python3 -m unittest discover -s tests
