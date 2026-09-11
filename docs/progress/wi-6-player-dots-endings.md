@@ -13,3 +13,4 @@
 02:36:50Z  NOTE    PR body finalised with suite counts and the test table
 02:37:12Z  TEST    final whole-suite run before reporting: Ran 515 tests ... OK (skipped=2) — 0 failed
 02:37:12Z  DONE    WI-6 wi-6-player-dots-endings
+02:37:50Z  DONE    WI-6 wi-6-player-dots-endings b7877d4 (head at the moment of this line; this log commit follows it) — PR #10 ready for review
