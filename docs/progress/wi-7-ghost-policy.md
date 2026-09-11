@@ -15,3 +15,5 @@
 02:43:05Z  TEST    567 passed, 0 failed, 2 skipped (whole suite, post-merge) — main's 515 plus my 52
 02:43:19Z  COMMIT  c7810d1 WI-7: merge origin/main (WI-6) — the shared-module conflict, resolved
 02:44:49Z  TEST    567 passed, 0 failed, 2 skipped (whole suite, final)
+02:44:59Z  COMMIT  5baa02d WI-7: PR body and the finding behind the GHOST-4 board
+02:45:01Z  DONE    WI-7 wi-7-ghost-policy — GHOST-4 test present and passing; PR #11 ready for review, not merged
