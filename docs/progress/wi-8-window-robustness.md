@@ -7,3 +7,5 @@
 01:46:19Z  WI-8 READ    tests/test_window_supervisor.py, tests/test_launch_smoke.py, play, Terminal Game
 01:49:39Z  WI-8 TEST    373 passed, 0 failed, 2 skipped (baseline on origin/main, before any change)
 01:49:39Z  WI-8 PLAN    harden window.py's failure paths (tolerant reference query, gone-window tolerance, signal-driven interrupt close, visible-confirmed close, an unmaskable finally), add a ./launch-smoke one-command executable, and a failure-path test module whose recording fake forbids `front window` / a title / an index on EVERY path
+01:52:03Z  WI-8 TEST    373 passed, 0 failed, 2 skipped (window.py hardened, no new tests yet)
+01:52:03Z  WI-8 COMMIT  87e048c WI-8: the failure paths harden — tolerant reference query, a gone window, signals, and a close confirmed by visible
