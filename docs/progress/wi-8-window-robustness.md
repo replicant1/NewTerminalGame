@@ -33,3 +33,10 @@
 02:19:13Z  WI-8 NOTE    no osascript call errored, timed out, or hung at any point on this branch. No modal sheet was raised. No window this branch opened is still open.
 02:21:22Z  WI-8 TEST    443 passed, 0 failed, 2 skipped (whole suite, pinned command)
 02:21:22Z  WI-8 SMOKE   ./launch-smoke --repeat 2 — THIRD live attempt, after the displays() reporting change: PASS, PASS. Windows 4248 and 4251. Census [367, 2486] before and after BOTH runs. Title settled in 0.8s then 0.4s. Window landed at (-868, 106) = reference + 30 on the reference's own display, so the real layout was read and no fallback line was printed — the earlier silent fallback was transient, which is exactly why it needed to become audible.
+02:23:53Z  WI-8 NOTE    merged origin/main (0c4b93f, WI-5) — CLEAN, no conflict. WI-5 added termgame/rules.py and tests/test_rules_start.py, neither of which I touch.
+02:23:53Z  WI-8 TEST    479 passed, 0 failed, 2 skipped (whole suite after the merge — 409 on main + 70 mine)
+02:23:53Z  WI-8 NOTE    my PR diff against origin/main contains NO orchestration/ changes. index.html arrived via the merge FROM main, not from me; I have not touched it.
+02:23:53Z  WI-8 COMMIT  bf97cc9 WI-8: the title has to settle, the report must not contradict itself, and a silent display fallback becomes audible
+02:23:53Z  WI-8 NOTE    wrote docs/findings/WI-8-close-grace-timeout.md and docs/findings/WI-8-title-settling-race.md
+02:25:19Z  WI-8 TEST    479 passed, 0 failed, 2 skipped (whole suite, final)
+02:25:19Z  WI-8 NOTE    PR body written to docs/prs/PR-WI-8-window-robustness.md
