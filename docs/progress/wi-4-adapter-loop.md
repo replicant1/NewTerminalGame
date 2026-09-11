@@ -19,3 +19,4 @@
 01:31:59Z  NOTE    lead reports WI-3 merged to main at 258/0/2; will merge origin/main after the pty probe is settled
 01:32:25Z  NOTE    pty probe green against real ncurses: addstr at (29,39) gives "addwstr() returned ERR", insstr does not, full 30x40 paint clean, and the screen reads back identical including the corner cell. C1 measured, not assumed
 01:32:48Z  TEST    290 passed, 0 failed, 3 skipped (whole suite, branch before merging main)
+01:33:06Z  COMMIT  344cf5f WI-4: the loop driven by a fake screen, and the adapter measured on a real pty
