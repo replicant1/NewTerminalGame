@@ -16,3 +16,6 @@
 01:24:35Z  ASK     SCRN-5 gives each entity three characters on a two-column pitch, so two entities on horizontally adjacent corridor cells must share one picture column; the spec never draws that case and does not say what should happen
 01:24:41Z  ASSUME  proceeding with the draw order the plan specifies — the ghost is last, so the ghost keeps the shared column and the player loses its right-hand edge for that one frame. Affects only view.draw_entity and TestTwoEntitiesSideBySide in tests/test_view.py; a ruling either way is a few lines
 01:25:57Z  NOTE    WI-3 PR summary written to docs/prs/PR-WI-3-glyphs-picture.md
+01:26:27Z  NOTE    WI-3 draft PR #6 opened against main
+01:27:08Z  TEST    cross-check on /opt/homebrew/bin/python3 (3.14.7): Ran 258 tests ... OK (skipped=2) — 258 passed, 0 failed, 2 skipped
+01:27:14Z  DONE    WI-3 wi-3-glyphs-picture (head after this commit); draft PR #6 to be marked ready, suite 258 passed 0 failed 2 skipped on both interpreters
