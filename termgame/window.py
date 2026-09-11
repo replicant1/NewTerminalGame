@@ -1026,6 +1026,7 @@ def supervise(
     report=None,
     close_grace=None,
     on_window_opened=None,
+    on_window_ready=None,
 ):
     """The whole of ``./play``: WIN-1..5, in order.
 
@@ -1033,11 +1034,18 @@ def supervise(
     the settings, positions it, waits for the game to end, and closes that
     window by that id -- on the failure path, and on the interrupt path, too.
 
-    *on_window_opened*, when given, is handed the window id the instant it is
-    captured and before anything is done with it. It exists so that a caller
-    which is not watching stderr -- the launch smoke -- learns the id from the
-    supervisor itself rather than by enumerating Terminal's windows and
-    guessing which one is new.
+    Two optional hooks exist for the launch smoke, and both are there for the
+    same reason: a caller must be able to learn about *our* window from the
+    supervisor itself, never by enumerating Terminal's windows and guessing
+    which one is new.
+
+    * *on_window_opened* is handed the id the instant it is captured, before
+      anything at all has been done with it. That is the earliest a caller
+      could know which window to clean up, which is exactly when it needs to.
+    * *on_window_ready* is handed the same id once the window has been sized,
+      titled and positioned. A caller reading the title or the tab size back
+      must wait for this: between the two hooks the tab is still whatever
+      Terminal opened it as, which is not 40 x 30.
 
     Returns 0, or ``INTERRUPTED_EXIT_STATUS`` if a signal ended the game
     rather than the player.
@@ -1066,6 +1074,8 @@ def supervise(
                 "game window %d at %s (reference %s from %s)"
                 % (window_id, target, reference, source)
             )
+            if on_window_ready is not None:
+                on_window_ready(window_id)
             game_ended = wait_until_idle(window_id, timeout=None)
         except SupervisorInterrupted as error:
             report(

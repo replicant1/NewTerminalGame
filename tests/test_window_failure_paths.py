@@ -173,7 +173,7 @@ class RecordingTerminal(object):
         tty_position="none",
         front_position="10 20",
         states=None,
-        visible_after_close="false",
+        visible_after_close=None,
         window_name="Terminal Game",
         geometry="40 30 Menlo-Regular 18",
         new_window_id=NEW_WINDOW_ID,
@@ -241,7 +241,14 @@ class RecordingTerminal(object):
         if kind == "close":
             return self._close()
         if kind == "visible":
-            return self.visible_after_close
+            # Derived from the census unless a test pins it, so that "is the
+            # window still there?" and "what does the screen hold?" cannot
+            # disagree inside the fake. A fake that let them disagree hid a
+            # real defect once already: the smoke's clean-up believed the
+            # window had gone while the census still listed it.
+            if self.visible_after_close is not None:
+                return self.visible_after_close
+            return "true" if self.new_window_id in self.census else "false"
         if kind == "name":
             return self.window_name
         if kind == "geometry":

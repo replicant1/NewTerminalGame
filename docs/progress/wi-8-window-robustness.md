@@ -16,3 +16,6 @@
 01:58:37Z  WI-8 NOTE    the rule-1 check is an ALLOWLIST, not a denylist: every occurrence of the word `window` in every script on every path must be one of `first window whose id is N`, `first window whose tabs contains newTab`, `repeat with w in windows`, or the WIN-3 title component `title displays window size`
 01:58:37Z  WI-8 NOTE    added window._sleep / window._now indirections so a test can watch the 10s grace elapse without spending 10s, and without mutating the stdlib time module for the whole process
 01:58:37Z  WI-8 TEST    34 passed, 1 failed, 0 skipped (failure-path module alone; the signal scenario's fake was modelling the wrong tab state — fixing)
+01:59:31Z  WI-8 TEST    409 passed, 0 failed, 2 skipped (whole suite, pinned command — 373 at the branch point + 36 new)
+01:59:31Z  WI-8 COMMIT  66e681e WI-8: every failure path, and the never-touch-a-window-you-did-not-open regression test
+01:59:31Z  WI-8 PLAN    next: ./launch-smoke, the one-command smoke — supervise() on a worker thread against a self-exiting child named `Terminal Game` in a temp dir, with the captured id arriving via on_window_opened, never by enumerating windows
