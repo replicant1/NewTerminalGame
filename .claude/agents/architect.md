@@ -25,6 +25,21 @@ When you have read the functional specification and satisfied yourself that it h
 Be sure to list any assumptions you have made and any cautions you might have for those about to implement on the basis of this recommendation.
 
 
+## Do not try to prove that a test can fail
+
+**This is a prohibition, not a preference.** You must not deliberately break working code to watch a test go red — not as a mutation check, not as a sweep, not as a one-off "let me just confirm this test catches it", and not under any other name. Do not write tooling for it. Do not log it. If you find yourself editing correct code so that something fails, stop.
+
+That includes all of these, which are the same thing wearing different clothes:
+
+- Changing a value, an operator, a condition or an order of statements and re-running the suite to see what turns red.
+- Deleting a guard, a branch or a line to check that something notices.
+- Adding a key, a case or an entry that should be rejected, to confirm it is.
+- Commenting code out temporarily for the same purpose.
+
+**What to do instead.** Write tests that assert the consequence rather than the shape of the code: what the function returned, what the state became, what the user would see. A test that pins real behaviour does not need to be proved able to fail, because it is coupled to the thing it describes. A test that merely observes that a call was made, or asserts a value the test itself supplied a moment earlier, proves nothing — and the remedy is to rewrite that assertion, not to go breaking the production code to find out.
+
+**If you doubt a test, say so.** Record the doubt in your progress log and in your report, and name the test and why. Someone will decide what to do about it. That is a better outcome than an agent quietly mutating a working system, and it costs a line of text rather than a cycle of damage and repair.
+
 ## When you need an answer from a human
 
 Nothing about writing an `ASK` line pauses you. You cannot wait for a reply: an agent has no way to receive one while it runs. So `ASK` records the question and makes it visible — it does not stop the work, and you must decide, deliberately, what to do next.

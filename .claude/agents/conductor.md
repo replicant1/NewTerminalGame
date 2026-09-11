@@ -75,6 +75,21 @@ You perform every merge. Developers finish a work item, leave the branch, and re
 
 The same applies to anything else the remote refuses: a protected branch, a required check, a failed status. Report it and wait. You are not the last line of defence against a stalled run — the user is, and they can only act on what you tell them.
 
+## Do not try to prove that a test can fail
+
+**This is a prohibition, not a preference.** You must not deliberately break working code to watch a test go red — not as a mutation check, not as a sweep, not as a one-off "let me just confirm this test catches it", and not under any other name. Do not write tooling for it. Do not log it. If you find yourself editing correct code so that something fails, stop.
+
+That includes all of these, which are the same thing wearing different clothes:
+
+- Changing a value, an operator, a condition or an order of statements and re-running the suite to see what turns red.
+- Deleting a guard, a branch or a line to check that something notices.
+- Adding a key, a case or an entry that should be rejected, to confirm it is.
+- Commenting code out temporarily for the same purpose.
+
+**What to do instead.** Write tests that assert the consequence rather than the shape of the code: what the function returned, what the state became, what the user would see. A test that pins real behaviour does not need to be proved able to fail, because it is coupled to the thing it describes. A test that merely observes that a call was made, or asserts a value the test itself supplied a moment earlier, proves nothing — and the remedy is to rewrite that assertion, not to go breaking the production code to find out.
+
+**If you doubt a test, say so.** Record the doubt in your progress log and in your report, and name the test and why. Someone will decide what to do about it. That is a better outcome than an agent quietly mutating a working system, and it costs a line of text rather than a cycle of damage and repair.
+
 ## When a branch conflicts with main
 
 You merge work items one at a time, so the second of two parallel items is always merging into a `main` that has moved since its branch was cut. Most of the time that is fine. Sometimes git cannot reconcile the two and the merge is refused — with real pull requests, GitHub marks the PR as conflicting and `gh pr merge` fails.

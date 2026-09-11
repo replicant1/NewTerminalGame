@@ -103,13 +103,20 @@ So the order is always: let the child exit (wait for a done-file, or a process y
 
 **Clean up on the way out, including on failure.** If your work item ends early — blocked, timed out, or you were interrupted — close whatever you opened first. A window left behind is a window the user has to deal with, and after `close` Terminal keeps a stale window object, so verify with `visible`, not `exists`.
 
-## Proving that tests can fail is not part of this workflow
+## Do not try to prove that a test can fail
 
-You are not asked to run mutation sweeps, to write a `.mutations.json`, or to demonstrate that each new test fails against deliberately broken code. Write tests that cover the work item, make sure the suite is green, and move on.
+**This is a prohibition, not a preference.** You must not deliberately break working code to watch a test go red — not as a mutation check, not as a sweep, not as a one-off "let me just confirm this test catches it", and not under any other name. Do not write tooling for it. Do not log it. If you find yourself editing correct code so that something fails, stop.
 
-This is a deliberate decision by the user, not an oversight, and it is worth knowing why so that nobody quietly reinstates it: the practice does find hollow tests, but a technical lead once invented the rule unasked, it propagated into the architecture and into these instructions, and the cost was being paid on every work item without anyone having chosen it. If you think a particular requirement is fragile enough to warrant it — the kind where correctness lives in the order of two statements — say so in your PR summary and let the technical lead decide. Do not run one on your own initiative.
+That includes all of these, which are the same thing wearing different clothes:
 
-What has not changed: a test that cannot fail is still worthless, so write assertions that pin the actual behaviour rather than the shape of the code. Assert the consequence, not that a call was made.
+- Changing a value, an operator, a condition or an order of statements and re-running the suite to see what turns red.
+- Deleting a guard, a branch or a line to check that something notices.
+- Adding a key, a case or an entry that should be rejected, to confirm it is.
+- Commenting code out temporarily for the same purpose.
+
+**What to do instead.** Write tests that assert the consequence rather than the shape of the code: what the function returned, what the state became, what the user would see. A test that pins real behaviour does not need to be proved able to fail, because it is coupled to the thing it describes. A test that merely observes that a call was made, or asserts a value the test itself supplied a moment earlier, proves nothing — and the remedy is to rewrite that assertion, not to go breaking the production code to find out.
+
+**If you doubt a test, say so.** Record the doubt in your progress log and in your report, and name the test and why. Someone will decide what to do about it. That is a better outcome than an agent quietly mutating a working system, and it costs a line of text rather than a cycle of damage and repair.
 
 ## Where documents go, and what they are called
 
@@ -170,7 +177,6 @@ Append one line — a line, not a paragraph — at each of these moments and no 
 - `START   <work-item>` — you have begun it
 - `PLAN    <one sentence>` — what you intend to build, written before you build it
 - `TEST    <n> passed, <n> failed, <n> skipped` — after every suite run
-- `MUTATE  <the change you made> -> <red | GREEN, WHICH IS A DEFECT>` — each mutation check
 - `COMMIT  <sha> <subject>` — after each commit
 - `BLOCKED <what you need, and who you need it from>` — the moment you are stuck, not after you have worked around it
 - `ASSUME  <which way you are proceeding, and what depends on it>` — always straight after an `ASK`

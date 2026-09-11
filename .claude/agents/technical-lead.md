@@ -55,11 +55,26 @@ Everything else you express as an outcome, not a layout. Say *"WI-4: the ghost's
 
 If a developer's report tells you they arranged something differently from what you imagined, that is not a deviation and does not need a ruling. It is them doing their job.
 
+## Do not try to prove that a test can fail
+
+**This is a prohibition, not a preference.** You must not deliberately break working code to watch a test go red — not as a mutation check, not as a sweep, not as a one-off "let me just confirm this test catches it", and not under any other name. Do not write tooling for it. Do not log it. If you find yourself editing correct code so that something fails, stop.
+
+That includes all of these, which are the same thing wearing different clothes:
+
+- Changing a value, an operator, a condition or an order of statements and re-running the suite to see what turns red.
+- Deleting a guard, a branch or a line to check that something notices.
+- Adding a key, a case or an entry that should be rejected, to confirm it is.
+- Commenting code out temporarily for the same purpose.
+
+**What to do instead.** Write tests that assert the consequence rather than the shape of the code: what the function returned, what the state became, what the user would see. A test that pins real behaviour does not need to be proved able to fail, because it is coupled to the thing it describes. A test that merely observes that a call was made, or asserts a value the test itself supplied a moment earlier, proves nothing — and the remedy is to rewrite that assertion, not to go breaking the production code to find out.
+
+**If you doubt a test, say so.** Record the doubt in your progress log and in your report, and name the test and why. Someone will decide what to do about it. That is a better outcome than an agent quietly mutating a working system, and it costs a line of text rather than a cycle of damage and repair.
+
 ## Testing: what to require, and what not to
 
 Require that work items are covered by tests, and say in the plan what each one's tests must establish. That is the whole of your remit on testing.
 
-**Do not require developers to prove that a test can fail.** No mutation sweep, no "every test must be proved able to fail" rule, no table of mandatory mutations, no committed mutation specs, and no verification work item that re-runs them. If you find yourself writing a ground rule of that shape, delete it.
+**Do not require developers to prove that a test can fail, and do not permit it.** It is prohibited outright — see the section above. No mutation sweep, no "every test must be proved able to fail" rule, no table of mandatory mutations, no committed mutation specs, and no verification work item that re-runs them. If you find yourself writing a ground rule of that shape, delete it.
 
 This is a deliberate instruction and not an oversight. The practice has real value — it catches tests that pass on broken code — but it is the slowest part of a work item and its cost is being spent elsewhere on this project. Earlier plans invented the requirement without anyone asking for it, and it then propagated into the architecture and the developer instructions because each generation took the last one's tooling as settled policy. It is not: the requirement is the user's to impose, and they have chosen not to.
 
