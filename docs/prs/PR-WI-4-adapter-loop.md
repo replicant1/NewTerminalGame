@@ -186,7 +186,9 @@ asserted here against the stand-ins and is named in `loop.py`'s docstring.
   would raise the modal sheet that blocks every later AppleScript call. So the
   live run is a person's, and what I did instead was drive the real adapter and
   the real loop through real ncurses on a pseudo-terminal, where no window is
-  involved at all. **No Terminal window was opened by this work item.**
+  involved at all. **No Terminal window was opened by this work item.** The
+  census, read-only, before and after: visible `[367, 2486]`, full
+  `[367, 2420, 2440, 2486]` — identical to what WI-2 reported and left.
 - **H5 — no flicker while the ghost moves.** Perceptual; I cannot judge it and
   do not claim it. What I can say is what the design rests on: one `addstr`
   per cell and one `refresh`, with ncurses diffing its virtual screen against
