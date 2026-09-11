@@ -1,0 +1,1242 @@
+#!/usr/bin/python3
+"""``./verify`` -- everything about this game that a machine can check, in one
+command.
+
+    ./verify                 the three stages below
+    ./verify --corner        and the real-window measurement as a fourth
+    ./verify --only play     just one stage, by its short name
+    ./verify --list          the stages, their short names, and what each proves
+
+Three stages run by default, in this order, cheapest first:
+
+=========  ==========================================================
+``suite``  the whole test suite, at the one pinned command:
+           ``/usr/bin/python3 -m unittest discover -s tests``
+``smoke``  ``./launch-smoke`` -- WI-8's one-command launch smoke, run as
+           the separate program it is. **It opens a real Terminal window
+           on the screen** and closes it again.
+``play``   three scripted play-throughs that drive the real loop with a
+           fake screen and a fake clock, through the real rules and the
+           real renderer, and compare the **final picture** with a
+           recorded one, character for character.
+=========  ==========================================================
+
+**A harness that cannot say what broke is not a harness.** Every stage has a
+name, a one-line statement of what it proves, and its own captured output, and
+a failure prints all three under a banner that says which stage of how many
+failed. Nothing here reports "verification failed" and leaves you to guess.
+
+**What it deliberately does not do.** It cannot press a key, see the screen, or
+know which window a person was looking at -- no agent in this project has a
+controlling tty. Six things therefore remain a person's, and they are packaged
+one step each in ``docs/findings/WI-10-human-checks.md``. ``./verify`` passing
+is not the same as the game being right; it is the half of "right" that can be
+re-checked in eleven seconds.
+
+**The window rules (implementation plan §2.6) apply to two of these stages.**
+``smoke`` is a separate program and looks after its own window. ``corner``
+opens one here: it captures the id from the supervisor at the instant the
+window is created, addresses that id and no other, lets the child exit by
+itself, confirms it has gone with ``visible`` rather than ``exists``, and reaps
+it in a ``finally`` even when the stage fails. It never closes a busy tab --
+Terminal's modal confirmation sheet can only be dismissed by a human, and while
+it is up it blocks every AppleScript call in the system.
+"""
+
+import argparse
+import json
+import os
+import shutil
+import subprocess
+import sys
+import tempfile
+import threading
+import time
+
+REPO_ROOT = os.path.dirname(os.path.realpath(__file__))
+if REPO_ROOT not in sys.path:
+    sys.path.insert(0, REPO_ROOT)
+
+from termgame import controls, maze as mazelib, rules, theme, view, window
+from termgame.loop import run_loop
+from termgame.model import (
+    LEFT,
+    UP,
+    GameState,
+    Outcome,
+    Position,
+    SCREEN_COLS,
+    SCREEN_ROWS,
+)
+from termgame.ticker import GHOST_TICK_SECONDS
+
+#: The one pinned test command (implementation plan §2.2). Written out in full
+#: rather than assembled, so that what this runs is the string a person can
+#: read here and type themselves.
+TEST_COMMAND = ("/usr/bin/python3", "-m", "unittest", "discover", "-s", "tests")
+
+#: WI-8's launch smoke, run as the separate program it is rather than
+#: re-implemented. It is the only thing in this project that opens a real
+#: window and proves it closed, and there should be exactly one of those.
+SMOKE_COMMAND = ("./launch-smoke",)
+
+#: Where the recorded final pictures live. ``tests/fixtures`` is the sanctioned
+#: home for data files (§2.3) and these are data: thirty lines of forty
+#: characters, one file per play-through.
+FIXTURES = os.path.join(REPO_ROOT, "tests", "fixtures")
+
+#: How long any one stage's subprocess is given. The suite takes about twelve
+#: seconds and the smoke about ten; five minutes is far beyond either and is
+#: here only so that a wedged stage ends as a failure with a name on it rather
+#: than as a command that never returns.
+STAGE_TIMEOUT_SECONDS = 300.0
+
+#: How long the corner stage's whole window sequence is given, including the
+#: child. The same reasoning as ``launch-smoke``'s ``SMOKE_SECONDS``: it can
+#: only expire if something is genuinely wedged, which on this API almost
+#: always means a modal sheet is blocking AppleScript.
+CORNER_SECONDS = 60.0
+
+#: How long the corner stage waits for a child to go away before giving up and
+#: leaving its window open. The same number as the launcher's, deliberately:
+#: nothing here should be more patient or more forceful than ``./play``.
+CORNER_CLEANUP_SECONDS = window.CLOSE_GRACE_SECONDS
+
+
+# ==========================================================================
+# A stage, and its result
+# ==========================================================================
+
+
+class StageResult(object):
+    """What one stage did. ``detail`` is the sentence a failure is read by."""
+
+    def __init__(self, name, proves, ok, detail="", output="", seconds=0.0):
+        self.name = name
+        self.proves = proves
+        self.ok = bool(ok)
+        self.detail = detail
+        self.output = output
+        self.seconds = seconds
+
+    def __str__(self):
+        return "%s %s" % ("ok  " if self.ok else "FAIL", self.name)
+
+
+class Stage(object):
+    """A named step of the verification.
+
+    ``short`` is what ``--only`` takes, ``name`` is what a failure is announced
+    by, and ``proves`` is the one line that tells somebody who has never read
+    this file what it was for.
+    """
+
+    def __init__(self, short, name, proves, run, opens_a_window=False):
+        self.short = short
+        self.name = name
+        self.proves = proves
+        self.run = run
+        self.opens_a_window = opens_a_window
+
+
+def run_command(command, cwd, timeout=STAGE_TIMEOUT_SECONDS):
+    """Run a command and hand back ``(status, combined output)``.
+
+    stderr is folded into stdout because the point of capturing it at all is to
+    print it under a failure banner, and two streams printed one after the
+    other put a traceback's cause after its effect.
+    """
+    try:
+        completed = subprocess.run(
+            list(command),
+            cwd=cwd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            timeout=timeout,
+        )
+    except subprocess.TimeoutExpired as expired:
+        partial = expired.output or b""
+        return None, partial.decode("utf-8", "replace")
+    except OSError as error:
+        return None, "could not run %s: %s" % (" ".join(command), error)
+    return completed.returncode, completed.stdout.decode("utf-8", "replace")
+
+
+# ==========================================================================
+# Stage 1 -- the whole test suite
+# ==========================================================================
+
+
+def stage_the_test_suite(root=REPO_ROOT, run=None):
+    """Run the pinned command and read its own summary line back."""
+    runner = run_command if run is None else run
+    began = time.time()
+    status, output = runner(TEST_COMMAND, root)
+    seconds = time.time() - began
+    if status is None:
+        return StageResult(
+            SUITE_NAME,
+            SUITE_PROVES,
+            False,
+            "the test command did not complete: %s"
+            % (first_line(output) or "no output"),
+            output,
+            seconds,
+        )
+    if status != 0:
+        return StageResult(
+            SUITE_NAME,
+            SUITE_PROVES,
+            False,
+            "%s exited %d -- %s"
+            % (" ".join(TEST_COMMAND), status, summary_of_a_unittest_run(output)),
+            output,
+            seconds,
+        )
+    return StageResult(
+        SUITE_NAME,
+        SUITE_PROVES,
+        True,
+        summary_of_a_unittest_run(output),
+        output,
+        seconds,
+    )
+
+
+def summary_of_a_unittest_run(output):
+    """``unittest``'s own two summary lines, joined, or a note that there are
+    none.
+
+    Quoted verbatim rather than re-counted, because the plan requires the
+    counts reported to be the ones that command printed and no others.
+    """
+    interesting = []
+    for line in output.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("Ran ") or stripped.startswith("OK"):
+            interesting.append(stripped)
+        elif stripped.startswith("FAILED"):
+            interesting.append(stripped)
+    if not interesting:
+        return "the run printed no summary line"
+    return "; ".join(interesting)
+
+
+def first_line(text):
+    for line in text.splitlines():
+        if line.strip():
+            return line.strip()
+    return ""
+
+
+SUITE_NAME = "the test suite"
+SUITE_PROVES = (
+    "every unit test in tests/ passes at the one pinned command, "
+    "/usr/bin/python3 -m unittest discover -s tests"
+)
+
+
+# ==========================================================================
+# Stage 2 -- WI-8's launch smoke, run as the separate program it is
+# ==========================================================================
+
+
+SMOKE_NAME = "the launch smoke"
+SMOKE_PROVES = (
+    "./launch-smoke opens a real Terminal window, sizes, titles and positions "
+    "it, closes it by the id it captured, and leaves every other window on "
+    "the screen exactly as it was"
+)
+
+
+def stage_the_launch_smoke(root=REPO_ROOT, run=None):
+    """Run ``./launch-smoke``. **This opens a real window on the screen.**
+
+    It is run rather than re-implemented. The smoke is the one place in this
+    project that drives ``window.supervise`` for real, and a second copy of
+    that code would be a second thing to keep obeying §2.6.
+    """
+    runner = run_command if run is None else run
+    began = time.time()
+    status, output = runner(SMOKE_COMMAND, root)
+    seconds = time.time() - began
+    if status is None:
+        return StageResult(
+            SMOKE_NAME,
+            SMOKE_PROVES,
+            False,
+            "./launch-smoke did not complete: %s"
+            % (first_line(output) or "no output"),
+            output,
+            seconds,
+        )
+    if status != 0:
+        return StageResult(
+            SMOKE_NAME,
+            SMOKE_PROVES,
+            False,
+            "./launch-smoke exited %d; the failing checks are the lines "
+            "beginning FAIL below" % status,
+            output,
+            seconds,
+        )
+    return StageResult(
+        SMOKE_NAME, SMOKE_PROVES, True, smoke_verdict(output), output, seconds
+    )
+
+
+def smoke_verdict(output):
+    """The smoke's own last verdict line, so the summary quotes it rather than
+    paraphrasing it."""
+    lines = [line.strip() for line in output.splitlines() if line.strip()]
+    for line in reversed(lines):
+        if line.startswith("run ") or "PASS" in line or "FAIL" in line:
+            return line
+    return "the smoke printed no verdict line"
+
+
+# ==========================================================================
+# Stage 3 -- scripted play-throughs against the real game
+# ==========================================================================
+
+
+PLAY_NAME = "the scripted play-through"
+PLAY_PROVES = (
+    "the real rules, the real loop and the real renderer together produce, "
+    "character for character, the final picture recorded in tests/fixtures"
+)
+
+#: The key a play-through falls back on when its script runs out.
+#:
+#: An exhausted script must never mean "wait forever": that is the same
+#: mistake as a child process with no way to exit (§2.6 rule 4), one level up.
+#: ``q`` is the only key that ends the loop, so it is the only safe default.
+QUIT_KEY = ord("q")
+
+#: An unmapped key. Pressing it is CTRL-5 -- nothing at all happens -- which is
+#: how a play-through lets the clock run on without moving the player.
+IDLE_KEY = ord("z")
+
+ARROW = {
+    "up": controls.KEY_UP,
+    "down": controls.KEY_DOWN,
+    "left": controls.KEY_LEFT,
+    "right": controls.KEY_RIGHT,
+}
+
+
+class ScriptedClock(object):
+    """A clock that only moves when somebody moves it.
+
+    ``run_loop`` asks the clock twice an iteration and never sleeps, so a
+    play-through that advances it by exactly one tick per key read gets exactly
+    one ghost move per key -- and one that advances it by nothing gets a ghost
+    that never moves at all. Both are useful and neither is a stub: the loop's
+    real arithmetic runs either way.
+    """
+
+    def __init__(self, start=0.0):
+        self.now = float(start)
+
+    def __call__(self):
+        return self.now
+
+    def advance(self, seconds):
+        self.now += float(seconds)
+
+
+class ScriptedScreen(object):
+    """The two methods ``run_loop`` needs, and a record of everything painted.
+
+    Time passes in ``read_key`` because that is where it passes in the real
+    game: the loop spends its life waiting for a key, and the ghost's deadline
+    arrives while it waits.
+    """
+
+    def __init__(self, keys, clock, seconds_per_key=0.0):
+        self.keys = list(keys)
+        self.clock = clock
+        self.seconds_per_key = float(seconds_per_key)
+        self.frames = []
+        self.timeouts = []
+        self.reads = 0
+
+    def paint(self, frame):
+        self.frames.append(frame)
+
+    def read_key(self, timeout_ms):
+        self.timeouts.append(timeout_ms)
+        self.reads += 1
+        self.clock.advance(self.seconds_per_key)
+        if self.keys:
+            return self.keys.pop(0)
+        return QUIT_KEY
+
+
+class PlayThrough(object):
+    """One scripted game: a board, a starting state, a script, and a fixture."""
+
+    def __init__(self, name, state, keys, seconds_per_key, fixture, expected):
+        self.name = name
+        self.state = state
+        self.keys = keys
+        self.seconds_per_key = seconds_per_key
+        self.fixture = fixture
+        self.expected = expected
+
+    def play(self):
+        """Play it. Returns ``(final state, the rows of the last picture)``.
+
+        The real ``run_loop``, the real ``rules.move_player`` and
+        ``rules.move_ghost``, the real ``view.render``. The only stand-ins are
+        the screen and the clock, which is the whole of what a terminal is.
+        """
+        clock = ScriptedClock()
+        screen = ScriptedScreen(self.keys, clock, self.seconds_per_key)
+        import random
+
+        final = run_loop(
+            screen,
+            self.state,
+            view.render,
+            rules.move_player,
+            rules.move_ghost,
+            random.Random(0),
+            clock=clock,
+            tick=GHOST_TICK_SECONDS,
+        )
+        return final, screen.frames[-1].rows()
+
+
+def board(*lines):
+    return mazelib.from_text("\n".join(lines))
+
+
+def state_on(maze, player, ghost, ghost_dir, score=0):
+    """A starting state on a hand-written board.
+
+    Every corridor square carries a dot except the two the player and the
+    ghost are standing on. Leaving the ghost's square bare is deliberate and it
+    is the only way a full clear is reachable at all: eating the last dot on
+    the ghost's square is a loss, not a win (END-3), so a board whose last dot
+    is under the ghost can never be cleared.
+    """
+    player = Position(*player)
+    ghost = Position(*ghost)
+    dots = frozenset(
+        square for square in maze.corridors() if square not in (player, ghost)
+    )
+    return GameState(
+        maze=maze,
+        player=player,
+        ghost=ghost,
+        ghost_dir=ghost_dir,
+        dots=dots,
+        score=score,
+        outcome=Outcome.PLAYING,
+    )
+
+
+# -- the won game ----------------------------------------------------------
+#
+# A ring nine squares across. The player starts at the top left, walks the
+# whole ring anticlockwise and eats every dot on it; the ghost sits in the left
+# wall column with nothing under it and never moves, because the clock never
+# does. Fourteen moves, fourteen dots, and the board is clear.
+
+CLEARED_BOARD = (
+    "#########",
+    "#.......#",
+    "#.#####.#",
+    "#.......#",
+    "#########",
+)
+
+CLEARED_KEYS = (
+    [ARROW["right"]] * 6      # (1,1) -> (1,7), six dots
+    + [ARROW["down"]] * 2     # (1,7) -> (3,7), two dots
+    + [ARROW["left"]] * 6     # (3,7) -> (3,1), six dots -- the last one clears
+    + [IDLE_KEY]              # END-5: a key after the end changes nothing
+    + [QUIT_KEY]              # CTRL-4, END-6
+)
+
+# -- the lost game ---------------------------------------------------------
+#
+# A straight corridor. The player takes two dots and then stands still while
+# the ghost, which started facing it, walks the length of the corridor one
+# square per key and arrives on its square. The clock advances by exactly one
+# tick per key read, so every key is also one ghost move (GHOST-1).
+
+CAUGHT_BOARD = (
+    "###########",
+    "#.........#",
+    "###########",
+)
+
+CAUGHT_KEYS = (
+    [ARROW["right"]] * 2      # score 2; the ghost closes from (1,9) to (1,7)
+    + [IDLE_KEY] * 4          # the ghost walks (1,6), (1,5), (1,4), (1,3)=caught
+    + [IDLE_KEY]              # END-5: caught is caught, and nothing moves after
+    + [QUIT_KEY]
+)
+
+# -- the real board --------------------------------------------------------
+#
+# The other two are hand-written so that a whole game fits in a dozen keys.
+# This one is the real thing: ``rules.new_game`` on a generated 29 x 19 maze,
+# with the real starting positions, and a script that moves the player and
+# lets the ghost tick. It does not reach an ending -- on a real board that
+# would take three hundred keys -- and it is not meant to. It is here so that
+# the recorded picture is a picture of the game somebody actually plays.
+
+REAL_MAZE_SEED = 10
+
+REAL_MAZE_KEYS = (
+    [ARROW["down"]] * 3
+    + [ARROW["right"]] * 3
+    + [ARROW["up"]] * 2
+    + [ARROW["left"]] * 4
+    + [IDLE_KEY] * 3
+    + [ARROW["down"]] * 2
+    + [QUIT_KEY]
+)
+
+
+def play_throughs():
+    """The three scripted games, built fresh each time they are asked for."""
+    import random
+
+    cleared = PlayThrough(
+        "a game played to a win",
+        state_on(board(*CLEARED_BOARD), (1, 1), (2, 1), UP),
+        CLEARED_KEYS,
+        0.0,  # the clock never moves, so the ghost never does
+        "verify_final_cleared.txt",
+        {"outcome": Outcome.CLEARED, "score": 14, "player": (3, 1)},
+    )
+    caught = PlayThrough(
+        "a game played to a loss",
+        state_on(board(*CAUGHT_BOARD), (1, 1), (1, 9), LEFT),
+        CAUGHT_KEYS,
+        GHOST_TICK_SECONDS,  # exactly one ghost move per key
+        "verify_final_caught.txt",
+        {"outcome": Outcome.CAUGHT, "score": 2, "player": (1, 3)},
+    )
+    real = PlayThrough(
+        "a real generated board",
+        rules.new_game(random.Random(REAL_MAZE_SEED)),
+        REAL_MAZE_KEYS,
+        GHOST_TICK_SECONDS,
+        "verify_final_real_maze.txt",
+        None,  # whatever the real rules do, the recorded picture is the claim
+    )
+    return (cleared, caught, real)
+
+
+def fixture_path(name):
+    return os.path.join(FIXTURES, name)
+
+
+def read_fixture(name):
+    import io
+
+    with io.open(fixture_path(name), encoding="utf-8") as handle:
+        return tuple(handle.read().split("\n")[:SCREEN_ROWS])
+
+
+def write_fixture(name, rows):
+    import io
+
+    with io.open(fixture_path(name), "w", encoding="utf-8") as handle:
+        handle.write("\n".join(rows))
+        handle.write("\n")
+
+
+def compare_pictures(expected, actual):
+    """The first row that differs, said in a way you can act on.
+
+    ``None`` when they are the same. A whole-picture diff would be sixty lines
+    of block characters and nobody reads those; the row number, the column, and
+    the two rows quoted is what tells you where to look.
+    """
+    if len(expected) != len(actual):
+        return "the picture has %d rows; the recorded one has %d" % (
+            len(actual),
+            len(expected),
+        )
+    for index, (wanted, got) in enumerate(zip(expected, actual)):
+        if wanted != got:
+            column = next(
+                (
+                    position
+                    for position, pair in enumerate(zip(wanted, got))
+                    if pair[0] != pair[1]
+                ),
+                min(len(wanted), len(got)),
+            )
+            return (
+                "row %d differs from the recorded picture, first at column "
+                "%d:\n    recorded: %r\n    painted:  %r"
+                % (index, column, wanted, got)
+            )
+    return None
+
+
+def check_a_play_through(game):
+    """Play one scripted game and say what, if anything, is wrong with it.
+
+    Returns ``(lines of report, failure sentence or None)``.
+    """
+    lines = []
+    try:
+        final, rows = game.play()
+    except Exception as error:  # a raise here is the failure, not a crash
+        return (
+            ["%s: the loop raised %s: %s" % (game.name, type(error).__name__, error)],
+            "%s: the loop raised %s: %s"
+            % (game.name, type(error).__name__, error),
+        )
+
+    lines.append(
+        "%s: outcome %s, score %d, player %s, ghost %s"
+        % (
+            game.name,
+            final.outcome.name,
+            final.score,
+            tuple(final.player),
+            tuple(final.ghost),
+        )
+    )
+
+    # The claims that do not depend on the recorded picture at all. A recorded
+    # picture only ever proves that nothing changed; these say what the game
+    # was supposed to have done.
+    if game.expected is not None:
+        for key, wanted in sorted(game.expected.items()):
+            got = {
+                "outcome": final.outcome,
+                "score": final.score,
+                "player": tuple(final.player),
+            }[key]
+            if got != wanted:
+                return lines, "%s: %s should be %r and is %r" % (
+                    game.name,
+                    key,
+                    wanted,
+                    got,
+                )
+
+    # The status line is the one row of the picture whose text is dictated
+    # elsewhere, so it is worth checking against its source and not only
+    # against the recording.
+    wanted_status = theme.status_text(final.outcome, final.score)
+    status_row = rows[SCREEN_ROWS - 1]
+    if wanted_status not in status_row:
+        return lines, "%s: the status row reads %r, which does not contain %r" % (
+            game.name,
+            status_row,
+            wanted_status,
+        )
+
+    if len(rows) != SCREEN_ROWS or any(len(row) != SCREEN_COLS for row in rows):
+        return lines, "%s: the picture is not %d rows of %d characters" % (
+            game.name,
+            SCREEN_ROWS,
+            SCREEN_COLS,
+        )
+
+    try:
+        recorded = read_fixture(game.fixture)
+    except (IOError, OSError) as error:
+        return lines, "%s: the recorded picture could not be read: %s" % (
+            game.name,
+            error,
+        )
+
+    difference = compare_pictures(recorded, tuple(rows))
+    if difference is not None:
+        return lines, "%s: %s" % (game.name, difference)
+
+    lines.append(
+        "%s: the final picture is character for character the one in "
+        "tests/fixtures/%s" % (game.name, game.fixture)
+    )
+    return lines, None
+
+
+def stage_the_scripted_play_through(root=REPO_ROOT, games=None):
+    """Play every scripted game and compare each final picture with its
+    recording."""
+    began = time.time()
+    lines = []
+    failure = None
+    for game in play_throughs() if games is None else games:
+        reported, problem = check_a_play_through(game)
+        lines.extend(reported)
+        if problem is not None:
+            failure = problem
+            break
+    seconds = time.time() - began
+    output = "\n".join(lines)
+    if failure is not None:
+        return StageResult(PLAY_NAME, PLAY_PROVES, False, failure, output, seconds)
+    return StageResult(
+        PLAY_NAME,
+        PLAY_PROVES,
+        True,
+        "%d scripted games, each ending on the recorded picture"
+        % len(play_throughs() if games is None else games),
+        output,
+        seconds,
+    )
+
+
+# ==========================================================================
+# Stage 4 (--corner) -- the bottom-right cell, in a real window
+# ==========================================================================
+
+
+CORNER_NAME = "the bottom-right cell in a real window"
+CORNER_PROVES = (
+    "in a real 40 x 30 Terminal window, writing the last cell of the last row "
+    "with addstr raises and the adapter's insstr does not, so the picture "
+    "reaches the screen whole (architecture C1, SCRN-7)"
+)
+
+#: How long the probe child waits for the window to actually become 40 x 30.
+#:
+#: It has to wait, and this is not defensiveness. ``do script`` starts the
+#: child and the supervisor resizes the tab afterwards, so a child that calls
+#: ``initscr`` immediately can measure whatever size Terminal happened to open
+#: the window at. curses reads the size once, at ``initscr``, so a resize that
+#: lands a moment later is invisible to it and the whole measurement would be
+#: about the wrong window.
+PROBE_SIZE_SECONDS = 8.0
+
+#: How long the painted picture is left on the screen before the probe ends.
+#: Purely so that a person watching sees something rather than a flash.
+PROBE_HOLD_SECONDS = 1.5
+
+CORNER_PROBE_SOURCE = r'''#!/usr/bin/python3
+"""The bottom-right cell, measured inside a real Terminal window.
+
+Named ``Terminal Game`` and invoked with no arguments because Terminal builds
+the window title out of the active process's name (plan §2.6 rule 7), and the
+first thing it writes is the escape that clears the working-directory prefix,
+exactly as the real game does.
+
+It **exits by itself**, in about %(hold).1f seconds plus however long the
+window takes to reach 40 x 30. There is no input(), no read, and no unbounded
+sleep anywhere in it: a child this script could not end is a window that could
+not be closed without Terminal's modal confirmation sheet.
+"""
+
+import json
+import os
+import sys
+import time
+
+sys.path.insert(0, %(root)r)
+sys.stdout.write("\033]7;\007")
+sys.stdout.flush()
+
+WANTED = (%(rows)d, %(cols)d)
+result = {"wanted": list(WANTED)}
+
+# Wait for the supervisor's resize to land before curses reads the size.
+began = time.time()
+seen = None
+while time.time() - began < %(size_seconds).1f:
+    try:
+        size = os.get_terminal_size()
+        seen = (size.lines, size.columns)
+    except OSError:
+        seen = None
+    if seen == WANTED:
+        break
+    time.sleep(0.1)
+result["waited_for_the_size"] = round(time.time() - began, 2)
+result["size_from_the_os"] = list(seen) if seen else None
+
+import curses
+
+screen = curses.initscr()
+try:
+    result["size_from_curses"] = list(screen.getmaxyx())
+
+    try:
+        screen.addstr(curses.LINES - 1, curses.COLS - 1, "X")
+        result["addstr_at_the_corner"] = "no error"
+    except Exception as error:
+        result["addstr_at_the_corner"] = str(error)
+
+    try:
+        screen.insstr(curses.LINES - 1, curses.COLS - 1, "X")
+        result["insstr_at_the_corner"] = "no error"
+    except Exception as error:
+        result["insstr_at_the_corner"] = str(error)
+
+    screen.erase()
+
+    from termgame import screen as screen_module
+    from termgame.model import frame_from_rows
+
+    rows = []
+    for r in range(%(rows)d):
+        rows.append("".join(chr(ord("a") + ((r + c) %% 26)) for c in range(%(cols)d)))
+    frame = frame_from_rows(rows)
+    adapter = screen_module.Screen(screen, screen_module.build_attributes())
+    try:
+        adapter.paint(frame)
+        result["paint"] = "no error"
+    except Exception as error:
+        result["paint"] = "%%s: %%s" %% (type(error).__name__, error)
+
+    read_back = []
+    for r in range(%(rows)d):
+        read_back.append(
+            "".join(chr(screen.inch(r, c) & 0xFF) for c in range(%(cols)d))
+        )
+    result["matches"] = (read_back == rows)
+    result["last_row_in"] = rows[-1]
+    result["last_row_out"] = read_back[-1]
+    result["curs_set"] = curses.curs_set(0)
+    time.sleep(%(hold).1f)
+finally:
+    curses.endwin()
+
+with open(%(out)r, "w") as handle:
+    json.dump(result, handle)
+'''
+
+
+def corner_probe_source(root=REPO_ROOT, out="/dev/null", rows=None, cols=None):
+    """The probe, as source. Pure -- a test can read it without running it."""
+    return CORNER_PROBE_SOURCE % {
+        "root": root,
+        "out": out,
+        "rows": window.ROWS if rows is None else rows,
+        "cols": window.COLUMNS if cols is None else cols,
+        "size_seconds": PROBE_SIZE_SECONDS,
+        "hold": PROBE_HOLD_SECONDS,
+    }
+
+
+def read_the_corner_measurement(measured):
+    """Turn the probe's JSON into ``(lines of report, failure sentence)``.
+
+    Separated from the window handling so that the judgement can be tested
+    without opening anything.
+    """
+    lines = []
+    if not measured:
+        return (
+            ["the probe wrote nothing"],
+            "the probe in the window wrote no result at all",
+        )
+    lines.append(
+        "the window reported %s to the OS after %.2fs, and %s to curses"
+        % (
+            tuple(measured.get("size_from_the_os") or ()),
+            measured.get("waited_for_the_size", -1.0),
+            tuple(measured.get("size_from_curses") or ()),
+        )
+    )
+    for key in ("addstr_at_the_corner", "insstr_at_the_corner", "paint"):
+        lines.append("%s: %s" % (key.replace("_", " "), measured.get(key)))
+    lines.append("the screen read back as the picture that went in: %s"
+                 % measured.get("matches"))
+
+    wanted = tuple(measured.get("wanted") or ())
+    if tuple(measured.get("size_from_curses") or ()) != wanted:
+        return lines, (
+            "curses saw a %s window, not %s, so this measurement is about the "
+            "wrong window and says nothing about the corner"
+            % (tuple(measured.get("size_from_curses") or ()), wanted)
+        )
+    if measured.get("paint") != "no error":
+        return lines, (
+            "the adapter could not paint a whole picture in a real window: %s"
+            % measured.get("paint")
+        )
+    if not measured.get("matches"):
+        return lines, (
+            "the picture on the screen is not the picture that was painted; "
+            "the last row went in as %r and came back as %r"
+            % (measured.get("last_row_in"), measured.get("last_row_out"))
+        )
+    if measured.get("insstr_at_the_corner") != "no error":
+        return lines, (
+            "insstr at the bottom-right cell raised %r, so the adapter's fix "
+            "for architecture C1 does not work in a real window"
+            % measured.get("insstr_at_the_corner")
+        )
+    if "ERR" not in (measured.get("addstr_at_the_corner") or ""):
+        lines.append(
+            "NOTE: addstr at the bottom-right cell no longer raises in a real "
+            "window. The guard in screen.paint has become dead code -- worth "
+            "knowing, and not a failure of this game."
+        )
+    return lines, None
+
+
+def stage_the_bottom_right_cell(root=REPO_ROOT, out=None, timeout=CORNER_SECONDS):
+    """Open one real window, measure the corner inside it, close it again.
+
+    Every rule of §2.6 is obeyed here and each one is worth naming: the id
+    comes from the supervisor at the instant it captured it and never from
+    enumerating windows; only that id is ever addressed; the child ends by
+    itself; the close is confirmed with ``visible``; and the ``finally`` reaps
+    the window whether this succeeded, failed or raised.
+    """
+    if out is None:
+        out = sys.stdout
+    began = time.time()
+    lines = []
+    directory = tempfile.mkdtemp(prefix="termgame-corner-")
+    result_path = os.path.join(directory, "corner.json")
+    child = os.path.join(directory, window.CHILD_NAME)
+    with open(child, "w") as handle:
+        handle.write(corner_probe_source(root, result_path))
+    os.chmod(child, 0o755)
+
+    captured = []
+    finished = threading.Event()
+    supervisor = {"error": None, "status": None}
+    reports = []
+    before = window.visible_window_ids()
+    lines.append("visible Terminal windows before: %s" % (before,))
+
+    def on_window_opened(window_id):
+        captured.append(window_id)
+
+    def body():
+        try:
+            supervisor["status"] = window.supervise(
+                directory,
+                report=reports.append,
+                on_window_opened=on_window_opened,
+            )
+        except BaseException as error:
+            supervisor["error"] = error
+        finally:
+            finished.set()
+
+    try:
+        thread = threading.Thread(target=body, name="verify-corner")
+        thread.daemon = True
+        thread.start()
+        finished.wait(timeout)
+        thread.join(max(1.0, timeout - (time.time() - began)))
+
+        if captured:
+            lines.append("game window id (from the supervisor): %d" % captured[0])
+        lines.extend("play said: %s" % note for note in reports)
+
+        if supervisor["error"] is not None:
+            return StageResult(
+                CORNER_NAME,
+                CORNER_PROVES,
+                False,
+                "the supervisor raised %r" % (supervisor["error"],),
+                "\n".join(lines),
+                time.time() - began,
+            )
+        if thread.is_alive():
+            return StageResult(
+                CORNER_NAME,
+                CORNER_PROVES,
+                False,
+                "the window sequence did not finish within %.0fs" % timeout,
+                "\n".join(lines),
+                time.time() - began,
+            )
+
+        measured = None
+        if os.path.exists(result_path):
+            try:
+                with open(result_path) as handle:
+                    measured = json.load(handle)
+            except ValueError as error:
+                lines.append("the probe's result would not parse: %s" % error)
+        reported, failure = read_the_corner_measurement(measured)
+        lines.extend(reported)
+
+        after = window.visible_window_ids()
+        lines.append("visible Terminal windows after:  %s" % (after,))
+        if sorted(after) != sorted(before):
+            failure = failure or (
+                "the set of visible Terminal windows changed: before %s, "
+                "after %s" % (before, after)
+            )
+
+        if failure is not None:
+            return StageResult(
+                CORNER_NAME,
+                CORNER_PROVES,
+                False,
+                failure,
+                "\n".join(lines),
+                time.time() - began,
+            )
+        return StageResult(
+            CORNER_NAME,
+            CORNER_PROVES,
+            True,
+            "addstr raises at the corner, insstr does not, and the whole "
+            "picture reached the screen intact",
+            "\n".join(lines),
+            time.time() - began,
+        )
+    finally:
+        reap(captured[0] if captured else None, out)
+        shutil.rmtree(directory, ignore_errors=True)
+
+
+def reap(window_id, out):
+    """Close a window we opened, if it is somehow still there. Never forces.
+
+    The same shape as the launch smoke's clean-up and for the same reason: a
+    stage that failed must not leave a window on somebody's desktop, and a
+    busy tab must be left alone and named rather than forced, because the
+    modal sheet a forced close raises can only be dismissed by a person and
+    blocks every AppleScript call in the system while it is up.
+    """
+    if window_id is None:
+        return
+    try:
+        if not window.window_is_visible(window_id):
+            return
+    except window.WindowError:
+        return
+    out.write("cleaning up: Terminal window %d is still open\n" % window_id)
+    try:
+        closed = window.close_when_idle(window_id, timeout=CORNER_CLEANUP_SECONDS)
+    except window.WindowError as error:
+        closed = False
+        out.write("clean-up could not close it: %s\n" % error)
+    if not closed:
+        out.write(
+            "LEFT OPEN: Terminal window id %d is still running something. It "
+            "has deliberately not been forced -- closing a busy tab raises a "
+            "modal sheet that only you can dismiss, and that sheet blocks "
+            "every later AppleScript call. Please close it yourself.\n"
+            % window_id
+        )
+
+
+# ==========================================================================
+# Putting the stages together
+# ==========================================================================
+
+
+def all_stages():
+    return (
+        Stage("suite", SUITE_NAME, SUITE_PROVES, stage_the_test_suite),
+        Stage(
+            "smoke",
+            SMOKE_NAME,
+            SMOKE_PROVES,
+            stage_the_launch_smoke,
+            opens_a_window=True,
+        ),
+        Stage("play", PLAY_NAME, PLAY_PROVES, stage_the_scripted_play_through),
+        Stage(
+            "corner",
+            CORNER_NAME,
+            CORNER_PROVES,
+            stage_the_bottom_right_cell,
+            opens_a_window=True,
+        ),
+    )
+
+
+#: The stages ``./verify`` runs when it is given no arguments.
+DEFAULT_STAGES = ("suite", "smoke", "play")
+
+RULE = "=" * 72
+THIN = "-" * 72
+
+
+def chosen_stages(only=None, corner=False):
+    """Which stages to run, in the order they are defined."""
+    by_short = dict((stage.short, stage) for stage in all_stages())
+    if only:
+        wanted = list(only)
+    else:
+        wanted = list(DEFAULT_STAGES)
+        if corner and "corner" not in wanted:
+            wanted.append("corner")
+    unknown = [name for name in wanted if name not in by_short]
+    if unknown:
+        raise ValueError(
+            "no such stage: %s. The stages are %s."
+            % (", ".join(unknown), ", ".join(sorted(by_short)))
+        )
+    return [by_short[name] for name in wanted]
+
+
+def run_stages(stages, out=None, root=REPO_ROOT):
+    """Run them in order and print a report that names what broke.
+
+    **It does not stop at the first failure.** A second failing stage is
+    information -- "the suite is red and so is the smoke" is a different
+    morning from "only the smoke is red" -- and none of these stages can
+    corrupt the next one.
+    """
+    if out is None:
+        out = sys.stdout
+    results = []
+    total = len(stages)
+    began = time.time()
+    for index, stage in enumerate(stages, start=1):
+        out.write("[%d/%d] %s ... " % (index, total, stage.name))
+        out.flush()
+        result = stage.run(root)
+        results.append(result)
+        out.write(
+            "%s (%.1fs)\n" % ("ok" if result.ok else "FAILED", result.seconds)
+        )
+        out.flush()
+
+    elapsed = time.time() - began
+    failures = [
+        (index, stage, result)
+        for index, (stage, result) in enumerate(zip(stages, results), start=1)
+        if not result.ok
+    ]
+
+    out.write("\n%s\n" % RULE)
+    if not failures:
+        out.write("VERIFICATION PASSED -- %d of %d stages, %.1fs\n" % (total, total, elapsed))
+        for result in results:
+            out.write("  ok   %s -- %s\n" % (result.name, result.detail))
+        out.write("%s\n" % RULE)
+        out.write(
+            "This is the half of 'right' a machine can check. The other half "
+            "is\ndocs/findings/WI-10-human-checks.md, and it needs a person.\n"
+        )
+        return results, True
+
+    out.write(
+        "VERIFICATION FAILED -- %d of %d stages failed, %.1fs\n"
+        % (len(failures), total, elapsed)
+    )
+    for index, stage, result in failures:
+        out.write("%s\n" % THIN)
+        out.write("FAILED at stage %d of %d: %s\n" % (index, total, stage.name))
+        out.write("  what it proves:  %s\n" % stage.proves)
+        out.write("  what went wrong: %s\n" % result.detail)
+        if result.output.strip():
+            out.write("  what it printed:\n")
+            for line in tail(result.output, TAIL_LINES).splitlines():
+                out.write("    %s\n" % line)
+    out.write("%s\n" % RULE)
+    passed = [result.name for result in results if result.ok]
+    if passed:
+        out.write("The stages that passed: %s\n" % ", ".join(passed))
+    return results, False
+
+
+#: How many lines of a failing stage's output are printed under the banner.
+#: Enough for a unittest traceback and its summary; short enough to read.
+TAIL_LINES = 40
+
+
+def tail(text, lines):
+    split = text.splitlines()
+    if len(split) <= lines:
+        return text
+    return "... %d earlier lines not shown ...\n%s" % (
+        len(split) - lines,
+        "\n".join(split[-lines:]),
+    )
+
+
+def write_the_list(out=None):
+    if out is None:
+        out = sys.stdout
+    out.write("The stages, in the order ./verify runs them:\n\n")
+    for stage in all_stages():
+        default = "default" if stage.short in DEFAULT_STAGES else "--corner"
+        out.write(
+            "  %-7s %s  [%s]%s\n"
+            % (
+                stage.short,
+                stage.name,
+                default,
+                "  OPENS A REAL WINDOW" if stage.opens_a_window else "",
+            )
+        )
+        out.write("          %s\n\n" % stage.proves)
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(
+        description="Everything about this game that a machine can check, in "
+        "one command. A failure names the stage that failed."
+    )
+    parser.add_argument(
+        "--only",
+        action="append",
+        metavar="STAGE",
+        help="run just this stage (repeatable). See --list for the names.",
+    )
+    parser.add_argument(
+        "--corner",
+        action="store_true",
+        help="also measure the bottom-right cell in a real Terminal window "
+        "(opens a second window)",
+    )
+    parser.add_argument(
+        "--list", action="store_true", help="say what the stages are and stop"
+    )
+    parser.add_argument(
+        "--record",
+        action="store_true",
+        help="re-record the play-through pictures in tests/fixtures from the "
+        "code as it stands, and stop. Read the diff before committing it: "
+        "this overwrites the thing the play-through stage compares against.",
+    )
+    arguments = parser.parse_args(argv)
+
+    if arguments.list:
+        write_the_list()
+        return 0
+
+    if arguments.record:
+        return record_the_pictures()
+
+    try:
+        stages = chosen_stages(arguments.only, arguments.corner)
+    except ValueError as error:
+        sys.stderr.write("verify: %s\n" % error)
+        return 2
+
+    _results, ok = run_stages(stages)
+    return 0 if ok else 1
+
+
+def record_the_pictures(out=None):
+    """Write each play-through's final picture to its fixture file.
+
+    Deliberately a separate flag rather than something that happens on a
+    mismatch. A harness that rewrites its own expectations when they fail is
+    not a harness either.
+    """
+    if out is None:
+        out = sys.stdout
+    for game in play_throughs():
+        _final, rows = game.play()
+        write_fixture(game.fixture, rows)
+        out.write("recorded tests/fixtures/%s (%s)\n" % (game.fixture, game.name))
+    out.write(
+        "\nRead the diff before you commit it. These files are what the "
+        "play-through\nstage compares against, so a wrong recording makes a "
+        "wrong game pass.\n"
+    )
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
