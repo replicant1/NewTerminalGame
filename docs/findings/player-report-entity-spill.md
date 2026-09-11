@@ -70,7 +70,7 @@ asserting exactly that.
 | Rows redrawn for one upward move | **4 of 30** |
 | Added cost of `paint` | **+0.014 ms/frame** |
 | Against the 143 ms tick | **0.01%** |
-| Suite | 774 -> **783**, `OK (skipped=2)` |
+| Suite | 774 -> **783**, `OK (skipped=2)` (now 637; see the note on removed harness tests) |
 | `./verify` | 3 of 3, 23.4s |
 
 ## Confirmed fixed
