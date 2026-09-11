@@ -1,0 +1,31 @@
+#!/usr/bin/python3
+"""PROCESS B -- the game itself.
+
+THIS FILE'S NAME IS LOAD-BEARING. Terminal composes its window title from the
+name of the active process, and that is the whole of how WIN-3 is met: the
+window is titled *Terminal Game* because this file is called ``Terminal Game``.
+Renaming it, invoking it as ``python3 "Terminal Game"``, or passing it an
+argument all break WIN-3. (ARCHITECTURE.md section 6.3 and C2.)
+
+The first write is the escape sequence that clears Terminal's
+working-directory title prefix -- without it the title reads
+``rodneybailey -- Terminal Game``.
+
+The body is one call into the game entry point. WI-4 and WI-9 replace that
+entry point's implementation; neither should need to touch this file.
+"""
+
+import os
+import sys
+
+sys.stdout.write("\033]7;\007")
+sys.stdout.flush()
+
+REPO_ROOT = os.path.dirname(os.path.realpath(__file__))
+if REPO_ROOT not in sys.path:
+    sys.path.insert(0, REPO_ROOT)
+
+from termgame.loop import run_game
+
+if __name__ == "__main__":
+    sys.exit(run_game())

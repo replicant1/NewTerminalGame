@@ -141,7 +141,15 @@ class TestTheCoreImportsCleanlyWithoutTheShell(unittest.TestCase):
 
     def test_the_poison_really_bites(self):
         # If it did not, the test below would prove nothing at all.
-        sys.modules.pop("curses", None)
+        #
+        # Both names have to leave sys.modules first, exactly as
+        # _import_core_with_poison does it. A cached module is returned
+        # without sys.meta_path ever being consulted, so leaving one behind
+        # makes this check depend on nothing else in the suite having
+        # imported it -- and the architecture requires termgame.window to
+        # import subprocess, so as soon as WI-2 landed, something always had.
+        for name in POISONED:
+            sys.modules.pop(name, None)
         sys.meta_path.insert(0, _Poison(POISONED))
         with self.assertRaises(ImportError):
             importlib.import_module("curses")
