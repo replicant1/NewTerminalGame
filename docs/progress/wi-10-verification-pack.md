@@ -19,3 +19,5 @@
 03:06:58Z  TEST    666 passed, 0 failed, 2 skipped — and the whole ./verify run green in 23.1s: suite 12.5s, launch smoke 9.8s (window 4324, title settled in 0.8s, tab 40 x 30 Menlo-Regular 18, census unchanged), play-through 0.1s
 03:07:19Z  COMMIT  667f6c5 WI-10: --verbose, so a measurement taken by a passing stage can be read
 03:11:27Z  TEST    701 passed, 0 failed, 2 skipped — the human-check pack and its 35 staleness tests, plus the bottom-right findings note
+03:14:32Z  TEST    745 passed, 0 failed, 2 skipped — after merging origin/main (WI-9, 606 there) and folding WI-9's three measurements into the pack. Merge was clean: no conflicts, nothing of mine referenced standins.py
+03:14:32Z  NOTE    the real-maze recorded picture survived WI-9 unchanged — rules.new_game(Random(10)) is what it always was, so the golden still matches character for character

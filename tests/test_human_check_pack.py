@@ -185,6 +185,15 @@ class EveryFactItQuotesIsStillTrueOfTheCode(unittest.TestCase):
         self.assertEqual(7.0, ticker.GHOST_TICKS_PER_SECOND)
         self.assertIn("seven squares a second", PACK)
 
+    def test_the_redraw_budget_it_quotes_is_one_tick_of_the_clock(self):
+        from termgame import ticker
+
+        self.assertEqual(143, round(ticker.GHOST_TICK_SECONDS * 1000))
+        self.assertTrue(
+            "It has 143" in PACK and "milliseconds to redraw" in PACK,
+            "the pack no longer quotes the 143 ms redraw budget",
+        )
+
     def test_the_blank_right_hand_margin_it_mentions_is_the_real_width(self):
         from termgame import view
         from termgame.model import MAZE_COLS, SCREEN_COLS
@@ -199,6 +208,43 @@ def _a_full_width_maze():
     from termgame.model import MAZE_COLS
 
     return mazelib.from_text("\n".join(["#" * MAZE_COLS] * 3))
+
+
+class TheMeasurementsItQuotesAreTheOnesThatWereTaken(unittest.TestCase):
+    """Numbers WI-9 measured against real processes, quoted rather than
+    re-derived.
+
+    They are in the pack for one reason: a person who sees flicker, or thinks
+    the ghost feels wrong, should not spend an afternoon on a cause that has
+    already been ruled out. So each one is checked against the document that
+    recorded it, and a change to either without the other is a failure here.
+    """
+
+    def setUp(self):
+        with io.open(
+            os.path.join(REPO_ROOT, "docs", "findings", "WI-9-the-running-game.md"),
+            encoding="utf-8",
+        ) as handle:
+            self.source = handle.read()
+
+    def test_the_slowest_redraw_it_quotes_was_actually_measured(self):
+        self.assertIn("20.3 ms", self.source)
+        self.assertIn("**20.3 ms**", PACK)
+
+    def test_the_three_tick_rates_it_quotes_were_actually_measured(self):
+        for rate in ("6.99990", "7.00078", "6.99999"):
+            self.assertIn(rate, self.source, rate)
+            self.assertIn(rate, PACK, rate)
+
+    def test_the_time_it_says_a_motionless_player_survived_was_measured(self):
+        self.assertIn("4.14 seconds", self.source)
+        self.assertIn("**4.14 seconds**", PACK)
+
+    def test_it_tells_the_reader_the_game_ends_without_them(self):
+        # Otherwise a person watching for flicker reads a finished game as a
+        # frozen one, and reports the wrong failure.
+        self.assertIn("The game will end on its own if you leave it alone", PACK)
+        self.assertIn("only `q` does", PACK)
 
 
 class TheKnownDisplayFaultIsExplainedInTheWordsTheGameUses(unittest.TestCase):

@@ -28,6 +28,14 @@ setting.
 key that ends it. If anything goes wrong, jump to **"If something is left
 behind"** at the end.
 
+**The game will end on its own if you leave it alone.** The ghost moves whether
+or not you do, and it pays no attention to where you are — in one measured run
+it wandered into a player who never moved after **4.14 seconds**. When it
+catches you the bottom line changes to `CAUGHT`, everything stops, and the last
+picture stays on the screen until you press `q`. That is intended: winning or
+losing does not close the window, only `q` does. If you want longer to look at
+something, quit and run it again.
+
 **One thing worth knowing before you look at anything.** This machine has three
 displays, and there is a known fault that shows up now and then: the game
 occasionally cannot read the display layout, and when that happens it opens on
@@ -303,12 +311,16 @@ want instead.
 ```
 
 Then **do not touch the keyboard**. Just watch. The pink ghost moves on its
-own, about seven squares a second, and it will keep moving whether or not you
-do anything. Watch it for twenty or thirty seconds, including while it crosses
-the middle of the maze and while it turns corners. Press `q` when you have seen
-enough.
+own, seven squares a second, and it will keep moving whether or not you do
+anything. Watch it while it crosses the middle of the maze and while it turns
+corners.
 
-Then watch it again while you *are* moving, with the arrow keys.
+**It may catch you while you are watching**, since you are standing still — see
+"the game will end on its own" above. When it does, everything stops and there
+is nothing left to watch. Press `q`, run `./play` again, and carry on. Two or
+three runs is enough.
+
+Then watch it once more while you *are* moving, with the arrow keys.
 
 ### What you should see
 
@@ -324,11 +336,25 @@ even for an instant.
 - A text cursor is visible anywhere, blinking or otherwise.
 - Moving with the arrow keys makes it worse than standing still does.
 
+### Two things already measured, so you do not chase them
+
+If you *do* see flicker, these two are already ruled out, and saying so saves
+whoever fixes it a wasted afternoon:
+
+- **The game is not running out of time between moves.** It has 143
+  milliseconds to redraw between one ghost move and the next, and the slowest
+  single redraw measured was **20.3 ms** — about a seventh of the budget.
+- **The ghost really does move exactly seven times a second.** Three runs of
+  about twelve seconds each measured 6.99990, 7.00078 and 6.99999 moves per
+  second. So if the ghost *feels* wrong — jerky, too fast, too slow — it is not
+  the speed it is set to, and that is itself worth reporting.
+
 ### What to write down
 
 What you saw. "Nothing flickered" is an answer. So is "there is a flicker at
 the bottom of the screen once a second or so", and that would be the more
-useful one.
+useful one. If the ghost's movement felt wrong rather than looked wrong, say
+that too, and say in what way.
 
 ---
 
