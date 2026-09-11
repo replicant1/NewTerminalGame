@@ -18,3 +18,4 @@
 01:54:57Z  TEST    whole suite: Ran 409 tests — OK (skipped=2)
 01:55:27Z  NOTE    branch cut from local main e43059c, which is 3 commits ahead of origin/main 496d572 — the conductor unpushed commit fd0367d (orchestration/static/index.html) therefore shows in the PR diff. Not mine, not reverted, drops out when main is pushed
 01:55:52Z  TEST    final whole suite: Ran 409 tests in 11.488s — OK (skipped=2)
+01:56:04Z  DONE    WI-5 wi-5-starting-a-game (head recorded in next commit)
