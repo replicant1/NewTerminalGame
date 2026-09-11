@@ -16,3 +16,6 @@
 05:38:31Z  WI-12a NOTE    completion document re-gated: header block, S1 suite+verify+corner+census, S2 preamble incl. the ruling, the 9 affected rows (WIN-2, SCRN-3/4/5/6/7, MAZE-4, START-2, CTRL-5), both count tables, all 8 findings in S4 given CLOSED blocks with the finding text kept, S5 A2-verifiable note + human checks + items 3-5 + contradictions 1-4, S6 deviations 5-8, S7 per-branch counts, S8, and a new S9 (what the re-gate did, the five pre-ruling breaks, four named doubts, what was not changed).
 05:39:59Z  WI-12a COMMIT  b3702f7 re-gate the project at 774, with the findings kept as closed
 05:41:11Z  WI-12a NOTE    wrote docs/prs/PR-WI-12a-regate.md as the PR body.
+05:42:21Z  WI-12a PR      draft PR #17 opened against main (replicant1/NewTerminalGame/pull/17)
+05:42:43Z  WI-12a TEST    774 passed, 0 failed, 2 skipped (final, after all restores: Ran 774 tests in 13.490s, OK (skipped=2))
+05:42:55Z  WI-12a DONE    WI-12a wi-12a-regate; suite 774 OK (skipped=2), ./verify 3/3, PR #17 draft -> ready, termgame/ untouched, no test added or weakened. Human checks still 0 of 6; A1, A2, A3 still open; WI-11 still held.
