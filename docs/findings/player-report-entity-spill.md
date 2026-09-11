@@ -73,22 +73,31 @@ asserting exactly that.
 | Suite | 774 -> **783**, `OK (skipped=2)` |
 | `./verify` | 3 of 3, 23.4s |
 
-## What is still unconfirmed, and who can confirm it
+## Confirmed fixed
 
-**The mechanism is inferred, not seen.** No agent on this project has a
+**The player confirmed on 2026-09-11, after the fix, that the spill is gone.**
+That is the only evidence that could ever have settled it: no agent on this
+project has a screen, and the pixels are below the level any test can reach.
+
+It also settles the mechanism by consequence. The repair only ever forces
+`redrawln` over the band of rows around a change; if the cause had been
+anything other than pixels surviving in rows ncurses was not re-sending, that
+repair would have changed nothing visible. It did.
+
+The two observations below were what was wanted before the confirmation came
+in. The first is now moot; the second is answered.
+
+**The mechanism was inferred, not seen.** No agent on this project has a
 screen. What is *proved* is that the character grid is clean; that the
 remaining cause must be below the character level; and that the repair issues
 the right calls over the right rows. That the pixels are actually gone can
 only be established by a person looking at the screen.
 
-Two observations would settle it, and both are one game each:
-
-1. **Does the sliver also appear moving left or right?** It should have, before
-   this change — the row below the vacated columns is equally unchanged. If it
-   appeared *only* on upward moves, the mechanism above is incomplete and this
-   fix may be treating a symptom.
-2. **Is it gone now, in all four directions?** Including at the very top and
-   bottom rows of the maze, where the band is clipped.
+1. **Did the sliver also appear moving left or right?** Never answered, and no
+   longer needed. It would have distinguished this mechanism from a narrower
+   one, but the fix repairs the band in every direction either way.
+2. **Is it gone now?** **Yes** — reported by the player against the fixed
+   build.
 
 This belongs with human check **H5** (SCRN-7, "nothing flickers"), which is
 the check that owns what the screen actually does between frames.
