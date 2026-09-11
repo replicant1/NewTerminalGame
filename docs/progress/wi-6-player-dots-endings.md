@@ -9,3 +9,7 @@
 02:35:38Z  TEST    tests/test_rules_player.py alone: 36 passed, 0 failed, 0 skipped
 02:35:38Z  TEST    whole suite: Ran 515 tests ... OK (skipped=2) — 479 baseline + 36 new, 0 failed
 02:35:38Z  NOTE    END-3 named test present and passing: EndThreeTheOrderOfTwoBranches.test_END_3_eating_the_last_dot_on_the_ghosts_square_is_a_loss_not_a_win
+02:35:56Z  COMMIT  6b0f465 WI-6: tests for the player's move, including the named END-3 test
+02:36:50Z  NOTE    PR body finalised with suite counts and the test table
+02:37:12Z  TEST    final whole-suite run before reporting: Ran 515 tests ... OK (skipped=2) — 0 failed
+02:37:12Z  DONE    WI-6 wi-6-player-dots-endings

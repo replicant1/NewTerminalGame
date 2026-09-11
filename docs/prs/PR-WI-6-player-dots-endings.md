@@ -3,8 +3,6 @@
 **Branch** `wi-6-player-dots-endings`, cut from `main` (`4d88d47`, the WI-8 merge).
 **Base** `main`. **Iteration** M1, Dev A, round 4.
 
-*Draft while the tests land; this body is updated before the PR is marked ready.*
-
 ## What this adds
 
 One function, in the module WI-5 already started:
@@ -68,9 +66,33 @@ Per plan §2.7 and the conductor's dispatch, no mutation check was run on this:
 the user has decided that is not part of this workflow. Report section 5 reads
 "not applicable".
 
+## What the tests establish
+
+`tests/test_rules_player.py`, 36 tests, one class per group of requirements:
+
+| Class | Requirements | What it pins |
+|---|---|---|
+| `TheBoardHelper` | — | the pictures really do say what their comments say |
+| `TheMoveItself` | CTRL-1, CTRL-2 | all four directions; one square per press; five presses land on the fifth square and the sixth (into a wall) changes nothing; the ghost and its heading are untouched; the state handed in is not mutated; totality over every square of a board |
+| `APressTowardsAWall` | CTRL-3 | the identical object comes back, no field changes, the score in particular does not, off-the-grid presses behave the same, and a wall press between two real moves loses nothing |
+| `DotsAndTheScore` | SCORE-1, SCORE-2, SCORE-3, SCORE-5 | the dot is eaten and scores exactly one, the other dots stay put, the eaten dot is gone for good, re-entering scores nothing, a seven-dot lap scores seven, and the score is non-decreasing at every step of a two-lap scripted run |
+| `HowAGameEnds` | END-1, END-2, GAME-2 | walking onto the ghost loses with dots still on the board; the last dot on an empty square wins; two dots left wins nothing; and both endings are reached off one board by two different routes |
+| `EndThreeTheOrderOfTwoBranches` | END-3 | see above — four tests, including the named one |
+| `AfterTheGameHasEnded` | END-5 | after a loss and after a win, every direction returns the identical object; the helper first asserts the player's square has an open way out, so the test cannot pass vacuously |
+
 ## Suite
 
-`/usr/bin/python3 -m unittest discover -s tests` — filled in when green.
+From the worktree root:
+
+```
+/usr/bin/python3 -m unittest discover -s tests
+Ran 515 tests in 10.278s
+OK (skipped=2)
+```
+
+`main` was at `Ran 479 tests … OK (skipped=2)` at the branch point; 36 of the
+515 are new and the two skips are the pre-existing ones. WI-1's AST purity guard
+covers `rules.py` automatically and did not fire.
 
 ## Notes for the merge
 
@@ -82,9 +104,25 @@ the user has decided that is not part of this workflow. Report section 5 reads
   helper for "is this corridor" or "which neighbours are open" was added — WI-1's
   maze value answers both (`is_wall`, `open_directions`), and nothing else was
   needed in common.
-- `orchestration/static/index.html` is **not** in this diff. If it shows up in
-  any comparison, that is the user's own unpushed work on `main` and has been
-  left completely alone.
+- `orchestration/static/index.html` is **not** in this diff. `git diff --stat
+  origin/main...HEAD` lists exactly four files: `termgame/rules.py`,
+  `tests/test_rules_player.py`, this summary and the progress log. The user's own
+  unpushed work under `orchestration/` has been left completely alone.
+
+## Deviations and open points
+
+- **No deviations from the plan's WI-6 brief.** Everything in its "Tests must
+  establish" list is covered, and nothing outside the item was touched.
+- **Additive, and worth a ruling if you disagree:** the tests include a few
+  assertions the brief does not ask for — totality over every square of a board,
+  a purity check that the state handed in is not mutated, and the board-helper
+  tests. They are cheap and they are the kind of thing a later refactor breaks
+  first; say the word and they come out.
+- **No contradictions found** between the plan, the architecture and the
+  requirements for this item. The architecture's §5.4 pseudocode for
+  `move_player` and the plan's §5 prose agree with each other and with FR
+  CTRL-1..3 / SCORE-1..3,5 / END-1..3,5 / GAME-2, and the implementation follows
+  the pseudocode branch for branch.
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
