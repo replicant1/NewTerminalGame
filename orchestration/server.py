@@ -374,6 +374,32 @@ def panes():
     return result
 
 
+def run_mode():
+    """Which mode this run is actually in, observed rather than declared.
+
+    In local mode nothing of the run reaches the remote. So the evidence is
+    simple: work-item branches on origin, or pull requests. A checkbox that
+    the user sets is not evidence of anything -- it was defaulting to "local"
+    through a run that was using pull requests throughout.
+    """
+    remote = sh(["git", "ls-remote", "--heads", "origin"])
+    branches = [l.split("refs/heads/")[-1] for l in remote.splitlines() if "refs/heads/" in l]
+    work = [b for b in branches if re.match(r"(wi|s|hv)-\d", b, re.I)]
+    prs = sh(["gh", "pr", "list", "--state", "all", "--limit", "50",
+              "--json", "number", "--jq", "length"]) or "0"
+    try:
+        n_prs = int(prs.strip() or 0)
+    except ValueError:
+        n_prs = 0
+    non_local = bool(work) or n_prs > 1     # PR #1 predates these runs
+    return {
+        "nonLocal": non_local,
+        "label": "pull requests" if non_local else "local only",
+        "why": ("%d work branch(es) on origin, %d PR(s)" % (len(work), n_prs)) if non_local
+               else "no work-item branches on origin",
+    }
+
+
 def run_clock():
     """When this run began, taken from the agents' own logs.
 
@@ -663,6 +689,7 @@ class Handler(BaseHTTPRequestHandler):
                 "root": str(ROOT), "now": time.time(),
                 "panes": panes(), "git": git_state(), "session": session_health(),
                 "progress": progress(), "now": in_hand(), "run": run_clock(),
+                "mode": run_mode(),
                 "asks": asks(), "requests": pending_requests(),
             }))
 
