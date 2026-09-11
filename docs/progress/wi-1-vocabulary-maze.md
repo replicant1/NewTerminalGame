@@ -4,3 +4,4 @@
 00:37:40Z  NOTE    branch wi-1-vocabulary-maze cut from main @436dfa5
 00:39:52Z  PLAN    termgame/model.py (Direction, Outcome, Position, Maze, GameState, Frame+FrameBuilder) + termgame/maze.py (generate/from_text); tests test_model/test_maze/test_purity; fixture spec_maze.txt
 00:39:52Z  NOTE    tests/fixtures/spec_maze.txt written — 29 rows x 37 cols, even-column charset is box-drawing + ■ (wall) and ▪ █ (corridor), no spaces
+00:42:45Z  COMMIT  327b2a7 WI-1: value vocabulary, braided-DFS maze generator, spec fixture
