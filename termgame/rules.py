@@ -1,4 +1,7 @@
-"""The rules of the game. This module lands **starting** a game — START-1..5.
+"""The rules of the game: **starting** a game, and what a **move** does.
+
+START-1..5 say where everything begins; :func:`move_player` says what one
+press of an arrow key changes.
 
 It is part of the pure core: it imports nothing impure, reads no file, reads
 no clock, and takes every scrap of randomness it needs as a
@@ -35,6 +38,42 @@ where :func:`starting_ghost` calls it — and one test changes with it.
 Squared Euclidean is used rather than the square root of it because the two
 order the candidates identically and the squared form is exact integer
 arithmetic, so ties are ties and never a floating-point near-miss.
+
+The player's move, in one sentence each
+---------------------------------------
+
+===========  ==============================================================
+END-5        once the game has ended the arrow keys do nothing: the state
+             comes back **unchanged**
+CTRL-1       an arrow moves the player one square up, down, left or right
+CTRL-2       one square per press and then a stop — this function moves
+             exactly one square and holds no repeat, drift or momentum
+             anywhere for a caller to wind up
+CTRL-3       a press towards a wall does **nothing at all**: the very same
+             state comes back, not a fresh one that happens to compare
+             equal, and certainly not one with a changed score
+SCORE-1      a dot on the square moved onto is eaten and gone from the
+             state for the rest of the game
+SCORE-2      each dot eaten adds exactly one to the score
+SCORE-3      moving onto a square whose dot has already gone scores nothing
+SCORE-5      nothing here ever subtracts from the score
+END-1        walking onto the ghost's square loses the game
+END-2        eating the last dot wins it
+END-3        and **in that order** — see below
+GAME-2       so the two ways a game ends are eating every dot and meeting
+             the ghost, and there is no third
+===========  ==============================================================
+
+**END-3 is an ordering, not a special case.** "Eating the last dot on the
+square the ghost is standing on is a loss, not a win: meeting the ghost is
+decided first." In :func:`move_player` that is the ``if`` before the
+``elif``: the collision test is evaluated first, so when both conditions hold
+at once the game is :data:`Outcome.CAUGHT`. Swap those two branches and the
+game silently starts *winning* that position. Nothing else in the function
+would change, no other test would notice, and the board it goes wrong on is
+rare. Both branches are kept adjacent and in that order for that reason, and
+``tests/test_rules_player.py`` names a test after this requirement so that
+the position is checked on purpose rather than by luck.
 """
 
 import random
@@ -58,6 +97,7 @@ __all__ = [
     "starting_heading",
     "starting_state",
     "new_game",
+    "move_player",
 ]
 
 
@@ -184,3 +224,73 @@ def new_game(rng: random.Random) -> GameState:
     under way the moment this returns (START-5).
     """
     return starting_state(mazelib.generate(rng), rng)
+
+
+# --------------------------------------------------------------------------
+# What a move does
+# --------------------------------------------------------------------------
+
+
+def move_player(state: GameState, direction: Direction) -> GameState:
+    """The player presses one arrow key, once — CTRL-1..3, SCORE-1..3, END-1..3.
+
+    A total function: every state and every direction has an answer, and it
+    is always a :class:`GameState`. It reads no clock and draws no random
+    number, so the same state and the same direction always give the same
+    result.
+
+    Three of the requirements are about *not* doing something, and each is
+    one line here:
+
+    * the game has already ended — the state comes back, the identical
+      object, untouched (END-5);
+    * the square ahead is wall, or off the grid entirely — likewise, the
+      identical object (CTRL-3, "nothing at all"). Not a copy that compares
+      equal: a caller that checks ``is`` must see nothing happened;
+    * one square is moved and the function returns. There is no loop, so
+      there is no way for a press to travel two squares (CTRL-2).
+
+    Then the dot, and then the ending:
+
+    * if the square moved onto still holds a dot, that dot is removed from
+      ``dots`` for good and the score goes up by exactly one (SCORE-1,
+      SCORE-2). If it does not, the score is carried across untouched
+      (SCORE-3). The score is only ever added to (SCORE-5);
+    * **the ghost's square is tested first, and the empty board second.**
+      That order is END-3 and is the whole of it: eating the last dot while
+      standing into the ghost is :data:`Outcome.CAUGHT`, never
+      :data:`Outcome.CLEARED`. Do not reorder these two branches.
+    """
+    if state.outcome is not Outcome.PLAYING:
+        return state                                    # END-5
+
+    target = state.player.shifted(direction)
+    if state.maze.is_wall(target):
+        return state                                    # CTRL-3
+
+    if target in state.dots:
+        dots = state.dots - {target}                    # SCORE-1
+        score = state.score + 1                         # SCORE-2
+    else:
+        dots = state.dots                               # SCORE-3
+        score = state.score
+
+    # END-3 lives in the next three lines, and in their order. Meeting the
+    # ghost is decided first; the cleared board only gets a say if the ghost
+    # is not standing where the player has just moved.
+    if target == state.ghost:
+        outcome = Outcome.CAUGHT                        # END-1
+    elif not dots:
+        outcome = Outcome.CLEARED                       # END-2
+    else:
+        outcome = Outcome.PLAYING
+
+    return GameState(
+        maze=state.maze,
+        player=target,                                  # CTRL-1, CTRL-2
+        ghost=state.ghost,
+        ghost_dir=state.ghost_dir,
+        dots=dots,
+        score=score,
+        outcome=outcome,
+    )
