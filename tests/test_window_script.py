@@ -227,13 +227,25 @@ class ReadOnlyQueryTest(unittest.TestCase):
         # and only `visible` goes false, so a census over all windows never
         # matches itself across a close.
         script = window.script_visible_window_ids()
-        self.assertIn("if visible of w then", script)
+        self.assertIn("whose visible is true", script)
 
     def test_the_census_only_reads_ids(self):
         script = window.script_visible_window_ids()
-        self.assertIn("id of w as text", script)
+        self.assertIn("get id of every window", script)
         self.assertNotIn("close", script)
         self.assertNotIn("set position", script)
+
+    def test_the_census_asks_once_rather_than_walking_an_index(self):
+        # Measured (WI-10): `repeat with w in windows` is really
+        # `item N of every window` on every iteration, and a window closing
+        # during the loop makes that index invalid --
+        # "Can't get item 5 of every window. Invalid index. (-1719)".
+        # The census is taken straight after a close, which is exactly when a
+        # window is going away, so the loop is the one thing it must not be.
+        script = window.script_visible_window_ids()
+        self.assertNotIn("repeat", script)
+        self.assertNotIn("item", script)
+        self.assertEqual(1, len(script.splitlines()))
 
 
 if __name__ == "__main__":
