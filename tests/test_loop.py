@@ -523,6 +523,25 @@ class ResolveRenderTest(unittest.TestCase):
     def test_the_default_lookup_produces_something_callable(self):
         self.assertTrue(callable(loop.resolve_render()))
 
+    def test_once_wi_3_has_landed_the_loop_draws_the_real_picture(self):
+        # Self-arming: skips on a branch without WI-3, and turns itself on
+        # the moment WI-3 is merged. WI-9 should then replace resolve_render
+        # with a plain import and delete this.
+        try:
+            from termgame import view
+        except ImportError:
+            self.skipTest("WI-3's renderer has not landed on this branch yet")
+        self.assertIs(view.render, loop.resolve_render())
+
+    def test_the_picture_the_loop_paints_is_the_size_of_the_window(self):
+        # Whatever renderer is resolved, the loop paints a whole window.
+        import random as random_module
+
+        render = loop.resolve_render()
+        frame = render(standins.new_game(random_module.Random(3)))
+        self.assertEqual(30, frame.height)
+        self.assertEqual(40, frame.width)
+
 
 class PlainTextPathTest(unittest.TestCase):
     """With no terminal there is no key to press, so the game must not block.

@@ -159,11 +159,25 @@ asserted here against the stand-ins and is named in `loop.py`'s docstring.
 
 ```
 /usr/bin/python3 -m unittest discover -s tests
+Ran 368 tests in 6.980s
+OK (skipped=2)
 ```
 
-Counts are in the progress log at `docs/progress/wi-4-adapter-loop.md` and in
-the completion note; `main` stood at 186 passed / 2 skipped before WI-3, and
-258 / 2 after it.
+`main` stood at **258 / 2** after WI-3 merged. This branch merges `main` in —
+no conflicts; WI-3 touched no file of mine — adds 119 tests, and removes WI-2's
+nine placeholder ones. The same 368 / 2 on `/opt/homebrew/bin/python3` 3.14.7,
+as the plan's cross-check.
+
+The two skips are `tests/test_launch_smoke.py`, guarded on a controlling tty,
+exactly as WI-2 left them. Nothing in this branch opens a window, and this work
+item opened none while it was being built.
+
+With WI-3 merged in, two self-arming tests armed and passed for the first time
+against real data: every style identifier `view.py` emits is one the palette
+knows, and `loop.resolve_render()` now resolves to `view.render`. The child
+executable, run with no tty, paints the real maze with the real double-line
+wall glyphs, the dots, the three-character player and ghost, and
+`score 0    arrows, q quits` on the last row.
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 

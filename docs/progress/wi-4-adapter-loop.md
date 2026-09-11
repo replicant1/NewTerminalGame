@@ -20,3 +20,7 @@
 01:32:25Z  NOTE    pty probe green against real ncurses: addstr at (29,39) gives "addwstr() returned ERR", insstr does not, full 30x40 paint clean, and the screen reads back identical including the corner cell. C1 measured, not assumed
 01:32:48Z  TEST    290 passed, 0 failed, 3 skipped (whole suite, branch before merging main)
 01:33:06Z  COMMIT  344cf5f WI-4: the loop driven by a fake screen, and the adapter measured on a real pty
+01:34:30Z  COMMIT  9241c3f WI-4: PR summary
+01:34:34Z  NOTE    draft PR 7 open against main; merging main in now that WI-3 has landed
+01:36:05Z  TEST    368 passed, 0 failed, 2 skipped (whole suite, after merging main with WI-3, /usr/bin/python3 3.9.6)
+01:36:09Z  TEST    368 passed, 0 failed, 2 skipped on /opt/homebrew/bin/python3 3.14.7 too — the cross-check agrees

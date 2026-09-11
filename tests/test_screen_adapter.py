@@ -280,6 +280,55 @@ class TheRealRendererTest(unittest.TestCase):
         )
 
 
+class TheRealThemeTest(unittest.TestCase):
+    """The adapter and WI-3's theme, now that both are here.
+
+    Self-arming in the same way as the test above: these skip on a branch
+    where WI-3 has not landed and turn themselves on when it has.
+    """
+
+    def setUp(self):
+        try:
+            from termgame import theme  # noqa: F401
+        except ImportError:
+            self.skipTest("WI-3's theme has not landed on this branch yet")
+
+    def test_the_adapter_paints_with_the_colours_the_pure_theme_names(self):
+        # Not the fallback: the numbers come from theme.py, so changing one
+        # after human check H6 never touches the adapter.
+        from termgame import theme
+
+        palette = screen_module.resolve_palette()
+        for name, style in theme.STYLES.items():
+            self.assertEqual(
+                style.colour,
+                palette[name].colour,
+                "%s: the adapter is not reading theme.py" % name,
+            )
+            self.assertEqual("bold" in style.attributes, palette[name].bold, name)
+            self.assertEqual("dim" in style.attributes, palette[name].dim, name)
+
+    def test_the_two_halves_agree_on_which_attributes_exist(self):
+        from termgame import theme
+
+        self.assertEqual(theme.ATTRIBUTE_NAMES, screen_module.ATTRIBUTE_NAMES)
+
+    def test_the_fallback_still_covers_every_identifier_the_theme_names(self):
+        # The fallback is only reached if theme.py cannot be read at all, but
+        # a stale one would then paint half the picture in the default
+        # colour, silently.
+        from termgame import theme
+
+        for name in theme.STYLE_NAMES:
+            self.assertIn(name, screen_module.FALLBACK_PALETTE, name)
+
+    def test_a_style_the_theme_does_not_name_still_falls_back(self):
+        palette = screen_module.resolve_palette()
+        screen = screen_module.Screen(FakeWindow(3, 4), {STYLE_DEFAULT: 7})
+        screen.paint(a_picture(["abcd", "efgh", "ijkl"], style="invented"))
+        self.assertNotIn("invented", palette)
+
+
 class CursesConstantsTest(unittest.TestCase):
     """The adapter may import curses; this checks what it relies on exists."""
 
