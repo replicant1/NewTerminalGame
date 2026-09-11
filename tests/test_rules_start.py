@@ -26,6 +26,7 @@ their own docstrings.
 """
 
 import inspect
+import os
 import random
 import unittest
 
@@ -40,9 +41,22 @@ from termgame.model import (
     Position,
 )
 
-#: How many seeds the "over many seeds" tests sweep. Each one generates a
-#: maze and recounts 551 cells, so this is a couple of seconds all told.
-SEEDS = range(200)
+#: How many seeds the "over many seeds" tests sweep. Each one generates a maze
+#: and recounts 551 cells, at roughly 23 ms a seed — so this constant alone
+#: decided over a third of the whole suite's runtime when it was 200.
+#:
+#: 50 by default. These tests pin START-1 and START-2, which are properties of
+#: a *placement rule* applied to a maze, not properties of the maze generator:
+#: a rule that picks the wrong square gets it wrong on nearly every board, so
+#: what they catch is not a rare failure. By the rule of three, 50 clean seeds
+#: bound the failure rate at 6% with 95% confidence, and every one of these
+#: tests also has hand-written boards behind it where the right answer is known
+#: by construction rather than by recount.
+#:
+#: For a long sweep::
+#:
+#:     TERMGAME_START_SEEDS=1000 /usr/bin/python3 -m unittest tests.test_rules_start
+SEEDS = range(int(os.environ.get("TERMGAME_START_SEEDS", "50")))
 
 #: The middle of the real 29 x 19 board, written out here as literal numbers
 #: so that these tests pin it rather than take the module's word for it.

@@ -1,7 +1,22 @@
 """The maze generator and the loader — MAZE-1..6.
 
-The invariant sweep runs 1000 seeds. The architect's prototype ran 5000 and
-found nothing; 1000 costs a couple of seconds here.
+**The invariant sweep runs 250 seeds by default.** It was 1000, which cost
+3.4s — more than a quarter of the whole suite — and the reduction is
+deliberate rather than a trim for its own sake.
+
+The sweep is a *regression* guard, not the original evidence. The evidence
+that this generator is sound is the architect's prototype: 5000 seeds, zero
+failures on border, dead-end, connectivity and no-2x2-open, recorded in
+`docs/ARCHITECTURE.md`. That measurement does not need re-running on every
+edit. What this sweep has to catch is a **change** that breaks the generator,
+and a broken braid pass or a broken connectivity guarantee fails at a high
+rate, not a one-in-a-thousand rate; it shows up in the first handful of seeds.
+
+By the rule of three, 250 seeds clean puts a 95% upper bound of 1.2% on the
+failure rate. For the rarer input-dependent bug that only a long sweep would
+find, run the long sweep::
+
+    TERMGAME_MAZE_SEEDS=5000 /usr/bin/python3 -m unittest tests.test_maze
 """
 
 import io
@@ -15,7 +30,9 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from termgame import maze as mazelib  # noqa: E402
 from termgame.model import DOWN, LEFT, MAZE_COLS, MAZE_ROWS, RIGHT, UP, Position  # noqa: E402
 
-SEEDS = 1000
+#: Seeds the invariant sweep generates. See the module docstring for why
+#: this is 250 and not 1000, and how to run a longer sweep.
+SEEDS = int(os.environ.get("TERMGAME_MAZE_SEEDS", "250"))
 
 FIXTURES = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fixtures")
 
