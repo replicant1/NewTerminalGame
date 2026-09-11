@@ -24,3 +24,6 @@
 01:05:27Z  WI-2 NOTE    probe 6: ./play itself — window 3984 at (-868,106), name 'Terminal Game', play exited 0 within 0.24s of q, window gone, census unchanged
 01:05:27Z  WI-2 NOTE    findings written to docs/findings/WI-2-terminal-window-id.md
 01:05:37Z  WI-2 TEST    90 passed, 0 failed, 2 skipped (the live smoke, no controlling tty)
+01:07:39Z  WI-2 NOTE    final Terminal census: all windows 367, 2486, 2420, 2440 — the exact four ids held before this run; visible 367, 2486. Every window I opened is closed.
+01:07:39Z  WI-2 TEST    90 passed, 0 failed, 2 skipped on /usr/bin/python3 3.9.6; same counts on /opt/homebrew/bin/python3 3.14.7
+01:07:39Z  WI-2 NOTE    PR #4 body updated and marked ready for review. Not merged, not approved, not closed — that is the conductor's.
