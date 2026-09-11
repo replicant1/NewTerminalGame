@@ -219,6 +219,23 @@ same two.
 
 ---
 
+## One thing in the diff that is not mine
+
+The PR diff against `origin/main` shows an edit to
+`orchestration/static/index.html`. **It is not part of this work item.** The
+branch was cut from the local `main` at `e43059c`, which is three commits ahead
+of what `origin/main` had at the time (`496d572`) — `fd0367d`, "monitor: the
+finished checkbox now covers agents that said DONE", is the conductor's own
+commit and has not been pushed. It will drop out of the diff the moment `main`
+is pushed. I have deliberately not touched it: reverting it here would undo the
+conductor's work.
+
+The files this item actually adds or changes are exactly two:
+`termgame/rules.py` and `tests/test_rules_start.py`, plus this summary and the
+progress log.
+
+---
+
 ## Contradictions found
 
 **None, and one thing specifically checked and cleared.** The obvious candidate
