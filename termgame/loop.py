@@ -36,22 +36,32 @@ a requirement that would otherwise need machinery:
   test the outcome; it calls the transitions as usual and they decline. That
   is what keeps game logic out of the shell, and it is a requirement on
   whatever WI-6 and WI-7 land: *a transition applied to a finished game
-  returns the same state.*
+  returns the same state.* Both of them honour it, so the loop never grew
+  the ``if`` it was written not to need.
 
 The loop still paints on every turn even when nothing changed, which is what
 the architecture's §6.2 sketch does. It costs 0.25 ms of a 143 ms tick, and
 it is what makes END-5's "the last picture stays on screen" true by doing
 rather than by not doing.
+
+**WI-9 wired the real game in here.** WI-4 shipped this loop against
+stand-ins, because the rules and the renderer had not landed yet, and it
+looked the renderer up at run time rather than importing it. Both of those
+are gone: :func:`run_game` now builds a real starting state with
+:func:`termgame.rules.new_game` and drives the loop with
+:func:`termgame.view.render`, :func:`termgame.rules.move_player` and
+:func:`termgame.rules.move_ghost`. Nothing about :func:`run_loop` changed
+when it did, which was the point of taking them as parameters — and the
+``Terminal Game`` executable did not change either.
 """
 
-import importlib
 import os
 import random
 import sys
 import time
-from typing import Callable, Optional
+from typing import Callable
 
-from termgame import controls, screen as screen_module, standins, ticker
+from termgame import controls, rules, screen as screen_module, ticker, view
 from termgame.model import Frame, GameState
 
 #: The clock. Monotonic, because the game must not care what the wall clock
@@ -95,56 +105,61 @@ def run_loop(
         screen.paint(render(state))
 
 
-def resolve_render(
-    module_lookup: Optional[Callable[[str], object]] = None
-) -> Callable[[GameState], Frame]:
-    """The renderer to draw with: WI-3's if it has landed, else the stand-in.
-
-    WI-3 and WI-4 were built in parallel against a picture type that was
-    already merged, so this module cannot import the real renderer at the
-    moment it is written. Looking it up at run time rather than importing it
-    means the real picture appears the moment WI-3 is merged, with no change
-    here — and WI-9 replaces the whole of this with a plain import.
-    """
-    lookup = importlib.import_module if module_lookup is None else module_lookup
-    try:
-        view = lookup("termgame.view")
-    except ImportError:
-        return standins.render
-    render = getattr(view, "render", None)
-    return render if callable(render) else standins.render
-
-
 # --------------------------------------------------------------------------
 # The entry point the `Terminal Game` executable calls
 # --------------------------------------------------------------------------
 
 
-def run_game() -> int:
-    """Play one game. Returns the process exit code.
+def run_game(open_screen=None, out=None, stdin=None) -> int:
+    """Play one game, from a maze nobody has seen before. Returns the exit code.
 
-    The starting state and the two transitions are stand-ins from
-    :mod:`termgame.standins`; **WI-9 deletes them** and puts the real ones
-    here. Nothing about the loop changes when it does, which is the point.
+    This is the whole of the wiring, and it is four names long: a fresh game
+    from :func:`termgame.rules.new_game`, the picture from
+    :func:`termgame.view.render`, and the two transitions from
+    :mod:`termgame.rules`. There is no argument by which a different game
+    could be asked for and no title screen to get past — the game is under
+    way the moment the state exists (START-5).
 
-    With no controlling terminal there is no key to press, so rather than
-    block forever in a window nobody could then close (plan §2.6, rule 4) the
-    game paints one frame as plain text and returns. That path is also how an
-    agent — which has no tty at all — can see the picture the game would draw.
+    The random source is a bare ``random.Random()``, seeded by the operating
+    system, so no two games are the same (MAZE-4). It is the *same* source
+    the maze and the ghost both draw from, which is why a seeded
+    :func:`termgame.rules.new_game` reproduces a whole game and an unseeded
+    one never repeats.
+
+    ``open_screen`` is the context manager that hands the loop a screen, and
+    defaults to the curses adapter's :func:`termgame.screen.session`. A
+    caller that supplies one has thereby said it has a screen. With neither a
+    screen nor a controlling terminal there is no key to press, so rather
+    than block forever in a window nobody could then close (plan §2.6, rule
+    4) the game paints one frame as plain text on ``out`` and returns. That
+    path is also how an agent — which has no tty at all — can see the picture
+    the game would have drawn.
+
+    ``stdin`` is the stream whose tty-ness decides that, and defaults to the
+    real one. It is a parameter rather than a fixed reference to
+    ``sys.stdin`` because a test that could not say "there is no terminal
+    here" would, when the suite happens to be run from a real terminal,
+    open curses and block the whole suite on a key nobody is there to press.
+
+    It returns **only** after :func:`run_loop` returns, and :func:`run_loop`
+    returns only on ``q`` (CTRL-4, END-6). Winning or losing does not end the
+    process: the last picture stays on the screen until the player leaves
+    (END-5), and the process exiting is what lets the supervisor close the
+    window (WIN-5).
     """
     rng = random.Random()
-    state = standins.new_game(rng)
-    render = resolve_render()
-    if not _has_a_terminal():
-        _write_plainly(render(state))
+    state = rules.new_game(rng)
+    if open_screen is None and not _has_a_terminal(stdin):
+        _write_plainly(view.render(state), stream=out)
         return 0
-    with screen_module.session() as scr:
+    opener = screen_module.session if open_screen is None else open_screen
+    with opener() as scr:
         run_loop(
             scr,
             state,
-            render,
-            standins.move_player,
-            standins.move_ghost,
+            view.render,
+            rules.move_player,
+            rules.move_ghost,
             rng,
         )
     return 0

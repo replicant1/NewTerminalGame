@@ -15,7 +15,7 @@ that no negative timeout ever reaches ncurses.
 
 import unittest
 
-from termgame import controls, screen as screen_module, standins
+from termgame import controls, screen as screen_module
 from termgame.model import STYLE_DEFAULT, Cell, Frame, frame_from_rows
 
 
@@ -231,13 +231,26 @@ class PaletteTest(unittest.TestCase):
         palette = screen_module.resolve_palette(lambda name: Theme)
         self.assertIn("default", palette)
 
-    def test_the_fallback_knows_every_identifier_the_stand_in_emits(self):
-        for style in standins.STYLE_IDS:
-            self.assertIn(
-                style,
-                screen_module.FALLBACK_PALETTE,
-                "the adapter would paint %r in the default colour" % style,
-            )
+    def test_the_fallback_covers_every_style_a_real_picture_emits(self):
+        # WI-9 note: this used to be asserted against the stand-in renderer's
+        # published vocabulary, which is gone with the stand-ins. The
+        # stronger claim is against what the real renderer actually puts on
+        # the screen for a real game: if theme.py cannot be read at all, the
+        # fallback must still paint the whole picture rather than half of it.
+        import random
+
+        from termgame import rules, view
+
+        frame = view.render(rules.new_game(random.Random(11)))
+        emitted = set()
+        for row in frame.styles():
+            emitted.update(row)
+        unknown = sorted(emitted - set(screen_module.FALLBACK_PALETTE))
+        self.assertEqual(
+            [],
+            unknown,
+            "the fallback would paint %s in the default colour" % unknown,
+        )
 
     def test_only_bold_and_dim_are_ever_asked_for(self):
         # WI-3 states the attribute list is closed at these two. If a third
@@ -263,10 +276,10 @@ class TheRealRendererTest(unittest.TestCase):
     def test_every_style_the_real_renderer_emits_is_in_the_palette(self):
         import random
 
-        from termgame import view
+        from termgame import rules, view
 
         palette = screen_module.resolve_palette()
-        state = standins.new_game(random.Random(7))
+        state = rules.new_game(random.Random(7))
         frame = view.render(state)
         emitted = set()
         for row in frame.styles():
