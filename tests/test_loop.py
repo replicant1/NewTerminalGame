@@ -16,7 +16,7 @@ that comes back is asserting the consequence, not the call.
 import random
 import unittest
 
-from termgame import controls, loop, standins, ticker
+from termgame import controls, loop, ticker
 from termgame.model import (
     DOWN,
     LEFT,
@@ -119,13 +119,55 @@ def positions(pictures):
     return [picture.rows()[0] for picture in pictures]
 
 
+def a_plain_step(state, direction):
+    """Step one square if the way is open, eating a dot if there is one.
+
+    Deliberately **not** :func:`termgame.rules.move_player`. This file is
+    about the shape of the loop, and the loop takes its transitions as
+    parameters precisely so that it can be driven by something whose answers
+    are obvious by inspection. The real transition also decides the two
+    endings, and on these boards — most of which start with no dots at all —
+    the first arrow press would win the game, which is a fact about the rules
+    and not about the loop.
+
+    The real transitions are driven through the real loop in
+    ``tests/test_scripted_game.py``. What this one has to honour, because the
+    loop relies on it and the real one honours it too, is that a transition
+    applied to a finished game returns the same state (END-5).
+    """
+    if state.outcome is not Outcome.PLAYING:
+        return state
+    target = state.player.shifted(direction)
+    if not state.maze.is_corridor(target):
+        return state
+    dots = state.dots
+    score = state.score
+    if target in dots:
+        dots = dots - {target}
+        score += 1
+    return GameState(
+        maze=state.maze,
+        player=target,
+        ghost=state.ghost,
+        ghost_dir=state.ghost_dir,
+        dots=dots,
+        score=score,
+        outcome=state.outcome,
+    )
+
+
+def a_still_ghost(state, rng):
+    """A ghost transition that does nothing — ticks without movement."""
+    return state
+
+
 def a_recording_player_move():
     """A player transition that records what it was asked to do."""
     calls = []
 
     def move(state, direction):
         calls.append(direction)
-        return standins.move_player(state, direction)
+        return a_plain_step(state, direction)
 
     return move, calls
 
@@ -168,9 +210,9 @@ def run(keys, state=None, render=constant_render, move_player=None,
     clock = FakeClock(start)
     screen = FakeScreen(keys, clock)
     if move_player is None:
-        move_player = standins.move_player
+        move_player = a_plain_step
     if move_ghost is None:
-        move_ghost = standins.move_ghost
+        move_ghost = a_still_ghost
     final = loop.run_loop(
         screen,
         a_state() if state is None else state,
@@ -249,8 +291,8 @@ class PaintBeforeTheFirstReadTest(unittest.TestCase):
             screen,
             a_state(),
             constant_render,
-            standins.move_player,
-            standins.move_ghost,
+            a_plain_step,
+            a_still_ghost,
             random.Random(0),
             clock=clock,
             tick=1.0,
@@ -488,57 +530,32 @@ class EndedGameTest(unittest.TestCase):
         self.assertEqual(["p11 g33"] * 6, positions(screen.pictures))
 
 
-class ResolveRenderTest(unittest.TestCase):
-    """Which renderer the loop draws with.
+class TheRendererTheLoopDrawsWithTest(unittest.TestCase):
+    """WI-9 replaced WI-4's run-time lookup with a plain import.
 
-    WI-3 and WI-4 were built in parallel, so the loop looks its renderer up
-    rather than importing it. Both halves of that are tested here with a fake
-    lookup, because on this branch only one of them can be tested for real.
+    ``loop.resolve_render`` is gone, and so are the stand-ins it could fall
+    back to. What is left to say is that the picture the entry point paints
+    is the real one and it is the size of the window — asserted by rendering,
+    not by comparing function objects.
     """
 
-    def test_without_wi_3_it_falls_back_to_the_stand_in(self):
-        def missing(name):
-            raise ImportError(name)
+    def test_resolve_render_is_gone(self):
+        # The lookup existed only because WI-3 had not merged when WI-4 was
+        # written. If it comes back, the loop has grown a second renderer.
+        self.assertFalse(hasattr(loop, "resolve_render"))
 
-        self.assertIs(standins.render, loop.resolve_render(missing))
+    def test_the_stand_ins_are_gone(self):
+        import importlib
 
-    def test_with_wi_3_present_it_uses_the_real_renderer(self):
-        sentinel = lambda state: None
-
-        class View(object):
-            render = staticmethod(sentinel)
-
-        def found(name):
-            self.assertEqual("termgame.view", name)
-            return View
-
-        self.assertIs(sentinel, loop.resolve_render(found))
-
-    def test_a_view_module_without_a_render_falls_back_rather_than_crashing(self):
-        class Empty(object):
-            pass
-
-        self.assertIs(standins.render, loop.resolve_render(lambda name: Empty))
-
-    def test_the_default_lookup_produces_something_callable(self):
-        self.assertTrue(callable(loop.resolve_render()))
-
-    def test_once_wi_3_has_landed_the_loop_draws_the_real_picture(self):
-        # Self-arming: skips on a branch without WI-3, and turns itself on
-        # the moment WI-3 is merged. WI-9 should then replace resolve_render
-        # with a plain import and delete this.
-        try:
-            from termgame import view
-        except ImportError:
-            self.skipTest("WI-3's renderer has not landed on this branch yet")
-        self.assertIs(view.render, loop.resolve_render())
+        with self.assertRaises(ImportError):
+            importlib.import_module("termgame.standins")
 
     def test_the_picture_the_loop_paints_is_the_size_of_the_window(self):
-        # Whatever renderer is resolved, the loop paints a whole window.
         import random as random_module
 
-        render = loop.resolve_render()
-        frame = render(standins.new_game(random_module.Random(3)))
+        from termgame import rules, view
+
+        frame = view.render(rules.new_game(random_module.Random(3)))
         self.assertEqual(30, frame.height)
         self.assertEqual(40, frame.width)
 
