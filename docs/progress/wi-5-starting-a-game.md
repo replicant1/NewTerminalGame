@@ -6,3 +6,4 @@
 01:47:02Z  PLAN    termgame/rules.py — new_game(rng), starting_player/ghost/dots over a Maze; tests recount the board exhaustively with distances written out in the test, never the module's expression
 01:47:02Z  ASK     A2: which straight-line metric does START-2 mean? unanswered, with the user
 01:47:02Z  ASSUME  squared Euclidean on (row, col), ties lowest (row, col) — per §9 A2, NOT a ruling. Affects one expression in rules.starting_ghost and the ghost-placement test only
+01:48:03Z  COMMIT  30fdf84 WI-5: rules.new_game — the two placement rules, dots, score and outcome
