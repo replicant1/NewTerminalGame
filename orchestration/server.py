@@ -444,6 +444,10 @@ def progress():
     # WI-8 and WI-9 start on the same day and are not one after the other.
     section, starts = None, {}
     sections, durations = {}, {}
+    # "excludes weekends" makes the plan's durations working days, not calendar
+    # days; the bar chart has to lay them out on the same axis or contiguous
+    # work appears to have gaps at every weekend.
+    excludes_weekends = bool(re.search(r"^\s*excludes\s+weekends\b", text, re.M | re.I))
     for line in text.split("\n"):
         t = line.strip()
         m = re.match(r"^section\s+(.*)$", t)
@@ -505,6 +509,7 @@ def progress():
         "items": items, "done": done, "total": total,
         "percent": int(round(100.0 * done / total)) if total else 0,
         "next": nxt,
+        "excludesWeekends": excludes_weekends,
         "active": sorted(i["id"] for i in items if i["active"] and not i["done"]),
         "label": ("%d of %d work items merged" % (done, total)) if total else "no plan yet",
     }
