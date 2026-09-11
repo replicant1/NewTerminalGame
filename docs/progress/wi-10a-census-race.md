@@ -9,3 +9,8 @@
 04:17:06Z  NOTE    WI-10a DEFECT IN THE PATCH: tests/test_window_failure_paths.py::classify still keys the census off the old text "if visible of w then", so the fake Terminal stopped answering the census at all -> smoke before-census came back empty and the reconcile test passed vacuously. Patch is incomplete; fixing.
 04:19:33Z  NOTE    WI-10a second stale literal found: tests/test_launch_smoke_script.py keyed its census-lie on "set out to"; now keys on classify(script)=="census". Fake census answer is now ", "-joined, the shape osascript really prints.
 04:19:33Z  TEST    746 passed, 0 failed, 2 skipped (/usr/bin/python3 -m unittest discover -s tests)
+04:20:24Z  COMMIT  e28e4fb WI-10a: census asks Terminal once instead of walking an index
+04:21:16Z  NOTE    WI-10a pushed wi-10a-census-race, opened draft PR #14 against main
+04:21:16Z  PLAN    WI-10a add the test that carries the weight (census survives a window vanishing mid-census, driven through visible_window_ids with a fake run_osascript that raises the measured -1719 for a loop-shaped script) plus a parse test over the three measured output shapes
+04:22:41Z  TEST    749 passed, 0 failed, 2 skipped (3 new tests in tests/test_window_supervisor.py)
+04:22:41Z  NOTE    WI-10a discrimination check: with script_visible_window_ids swapped back to the old repeat-loop text, visible_window_ids() raises the measured -1719 WindowError against the same fake the new test passes against. The behavioural test tells the two apart.
