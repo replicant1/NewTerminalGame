@@ -44,7 +44,7 @@ cannot quietly add one.
 
 ### `tests/test_rules_start.py` — new
 
-31 tests. What matters about them is stated in the section below.
+36 tests. What matters about them is stated in the section below.
 
 ---
 
@@ -81,10 +81,17 @@ The tie-breaks are not left to chance. Two hand-written boards force them:
   corner squares tie** for furthest, and the ghost must take `(1, 1)`.
 
 Both are checked by hand in the test's own docstring, and separately re-checked
-by the exhaustive recount. On the generated 29 × 19 board a player tie occurs on
-essentially every seed anyway — the exact centre `(14, 9)` is a link cell, and
-when it is a wall the two nodes above and below it both sit at distance 1 — so
-the low-row rule is exercised by the seeded tests as well.
+by the exhaustive recount.
+
+The seeded sweep exercises both tie-breaks too, and two tests assert that it
+does rather than leaving it to luck. **Measured over 200 seeds: a tie for
+nearest the middle on 88 of them, and a tie for furthest from the player on all
+200.** The first is because the exact centre `(14, 9)` is a *link* cell of the
+lattice, so on many seeds it is a wall and the two node squares above and below
+it both sit at distance 1 — which is exactly why START-1 says "nearest the
+middle" and not "the middle", and why the search has to be over corridor squares
+rather than a lookup. The second is because squared Euclidean distance collides
+freely: `(a, b)` and `(b, a)` offsets from the player are the same distance.
 
 ## What else the tests establish
 
@@ -103,6 +110,10 @@ the low-row rule is exercised by the seeded tests as well.
   returning the first open direction.
 - `GameState` still carries exactly the seven fields WI-1 declared — GAME-3
   holds through this item by a state built here having no eighth field.
+- START-2's "rather than along the corridors" has teeth: a breadth-first search
+  written out in the test finds seeds where the square furthest *along the
+  corridors* is not the one the code chose, so swapping the metric for a flood
+  fill would be caught.
 - Degenerate boards fail loudly rather than silently: a maze with no corridor,
   and a ghost square with no way on, each raise `ValueError`.
 
@@ -120,15 +131,31 @@ module-level `random` call.
 furthest from the player "measured across the grid rather than along the
 corridors", which rules out path distance but does not say which straight-line
 metric. This item proceeds on the plan's recorded assumption — **squared
-Euclidean on `(row, col)`, ties broken by lowest `(row, col)`** — and that is an
-assumption, not a decision.
+Euclidean on `(row, col)`** — and that is an assumption, not a decision.
 
-**Blast radius, should the answer differ:** one expression and one test.
-`rules.squared_distance` is the expression; `test_ghost_is_furthest_from_the_player`
-(and the hand-written `test_hand_written_board_ghost_takes_the_lowest_of_four_tied_corners`)
-is the test. Manhattan or Chebyshev would each be a one-line change to that
-function plus the matching longhand arithmetic in those two tests. Nothing else
+The **tie-break** is not part of A2 and is not an assumption: the plan's §5 WI-5
+settles it in writing for both placements — *"ties broken by lowest row then
+lowest column"*, and *"ties broken the same way"* for the ghost — and its "Tests
+must establish" list repeats it. That is a decision, taken before this item
+started, and it is what the code and the tests implement. Only the metric is
+open.
+
+**Blast radius, should the answer differ:** one expression and one test class.
+`rules.squared_distance`, where `starting_ghost` calls it, is the expression.
+`GhostPlacementTests` is the test — specifically
+`test_no_corridor_square_is_further_from_the_player_than_the_ghosts`, whose
+longhand `(r - pr) ** 2 + (c - pc) ** 2` would become the matching Manhattan or
+Chebyshev arithmetic, and the two hand-written-board expectations
+`test_hand_written_board_ghost_takes_the_lowest_of_four_tied_corners` and
+`test_hand_written_board_the_four_way_tie_for_the_ghost_is_real`. Nothing else
 in the module or the suite depends on the metric. This is WI-11's to apply.
+
+What is **not** open, and is asserted independently of the metric:
+`test_the_ghost_is_measured_across_the_grid_and_not_along_the_corridors`. It
+runs its own breadth-first search from the player and finds seeds where the
+square furthest *along the corridors* is not the square the code chose. That is
+the half of START-2 the specification does settle — "rather than along the
+corridors" — and it holds whichever straight-line metric the user picks.
 
 Squared rather than rooted Euclidean is not part of the open question: the two
 order the candidates identically, and the squared form is exact integers, so a
@@ -165,10 +192,12 @@ Run from the root of the worktree, the pinned command:
 ```
 
 ```
-Ran 404 tests in <TIME> — OK (skipped=2)
+Ran 409 tests in 11.413s
+
+OK (skipped=2)
 ```
 
-`main` was at 373 tests, 2 skipped. 373 + 31 = 404, and the two skips are the
+`main` was at 373 tests, 2 skipped. 373 + 36 = 409, and the two skips are the
 same two.
 
 ---
@@ -187,6 +216,25 @@ same two.
 - **Additive:** `starting_state(maze, rng)` alongside `new_game(rng)`. The plan
   asks only for `new_game`; the seam exists so a test can use a board a reader
   can check by hand, which the plan does ask for.
+
+---
+
+## Contradictions found
+
+**None, and one thing specifically checked and cleared.** The obvious candidate
+was `standins.new_game` disagreeing with `rules.new_game` about where things
+start, since WI-9 will swap one for the other. Measured across 200 seeds: for
+the same maze the two agree on the player's square and on the ghost's square
+every time. They differ only in how the ghost's heading is drawn —
+`rng.randrange(len(headings))` against `rng.choice(headings)` — which consumes
+the random source differently, so the same seed gives the two functions
+different headings on **99 of those 200 seeds**. That is a difference, not a
+disagreement, and it disappears when WI-9 deletes the stand-in.
+
+The plan's §5 WI-5 and the architecture's §5.3 agree with each other on every
+point of this item: the centre `(14, 9)`, squared Euclidean for the ghost, the
+lowest-`(row, col)` tie-break, dots as corridors minus the player, score zero,
+and a random open initial heading.
 
 ---
 
