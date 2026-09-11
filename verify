@@ -5,6 +5,7 @@ command.
     ./verify                 the three stages below
     ./verify --corner        and the real-window measurement as a fourth
     ./verify --only play     just one stage, by its short name
+    ./verify --verbose       print what every stage printed, not only failures
     ./verify --list          the stages, their short names, and what each proves
 
 Three stages run by default, in this order, cheapest first:
@@ -1085,13 +1086,17 @@ def chosen_stages(only=None, corner=False):
     return [by_short[name] for name in wanted]
 
 
-def run_stages(stages, out=None, root=REPO_ROOT):
+def run_stages(stages, out=None, root=REPO_ROOT, verbose=False):
     """Run them in order and print a report that names what broke.
 
     **It does not stop at the first failure.** A second failing stage is
     information -- "the suite is red and so is the smoke" is a different
     morning from "only the smoke is red" -- and none of these stages can
     corrupt the next one.
+
+    A failing stage always prints what it printed. ``verbose`` makes a passing
+    one do the same, which is how a measurement taken by a stage that passed
+    -- the corner stage's, in particular -- can be read and written down.
     """
     if out is None:
         out = sys.stdout
@@ -1106,6 +1111,9 @@ def run_stages(stages, out=None, root=REPO_ROOT):
         out.write(
             "%s (%.1fs)\n" % ("ok" if result.ok else "FAILED", result.seconds)
         )
+        if verbose and result.ok and result.output.strip():
+            for line in result.output.splitlines():
+                out.write("    %s\n" % line)
         out.flush()
 
     elapsed = time.time() - began
@@ -1201,6 +1209,12 @@ def main(argv=None):
         "--list", action="store_true", help="say what the stages are and stop"
     )
     parser.add_argument(
+        "-v",
+        "--verbose",
+        action="store_true",
+        help="print what each stage printed, even the ones that passed",
+    )
+    parser.add_argument(
         "--record",
         action="store_true",
         help="re-record the play-through pictures in tests/fixtures from the "
@@ -1222,7 +1236,7 @@ def main(argv=None):
         sys.stderr.write("verify: %s\n" % error)
         return 2
 
-    _results, ok = run_stages(stages)
+    _results, ok = run_stages(stages, verbose=arguments.verbose)
     return 0 if ok else 1
 
 

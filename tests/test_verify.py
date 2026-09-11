@@ -212,6 +212,27 @@ class WhenAStageFailsTheOutputSaysWhichOne(unittest.TestCase):
         self.assertIn("[2/3] the launch smoke ... FAILED", text)
         self.assertIn("[1/3] the test suite ... ok", text)
 
+    def test_a_passing_stage_keeps_its_output_to_itself_by_default(self):
+        out = io.StringIO()
+        verify.run_stages(
+            [stage_that("a chatty stage", True, "fine", "a measurement worth having")],
+            out=out,
+            root=REPO_ROOT,
+        )
+        self.assertNotIn("a measurement worth having", out.getvalue())
+
+    def test_verbose_prints_what_a_passing_stage_printed(self):
+        # How a measurement taken by a stage that passed -- the corner
+        # stage's -- gets read and written down.
+        out = io.StringIO()
+        verify.run_stages(
+            [stage_that("a chatty stage", True, "fine", "a measurement worth having")],
+            out=out,
+            root=REPO_ROOT,
+            verbose=True,
+        )
+        self.assertIn("a measurement worth having", out.getvalue())
+
     def test_a_very_long_output_is_tailed_and_says_it_was_tailed(self):
         out = io.StringIO()
         noisy = "\n".join("line %d" % index for index in range(200))
