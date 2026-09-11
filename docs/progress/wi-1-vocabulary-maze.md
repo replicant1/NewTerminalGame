@@ -10,3 +10,6 @@
 00:45:03Z  TEST    42 passed, 0 failed, 0 skipped  (tests/test_model.py only)
 00:46:39Z  TEST    84 passed, 0 failed, 0 skipped  (test_model + test_maze)
 00:46:39Z  NOTE    spec mock-up: 126 nodes + 138 links = 264 corridors; joiner-column invariant (architecture C9) holds across all 29 rows
+00:48:05Z  TEST    96 passed, 0 failed, 0 skipped  (test_model + test_maze + test_purity) — the whole suite
+00:48:05Z  NOTE    AST scanners verified against a deliberately impure snippet: they report curses/os/pathlib and random.shuffle
+00:48:15Z  NOTE    cross-check on /opt/homebrew/bin/python3 (3.14.7): Ran 96 tests ... OK — the gate remains /usr/bin/python3
