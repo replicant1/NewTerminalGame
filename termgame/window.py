@@ -598,6 +598,23 @@ def run_osascript(script, timeout=OSASCRIPT_TIMEOUT_SECONDS):
     return (completed.stdout or "").strip()
 
 
+def _sleep(seconds):
+    """The one place this module waits, and the one place a test replaces it.
+
+    An indirection rather than ``time.sleep`` bound as a default argument: a
+    default is captured when the function is defined, so a test could only
+    reach it by mutating the standard library's ``time`` module for the whole
+    process. Going through a module-level name keeps that blast radius inside
+    this module.
+    """
+    time.sleep(seconds)
+
+
+def _now():
+    """Monotonic seconds. Replaceable for the same reason as ``_sleep``."""
+    return time.monotonic()
+
+
 class _CGPoint(ctypes.Structure):
     _fields_ = [("x", ctypes.c_double), ("y", ctypes.c_double)]
 
@@ -802,9 +819,10 @@ def window_is_visible(window_id):
 def wait_until_idle(
     window_id,
     timeout=None,
-    poll=POLL_SECONDS,
-    startup=STARTUP_GRACE_SECONDS,
-    sleep=time.sleep,
+    poll=None,
+    startup=None,
+    sleep=None,
+    clock=None,
 ):
     """Poll our window's tab until the game has ended (WIN-5).
 
@@ -817,16 +835,32 @@ def wait_until_idle(
     as "the game has ended" once the game has been seen running, or once the
     startup grace has passed (which is what lets a child that exits instantly
     still be waited on).
+
+    *poll* and *startup* default to ``None`` meaning "read the module constant
+    now", rather than binding the constant at definition time. That is what
+    lets a test shorten the grace without changing what ``./play`` does.
+
+    *sleep* and *clock* are the seam that lets a test watch ten seconds pass
+    without spending ten seconds. They are injected together because a fake
+    sleep that does not advance a fake clock would spin.
     """
-    deadline = None if timeout is None else time.monotonic() + timeout
-    began = time.monotonic()
+    if poll is None:
+        poll = POLL_SECONDS
+    if startup is None:
+        startup = STARTUP_GRACE_SECONDS
+    if sleep is None:
+        sleep = _sleep
+    if clock is None:
+        clock = _now
+    deadline = None if timeout is None else clock() + timeout
+    began = clock()
     seen_running = False
     while True:
         if is_running(window_id):
             seen_running = True
-        elif seen_running or time.monotonic() - began >= startup:
+        elif seen_running or clock() - began >= startup:
             return True
-        if deadline is not None and time.monotonic() >= deadline:
+        if deadline is not None and clock() >= deadline:
             return False
         sleep(poll)
 
@@ -844,7 +878,11 @@ def close_window(window_id):
 
 
 def close_when_idle(
-    window_id, timeout=CLOSE_GRACE_SECONDS, startup=0.0, sleep=time.sleep
+    window_id,
+    timeout=None,
+    startup=0.0,
+    sleep=None,
+    clock=None,
 ):
     """Wait for the game to end, confirm it has, then close the window.
 
@@ -857,9 +895,14 @@ def close_when_idle(
 
     Returns True when the window was closed; False -- leaving the window open
     rather than forcing it -- when the game was still running.
+
+    ``timeout=None`` means ``CLOSE_GRACE_SECONDS``, read now rather than bound
+    at definition time.
     """
+    if timeout is None:
+        timeout = CLOSE_GRACE_SECONDS
     if not wait_until_idle(
-        window_id, timeout=timeout, startup=startup, sleep=sleep
+        window_id, timeout=timeout, startup=startup, sleep=sleep, clock=clock
     ):
         return False
     return close_window(window_id)
@@ -981,7 +1024,7 @@ def supervise(
     root=None,
     settings=DEFAULT_SETTINGS,
     report=None,
-    close_grace=CLOSE_GRACE_SECONDS,
+    close_grace=None,
     on_window_opened=None,
 ):
     """The whole of ``./play``: WIN-1..5, in order.
@@ -1003,6 +1046,8 @@ def supervise(
         root = repo_root()
     if report is None:
         report = _stderr_report
+    if close_grace is None:
+        close_grace = CLOSE_GRACE_SECONDS
 
     reference, source = reference_position(report=report)
     screens = applescript_display_bounds(displays())
