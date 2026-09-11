@@ -21,7 +21,7 @@ def acting_scripts():
     return {
         "configure": window.script_configure_window(WINDOW_ID),
         "move": window.script_move_window(WINDOW_ID, 130, 230),
-        "busy": window.script_tab_busy(WINDOW_ID),
+        "state": window.script_tab_state(WINDOW_ID),
         "close": window.script_close_window(WINDOW_ID),
         "visible": window.script_window_visible(WINDOW_ID),
         "name": window.script_window_name(WINDOW_ID),
@@ -80,15 +80,32 @@ class AddressingTest(unittest.TestCase):
 
 
 class CloseTest(unittest.TestCase):
-    """Rule 2 and 3: never close a busy tab."""
+    """Rules 2 and 3: never close a busy tab, and never close a live game."""
 
-    def test_the_close_is_guarded_by_the_busy_test_in_the_same_script(self):
+    def test_the_close_is_guarded_in_the_same_script(self):
         script = window.script_close_window(WINDOW_ID)
-        busy_at = script.index("busy of tab 1")
+        busy_at = script.index("busy of gameTab is false")
+        processes_at = script.index("(count of processes of gameTab) is 0")
         close_at = script.index("close gameWindow")
+        self.assertLess(busy_at, close_at, "the close is not guarded by busy")
         self.assertLess(
-            busy_at, close_at, "the close is not guarded by the busy test"
+            processes_at, close_at, "the close is not guarded by the process count"
         )
+
+    def test_the_close_needs_both_halves_of_the_guard(self):
+        # busy alone is false for the whole of a running game (measured), so a
+        # close guarded only by busy would shut the window on a live game; the
+        # process count alone would not protect against the modal sheet.
+        script = window.script_close_window(WINDOW_ID)
+        self.assertIn(
+            "if busy of gameTab is false and (count of processes of gameTab) is 0",
+            script,
+        )
+
+    def test_the_running_test_reads_both_busy_and_the_process_count(self):
+        script = window.script_tab_state(WINDOW_ID)
+        self.assertIn("busy of gameTab", script)
+        self.assertIn("count of processes of gameTab", script)
 
     def test_the_close_reports_which_of_the_two_happened(self):
         script = window.script_close_window(WINDOW_ID)
@@ -199,8 +216,15 @@ class ReadOnlyQueryTest(unittest.TestCase):
     def test_the_tty_query_says_none_when_no_tab_matches(self):
         self.assertIn('return "none"', window.script_reference_position("/dev/ttys004"))
 
+    def test_the_census_counts_only_visible_windows(self):
+        # Measured: a closed window stays in Terminal's `windows` collection
+        # and only `visible` goes false, so a census over all windows never
+        # matches itself across a close.
+        script = window.script_visible_window_ids()
+        self.assertIn("if visible of w then", script)
+
     def test_the_census_only_reads_ids(self):
-        script = window.script_window_ids()
+        script = window.script_visible_window_ids()
         self.assertIn("id of w as text", script)
         self.assertNotIn("close", script)
         self.assertNotIn("set position", script)

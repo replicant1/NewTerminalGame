@@ -96,6 +96,16 @@ class QueryParsingTest(unittest.TestCase):
         self.assertIsNone(window.parse_position("no idea"))
         self.assertIsNone(window.parse_position("7"))
 
+    def test_a_tab_state_is_a_busy_flag_and_a_process_count(self):
+        self.assertEqual((False, 2), window.parse_tab_state("false 2"))
+        self.assertEqual((True, 0), window.parse_tab_state("true 0"))
+        self.assertEqual((False, 0), window.parse_tab_state("false 0"))
+
+    def test_an_unreadable_tab_state_is_not_read_as_a_running_game(self):
+        # Erring here would leave the window open, never close a live one.
+        self.assertEqual((False, 0), window.parse_tab_state(""))
+        self.assertEqual((False, 0), window.parse_tab_state("false lots"))
+
     def test_the_window_census_is_a_list_of_ids(self):
         self.assertEqual([367, 2486], window.parse_window_ids("367\n2486\n"))
         self.assertEqual([367, 2486], window.parse_window_ids("367, 2486"))

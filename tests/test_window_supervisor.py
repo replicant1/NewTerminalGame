@@ -14,18 +14,24 @@ NEW_WINDOW_ID = 4242
 OTHER_WINDOW_ID = 99
 
 
+#: A tab running the game, as measured: not busy, two processes
+#: (``login`` and ``Python``). See ``window.script_tab_state``.
+PLAYING = "false 2"
+#: The same tab once the child has exited.
+ENDED = "false 0"
+
+
 class FakeTerminal(object):
     """Answers the scripts the supervisor sends, and remembers them.
 
-    ``busy_answers`` is consumed one poll at a time; the last value repeats.
+    ``states`` is consumed one poll at a time; the last value repeats.
     """
 
-    def __init__(self, tty_position="none", front_position="10 20",
-                 busy_answers=None):
+    def __init__(self, tty_position="none", front_position="10 20", states=None):
         self.scripts = []
         self.tty_position = tty_position
         self.front_position = front_position
-        self.busy_answers = list(busy_answers or ["false"])
+        self.states = list(states or [PLAYING, ENDED])
         self.closed = []
         self.raise_on = None
 
@@ -39,19 +45,19 @@ class FakeTerminal(object):
             return self.front_position
         if "return id of newWindow" in script:
             return str(NEW_WINDOW_ID)
-        if "return (busy of tab 1" in script:
-            return self._next_busy()
+        if "count of processes" in script and "close gameWindow" not in script:
+            return self._next_state()
         if "close gameWindow" in script:
-            if self._next_busy() == "true":
+            if self._next_state() != ENDED:
                 return "busy"
             self.closed.append(script)
             return "closed"
         return ""
 
-    def _next_busy(self):
-        if len(self.busy_answers) > 1:
-            return self.busy_answers.pop(0)
-        return self.busy_answers[0]
+    def _next_state(self):
+        if len(self.states) > 1:
+            return self.states.pop(0)
+        return self.states[0]
 
     def kinds(self):
         """The sequence of what was asked, as short labels."""
@@ -69,8 +75,8 @@ class FakeTerminal(object):
                 labels.append("move")
             elif "close gameWindow" in script:
                 labels.append("close")
-            elif "busy of tab 1" in script:
-                labels.append("busy")
+            elif "count of processes" in script:
+                labels.append("poll")
             else:
                 labels.append("other")
         return labels
@@ -82,6 +88,8 @@ class SupervisorTest(unittest.TestCase):
         self.real_screen_size = window.screen_size
         self.real_tty = window.controlling_tty
         self.reports = []
+        self.real_sleep = window.time.sleep
+        window.time.sleep = lambda seconds: None
         window.screen_size = lambda: (1512, 982)
         window.controlling_tty = lambda: "/dev/ttys009"
 
@@ -89,6 +97,7 @@ class SupervisorTest(unittest.TestCase):
         window.run_osascript = self.real_run
         window.screen_size = self.real_screen_size
         window.controlling_tty = self.real_tty
+        window.time.sleep = self.real_sleep
 
     def supervise(self, terminal, root="/tmp/repo", close_grace=0):
         window.run_osascript = terminal
@@ -103,8 +112,8 @@ class SupervisorTest(unittest.TestCase):
         self.assertEqual("open", kinds[kinds.index("open")])
         self.assertLess(kinds.index("open"), kinds.index("configure"))
         self.assertLess(kinds.index("configure"), kinds.index("move"))
-        self.assertLess(kinds.index("move"), kinds.index("busy"))
-        self.assertLess(kinds.index("busy"), kinds.index("close"))
+        self.assertLess(kinds.index("move"), kinds.index("poll"))
+        self.assertLess(kinds.index("poll"), kinds.index("close"))
 
     def test_the_window_that_is_closed_is_the_one_that_was_created(self):
         terminal = FakeTerminal()
@@ -147,9 +156,9 @@ class SupervisorTest(unittest.TestCase):
             opened,
         )
 
-    def test_the_window_is_closed_when_configuring_it_fails(self):
+    def test_an_empty_window_is_closed_when_configuring_it_fails(self):
         # Rule 5: the failure path runs the same wait-then-close-by-id.
-        terminal = FakeTerminal()
+        terminal = FakeTerminal(states=[ENDED])
         terminal.raise_on = "number of columns"
         with self.assertRaises(window.WindowError):
             self.supervise(terminal)
@@ -160,15 +169,10 @@ class SupervisorTest(unittest.TestCase):
 
     def test_a_window_still_running_the_game_is_left_open_not_forced(self):
         # Rule 3: a busy tab is never closed -- that raises a modal sheet.
-        terminal = FakeTerminal(busy_answers=["true"])
+        terminal = FakeTerminal(states=[PLAYING])
         terminal.raise_on = "number of columns"
-        real_sleep = window.time.sleep
-        window.time.sleep = lambda seconds: None
-        try:
-            with self.assertRaises(window.WindowError):
-                self.supervise(terminal)
-        finally:
-            window.time.sleep = real_sleep
+        with self.assertRaises(window.WindowError):
+            self.supervise(terminal)
         self.assertEqual([], terminal.closed)
         self.assertTrue(
             any(str(NEW_WINDOW_ID) in message for message in self.reports),
@@ -178,15 +182,10 @@ class SupervisorTest(unittest.TestCase):
     def test_the_supervisor_waits_for_the_game_to_end_before_closing(self):
         # WIN-5 on the architect's reading of A1: the last picture stays, the
         # player presses q, the process exits, the window closes then.
-        terminal = FakeTerminal(busy_answers=["true", "true", "false"])
-        real_sleep = window.time.sleep
-        window.time.sleep = lambda seconds: None
-        try:
-            self.supervise(terminal)
-        finally:
-            window.time.sleep = real_sleep
+        terminal = FakeTerminal(states=[PLAYING, PLAYING, ENDED])
+        self.supervise(terminal)
         self.assertEqual(1, len(terminal.closed))
-        self.assertGreaterEqual(terminal.kinds().count("busy"), 3)
+        self.assertGreaterEqual(terminal.kinds().count("poll"), 3)
 
 
 class WaitAndCloseTest(unittest.TestCase):
@@ -199,32 +198,59 @@ class WaitAndCloseTest(unittest.TestCase):
     def tearDown(self):
         window.run_osascript = self.real_run
 
-    def test_waiting_returns_true_once_the_tab_goes_idle(self):
-        answers = ["true", "true", "false"]
-        window.run_osascript = lambda script, timeout=20.0: answers.pop(0)
+    def answer(self, states):
+        remaining = list(states)
+
+        def fake(script, timeout=20.0):
+            self.sent.append(script)
+            return remaining.pop(0) if len(remaining) > 1 else remaining[0]
+
+        self.sent = []
+        window.run_osascript = fake
+
+    def test_waiting_returns_true_once_the_game_has_ended(self):
+        self.answer([PLAYING, PLAYING, ENDED])
+        self.assertTrue(
+            window.wait_until_idle(7, timeout=5, sleep=self.slept.append)
+        )
+        self.assertEqual([0.2, 0.2], self.slept)
+
+    def test_a_tab_that_is_busy_counts_as_running_even_with_no_processes(self):
+        # Measured: busy is briefly true while the shell is being replaced.
+        self.answer(["true 0", "true 0", ENDED])
         self.assertTrue(
             window.wait_until_idle(7, timeout=5, sleep=self.slept.append)
         )
         self.assertEqual([0.2, 0.2], self.slept)
 
     def test_waiting_gives_up_rather_than_hanging_for_ever(self):
-        window.run_osascript = lambda script, timeout=20.0: "true"
+        self.answer([PLAYING])
         self.assertFalse(
             window.wait_until_idle(7, timeout=0, sleep=self.slept.append)
         )
 
-    def test_close_when_idle_does_not_close_a_busy_tab(self):
-        sent = []
+    def test_an_empty_tab_is_not_read_as_ended_during_the_startup_grace(self):
+        # The window must not be closed on a game that has not painted yet.
+        self.answer([ENDED])
+        self.assertFalse(
+            window.wait_until_idle(
+                7, timeout=0, startup=5.0, sleep=self.slept.append
+            )
+        )
 
-        def fake(script, timeout=20.0):
-            sent.append(script)
-            return "true"
-
-        window.run_osascript = fake
+    def test_close_when_idle_does_not_close_a_tab_still_running_the_game(self):
+        self.answer([PLAYING])
         self.assertFalse(
             window.close_when_idle(7, timeout=0, sleep=self.slept.append)
         )
-        self.assertFalse([s for s in sent if "close gameWindow" in s])
+        self.assertFalse([s for s in self.sent if "close gameWindow" in s])
+
+    def test_close_when_idle_closes_a_tab_whose_game_has_ended(self):
+        self.answer([ENDED, "closed"])
+        self.assertTrue(
+            window.close_when_idle(7, timeout=1, sleep=self.slept.append)
+        )
+        self.assertTrue([s for s in self.sent if "close gameWindow" in s])
 
 
 if __name__ == "__main__":

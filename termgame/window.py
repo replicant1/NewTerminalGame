@@ -275,11 +275,32 @@ def script_move_window(window_id, x, y):
     )
 
 
-def script_tab_busy(window_id):
-    """Is the game process still running? (WIN-5, and the modal-sheet guard.)"""
+def script_tab_state(window_id):
+    """Is the game still running in our window? (WIN-5.)
+
+    Returns ``"<busy> <process count>"``.
+
+    **Measured, and it contradicts ARCHITECTURE.md section 6.3:** ``busy`` is
+    **false** the whole time the game is running. Terminal does not count a
+    process that is blocked reading from the tty as busy, and the game spends
+    its whole life blocked on a keypress. (``exec /bin/sleep 4`` in the same
+    window *does* report busy true, so it is the waiting-on-input that does
+    it, not ``exec``.) Polling ``busy`` alone -- which is what the architecture
+    prescribes -- closes the window about a second after opening it.
+
+    ``count of processes of tab 1`` is the signal that works: measured 3 at
+    0.25 s (the shell being replaced), 2 (``login``, ``Python``) for as long as
+    the game runs, and 0 within 0.19 s of the child exiting.
+
+    ``busy`` is still read, and still gates the close, because it is what
+    Terminal itself uses to decide whether to raise the modal confirmation
+    sheet, and it *is* briefly true while the exec happens.
+    """
     return (
         'tell application "Terminal"\n'
-        "\treturn (busy of tab 1 of %s) as text\n"
+        "\tset gameTab to tab 1 of %s\n"
+        '\treturn ((busy of gameTab) as text) & " " & '
+        "((count of processes of gameTab) as text)\n"
         "end tell" % _window(window_id)
     )
 
@@ -287,14 +308,17 @@ def script_tab_busy(window_id):
 def script_close_window(window_id):
     """Close our window -- and only if its tab is idle (WIN-5).
 
-    The busy test is inside the script so that the check and the close cannot
-    be separated by the player quitting, or by anything else, in between.
-    Returns ``closed`` or ``busy``.
+    The test is inside the script so that it and the close cannot be separated
+    by anything happening in between. Both halves matter: no process left means
+    the game has really ended (``busy`` alone does not -- see
+    ``script_tab_state``), and ``busy`` false is what stops Terminal raising
+    the modal confirmation sheet. Returns ``closed`` or ``busy``.
     """
     return (
         'tell application "Terminal"\n'
         "\tset gameWindow to %s\n"
-        "\tif busy of tab 1 of gameWindow is false then\n"
+        "\tset gameTab to tab 1 of gameWindow\n"
+        "\tif busy of gameTab is false and (count of processes of gameTab) is 0 then\n"
         "\t\tclose gameWindow\n"
         '\t\treturn "closed"\n'
         "\telse\n"
@@ -327,8 +351,13 @@ def script_window_name(window_id):
     )
 
 
-def script_window_ids():
-    """Every Terminal window id, for a before/after census.
+def script_visible_window_ids():
+    """Every *visible* Terminal window id, for a before/after census.
+
+    Visible, not all: measured, a closed window stays in Terminal's ``windows``
+    collection -- three probe runs left ids 3924, 3927 and 3930 in it after
+    being closed -- and only ``visible`` goes false. A census over ``windows``
+    therefore never matches itself across a close.
 
     This enumerates in order to *count*. Nothing is ever acted on as a result
     of this list.
@@ -337,7 +366,7 @@ def script_window_ids():
         'tell application "Terminal"\n'
         '\tset out to ""\n'
         "\trepeat with w in windows\n"
-        "\t\tset out to out & (id of w as text) & linefeed\n"
+        "\t\tif visible of w then set out to out & (id of w as text) & linefeed\n"
         "\tend repeat\n"
         "\treturn out\n"
         "end tell"
@@ -455,9 +484,9 @@ def reference_position(tty=None):
     return choose_reference(tty_position, front_position)
 
 
-def terminal_window_ids():
-    """Census of Terminal's windows -- used to prove nothing else changed."""
-    return parse_window_ids(run_osascript(script_window_ids()))
+def visible_window_ids():
+    """Census of Terminal's visible windows -- proof nothing else changed."""
+    return parse_window_ids(run_osascript(script_visible_window_ids()))
 
 
 def open_game_window(command):
@@ -479,9 +508,32 @@ def move_window(window_id, x, y):
     run_osascript(script_move_window(window_id, x, y))
 
 
-def is_busy(window_id):
-    """True while the game process is still running in our window."""
-    return run_osascript(script_tab_busy(window_id)).strip().lower() == "true"
+def parse_tab_state(text):
+    """``"false 2"`` -> ``(False, 2)``. Pure."""
+    parts = (text or "").split()
+    busy = bool(parts) and parts[0].strip().lower() == "true"
+    count = 0
+    if len(parts) > 1:
+        try:
+            count = int(parts[1])
+        except ValueError:
+            count = 0
+    return (busy, count)
+
+
+def tab_state(window_id):
+    """``(busy, process count)`` for our window's tab."""
+    return parse_tab_state(run_osascript(script_tab_state(window_id)))
+
+
+def is_running(window_id):
+    """True while the game is still alive in our window (WIN-5).
+
+    See ``script_tab_state``: ``busy`` alone is false throughout the game, so
+    the process count is what actually answers the question.
+    """
+    busy, processes = tab_state(window_id)
+    return busy or processes > 0
 
 
 def window_name(window_id):
@@ -495,15 +547,28 @@ def window_is_visible(window_id):
     return answer == "true"
 
 
-def wait_until_idle(window_id, timeout=None, poll=0.2, sleep=time.sleep):
-    """Poll ``busy of tab 1`` until the game process is gone (WIN-5).
+def wait_until_idle(
+    window_id, timeout=None, poll=0.2, startup=2.0, sleep=time.sleep
+):
+    """Poll our window's tab until the game has ended (WIN-5).
 
-    ``timeout=None`` waits as long as the player plays. Returns True when the
-    tab went idle, False when the timeout ran out.
+    ``timeout=None`` waits as long as the player plays -- that is the whole
+    job of the supervisor. Returns True when the game has ended, False when
+    the timeout ran out with it still running.
+
+    *startup* exists because the tab is momentarily process-free between
+    ``do script`` returning and the child appearing; an empty tab is only read
+    as "the game has ended" once the game has been seen running, or once the
+    startup grace has passed (which is what lets a child that exits instantly
+    still be waited on).
     """
     deadline = None if timeout is None else time.monotonic() + timeout
+    began = time.monotonic()
+    seen_running = False
     while True:
-        if not is_busy(window_id):
+        if is_running(window_id):
+            seen_running = True
+        elif seen_running or time.monotonic() - began >= startup:
             return True
         if deadline is not None and time.monotonic() >= deadline:
             return False
@@ -511,18 +576,32 @@ def wait_until_idle(window_id, timeout=None, poll=0.2, sleep=time.sleep):
 
 
 def close_window(window_id):
-    """Close our window by id, but never while its tab is busy."""
+    """Close our window by id -- and only if the game has really ended.
+
+    The condition is checked inside the AppleScript; see
+    ``script_close_window``. Returns True when it closed.
+    """
     return run_osascript(script_close_window(window_id)).strip() == "closed"
 
 
-def close_when_idle(window_id, timeout=CLOSE_GRACE_SECONDS, sleep=time.sleep):
-    """The one close path: wait for the child, confirm it is gone, then close.
+def close_when_idle(
+    window_id, timeout=CLOSE_GRACE_SECONDS, startup=0.0, sleep=time.sleep
+):
+    """Wait for the game to end, confirm it has, then close the window.
 
-    Used by the success path and the failure path alike. Returns True when the
-    window was closed; False -- leaving the window open rather than forcing
-    it -- when the child was still running.
+    This is the failure path's clean-up. No startup grace here, and that is
+    deliberate: measured, the tab already holds processes 0.25 s after
+    ``do script`` returns -- before any statement that could fail has run --
+    so on this path an empty tab really does mean nothing is running. The
+    grace belongs to the main wait, where reading an empty tab too eagerly
+    would close the window on a live game.
+
+    Returns True when the window was closed; False -- leaving the window open
+    rather than forcing it -- when the game was still running.
     """
-    if not wait_until_idle(window_id, timeout=timeout, sleep=sleep):
+    if not wait_until_idle(
+        window_id, timeout=timeout, startup=startup, sleep=sleep
+    ):
         return False
     return close_window(window_id)
 
@@ -552,6 +631,7 @@ def supervise(
     target = offset_position(reference, screen_size())
 
     window_id = open_game_window(child_command(root))
+    game_ended = False
     try:
         configure_window(window_id, settings)
         move_window(window_id, target[0], target[1])
@@ -559,10 +639,17 @@ def supervise(
             "game window %d at %s (reference %s from %s)"
             % (window_id, target, reference, source)
         )
-        wait_until_idle(window_id, timeout=None)
+        game_ended = wait_until_idle(window_id, timeout=None)
         return 0
     finally:
-        if not close_when_idle(window_id, timeout=close_grace):
+        # On the way out of a finished game the wait above has already proved
+        # the game is gone, so close at once -- WIN-5 is "as soon as the game
+        # ends". Any other way out waits the grace period first.
+        if game_ended:
+            closed = close_window(window_id)
+        else:
+            closed = close_when_idle(window_id, timeout=close_grace)
+        if not closed:
             report(
                 "the game is still running in Terminal window id %d, so it has "
                 "been left open. Quit the game with q and close it yourself."

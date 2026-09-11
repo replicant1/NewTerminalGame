@@ -9,3 +9,10 @@
 00:45:52Z  WI-2 NOTE    draft PR #4 open against main (repo replicant1/NewTerminalGame). Now writing the tests.
 00:46:59Z  WI-2 TEST    41 passed, 0 failed, 0 skipped (geometry + script text)
 00:49:13Z  WI-2 TEST    69 passed, 0 failed, 0 skipped (adds executables, supervisor sequence, placeholder screen)
+00:50:02Z  WI-2 NOTE    about to run the live probe: one window, opened by id, ended with a typed q, closed by that id, census before/after
+00:52:38Z  WI-2 NOTE    live probe 1: WIN-3 REPRODUCES — window name read back exactly 'Terminal Game'; tab 40x30, Menlo-Regular 18; child reports '40 columns x 30 rows' from inside; position write landed exactly; closed by captured id; visible false after
+00:52:38Z  WI-2 NOTE    CONTRADICTION with ARCHITECTURE 6.3 WIN-5: 'busy of tab 1' is FALSE while the exec'd Python child is running (measured: busy=false, processes=login,Python for 3s of play). The architect's poll would have closed the window a second after opening it.
+00:52:38Z  WI-2 NOTE    probe 2: exec /bin/sleep gives busy=true; exec of the Python child gives busy=false. So it is not exec that does it — Terminal does not count a process blocked on tty input as busy.
+00:52:38Z  WI-2 NOTE    probe 3: 'count of processes of tab 1' IS a sound exit signal — 3 at 0.25s, 2 while playing, 0 within 0.19s of the child exiting. busy is briefly true at 0.25-0.47s during the exec. Close guard becomes: busy false AND no processes.
+00:52:38Z  WI-2 NOTE    probe 3: a closed window stays in Terminal's 'windows' collection (ids grew 3924, 3927, 3930) but its 'visible' goes false — a census must count VISIBLE windows. visible set was [367, 2486] before and after every probe.
+00:56:22Z  WI-2 TEST    77 passed, 0 failed, 0 skipped (exit signal changed from busy to busy-or-process-count; close guarded by both)
