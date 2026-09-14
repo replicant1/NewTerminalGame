@@ -43,6 +43,9 @@ CALLS_ON_THE_CAPTURED_WINDOW = (
         lambda: script.set_window_position(WINDOW_ID, Point(432, 332)),
     ),
     ("window_is_busy", lambda: script.window_is_busy(WINDOW_ID)),
+    # WI-3: what is actually running in the tab. Added because `busy` stops
+    # tracking the process once the window has been given its 40x30 grid.
+    ("window_processes", lambda: script.window_processes(WINDOW_ID)),
     ("close_window", lambda: script.close_window(WINDOW_ID)),
     ("window_is_visible", lambda: script.window_is_visible(WINDOW_ID)),
 )

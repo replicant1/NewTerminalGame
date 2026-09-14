@@ -141,6 +141,34 @@ class WindowLauncher(object):
 
         Returns the :class:`ReapResult`. The window is the launcher's throughout
         and belongs to nobody else.
+
+        .. warning::
+
+           **This method can close the window while the command is still
+           running, and report success.** Do not build anything new on it.
+
+           *WI-13 deletes this warning when it lands the fix. If you are reading
+           it, the fix has not landed yet.*
+
+           ``run`` decides the command has finished by asking the tab whether it
+           is ``busy``. That flag stops tracking the process once the tab has
+           been given a fixed number of rows and columns — and :meth:`open`
+           gives every window it creates exactly that, because WIN-2 requires
+           it. Measured: a game alive from +0.9 s to +8.4 s with ``busy``
+           reporting false from +0.9 s onwards. A whole session then takes the
+           same 1.0 s whether the game was asked to run for 5 seconds or for
+           12, because in both cases it was killed and the launcher said
+           ``closed``.
+
+           What to use instead, and what :func:`launcher.game.play` does::
+
+               window = launcher.open(command)
+               launcher.reap(window.window_id, launcher.session_timeout,
+                             still_running=launcher.has_live_processes)
+
+           The process list keeps telling the truth where ``busy`` does not.
+           The measurement is in
+           ``docs/findings/WI-3-busy-is-false-after-a-grid-resize.md``.
         """
         window = self.open(command)
         return self.reap(window.window_id, self.session_timeout)
@@ -179,12 +207,30 @@ class WindowLauncher(object):
 
     # -- getting rid of it again ----------------------------------------
 
-    def wait_until_idle(self, window_id, timeout):
-        """Is nothing running in that window? Polls, bounded, and gives up."""
+    def has_live_processes(self, window_id):
+        """Is anything running in that window, judged by its process list?
+
+        The alternative to :meth:`Desktop.is_busy`, and the one to pass to
+        :meth:`reap` for any window that has been given a grid: ``busy`` was
+        measured reporting false for the whole life of a process in a window
+        whose rows and columns had been set, which is every window this
+        launcher creates. See :func:`launcher.script.window_processes`.
+        """
+        return bool(self.desktop.processes(window_id))
+
+    def wait_until_idle(self, window_id, timeout, still_running=None):
+        """Is nothing running in that window? Polls, bounded, and gives up.
+
+        ``still_running`` is the question asked each time round, and defaults to
+        the tab's ``busy`` flag. Pass :meth:`has_live_processes` where that flag
+        cannot be trusted.
+        """
+        if still_running is None:
+            still_running = self.desktop.is_busy
         deadline = self.clock() + timeout
         while True:
             try:
-                if not self.desktop.is_busy(window_id):
+                if not still_running(window_id):
                     return True
             except AutomationError:
                 # A window we cannot even ask about is not one we should close.
@@ -193,19 +239,19 @@ class WindowLauncher(object):
                 return False
             self.sleeper(self.poll_interval)
 
-    def reap(self, window_id, timeout):
+    def reap(self, window_id, timeout, still_running=None):
         """Close the captured window once it is idle, and check that it went.
 
         Never raises: this is what runs on the failure path, where an exception
         of its own would bury the failure it was called to clean up after.
         """
         try:
-            return self._reap(window_id, timeout)
+            return self._reap(window_id, timeout, still_running)
         except BaseException as error:  # pragma: no cover - belt and braces
             return ReapResult(False, "reaping failed: %s" % (error,), window_id)
 
-    def _reap(self, window_id, timeout):
-        if not self.wait_until_idle(window_id, timeout):
+    def _reap(self, window_id, timeout, still_running=None):
+        if not self.wait_until_idle(window_id, timeout, still_running):
             return ReapResult(
                 False,
                 "window %r is still busy after %.1fs and was left open on "

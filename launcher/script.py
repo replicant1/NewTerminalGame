@@ -292,6 +292,44 @@ def window_is_busy(window_id, timeout=QUERY_TIMEOUT):
     return ScriptCall("window_is_busy", source + "\ntabBusy as text", timeout)
 
 
+def window_processes(window_id, timeout=QUERY_TIMEOUT):
+    """What is running in the captured window, by name, ``|``-separated.
+
+    This exists because ``busy`` cannot be trusted once the window has been
+    given its 40 x 30 grid. Measured: setting ``number of columns`` and
+    ``number of rows`` on a tab makes ``busy`` report false for the entire life
+    of the process running in it — the game was demonstrably alive from +0.9 s
+    to +8.4 s while ``busy`` said false from +0.9 s onwards. Font, colours and
+    title are all harmless; it is the grid alone, and WIN-2 requires the grid.
+    See ``docs/findings/WI-3-busy-is-false-after-a-grid-resize.md``.
+
+    The process list stays accurate throughout, and because the launcher
+    ``exec``s the command — so the login shell is replaced rather than left
+    underneath it — the list goes **empty** when the command ends rather than
+    falling back to a shell. Empty therefore means "nothing is running in
+    there", which is exactly the question caution C2 asks, and it needs no
+    matching of process names.
+
+    A window that has gone away answers with an empty list, because nothing is
+    running in a window that no longer exists.
+    """
+    ref = window_ref(window_id)
+    source = _bounded(
+        "try\n"
+        '\ttell application "Terminal"\n'
+        "\t\tset runningProcesses to processes of selected tab of %s\n"
+        "\tend tell\n"
+        "on error\n"
+        "\tset runningProcesses to {}\n"
+        "end try\n"
+        'set AppleScript\'s text item delimiters to "|"' % (ref,),
+        timeout,
+    )
+    return ScriptCall(
+        "window_processes", source + "\nrunningProcesses as text", timeout
+    )
+
+
 def close_window(window_id, timeout=SET_TIMEOUT):
     """Close the captured window, and only ever that one."""
     source = _bounded(

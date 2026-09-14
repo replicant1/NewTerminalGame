@@ -163,6 +163,25 @@ not log it. There is no mutation sweep on this project and no work item that run
 test, **say so** — name it and why, in your progress log and your report. That is the right answer and
 it costs a line of text.
 
+**Ask what a green result would look like if the thing you are testing were absent.** This is the most
+reusable practice this project has produced, and all three times it came up, the check and the
+flattering reading of it had quietly come apart:
+
+- A grid of **solid wall** satisfies MAZE-2, MAZE-3, MAZE-5 and MAZE-6 vacuously — so the maze sweep
+  asserts a corridor count as well, or it is a true statement about nothing.
+- A **word-list scan** for the screen's vocabulary passes against a bare `40` typed by hand — so it is
+  not the guard it appears to be, and the nine-size tests are.
+- **"I built it"** is true of a test whose point was missed.
+
+The whole of the work is noticing that they have come apart. Nothing needs running.
+
+**This is not the prohibited practice wearing a new coat, and the difference is worth being precise
+about.** You never touch the code. You never make anything fail. You ask what your test would say
+about a system that had *never* had the property you think you are testing — and if the honest answer
+is "it would still pass", the test is measuring something else and the remedy is to rewrite the
+assertion. Breaking working code to watch a test go red remains prohibited; asking what a test would
+say about a system you never build is just reading.
+
 One consequence of that prohibition: `.claude/agents/developer.md` asks for a report section 5,
 "Mutation checks". **Write "not applicable — mutation checking is prohibited on this project" there.**
 The instruction is a leftover and it contradicts the prohibition in the same file.
@@ -677,6 +696,11 @@ relax the restriction?"* The answer is **no**, not *probably not*. Anyone tempte
 arbitrary wall is not weakening a safety margin, they are removing the only thing that makes MAZE-2
 true. The write-up is in `docs/findings/WI-4-maze-invariants-over-seeds.md`.
 
+**The proof does not retire the sweep.** Its premise — that only the odd lattice is ever opened — is a
+property of the code, not of arithmetic, so if a later change alters what the carve and braid may
+open, the proof lapses without a word. The seed sweep is what would notice. Keep both: the proof says
+the restriction cannot be relaxed on purpose, the sweep says it has not been relaxed by accident.
+
 ### 11.8 Refusing beats silently degrading — now the rule in both lanes
 
 Two work items reached the same decision independently and it is worth stating once as policy.
@@ -698,3 +722,22 @@ The stronger guard is already built, though it was not framed as one. **The gene
 nine different grid sizes**, so a screen dimension hard-coded anywhere in the domain would fail those
 tests outright. Later domain items should keep testing at sizes other than 19 x 29 for that reason,
 not merely for generality.
+
+### 11.10 When the technical lead cannot reach the tree
+
+**A developer may apply the technical lead's exact words to this plan. A developer may not otherwise
+amend it, however right the edit.** When the lead is cut off from the working tree and a defect in the
+plan is known, the correction may be carried by whoever has access, under four conditions: the lead
+asks explicitly; the lead supplies the text; the developer applies it verbatim and attributes it; and
+the lead checks it word for word before the branch merges.
+
+**The third and fourth conditions are only checkable because of the second**, and that is the
+load-bearing half. Had the developer been asked to write the paragraph from the lead's intent, there
+would have been nothing to diff against, and "verbatim" would rest on goodwill instead of on an audit.
+Supplying the words is not ceremony — it is what makes the rest of the rule enforceable. A rule that
+cannot be checked is a convention, and this run has already watched a convention fail quietly: two
+developers agreed `tests/__init__.py` would be empty and identical on both sides, both believed it
+held, and it did not. It merged cleanly by luck.
+
+*(The distinction is DEV-B's, made while declining to apply an edit it had been offered and could have
+made unasked.)*
