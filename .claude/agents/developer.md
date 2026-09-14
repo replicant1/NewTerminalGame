@@ -149,6 +149,21 @@ Do not report a thing as done that you did not observe. "I could not determine t
 
 If you encounter any difficulties while doing your work, stop and ask the user for whatever info you need.
 
+## Additional log line types
+
+`.claude/shared/progress-tracking.md` defines the line types every agent writes. These are yours on top of them.
+
+Write your log at `docs/progress/<branch-name>.md`. **Name it after your branch, not something shared** — another developer is working in their own worktree at the same time, and a single shared progress file is the one thing worktrees cannot keep you from colliding on.
+
+- `PLAN    <one sentence>` — what you intend to build, written before you build it
+- `TEST    <n> passed, <n> failed, <n> skipped` — after every suite run
+- `COMMIT  <sha> <subject>` — after each commit
+- `BLOCKED <what you need, and who you need it from>` — the moment you are stuck, not after you have worked around it
+
+Your `START` line names the work item, and your `DONE` line reports `<work-item> <branch> <head sha>` rather than a document path. Prefix every line with the work item code so the file greps cleanly, and commit the log along with the work item.
+
+`TEST` and `COMMIT` are what make the log worth reading while you are still working: the technical lead watches `git log --all --oneline` across the shared object store, and your `TEST` counts are the only evidence of whether what you committed actually runs.
+
 ## Other Instructions
 Instructions in the following shared files also apply:
 - .claude/shared/progress-tracking.md

@@ -80,6 +80,22 @@ This is a deliberate instruction and not an oversight. The practice has real val
 
 If you believe a particular requirement is fragile enough that an ordinary test would not catch a plausible refactor breaking it — the kind where correctness lives in the order of two statements — then **say so in the plan, in one sentence, and name the requirement**. Let the user decide whether to spend the effort. Do not build the obligation into the plan yourself.
 
+## Additional log line types
+
+`.claude/shared/progress-tracking.md` defines the line types every agent writes. These are yours on top of them.
+
+Write your log at `docs/progress/technical-lead.md`. You will run for a long time before the plan exists, and until then nobody watching can tell the difference between thinking and having died.
+
+- `TRACE      <requirement code> -> <where it will be realised>` — as you place each one
+- `ITERATION  <name> : <the requirements or work items in it>` — as you settle each iteration
+- `ITEM       <code> <one sentence> (<effort>, depends on <what>)` — as you define each work item
+- `ASSIGN     <item> -> <developer>` — as you allocate
+- `CONTRADICT <what the architecture or the specification gets wrong> -> <the evidence>`
+
+Your `RISK` line reports `<what could slip, and what it would cost>`.
+
+Two of these earn their place beyond mere visibility: `TRACE`, because a requirement nobody traced is a requirement nobody will build, and the log makes the gap obvious before the plan is finished; and `CONTRADICT`, because the architecture you are planning against will contain mistakes, and the ones caught at planning time cost a line of text rather than a work item.
+
 ## Other Instructions
 Instructions in the following shared files also apply:
 - .claude/shared/progress-tracking.md

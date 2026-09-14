@@ -11,7 +11,7 @@ Create a suitably named (human readble) append-only log at `docs/progress/`, app
 
 Get it from the clock, not from memory — `date -u +%H:%M:%SZ` — and write it at the moment you append the line, never backfilled. The reader is watching a run unfold and needs to know when each thing actually happened; a stamp invented after the fact is worse than none, because it looks authoritative. Keep the `Z`: it says the time is UTC and stops it being read as local.
 
-One line each, at these moments and no others:
+One line each, at least these moments:
 
 - `START` — you have begun
 - `READ    <what you read>` — the specification, an existing document, a file in the repository
