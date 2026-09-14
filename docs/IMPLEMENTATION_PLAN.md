@@ -67,8 +67,17 @@ they are called is yours.
 - **The Domain is pure.** It imports nothing impure: no `curses`, no `subprocess`, no `os`, no
   `sys.stdout`, no `time`, no screen geometry. Randomness enters it only through a seed or a random
   source passed in, so any maze or ghost behaviour can be reproduced in a test.
-- **Presentation depends on Domain, and on nothing else.** It turns a domain state into a grid of
-  characters and colours. It never reads a key, never writes to a terminal, never sleeps.
+- **Presentation depends on Domain, and on the screen port's value vocabulary — and on nothing
+  else.** It turns a domain state into a grid of characters *and colours*, and it cannot name a colour
+  without the port's name for one. What it may take from the port is **names**: the value types and
+  constants a frame is made of. What it must never take is **behaviour or state** — no screen handle,
+  no adapter, no function that draws, presents, or reads a key. It never reads a key, never writes to
+  a terminal, never sleeps. The permitted set is pinned in one place in the suite, so that a ruling
+  the other way costs one line and the suite reports what else moves. *(The original wording said "and
+  on nothing else" flatly, which contradicted this plan's own §9 rows describing a "glyph **and
+  colour** table" for SCRN-4, SCRN-5 and SCRN-6. The plan assumed this in one section and forbade it
+  in another. Corrected after WI-5a raised it rather than quietly complying with the stricter
+  reading.)*
 - **Application depends on Presentation, Domain and the Screen port.** Nothing depends on Application.
 - **The Screen port is an interface; the terminal adapter is the only thing behind it that knows
   `curses` exists.** Nothing above the port imports `curses`.
@@ -135,6 +144,16 @@ using the screen. These are not cosmetic:
   summary in `docs/prs/` and progress log in `docs/progress/` tell you what their change was for. If
   the two of you find you disagree about something real — where a responsibility belongs, which
   interface survives — escalate *that*, named plainly, not the merge conflict it arrived as.
+- **Prefer not creating the conflict to resolving it cheaply.** The rule above settles a collision for
+  the price of a merge; avoiding it costs nothing at all. One case recurs often enough to name:
+  **where a guard sweeps a directory automatically, do not also list the swept thing explicitly in a
+  file that two lanes edit.** The explicit entry buys no coverage the sweep does not already give, and
+  it puts two developers on adjacent lines of a shared file for no return. Put the equivalent
+  assertion in your own test file and import the shared helper rather than duplicating it.
+- **If you leave something out deliberately, say so where the next person will look** — in the commit
+  message and in your PR summary. An absent entry that looks like an oversight will be "fixed" by
+  whoever notices it next, and the conflict you avoided arrives a week late with nobody remembering
+  why.
 
 ### 4.3 Where documents go
 
@@ -181,6 +200,42 @@ about a system that had *never* had the property you think you are testing — a
 is "it would still pass", the test is measuring something else and the remedy is to rewrite the
 assertion. Breaking working code to watch a test go red remains prohibited; asking what a test would
 say about a system you never build is just reading.
+
+**This shape is not only about tests, and it has now appeared three times in three different places.**
+A grid of solid wall satisfies four maze requirements vacuously — a test that passes whether or not
+the property holds. Terminal's `busy` flag reports false for the whole life of a process in any window
+this system grids, so "window confirmed idle" read identically whether the window was idle or the
+check was blind — a **safety rule** that passes whether or not the property holds (§11.3). And
+"applied verbatim" read identically whether the developer agreed with the text or silently thought it
+wrong — a **process rule** that passes whether or not the property holds (§11.10). Three instances,
+one shape. When you write a check of any kind — a test, a ground rule, a convention between two
+people — ask what it would report in a world where the thing it checks was never there. If the answer
+is "the same", you have written something that cannot fail, which is not the same as something that
+passes.
+
+**Some requirements are discharged by absence, and their tests should say so.** GAME-3 asks for no
+lives, levels, time limits, power-ups, pause or restart; §9 already records that "the absence is the
+design". CTRL-2's "the player never drifts on their own" is the same shape — drift would need
+somewhere to live, and there is no velocity and no persistent player heading for it to live in. You
+cannot write a behavioural test for a thing that has nowhere to happen. **This is a legitimate
+discharge, and it is not an excuse.** The distinction is that the test must **name what must not
+exist, and fail if it appears**. A test that asserts `GameState` has no velocity field is a real test:
+it goes red the day somebody adds one, which is the day CTRL-2 starts being at risk. Two obligations
+follow. **The test's docstring says it is structural rather than behavioural**, so no later reader
+mistakes it for proof about runtime behaviour. And **where the requirement also has a behavioural
+half, that half is named and placed** — CTRL-2's is in the game loop, where a tick must move the ghost
+and not the player.
+
+**A guard written when a category has one member has not been tested — it has only been written.**
+WI-5a's permitted-import list named the Domain and the screen port but not Presentation itself, so no
+presentation module could import a sibling. The omission could not show, because Presentation had
+exactly one module and nothing to import. It surfaced the moment a second arrived. The shape, in
+DEV-B's words: **a guard written when a category has one member cannot distinguish "this rule is
+right" from "this rule has never been exercised."** Both read as green. So when you write a rule about
+a category — a layer, a directory, a kind of module — ask how many members it has *today*. If the
+answer is one, the guard is a statement of intent and not yet a check. **The second member is the
+first real test of the rule**: treat its arrival as the moment to re-read the guard, not merely to
+extend it.
 
 One consequence of that prohibition: `.claude/agents/developer.md` asks for a report section 5,
 "Mutation checks". **Write "not applicable — mutation checking is prohibited on this project" there.**
@@ -600,18 +655,35 @@ M0 ran, and then the run was paused. These are the things the plan got wrong or 
 here rather than left to disagree with the tree. Each is backed by a measurement in
 `docs/findings/` or in a developer's PR summary.
 
-### 11.1 What M0 actually delivered
+### 11.1 What M0 and M1 delivered
 
-**Two of the four planned items.** WI-1 (lane A) and WI-2 (lane B) are built, merged and green.
-**WI-3 and WI-4 were never dispatched** — the run was paused first. Nothing is half-done and no branch
-is dangling.
+**M0 finished complete: all four planned items — WI-1, WI-2, WI-3 and WI-4.** It was interrupted by a
+pause after the first two and resumed. An earlier version of this section recorded it as ending short
+at two of four, which was true when written and is not now.
 
-`main` carries 191 tests, 0 failed, 0 skipped — 107 from WI-1 and 84 from WI-2, the two sums landing
-exactly, which is the first evidence that the two lanes did not interfere with each other.
+M0's purpose was to prove the architecture end to end before any game logic was worth writing, and it
+did — including by breaking. The launcher creates, owns and destroys a window by its captured id; the
+game draws a whole frame through curses inside it and gives the terminal back; the maze generator runs
+headlessly by the thousand; and WI-3 joined them and then found that the join's central safety check
+had never worked (§11.3). Better found in M0 by the item whose job was to join them than in M3 by a
+player.
 
-**Whoever resumes starts at WI-4**, which is the head of the longest chain in §8
-(WI-4 → WI-7 → WI-8 → WI-10 → WI-11 → WI-12 → WI-14b) and is blocked by nothing that was built. WI-3
-is the other unblocked item and is small.
+**M1 is complete — WI-5a, WI-7, WI-8, WI-9, WI-10 — and M2 is all but done**, with WI-5b, WI-6 and
+WI-11 landed and WI-12 and WI-13 in flight. `main` stands at **620 tests, 0 failed, 0 skipped**.
+
+**One thing about how it landed belongs in the record.** For an extended stretch neither the technical
+lead nor the conductor could reach the primary working tree, and a queue of nine finished branches
+accumulated unmerged. It was cleared by the user, from the primary tree, one branch at a time in plan
+order with the whole suite run after each and a hard stop at the first red or first conflict — the
+discipline this plan asks for, applied by the only party who could reach the tree. Nothing conflicted
+and nothing went red. The full record is `docs/findings/integration-queue-lockout.md`.
+
+Two lessons were paid for and should not be relearned. **The blockage changed the shape of the work,
+not only its timing** — with nothing merging, developers had to stack branches on branches and
+integrate their own dependencies, which is work that normally belongs to the merge. And **absent
+metadata is not evidence of an absent method**: the merges carry git's default messages, from which
+both the conductor and this lead inferred that no suite had been run between them. That inference was
+wrong.
 
 ### 11.2 WI-13 changes character — it is no longer first implementation
 
@@ -626,12 +698,38 @@ exist, confirmation that nothing the launcher opens survives a failure or a time
 the C2/C3 resolution in §11.3 against a real failing launch. The effort stays at 1 day; what is in it
 has changed. Its dependency on WI-3 is unchanged.
 
-### 11.3 C2 beats C3, and the §4.1 ground rule has been corrected
+### 11.3 C2 beats C3 — and the guard both rely on does not work
 
-The architecture's cautions C2 (never close a busy window) and C3 (clean up on the failure path) give
-opposite instructions when setup fails while the game is still running, and §4.1 of this plan repeated
-C3 without noticing. **C2 wins**, and §4.1 now says so. The reasoning is in §4.1 and in the log; the
-short form is that closing a busy window destroys the ability to clean up at all.
+Cautions C2 (never close a busy window) and C3 (clean up on the failure path) give opposite
+instructions when setup fails while the game is still running, and §4.1 of this plan repeated C3
+without noticing. **C2 wins**, and §4.1 says so: wait a bounded time, and if the process has not gone,
+leave the window and name its id in the failure.
+
+**That resolution was, when written, satisfied vacuously — and the reason matters more than the bug.**
+WI-3 measured that setting `number of columns` and `number of rows` on a tab, which is exactly what
+WIN-2 requires of every window this system opens, makes that tab's `busy` property report **false for
+the entire life of the process in it**. Fonts, colours and the title switches are harmless; the grid
+alone does it; and doing it to a blank window before running anything does not help. So the bounded
+wait never waited, the confirmation always confirmed, and "window confirmed idle" read exactly the
+same whether the window was idle or the flag was blind. The launcher closed windows on live games and
+reported success.
+
+**This is §4.4's practice applied to a ground rule instead of a test**: ask what a green result would
+look like if the thing being checked were absent. "Idle confirmed" looked identical in both worlds.
+
+**Do not read this as retiring the modal-sheet hazard.** The sheet is real and C2's reasoning is sound
+— for windows that have *not* been gridded, where `busy` tracks the process exactly. It is precisely
+the windows this launcher creates that are blind, and for them the danger is inverted: not a blocked
+call behind a sheet nobody can dismiss, but a game killed under the player with no prompt at all,
+because Terminal does not prompt about a window it believes idle. Two hazards; which applies depends
+on whether the window has a grid.
+
+**What to ask instead:** `processes of selected tab`, which keeps telling the truth and empties when
+the game ends. See §11.12.
+
+Relatedly, §4.1's "verify with `visible`, not `exists`" now has a measurement behind it rather than
+only the architecture's say-so: `id of every window` reported a window the launcher had already
+closed, and `every window whose visible is true` did not.
 
 ### 11.4 WIN-4's mechanism was wrong in the architecture
 
@@ -711,6 +809,18 @@ a quietly degraded result would turn a geometry bug into a picture or a maze tha
 rather than obviously broken. **Later items follow the same rule**: where an argument makes a
 requirement impossible, refuse and say which requirement.
 
+**Unsatisfiable is not the same as vacuous, and only the first calls for a refusal.** The rule above is
+for inputs that make a requirement **impossible** — a maze too small to have no dead ends, a cell
+outside a frame that must be 40 x 30. It is not for inputs that make a requirement **not apply**. A
+ghost on a square with no open way out satisfies GHOST-2 and GHOST-3 vacuously: both are conditioned
+on there being somewhere to go, and where there is not, neither is being broken. It stays put.
+Refusing there would turn a silent non-event into a crash, which is the opposite of what this rule is
+for. **The test of which you have: name the requirement the input defeats.** If you can — MAZE-5,
+SCRN-1 — refuse and say so. If the honest answer is "none, the requirement simply has nothing to say
+here", do the quiet thing. One consequence decided that case as much as the reasoning did: **sibling
+functions in one subsystem must agree about it**, because the next reader will infer a rule from
+whichever they meet first.
+
 ### 11.9 On guarding C5, and a guard that already exists
 
 `tests/test_layering.py` grew a domain-purity case under the standing obligation from §11 — but its
@@ -741,3 +851,131 @@ held, and it did not. It merged cleanly by luck.
 
 *(The distinction is DEV-B's, made while declining to apply an edit it had been offered and could have
 made unasked.)*
+
+**What the four conditions did not cover.** This rule was written the day the situation arose, by the
+two parties it favoured, about an instance that went well — which is exactly when a rule is most
+likely to be generous to itself. It had been tested once, in the easy case: a defect both parties
+already agreed was a defect, in text neither disputed. The case that tests it is the one where **the
+developer believes the supplied paragraph is wrong**, and the four conditions were silent on it.
+"Applies it verbatim" tells a dissenting developer what to type, not whether to speak; and the lead's
+word-for-word check at merge would pass a paragraph the developer thought was a mistake, because it
+checks transcription and not agreement. A developer could have complied exactly, in silence, and
+nobody would ever have learned they disagreed.
+
+That is the same defect this rule exists to prevent, one level up: **a check that reads the same
+whether the thing it is checking is there or not.**
+
+**So there is a fifth condition: the developer records agreement or dissent in the commit message that
+carries the text.** Dissent is a step, not an omission. They apply the text either way — the plan is
+the lead's document and disagreement is not a veto — but a dissent recorded travels with the change
+into the history, where the next reader meets it, instead of dying with the worktree. **And the lead
+answers a recorded dissent, before or at the merge**, by amending or by saying plainly why the text
+stands. Silence from the lead is not an answer either.
+
+*(The gap was found by DEV-B, which declined to amend the rule itself and left it on the record
+instead — which is the fifth condition being followed before it existed.)*
+
+### 11.11 The specification's purpose clauses are weaker than its mechanisms
+
+Five requirements state a mechanism and then a purpose the mechanism does not deliver. In each, the
+mechanism is what is specified and what we build; the purpose clause is not a guarantee and must not
+be read as one.
+
+| Requirement | The mechanism, which is met | The purpose clause, which it does not deliver |
+| --- | --- | --- |
+| WIN-3 | the custom title is set on the captured window id | *"titled Terminal Game"* — two title components are outside the scripting dictionary and governed by the player's saved profile |
+| WIN-2 | 40 x 30, fixed-width, black ground | *"large enough to read comfortably"* — only a human at the screen can say |
+| START-2 | furthest corridor square by straight-line grid distance | *"so the two always start well apart"* — on a winding maze, far across the grid can be a short walk |
+| GHOST-1 | one square at a time, about seven times a second, independent of the player | *"roams the maze"* — in about 1 game in 62 the ghost is confined to a loop over as little as 4.5% of it |
+| END-1 | co-location decides a loss, read from the state | *"whether the player walked into the ghost or the ghost walked into the player"* — a state does not record how it came about |
+
+**Conformance is settled in every row: the mechanism is implemented as written.** What is open in the
+first four is a judgement about how the finished game looks or feels, which is the user's and not this
+plan's. **END-1 is the exception and the interesting one:** its purpose clause is met *precisely
+because* the mechanism cannot honour the distinction. An implementation that could tell would be
+carrying history it has no reason to have, so "identical either way" is the requirement, proved by two
+tests arriving by each route.
+
+**WI-14b reports rows of this kind as two lines, not one** — the mechanism verified, and the purpose
+clause named as a human check with the measurement beside it. A single "met" would be true of the
+mechanism and misleading about the requirement.
+
+**Where two witnesses to a requirement disagree, prefer the one that can carry the detail.** The
+specification says things twice: once in prose, once in its worked example. Three items settled a
+question by parsing the picture rather than reading the sentence — the wall-glyph table, the joiner
+rule and the status line's leading space — and in each the picture decided it, because a 37-column
+rendering carries information a sentence cannot and did not have to be interpreted. This is not a
+licence to prefer whichever witness is convenient: it applies where one witness is **richer in the
+dimension under dispute**. The picture settles layout, glyphs and spacing; the prose settles intent,
+ordering and what counts as an ending. Ask which witness could even express the distinction you are
+trying to resolve, and take that one. And prefer a test that reads the **document** over one that
+reads a copy of it, so that editing the specification tells you the code needs rechecking.
+
+### 11.12 One answer to "is it still running", and where it lives
+
+Ruled after WI-3. `WindowLauncher.run` and `Desktop.is_busy` move from Terminal's `busy` flag to the
+process list; **WI-13 owns it and it is WI-13's first obligation**, not the revisit §11.2 described.
+Not folded into WI-3, which was green and measured, and whose 29-window evidence would have had to be
+re-measured on a changed foundation.
+
+The exposure meanwhile was bounded and deliberate: nothing on `main` depends on `run` except WI-1's
+own tests and entry point, M1 is pure-domain work that touches no launcher, and the first real
+consumer is WI-12 — which already depends on WI-13. Until it lands, the defect is stated in `run`'s
+own docstring, because nobody calling a function reads the plan first. **WI-13 removes that note when
+it lands the fix**: a warning that outlives the defect it warns about teaches readers that warnings in
+this code are not to be believed.
+
+**The outcome WI-13 must reach: exactly one answer exists in the system to "is this window's command
+still running."** Today there are two, and they disagree — the `busy` flag behind a default and the
+process list behind an injected argument. Which of them survives, and whether the seam survives at
+all, is the developer's call. Two sides of one seam disagreeing about the meaning of one question is
+not.
+
+**Also carried into WI-13, measured by WI-3 and DEV-A:** creating the window empty, gridding it while
+nothing runs in it, and only then running the command **removes the 0.496 s configure/start-up race
+entirely rather than narrowing it** — there is no interval in which the game could observe the
+pre-resize size. Two caveats, supplied unasked and to be honoured: it was measured for the *busy*
+question and **not** with the size gate removed, so nobody drops the gate without re-measuring; and it
+changes `open_window_running`, the call that captures the window identity, so it is a change to
+**caution C1's mechanism** and gets its own tests rather than riding along as a side effect.
+
+### 11.13 END-5's guard lives in the domain, not the loop
+
+Ruled after WI-10, **against the technical lead's stated lean**, on the developer's argument. Once a
+game's outcome is not *playing*, the domain itself refuses to move the player or the ghost. The loop
+is free to keep calling and correctness does not depend on it declining to.
+
+The lead's position had been that END-5 — *"everything stops"* — is a property of the loop. **The
+argument that overturned it: the loop cannot stop.** `q` must still work (END-6, CTRL-4), so after an
+ending the loop keeps running and keeps reading keys. There is no moment at which it ceases to call
+in. So the rule is a *condition* wherever it lives, and the only question is where the condition is
+cheapest to get right and hardest to bypass. Three things then decide it:
+
+- **A guard a caller can bypass is not a guard.** WI-12's acceptance pack, a replay tool or any test
+  can call the domain primitive directly. With the rule only in the loop, each can silently produce a
+  state the requirements say cannot exist.
+- **It belongs where testing is cheap.** END-5 is not hard to get right, it is easy to forget — which
+  is the worst kind of rule to place in the one component that needs a terminal to test.
+- **Both halves land in one place.** END-5 stops the ghost as well as the player, and the domain
+  refuses both; a loop-side guard has to remember each separately.
+
+**A consequence worth having, because it is the point rather than a side effect:** with the guard in
+the domain, every loop-side END-5 behaviour becomes an *optimisation* rather than a correctness
+requirement. The loop may skip the tick; it need not. It may skip rebuilding the frame; if it
+rebuilds, the state has not changed, so the frame is identical and the picture stands anyway. Nothing
+END-5 requires can be lost by forgetting something in the loop — exactly the property you want for a
+rule that is easy to forget.
+
+**What remains WI-11's:** `q` and `Q` quitting in play and after an ending (CTRL-4, END-6); unmapped
+keys discarded (CTRL-5); the tick timing (GHOST-1); and not rebuilding the frame after an ending, now
+as an optimisation rather than a requirement. **Do not re-add a loop-side guard "for safety"** — two
+enforcements of one rule is §11.12's shape, and the second is the one that rots, because the domain's
+has the whole domain suite behind it and the loop's would have a handful.
+
+### 11.14 One obligation carried into WI-12
+
+`compose(state, status_line=None)` leaves row 29 blank when no status line is handed to it. That seam
+is right — it is what let WI-5b and WI-6 proceed in either order — but it means a wiring omission in
+WI-12 produces a blank status row that composes cleanly and passes every WI-5b test: a silent STAT-1
+violation wearing the costume of a legitimately blank row. **WI-12 must assert the status row is
+non-blank in the wired game.**
