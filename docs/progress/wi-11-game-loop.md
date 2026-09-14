@@ -44,4 +44,38 @@ Branch `wi-11-game-loop`. DEV-A, lane A, M2, local mode.
 05:45:55Z         scripted screen that advances the clock to a key's arrival time
 05:45:55Z         or to the deadline, which is what makes "a key arriving early
 05:45:55Z         does not postpone the tick" testable at all.
+05:49:02Z NOTE    WI-11 two of my own tests failed first and both were right to.
+05:49:02Z         "nothing is redrawn while nothing moves" came back 8 frames
+05:49:02Z         instead of 1: with_changes builds a new GameState whatever it
+05:49:02Z         is handed, so a ghost told to stay put looked like a change and
+05:49:02Z         the loop redrew an identical picture. That is a real gap in my
+05:49:02Z         own WI-10 advance_ghost, found by the loop rather than by
+05:49:02Z         inspection. Fixed there, not worked around here: the Domain now
+05:49:02Z         returns the same state when the ghost stays, so the convention
+05:49:02Z         every other step already followed holds without exception.
+05:49:02Z NOTE    WI-11 the second failure was my test, not the code. I compared
+05:49:02Z         whole ghost walks across three player positions for GHOST-4;
+05:49:02Z         they differed in LENGTH because the ghost caught different
+05:49:02Z         players at different moments and a finished game issues no more
+05:49:02Z         ticks. That is END-5 working, not GHOST-4 failing. Compared as
+05:49:02Z         a prefix instead, with the reason written down, and noted that
+05:49:02Z         DEV-B's test_ghost_policy.py holds the definitive form.
+05:49:02Z MEASURE WI-11 GHOST-1 against a REAL clock, because an injected one
+05:49:02Z         proves only the arithmetic. 2.007s -> 14 ticks (6.975/s);
+05:49:02Z         4.011s -> 28 ticks (6.981/s); target 7.000. The anti-drift
+05:49:02Z         property is in the COUNTS not the rate: exactly double the
+05:49:02Z         ticks for exactly double the time. A loop rebasing its deadline
+05:49:02Z         on the present would show fewer than twice. Frames = ticks + 1,
+05:49:02Z         the extra being START-5's opening picture.
+05:49:02Z TEST    570 passed, 0 failed, 0 skipped  (python3 -m unittest discover)
+05:49:02Z COMMIT  b90d6ea WI-11: the game loop
+05:49:02Z NOTE    WI-11 tests/test_layering.py deliberately untouched: no
+05:49:02Z         Application purity class added, because WI-12 is the natural
+05:49:02Z         place to settle what Application may import and DEV-B is
+05:49:02Z         actively editing that file for WI-5b. Recorded in the commit
+05:49:02Z         message and the PR summary per EDIT 11. LayerRuleTest already
+05:49:02Z         sweeps loop.py for curses and subprocess.
+05:49:02Z NOTE    WI-11 windows opened: 0. The real-clock measurement used a stub
+05:49:02Z         screen -- GHOST-1 is about time, not about drawing.
+05:49:02Z DONE    WI-11 wi-11-game-loop b90d6ea (docs commit follows)
 ```
