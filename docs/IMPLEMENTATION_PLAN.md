@@ -105,6 +105,13 @@ using the screen. These are not cosmetic:
   would then have no way to end it without the sheet.
 - **Reap your windows on the failure path too.** A blocked, failed or timed-out work item closes what
   it opened *before* it reports. After a close, verify with `visible`, not `exists`.
+- **But reaping never means closing a busy window.** These two rules pull against each other when
+  setup fails while the child is still running, and the one above does **not** win. Wait a bounded
+  time for the process to exit; if it has not, **leave the window and name its id in the failure**.
+  Closing it anyway raises the modal sheet, and the sheet blocks every later automation call
+  *including the cleanup itself* — so "reap anyway" does not even achieve reaping. An orphan window is
+  a nuisance a human closes in one gesture; a sheet stops the whole team and needs the user. *(Added
+  after WI-1 measured it. See §11.)*
 - **Every automation call gets a timeout and a way out.**
 - **Anything that needs a human to look at a screen, flip a preference or grant a macOS permission
   cannot be done by an agent.** No agent on this team can grant the Automation/Accessibility
@@ -565,3 +572,84 @@ All 49 codes are placed. None is unassigned.
 | WI-5b and WI-6 collide over the frame. | A merge conflict between the two lanes in the one iteration with no float. | WI-6 lands first and the two own disjoint rows; the conflict, if it happens, is theirs to settle with each other. |
 | A developer treats a stale root executable as a starting point. | Time lost to code that references a package that no longer exists, and a design imported from a run we are deliberately redoing. | §1 says plainly that they are not authoritative and no work item may read them. |
 | Two copies of the game run at once. | Not a case the specification contemplates; the design does not defend against it (assumption A10). | Out of scope, recorded here so nobody spends a day on it. |
+
+---
+
+## 11. Amendments after M0
+
+M0 ran, and then the run was paused. These are the things the plan got wrong or left unsaid, corrected
+here rather than left to disagree with the tree. Each is backed by a measurement in
+`docs/findings/` or in a developer's PR summary.
+
+### 11.1 What M0 actually delivered
+
+**Two of the four planned items.** WI-1 (lane A) and WI-2 (lane B) are built, merged and green.
+**WI-3 and WI-4 were never dispatched** — the run was paused first. Nothing is half-done and no branch
+is dangling.
+
+`main` carries 191 tests, 0 failed, 0 skipped — 107 from WI-1 and 84 from WI-2, the two sums landing
+exactly, which is the first evidence that the two lanes did not interfere with each other.
+
+**Whoever resumes starts at WI-4**, which is the head of the longest chain in §8
+(WI-4 → WI-7 → WI-8 → WI-10 → WI-11 → WI-12 → WI-14b) and is blocked by nothing that was built. WI-3
+is the other unblocked item and is small.
+
+### 11.2 WI-13 changes character — it is no longer first implementation
+
+WI-1 built the A2 fallbacks — a refused reference-window query falls back to a documented default
+position, a refused screen query to a documented default screen — because **the clamp cannot function
+without a screen rectangle**, so the fallback was not separable from WI-1's own outcome. That was the
+right call and it is ruled accepted.
+
+The consequence is for WI-13, which §7 gives to lane B as though it were writing those fallbacks from
+nothing. **It is now hardening and verification:** failure-injection tests around the fallbacks that
+exist, confirmation that nothing the launcher opens survives a failure or a timeout, and a revisit of
+the C2/C3 resolution in §11.3 against a real failing launch. The effort stays at 1 day; what is in it
+has changed. Its dependency on WI-3 is unchanged.
+
+### 11.3 C2 beats C3, and the §4.1 ground rule has been corrected
+
+The architecture's cautions C2 (never close a busy window) and C3 (clean up on the failure path) give
+opposite instructions when setup fails while the game is still running, and §4.1 of this plan repeated
+C3 without noticing. **C2 wins**, and §4.1 now says so. The reasoning is in §4.1 and in the log; the
+short form is that closing a busy window destroys the ability to clean up at all.
+
+### 11.4 WIN-4's mechanism was wrong in the architecture
+
+`ARCHITECTURE.md` A4 and its WIN-4 coverage row say the position is "clamped to the visible screen so
+the window always lands somewhere visible". **Measured: the desktop reports the union of all displays
+— `-3509,-1440,1611,982` — much of which is over no display at all**, so clamping to that rectangle
+does not deliver visibility and WIN-4 would not be met.
+
+**The mechanism that does work, and which WI-1 implements:** keep the new window's corner inside the
+reference window's own frame. The reference window is by construction on a display the player is
+looking at, so a corner inside it is visible. Anyone revisiting window placement uses this, not the
+clamp.
+
+Related and measured on the same item: **`set position` is a request, not an instruction.** Asked for
+`Point(-876,-1353)`, the window landed at `Point(-876,30)`, because macOS constrains a window to the
+screen it is on. **WIN-4 is confirmed by reading the position back, never by the move call
+succeeding.** `GameWindow.asked_for` exists beside `GameWindow.position` to keep that difference
+visible instead of discarding it.
+
+### 11.5 WIN-3 cannot be met exactly by automation alone
+
+Measured: with every scriptable title switch off, the bar reads `rodneybailey — sleep 6`; with the
+custom title on, `rodneybailey — Terminal Game — sleep 6`. Two components — the active process name,
+and the working directory the login shell publishes — are **absent from Terminal's scripting
+dictionary** and are governed by the player's saved profile, which assumption A3 forbids changing.
+
+So the launcher sets the custom title, does **not** clear the profile-governed components, and
+**WIN-3 is not recorded as verified**. The §9 traceability row for WIN-3 should be read with that
+attached. This is the second requirement where the platform will not give what the specification asks
+without touching the player's preferences — WIN-2's font and colours are the first. Both are the
+user's to settle and both sit on WI-14b's human-check list.
+
+### 11.6 Where a test seam belongs, when the requirement is about a script
+
+WI-1 put its seam at the subprocess runner rather than at the adapter, so its tests assert on the
+**AppleScript text**. The reasoning is worth keeping: caution C1 is a claim about the *words in a
+script* — act on a captured id, never on "the front window" — and a test that watched Python method
+calls would watch a perfectly well-behaved adapter emit `close front window` and notice nothing. That
+is §4.4's rule about asserting the consequence rather than the shape, applied somewhere this plan had
+not thought to apply it. Later items that generate scripts should do the same.
