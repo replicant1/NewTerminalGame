@@ -17,8 +17,22 @@ ground and a fixed-width font on that identity alone, moves it a small fixed
 offset down and right of the remembered geometry, and closes that identity once
 the window is idle.
 
-Requirements it answers: **WIN-1, WIN-2, WIN-3, WIN-4, WIN-5** (WIN-5 under
-assumption A1, and joined to the game by WI-3).
+Requirements it answers: **WIN-1, WIN-2, WIN-4, WIN-5** (WIN-5 under assumption
+A1, and joined to the game by WI-3), and **WIN-3 only in part** — see below.
+
+**WIN-3 is only partly satisfiable without touching the player's saved Terminal
+profile, and the user has not ruled on whether it may be touched (open question
+Q3).** The launcher sets the window's custom title to exactly `Terminal Game`;
+two further title components are absent from the scripting dictionary and are
+governed by that saved profile, so the title bar reads, verbatim:
+
+```
+rodneybailey — Terminal Game — sleep 0.1
+```
+
+Assumption A3 says the profile is left alone, so the launcher leaves it alone.
+**WIN-3 is not recorded as verified.** The measurement and the exact steps a
+person would follow are in `docs/findings/WI-1-terminal-title-components.md`.
 
 ## The shape of it
 
