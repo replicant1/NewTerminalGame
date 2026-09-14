@@ -21,3 +21,11 @@
 04:54:49Z  DRAFT   WI-2 terminalgame/game_main.py — the walking-skeleton game process: one frame, a bounded hold, q quits. Runs as `python3 -m terminalgame.game_main`.
 04:54:49Z  DECIDE  the skeleton's lifetime -> draw one frame, then poll for q until a bounded --hold (default 3 s) expires, because a process that quits instantly gives WI-3's launcher nothing to join to and one that waits for a key could block forever in a window nobody can close.
 04:54:49Z  TEST    73 passed, 0 failed, 0 skipped  (python3 -m unittest discover)
+04:55:57Z  DECIDE  how to prove the real adapter -> drive it on a pseudo-terminal from os.openpty(), because it exercises real ncurses and real termios while opening nothing on the user's screen.
+04:55:57Z  VERIFY  real curses on a 40x30 pty -> frame reaches the glass with box-drawing glyphs intact, q acted on in well under a second against a 30 s hold, "hello there" typed mid-game never echoed, 20x10/80x24 refused with exit 2.
+04:55:57Z  VERIFY  terminal restored on a real pty -> tcgetattr before vs after differs in exactly one bit, 0x20000000 = termios.PENDIN, on all four exit paths (normal, q, SIGTERM, refusal). ECHO and ICANON both back on; every other field identical.
+04:55:57Z  DECIDE  restore assertion -> compare termios with PENDIN masked out, because PENDIN is transient kernel state ("input pending redisplay"), not a mode the player chose; masking it is the only way the assertion can be both strict and correct.
+04:55:57Z  VERIFY  SIGTERM/SIGHUP in a real process -> terminal restored AND the process still dies of the signal (returncode -15 / -1), so the handler does not swallow it.
+04:55:57Z  NOTE    WI-2 two pty gotchas worth knowing: LINES/COLUMNS must be removed from the child's environment or ncurses believes them over the window size; and the child's stderr must be a pipe or the "too small" message lands in the captured picture.
+04:55:57Z  DRAFT   WI-2 docs/findings/WI-2-pty-terminal-restore.md
+04:55:57Z  TEST    81 passed, 0 failed, 0 skipped  (python3 -m unittest discover)
