@@ -91,5 +91,5 @@ Branch `wi-3-end-to-end-join`, cut from `main` at 5269b67. DEV-A, local mode.
 05:23:08Z         exits on q, the window is closed, nothing is left behind.
 05:23:08Z NOTE    WI-3 windows: 29 opened across all measurement, 29 closed. Final
 05:23:08Z         visible census 7104 only, which is where it started.
-05:23:08Z DONE    WI-3 wi-3-end-to-end-join <head sha>
+05:23:08Z DONE    WI-3 wi-3-end-to-end-join 72402a9 (this log commit follows it)
 ```
