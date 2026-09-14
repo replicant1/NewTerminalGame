@@ -23,3 +23,4 @@
 04:13:29Z  VERIFY  all 5 mermaid diagrams rendered with mmdc -> 5/5 OK after removing a <br/> and a semicolon from a sequence Note (both are mermaid syntax, not text)
 04:13:29Z  DECIDE  recommendation -> Candidate 1 (Launched Terminal Session with a Layered Game Core), because both candidates still need the same automation permission for WIN-4, so Candidate 2 buys a GUI toolkit and a hand-built text grid for an advantage it only partly delivers
 04:13:29Z  RISK    WIN-5 and END-5 cannot both hold at the instant of an ending; recorded as assumption A1 and open question Q1 with the two affected coverage rows named
+04:13:29Z  DONE    /Users/rodneybailey/CursesProjects/NewTerminalGame/docs/ARCHITECTURE.md committed on main
