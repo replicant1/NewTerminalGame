@@ -42,3 +42,8 @@
 04:57:01Z  TEST    84 passed, 0 failed, 0 skipped  (python3 -m unittest discover)
 04:57:01Z  NOTE    WI-2 no window was opened on the user's screen at any point, no osascript was run and no macOS permission was requested. The real-terminal proof is a pseudo-terminal inside the test process.
 04:57:01Z  DONE    WI-2 wi-2-screen-port 519fe3d (log's own commit follows; the branch head is what the lead merges)
+04:59:34Z  NOTE    WI-2 merged into main by the technical lead as 021db44 (--no-ff); main green at 84 tests, 0 skipped. Branch fast-forwarded to main at eeccce3.
+04:59:34Z  NOTE    WI-2 all four deviations accepted. Constraints recorded for later items: --hold is M0 scaffolding and WI-12 must not inherit it; test_layering.py is promoted to a standing obligation for WI-4 and WI-7 to extend with domain purity; Frame.put keeps raising and WI-5b must NOT add clipping (the border ring means a 3-column glyph spans columns 1-35 of 0-36 and cannot run off an edge); the palette stays one dict and gold/pink stays a human check.
+04:59:34Z  TEST    84 passed, 0 failed, 0 skipped  (python3 -m unittest discover, on the branch at eeccce3)
+04:59:34Z  DRAFT   WI-2 docs/completions/COMPLETION-M0-DEV-B.md — M0 ends short for this lane: WI-2 delivered and merged, WI-4 never dispatched because the user paused the run.
+04:59:34Z  DONE    M0 wi-2-screen-port (completion document committed; the lead merges the branch)
