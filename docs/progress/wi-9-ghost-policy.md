@@ -1,0 +1,13 @@
+# WI-9 — the ghost's policy (DEV-B, iteration M1)
+
+Local mode. No push, no `gh`, no merge. Branch `wi-9-ghost-policy`, **stacked on DEV-A's
+`wi-7-game-state` at `af4c6d9`**, not on `main` — WI-9 needs WI-7's state vocabulary and WI-7 cannot
+merge while nobody can reach the primary tree.
+
+05:32:20Z  START   WI-9, the ghost's policy. GHOST-2, GHOST-3, GHOST-4 and SCORE-4. GHOST-1's seven-times-a-second clock is WI-11's, not mine.
+05:32:30Z  VERIFY  `wi-7-game-state` exists at af4c6d9 and its suite is green where I stand: `python3 -B -m unittest discover` -> **309 passed, 0 failed, 0 skipped**. That is my baseline, not main's 256.
+05:32:40Z  READ    wi-7-game-state:terminalgame/domain/game_state.py — GameState is immutable with FIELDS (maze, player, ghost, ghost_heading, dots, score, outcome), changed only through with_changes(). ghost_heading is a Direction from maze.py. open_game_on lays a dot on every corridor square but the player's, so the ghost's square keeps its dot (SCORE-4, and the END-3 case).
+05:32:45Z  READ    GHOST-2 "keeps going in a straight line for as long as the corridor lets it"; GHOST-3 "where it cannot carry on, it picks one of the other ways on at random, and turns back the way it came only when there is no other choice"; GHOST-4 "does not hunt the player and takes no notice of where they are"; SCORE-4 "a dot under the ghost is still there to be taken".
+05:32:50Z  RISK    **DEV-A's WI-7 and my WI-5a both edit tests/test_layering.py.** WI-7 adds `import re`, a `uses_global_random` helper and two DomainPurityTest methods; WI-5a adds three constants, splits domain_files() into files_under(), and adds PresentationLayerTest. Different regions, so git will probably merge them without help — but "probably" is not a measurement and I will measure it before reporting. Nothing to do with WI-9 itself, which adds no layering cases.
+05:33:10Z  VERIFY  Measured that merge risk instead of leaving it as "probably": `git merge-tree --write-tree wi-5a-wall-glyphs wi-7-game-state` -> exit 0, tree 61ebbb7, **no conflict**. The two sets of additions to tests/test_layering.py land in different regions and git resolves them without help. Not a promise about the future — if either branch is touched again the measurement is stale.
+05:33:20Z  NOTE    Pausing WI-9 for one bounded thing first: the technical lead named a trap in WI-5a — `is this a wall` now has two right answers in the system, one for "can an actor move there" and one for "should this glyph have an arm pointing there". Naming is mine. Leaving a known trap in a queued branch while I work on something else is how it gets unified by somebody later, so it gets a name now rather than after WI-9.
