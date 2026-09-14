@@ -65,7 +65,7 @@ You reach the other developer through what they left behind, and it is more than
 
 ## Working with real pull requests (non-local mode)
 
-When the technical lead has *not* put you in local mode, your branch goes to the remote and becomes a real pull request. Everything above still holds; this is only the mechanics.
+When the technical lead has put you in **non-local mode**, your branch goes to the remote and becomes a real pull request. Note that this is something you must have been told positively — the absence of a local-mode instruction is not the same as being told you are in non-local mode, and it is not something to infer. Everything above still holds; this is only the mechanics.
 
 **Push your own work-item branches, and nothing else.** Never push `main`, never force-push anything, and never push another developer's branch. Your first push is `git push -u origin <branch>`.
 
