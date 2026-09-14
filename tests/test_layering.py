@@ -119,6 +119,17 @@ APPLICATION_MAY_IMPORT = ("terminalgame.domain", "terminalgame.presentation",
 #: The launcher process, which is not part of the game package at all.
 LAUNCHER_ROOT = os.path.join(REPOSITORY_ROOT, "launcher")
 
+#: The acceptance pack, which is part of neither and drives both from outside.
+ACCEPTANCE_ROOT = os.path.join(REPOSITORY_ROOT, "acceptance")
+
+#: What the pack may import. The launcher, because it starts the game the way
+#: a player does — and **nothing from the game**, ruled in WI-14a for the
+#: reason that is the whole point of the pack: *a check that reaches inside
+#: the game can pass while the thing the player runs is broken.* Import
+#: `terminalgame` and the pack could assert against the frame builder's own
+#: output instead of against what reached the screen.
+ACCEPTANCE_MAY_IMPORT = ("acceptance", "launcher")
+
 
 def application_files():
     """The Python files of the Application layer."""
@@ -133,6 +144,17 @@ def launcher_files():
             if filename.endswith(".py"):
                 path = os.path.join(directory, filename)
                 found.append((os.path.relpath(path, LAUNCHER_ROOT), path))
+    return found
+
+
+def acceptance_files():
+    """The Python files of the acceptance pack, by their name within it."""
+    found = []
+    for directory, _, filenames in os.walk(ACCEPTANCE_ROOT):
+        for filename in sorted(filenames):
+            if filename.endswith(".py"):
+                path = os.path.join(directory, filename)
+                found.append((os.path.relpath(path, ACCEPTANCE_ROOT), path))
     return found
 
 
@@ -651,6 +673,74 @@ class LauncherTest(unittest.TestCase):
         self.assertFalse(is_standard_library("launcher"))
         self.assertFalse(is_standard_library("tests"))
         self.assertFalse(is_standard_library("no_such_module_anywhere"))
+
+
+class AcceptancePackTest(unittest.TestCase):
+    """The pack checks the game from outside, and must stay outside.
+
+    Ruled in WI-14a, and the reason is the pack's whole purpose: **a check
+    that reaches inside the game can pass while the thing the player runs is
+    broken.** If `acceptance/` could import `terminalgame`, it could assert
+    against the frame builder's own output rather than against what actually
+    arrived on the screen, and the acceptance run would stop being acceptance.
+
+    Added by WI-14b rather than left as a ruling nobody enforces — a new
+    category with rules in prose only is a guard waiting to have never been
+    exercised.
+    """
+
+    def test_there_is_a_pack_to_look_at(self):
+        # A scan of nothing passes. This is the guard on the guard.
+        names = [name for name, _ in acceptance_files()]
+        self.assertIn("pack.py", names)
+        self.assertIn("checks.py", names)
+        self.assertGreater(len(names), 2)
+
+    def test_the_pack_imports_nothing_from_the_game(self):
+        offenders = []
+        for name, path in acceptance_files():
+            for imported in top_level_imports(source_of(path), "acceptance"):
+                if imported == "terminalgame":
+                    offenders.append(name)
+        self.assertEqual([], offenders,
+                         "the acceptance pack drives the game from outside, "
+                         "the way a player does; importing it would let a "
+                         "check pass while what the player runs is broken")
+
+    def test_every_pack_import_is_the_standard_library_or_the_launcher(self):
+        # The stronger form, as with the launcher: not "does it avoid the
+        # game" but "what *does* it import", enumerated and each one judged.
+        offenders = []
+        for name, path in acceptance_files():
+            for imported in top_level_imports(source_of(path), "acceptance"):
+                if imported in ACCEPTANCE_MAY_IMPORT:
+                    continue
+                if not is_standard_library(imported):
+                    offenders.append((name, imported))
+        self.assertEqual([], offenders,
+                         "the pack runs on the standard library, the launcher "
+                         "and its own modules, and nothing else")
+
+    def test_it_really_does_import_the_launcher(self):
+        # Otherwise the test above passes on a pack that imports nothing and
+        # therefore does nothing.
+        imported = set()
+        for _, path in acceptance_files():
+            imported.update(top_level_imports(source_of(path), "acceptance"))
+        self.assertIn("launcher", imported)
+
+    def test_neither_the_game_nor_the_launcher_imports_the_pack(self):
+        # The other direction. The pack is a harness; nothing ships depending
+        # on it.
+        offenders = []
+        for name, path in python_files():
+            if "acceptance" in top_level_imports(source_of(path), "terminalgame"):
+                offenders.append(("terminalgame/" + name, "acceptance"))
+        for name, path in launcher_files():
+            if "acceptance" in top_level_imports(source_of(path), "launcher"):
+                offenders.append(("launcher/" + name, "acceptance"))
+        self.assertEqual([], offenders,
+                         "nothing that ships may depend on the test harness")
 
 
 if __name__ == "__main__":
