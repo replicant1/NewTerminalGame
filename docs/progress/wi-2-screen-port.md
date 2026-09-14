@@ -29,3 +29,16 @@
 04:55:57Z  NOTE    WI-2 two pty gotchas worth knowing: LINES/COLUMNS must be removed from the child's environment or ncurses believes them over the window size; and the child's stderr must be a pipe or the "too small" message lands in the captured picture.
 04:55:57Z  DRAFT   WI-2 docs/findings/WI-2-pty-terminal-restore.md
 04:55:57Z  TEST    81 passed, 0 failed, 0 skipped  (python3 -m unittest discover)
+04:57:01Z  COMMIT  3bb717f WI-2: a game process that draws one frame and quits
+04:57:01Z  COMMIT  048714a WI-2: prove the adapter against real curses on a pseudo-terminal
+04:57:01Z  DRAFT   WI-2 tests/test_layering.py — plan §3 as a test: curses imported only by the adapter, no subprocess anywhere in the game process (C11). Additive; flagged for a ruling.
+04:57:01Z  DRAFT   WI-2 docs/prs/PR-WI-2-screen-port.md
+04:57:01Z  VERIFY  suite command -> `python3 -m unittest discover` from the repository root works unchanged, no arguments and no installation; tests/ is a package so 3.9 discovery finds it without relying on namespace packages. Plan §2 asked this be confirmed before the first merge — confirmed from DEV-B's side.
+04:57:01Z  ASK     DEV-A/technical lead: the top-level game package is named `terminalgame`; DEV-A's launcher needs a name of its own and must not import from it (plan §3).
+04:57:01Z  ASSUME  proceeding on `terminalgame` for the game process and leaving the launcher's name entirely to DEV-A; nothing on this branch depends on what they pick.
+04:57:01Z  ASK     technical lead: WI-2's outcome says the process "draws a single frame and quits" — I gave it a bounded --hold (default 3 s) so WI-3 has something to join to and it can never block for ever. Ruling wanted; reversing it is one line.
+04:57:01Z  ASSUME  proceeding with --hold defaulting to 3 s; `--hold 0` gives the literal reading of the plan and is already tested.
+04:57:01Z  RISK    the five colours reach the terminal as five distinct attributes, but whether dim yellow reads as GOLD and bold magenta as PINK (SCRN-4, SCRN-5) is a human check and is listed as one — not recorded as verified.
+04:57:01Z  TEST    84 passed, 0 failed, 0 skipped  (python3 -m unittest discover)
+04:57:01Z  NOTE    WI-2 no window was opened on the user's screen at any point, no osascript was run and no macOS permission was requested. The real-terminal proof is a pseudo-terminal inside the test process.
+04:57:01Z  DONE    WI-2 wi-2-screen-port <head sha to follow in the final commit>
