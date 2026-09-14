@@ -65,18 +65,22 @@ GAME_MODULE = "terminalgame.game_main"
 #: package, and therefore the directory the game has to be started from.
 REPOSITORY_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-#: Seconds the M0 skeleton holds its frame before exiting on its own if nobody
-#: presses anything.
+#: How long the window lives, now that there is a real game in it: **until the
+#: player presses ``q``**, and no longer decided here at all.
 #:
-#: The game's own default is 3 seconds and the launcher could simply inherit it,
-#: but the lifetime of a window on the player's desktop is a decision this join
-#: ought to be making out loud rather than picking up by accident, so it is
-#: named here and always passed explicitly. Five seconds because a person who is
-#: watching needs long enough to actually read the frame and press ``q`` — which
-#: is the path WIN-5 and END-6 are about — while an unattended run still ends
-#: promptly. It is scaffolding either way: WI-11 replaces the skeleton with the
-#: real loop, which ends when the player ends it and not on a timer.
-DEFAULT_HOLD_SECONDS = 5.0
+#: Through M0 this module passed the skeleton a ``--hold`` so the window could
+#: not outlive an unattended run. That was scaffolding and is gone with the
+#: skeleton (WI-12). The game now ends when the player ends it, which is END-6,
+#: and the launcher takes the window away afterwards, which is WIN-5 under
+#: assumption A1.
+#:
+#: Note what this costs: the launched command is no longer bounded by anything
+#: the launcher controls. That is correct for a game — a player may stare at a
+#: maze for an hour — and it is safe because the launcher never closes a window
+#: with something running in it, and waits on the process list rather than on a
+#: timer. But anything that starts a game **without a person at the keyboard**
+#: has to arrange its own way out, because nothing here will end one.
+UNTIL_THE_PLAYER_QUITS = None
 
 #: How long the gate will wait for the window to reach the size the launcher
 #: asked for: attempts x interval, so 6 seconds. Bounded, and it falls through
@@ -120,8 +124,7 @@ def size_gate(columns=script.COLUMNS, rows=script.ROWS,
     )
 
 
-def game_command(repository_root=None, python_executable=None,
-                 hold_seconds=DEFAULT_HOLD_SECONDS,
+def game_command(repository_root=None, python_executable=None, seed=None,
                  columns=script.COLUMNS, rows=script.ROWS,
                  attempts=GATE_ATTEMPTS, interval=GATE_INTERVAL):
     """The one-line shell command that runs the real game in its own window.
@@ -134,12 +137,13 @@ def game_command(repository_root=None, python_executable=None,
     """
     root = REPOSITORY_ROOT if repository_root is None else repository_root
     python = sys.executable if python_executable is None else python_executable
+    start = "exec %s -m %s" % (shlex.quote(python), GAME_MODULE)
+    if seed is not None:
+        start += " --seed %d" % (int(seed),)
     inner = "; ".join([
         size_gate(columns, rows, attempts, interval),
         "cd %s || exit 1" % (shlex.quote(root),),
-        "exec %s -m %s --hold %s" % (
-            shlex.quote(python), GAME_MODULE, _seconds(hold_seconds),
-        ),
+        start,
     ])
     return "/bin/sh -c %s" % (shlex.quote(inner),)
 
@@ -181,7 +185,7 @@ def main(argv=None, launcher=None, out=None, err=None):
     if launcher is None:
         launcher = WindowLauncher(Desktop(OsascriptRunner()))
 
-    command = game_command(hold_seconds=arguments.hold)
+    command = game_command(seed=arguments.seed)
     try:
         result = play(launcher, command)
     except LaunchFailed as failure:
@@ -197,13 +201,11 @@ def _parse_arguments(argv):
         prog="launcher.game",
         description="Open a terminal window and run the game in it.")
     parser.add_argument(
-        "--hold", type=float, default=DEFAULT_HOLD_SECONDS,
-        help="seconds the frame stays up if nobody presses q "
-             "(default: %(default)s). Never unbounded.")
-    arguments = parser.parse_args(argv)
-    if arguments.hold < 0:
-        parser.error("--hold cannot be negative")
-    return arguments
+        "--seed", type=int, default=None,
+        help="play a reproducible game: the same seed gives the same maze, "
+             "the same opening position and the same ghost. Omit it for a "
+             "fresh game every time.")
+    return parser.parse_args(argv)
 
 
 def _seconds(value):

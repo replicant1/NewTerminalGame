@@ -3,8 +3,13 @@
 A pseudo-terminal is a terminal in every way curses cares about — it has a
 size, it has termios settings, it echoes or does not echo — and it exists
 entirely inside this process. Nothing here opens anything on the user's
-screen, and nothing here can block for ever: the child is given a bounded
-`--hold` and is waited for with a timeout it cannot outlive.
+screen.
+
+**Nothing here can block for ever, and how that is achieved changed in WI-12.**
+Through M0 the game took a bounded `--hold` and ended itself. The real game
+ends when the player presses `q` (END-6), so these tests type one — and
+`PATIENCE_SECONDS` below is the backstop that kills a child which does not go,
+so a game that stopped listening fails the suite rather than hanging it.
 
 These are the tests the fake terminal cannot give us: that a real ncurses
 really does hand the terminal back, and that echo really is off.
@@ -94,8 +99,9 @@ class PseudoTerminal(object):
                     self._process.kill()
                     self._process.wait(timeout=5)
                     raise AssertionError(
-                        "the game process outlived its bounded hold by "
-                        "{0:.0f}s; it must never block indefinitely."
+                        "the game process was still running after {0:.0f}s and "
+                        "had to be killed; it either never drew, or stopped "
+                        "listening for the q that was typed to end it."
                         .format(PATIENCE_SECONDS))
                 time.sleep(0.01)
             self._drain()
@@ -157,18 +163,19 @@ class RealTerminalTest(unittest.TestCase):
     """The adapter against the real curses module, in a real terminal."""
 
     def test_the_frame_reaches_a_real_terminal(self):
-        terminal = PseudoTerminal(40, 30).run(["--hold", "0.2"])
+        terminal = PseudoTerminal(40, 30).run([], keystrokes=[(0.6, b"q")])
 
         self.assertEqual(0, terminal.returncode, terminal.stderr)
         text = terminal.visible_text
-        self.assertIn("Terminal Game", text)
-        self.assertIn("the screen port is alive", text)
-        self.assertIn("arrows, q quits", text)
-        self.assertIn("╔", text, "the box-drawing glyphs must survive the "
+        self.assertIn("arrows, q quits", text,
+                      "the status line must reach the glass (STAT-2)")
+        self.assertIn("score 0", text)
+        self.assertIn("║", text, "the box-drawing glyphs must survive the "
                                  "trip through the terminal (SCRN-3)")
+        self.assertIn("▪", text, "the dots must survive it too (SCRN-4)")
 
     def test_a_real_terminal_is_handed_back_with_echo_and_line_mode_restored(self):
-        terminal = PseudoTerminal(40, 30).run(["--hold", "0.2"])
+        terminal = PseudoTerminal(40, 30).run([], keystrokes=[(0.6, b"q")])
 
         self.assertEqual(0, terminal.returncode, terminal.stderr)
         self.assertTrue(terminal.echo_is_on(terminal.settings_after),
@@ -185,34 +192,44 @@ class RealTerminalTest(unittest.TestCase):
 
     def test_nothing_typed_during_the_game_is_echoed_back(self):
         terminal = PseudoTerminal(40, 30).run(
-            ["--hold", "1.0"],
-            keystrokes=[(0.4, b"hello there")])
+            [], keystrokes=[(0.4, b"hello there"), (1.0, b"q")])
 
         self.assertEqual(0, terminal.returncode, terminal.stderr)
         self.assertNotIn("hello there", terminal.visible_text,
                          "nothing typed is echoed into the maze (CTRL-5)")
 
-    def test_q_ends_it_well_before_the_hold_would(self):
-        terminal = PseudoTerminal(40, 30).run(
-            ["--hold", "30"],
-            keystrokes=[(0.4, b"q")])
+    def test_q_ends_the_game_at_once(self):
+        """CTRL-4 and END-6, in a real terminal.
+
+        `q` is now the **only** thing that ends the game, so the claim is no
+        longer "sooner than the hold" but "promptly at all": the harness would
+        kill a child that ignored it after `PATIENCE_SECONDS`, and that would
+        be a failure rather than a pass.
+        """
+        terminal = PseudoTerminal(40, 30).run([], keystrokes=[(0.4, b"q")])
 
         self.assertEqual(0, terminal.returncode, terminal.stderr)
         self.assertLess(terminal.elapsed, 10.0,
-                        "q must be acted on at once, not at the end of the "
-                        "hold (CTRL-4)")
+                        "q must be acted on at once (CTRL-4)")
+
+    def test_an_upper_case_q_ends_it_too(self):
+        terminal = PseudoTerminal(40, 30).run([], keystrokes=[(0.4, b"Q")])
+
+        self.assertEqual(0, terminal.returncode, terminal.stderr)
+        self.assertLess(terminal.elapsed, 10.0)
 
     def test_a_terminal_too_small_is_refused_loudly_and_nothing_is_drawn(self):
-        terminal = PseudoTerminal(80, 24).run(["--hold", "0.2"])
+        # No keystroke needed: it refuses before it ever reads one.
+        terminal = PseudoTerminal(80, 24).run([])
 
         self.assertEqual(2, terminal.returncode)
         self.assertIn("40", terminal.stderr)
         self.assertIn("30", terminal.stderr)
         self.assertIn("24", terminal.stderr)
-        self.assertNotIn("the screen port is alive", terminal.visible_text)
+        self.assertNotIn("arrows, q quits", terminal.visible_text)
 
     def test_a_terminal_too_small_is_still_handed_back(self):
-        terminal = PseudoTerminal(80, 24).run(["--hold", "0.2"])
+        terminal = PseudoTerminal(80, 24).run([])
 
         self.assertTrue(terminal.echo_is_on(terminal.settings_after),
                         "refusing to play must not cost the player their "
@@ -237,7 +254,7 @@ class RealTerminalSignalTest(unittest.TestCase):
 
     def test_a_terminating_signal_still_hands_the_terminal_back(self):
         terminal = PseudoTerminal(40, 30).run(
-            ["--hold", "30"], signal_at=0.5, signal_number=signal.SIGTERM)
+            [], signal_at=0.5, signal_number=signal.SIGTERM)
 
         self.assertEqual(-signal.SIGTERM, terminal.returncode,
                          "the process must still die of the signal it was "
@@ -249,11 +266,11 @@ class RealTerminalSignalTest(unittest.TestCase):
         self.assertEqual(terminal.modes(terminal.settings_before),
                          terminal.modes(terminal.settings_after))
         self.assertLess(terminal.elapsed, 10.0,
-                        "the signal must end it, not be ignored until the hold")
+                        "the signal must end it, not be ignored")
 
     def test_a_hangup_still_hands_the_terminal_back(self):
         terminal = PseudoTerminal(40, 30).run(
-            ["--hold", "30"], signal_at=0.5, signal_number=signal.SIGHUP)
+            [], signal_at=0.5, signal_number=signal.SIGHUP)
 
         self.assertEqual(-signal.SIGHUP, terminal.returncode)
         self.assertTrue(terminal.echo_is_on(terminal.settings_after))

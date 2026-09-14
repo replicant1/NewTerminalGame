@@ -9,19 +9,15 @@ being called would not notice the string naming the wrong module, swapping rows
 for columns, or dropping the ``exec``.
 """
 
-import contextlib
-import io
 import os
 import unittest
 
 from launcher import script
 from launcher.game import (
-    DEFAULT_HOLD_SECONDS,
     GAME_MODULE,
     GATE_ATTEMPTS,
     REPOSITORY_ROOT,
     game_command,
-    main,
     size_gate,
 )
 
@@ -90,27 +86,32 @@ class WhatItStarts(unittest.TestCase):
 
 
 class HowLongTheWindowLives(unittest.TestCase):
+    """Until the player presses `q` — and no longer decided here.
 
-    def test_the_hold_is_always_passed_explicitly(self):
-        # Never inherited from the game's own default: how long a window sits on
-        # the player's desktop is this join's decision to make out loud.
-        self.assertIn("--hold", game_command())
+    Through M0 this join passed the skeleton a bounded `--hold` so an
+    unattended window could not outlive the run. WI-12 put the real game behind
+    it, and the real game ends when the player ends it (END-6). These tests are
+    what that change looks like from the launcher's side.
+    """
 
-    def test_the_hold_that_was_asked_for_is_the_hold_that_is_passed(self):
-        self.assertIn("--hold 12", game_command(hold_seconds=12))
-        self.assertIn("--hold 0.5", game_command(hold_seconds=0.5))
+    def test_no_timer_is_imposed_on_the_game(self):
+        # The scaffolding is gone rather than merely defaulted to something
+        # large: the command must carry no hold at all.
+        self.assertNotIn("--hold", game_command())
 
-    def test_the_default_hold_is_finite(self):
-        self.assertGreater(DEFAULT_HOLD_SECONDS, 0)
-        self.assertLess(DEFAULT_HOLD_SECONDS, 60)
+    def test_the_command_still_names_the_game_and_still_execs_it(self):
+        # Without this, the test above passes against a command that has
+        # stopped starting anything.
+        command = game_command()
+        self.assertIn("-m terminalgame.game_main", command)
+        self.assertIn("; exec ", command)
 
-    def test_a_negative_hold_is_refused_rather_than_launched(self):
-        # UnusableLauncher fails the test if anything reaches the desktop, so
-        # this establishes that no window is opened, not merely that argparse
-        # complained.
-        with contextlib.redirect_stderr(io.StringIO()):
-            with self.assertRaises(SystemExit):
-                main(["--hold", "-1"], launcher=UnusableLauncher())
+    def test_a_seed_is_passed_on_when_one_is_asked_for(self):
+        self.assertIn("--seed 7", game_command(seed=7))
+
+    def test_no_seed_means_a_fresh_game_every_time(self):
+        # MAZE-4. An absent --seed, not `--seed None`.
+        self.assertNotIn("--seed", game_command())
 
 
 class TheSizeGate(unittest.TestCase):
@@ -169,12 +170,6 @@ class SafeToPutInAScript(unittest.TestCase):
         command = game_command(python_executable="/opt/py 3/bin/python3")
         self.assertIn("'/opt/py 3/bin/python3'", command)
 
-
-class UnusableLauncher(object):
-    """Standing in where the test asserts the launcher is never reached."""
-
-    def run(self, command):
-        raise AssertionError("nothing should have been launched: %r" % (command,))
 
 
 if __name__ == "__main__":

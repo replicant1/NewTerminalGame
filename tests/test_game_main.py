@@ -1,24 +1,42 @@
-"""The game process that draws one frame and quits, over a fake terminal."""
+"""WI-12 — the assembly point: the real game in the real window.
+
+Until WI-12 this module tested the M0 skeleton — one frame, a `--hold` timer,
+and no game underneath. Both are gone, so these are new tests rather than
+adjusted ones.
+
+**The failure this file exists to catch.** `compose(state, status_line=None)`
+leaves row 29 blank, and a frame with a blank row 29 is a perfectly well-formed
+frame: it composes without complaint and satisfies every test the frame builder
+has. So forgetting to pass the status row would not break anything loudly — it
+would produce a game that quietly fails STAT-1 while looking entirely correct to
+every automated check above it. `TheStatusRowReachesTheFrame` is the guard, and
+it asserts the row is **not blank** and carries the real score, because
+"a status row exists" is exactly what a blank row also satisfies.
+"""
 
 from __future__ import annotations
 
-import contextlib
 import io
+import random
 import unittest
 
-from terminalgame import game_main
-from terminalgame.screen.curses_adapter import TerminalSession
-from terminalgame.screen.port import Colour
-
-from tests.fake_terminal import (
-    CursesError,
-    FakeCurses,
-    FakeLocale,
-    FakeSignals,
+from terminalgame.domain.game_state import Outcome, new_game_with
+from terminalgame.game_main import (
+    EXIT_OK,
+    EXIT_SCREEN_TOO_SMALL,
+    build_frame,
+    main,
+    play_a_game,
 )
+from terminalgame.presentation.frame_builder import HEIGHT, STATUS_ROW, WIDTH
+from terminalgame.presentation.status_line import status_text
+from terminalgame.screen.curses_adapter import TerminalSession
+from terminalgame.screen.port import Colour, Key
+from tests.fake_terminal import FakeCurses, FakeLocale, FakeSignals
 
 
 def session_over(curses_module):
+    """A real `TerminalSession` driven by a fake curses — WI-2's arrangement."""
     def factory():
         return TerminalSession(curses_module=curses_module,
                                signal_module=FakeSignals(),
@@ -27,142 +45,180 @@ def session_over(curses_module):
     return factory
 
 
-class SkeletonFrameTest(unittest.TestCase):
+def quitting_curses(width=WIDTH, height=HEIGHT):
+    """A fake terminal with `q` already pressed, so a game ends at once."""
+    curses_module = FakeCurses(width=width, height=height)
+    curses_module.window.press(ord("q"), at=0.0)
+    return curses_module
+
+
+class QuietScreen(object):
+    """A screen that quits at once. Enough to assemble a game on."""
+
+    def __init__(self, keys=None, width=WIDTH, height=HEIGHT):
+        self.keys = list(keys or [Key.printable("q")])
+        self.presented = []
+        self._size = (width, height)
+
+    def size(self):
+        return self._size
+
+    def new_frame(self):
+        return None
+
+    def present(self, frame):
+        self.presented.append(frame)
+
+    def read_key(self, timeout_seconds):
+        return self.keys.pop(0) if self.keys else Key.printable("q")
+
+
+def row_text(frame, row):
+    return "".join(frame.cell(column, row).character
+                   for column in range(frame.width))
+
+
+class TheStatusRowReachesTheFrame(unittest.TestCase):
+    """STAT-1, and the silent way it could have been lost."""
 
     def setUp(self):
-        self.frame = game_main.build_skeleton_frame(40, 30)
+        self.state = new_game_with(random.Random(3))
 
-    def test_the_frame_is_exactly_the_window_the_launcher_makes(self):
-        self.assertEqual((40, 30), (self.frame.width, self.frame.height))
-        rows = self.frame.text_rows()
-        self.assertEqual(30, len(rows))
-        self.assertTrue(all(len(row) == 40 for row in rows))
+    def test_the_bottom_row_is_not_blank(self):
+        frame = build_frame(self.state)
+        self.assertNotEqual("", row_text(frame, STATUS_ROW).strip(),
+                            "row 29 is blank: the status line was never "
+                            "passed to compose (STAT-1)")
 
-    def test_the_bottom_row_carries_the_status_line_and_the_rows_above_do_not(self):
-        rows = self.frame.text_rows()
-        self.assertTrue(rows[29].startswith(game_main.STATUS_LINE))
-        for row in rows[:29]:
-            self.assertNotIn("arrows, q quits", row)
+    def test_it_carries_the_real_score_and_not_a_placeholder(self):
+        scored = self.state.with_changes(score=41)
+        self.assertIn("score 41", row_text(build_frame(scored), STATUS_ROW))
 
-    def test_every_colour_the_specification_names_reaches_the_frame(self):
-        used = {cell.colour for _, _, cell in self.frame.cells()}
-        for colour in (Colour.WALL, Colour.DOT, Colour.PLAYER,
-                       Colour.GHOST, Colour.STATUS):
-            self.assertIn(colour, used)
+    def test_it_is_exactly_what_the_status_module_says_it_should_be(self):
+        row = row_text(build_frame(self.state), STATUS_ROW)
+        self.assertEqual(status_text(self.state), row.rstrip())
 
-    def test_the_status_row_is_cyan_all_the_way_across(self):
-        for column in range(40):
-            self.assertEqual(Colour.STATUS, self.frame.cell(column, 29).colour)
+    def test_it_changes_when_the_game_ends(self):
+        caught = self.state.with_changes(outcome=Outcome.CAUGHT, score=9)
+        row = row_text(build_frame(caught), STATUS_ROW)
+        self.assertIn("CAUGHT", row)
+        self.assertIn("score 9", row)
 
-    def test_it_composes_for_a_terminal_larger_than_the_minimum(self):
-        frame = game_main.build_skeleton_frame(80, 40)
-        self.assertEqual((80, 40), (frame.width, frame.height))
-        self.assertEqual(40, len(frame.text_rows()))
+    def test_it_is_cyan(self):
+        frame = build_frame(self.state)
+        for column in range(WIDTH):
+            self.assertEqual(Colour.STATUS,
+                             frame.cell(column, STATUS_ROW).colour)
 
-
-class RunTest(unittest.TestCase):
-
-    def setUp(self):
-        self.curses = FakeCurses()
-        self.session = TerminalSession(curses_module=self.curses,
-                                       signal_module=FakeSignals(),
-                                       locale_module=FakeLocale(),
-                                       on_fatal_signal=lambda number: None)
-        self.screen = self.session.open()
-        self.addCleanup(self.session.close)
-        self.window = self.curses.window
-        # The terminal's own virtual clock, so that waiting for a key really
-        # does use up the hold.
-        self.clock = lambda: self.curses.now
-
-    def test_one_frame_reaches_the_glass_in_one_update(self):
-        game_main.run(self.screen, hold_seconds=0.3, clock=self.clock)
-        self.assertEqual(1, len(self.window.presented))
-        self.assertEqual(game_main.build_skeleton_frame(40, 30).text_rows(),
-                         self.window.presented[0])
-
-    def test_it_quits_on_q(self):
-        self.window.press(ord("q"), at=0.05)
-        ended_with = game_main.run(self.screen, hold_seconds=10.0,
-                                   clock=self.clock)
-        self.assertEqual("q", ended_with.character)
-        self.assertLess(self.curses.now, 1.0,
-                        "q must end it at once, not after the hold")
-
-    def test_it_quits_on_shift_q(self):
-        self.window.press(ord("Q"), at=0.05)
-        ended_with = game_main.run(self.screen, hold_seconds=10.0,
-                                   clock=self.clock)
-        self.assertEqual("Q", ended_with.character)
-
-    def test_with_nobody_at_the_keyboard_it_ends_itself_when_the_hold_runs_out(self):
-        self.assertIsNone(game_main.run(self.screen, hold_seconds=0.35,
-                                        clock=self.clock))
-        self.assertGreaterEqual(self.curses.now, 0.35)
-        self.assertLess(self.curses.now, 0.5,
-                        "it must not overrun its hold by much")
-
-    def test_other_keys_do_not_end_it(self):
-        for code in (self.curses.KEY_UP, ord("x"), ord(" "),
-                     self.curses.KEY_F1):
-            self.window.press(code)
-        self.assertIsNone(game_main.run(self.screen, hold_seconds=0.35,
-                                        clock=self.clock))
-        self.assertGreaterEqual(self.curses.now, 0.35)
-
-    def test_a_hold_of_zero_draws_the_frame_and_leaves_at_once(self):
-        self.assertIsNone(game_main.run(self.screen, hold_seconds=0.0,
-                                        clock=self.clock))
-        self.assertEqual(1, len(self.window.presented))
-        self.assertEqual(0.0, self.curses.now)
+    def test_the_rows_above_it_are_not_the_status_line(self):
+        frame = build_frame(self.state)
+        for row in range(STATUS_ROW):
+            self.assertNotIn("arrows, q quits", row_text(frame, row))
 
 
-class MainTest(unittest.TestCase):
+class TheFrameIsTheWholeWindow(unittest.TestCase):
+
+    def test_it_is_exactly_the_window_the_launcher_makes(self):
+        frame = build_frame(new_game_with(random.Random(1)))
+        self.assertEqual(WIDTH, frame.width)
+        self.assertEqual(HEIGHT, frame.height)
+
+    def test_the_maze_and_the_actors_are_on_it(self):
+        state = new_game_with(random.Random(1))
+        text = "\n".join(row_text(build_frame(state), row)
+                         for row in range(STATUS_ROW))
+        self.assertIn("║", text, "no wall glyphs (SCRN-3)")
+        self.assertIn("▪", text, "no dots (SCRN-4)")
+
+
+class PlayingAWholeGame(unittest.TestCase):
+
+    def test_a_game_is_opened_and_played_and_handed_back(self):
+        screen = QuietScreen()
+        final = play_a_game(screen, seed=5)
+        self.assertEqual(Outcome.PLAYING, final.outcome)
+        self.assertGreaterEqual(len(screen.presented), 1)
+
+    def test_one_seed_gives_one_game(self):
+        first = play_a_game(QuietScreen(), seed=5)
+        second = play_a_game(QuietScreen(), seed=5)
+        self.assertEqual(first, second)
+
+    def test_different_seeds_give_different_games(self):
+        self.assertNotEqual(play_a_game(QuietScreen(), seed=5).maze,
+                            play_a_game(QuietScreen(), seed=6).maze)
+
+    def test_the_seed_reaches_the_ghost_as_well_as_the_maze(self):
+        """One seed names the *whole* game, which is why one source is used.
+
+        Played far enough for the ghost to have moved several times: two runs
+        on one seed must agree about where it ended up, not merely about the
+        maze.
+        """
+        keys = [None] * 40 + [Key.printable("q")]
+        first = play_a_game(QuietScreen(list(keys)), seed=8)
+        second = play_a_game(QuietScreen(list(keys)), seed=8)
+        self.assertEqual(first.ghost, second.ghost)
+        self.assertEqual(first.ghost_heading, second.ghost_heading)
+
+
+class TheProcessEntryPoint(unittest.TestCase):
 
     def test_a_normal_run_ends_well_and_gives_the_terminal_back(self):
-        curses_module = FakeCurses()
-        status = game_main.main(["--hold", "0"],
-                                session_factory=session_over(curses_module))
-        self.assertEqual(game_main.EXIT_OK, status)
+        curses_module = quitting_curses()
+        status = main([], session_factory=session_over(curses_module))
+        self.assertEqual(EXIT_OK, status)
         self.assertTrue(curses_module.is_restored, curses_module.describe())
-        self.assertEqual(1, len(curses_module.window.presented))
+        self.assertGreaterEqual(len(curses_module.window.presented), 1)
+
+    def test_the_real_picture_reaches_the_glass(self):
+        """What a player would actually see, read off the fake terminal.
+
+        The rows are asserted directly rather than through `str()` of whatever
+        was recorded: a repr can contain almost anything, and a test that
+        matches one is not reading the screen.
+        """
+        curses_module = quitting_curses()
+        main([], session_factory=session_over(curses_module))
+        rows = curses_module.window.presented[0]
+        self.assertEqual(HEIGHT, len(rows))
+        self.assertIn("arrows, q quits", rows[STATUS_ROW],
+                      "the status row never reached the terminal (STAT-1)")
+        self.assertIn("║", "\n".join(rows[:STATUS_ROW]), "no maze was drawn")
 
     def test_a_window_too_small_fails_loudly_instead_of_drawing_half_a_maze(self):
-        curses_module = FakeCurses(width=80, height=24)
+        curses_module = quitting_curses(width=80, height=24)
         stderr = io.StringIO()
-        status = game_main.main(["--hold", "0"],
-                                session_factory=session_over(curses_module),
-                                stderr=stderr)
-        self.assertEqual(game_main.EXIT_SCREEN_TOO_SMALL, status)
+        status = main([], session_factory=session_over(curses_module),
+                      stderr=stderr)
+        self.assertEqual(EXIT_SCREEN_TOO_SMALL, status)
         message = stderr.getvalue()
         self.assertIn("40", message)
         self.assertIn("30", message)
         self.assertIn("24", message)
         self.assertEqual([], curses_module.window.presented,
                          "nothing may be drawn into a window that is too small")
+
+    def test_a_terminal_too_small_is_still_handed_back(self):
+        curses_module = quitting_curses(width=80, height=24)
+        main([], session_factory=session_over(curses_module),
+             stderr=io.StringIO())
         self.assertTrue(curses_module.is_restored, curses_module.describe())
 
     def test_a_terminal_that_fails_mid_frame_still_gives_the_terminal_back(self):
         # Caution C10's hardest case: something goes wrong in the middle of
         # drawing, nothing catches it, and the player is left in the shell.
-        curses_module = FakeCurses()
+        curses_module = quitting_curses()
         curses_module.window.fail_writes = True
-
-        with self.assertRaises(CursesError):
-            game_main.main(["--hold", "0"],
-                           session_factory=session_over(curses_module))
-
+        with self.assertRaises(Exception):
+            main([], session_factory=session_over(curses_module))
         self.assertTrue(curses_module.is_restored, curses_module.describe())
 
-    def test_a_negative_hold_is_refused_rather_than_meaning_for_ever(self):
-        with self.assertRaises(SystemExit):
-            with contextlib.redirect_stderr(io.StringIO()):
-                game_main.main(["--hold", "-1"],
-                               session_factory=session_over(FakeCurses()))
-
-    def test_the_default_hold_is_finite(self):
-        self.assertGreater(game_main.DEFAULT_HOLD_SECONDS, 0)
-        self.assertLess(game_main.DEFAULT_HOLD_SECONDS, 60)
+    def test_a_seed_can_be_given_on_the_command_line(self):
+        curses_module = quitting_curses()
+        self.assertEqual(
+            EXIT_OK,
+            main(["--seed", "3"], session_factory=session_over(curses_module)))
 
 
 if __name__ == "__main__":
