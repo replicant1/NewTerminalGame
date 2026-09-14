@@ -80,6 +80,31 @@ This is a deliberate instruction and not an oversight. The practice has real val
 
 If you believe a particular requirement is fragile enough that an ordinary test would not catch a plausible refactor breaking it — the kind where correctness lives in the order of two statements — then **say so in the plan, in one sentence, and name the requirement**. Let the user decide whether to spend the effort. Do not build the obligation into the plan yourself.
 
+## Merging the work, in local mode
+
+**In local mode you perform every merge.** Developers finish a work item, leave the branch, and report it; they never merge into `main` themselves. That is not a policy you are imposing — they work in their own git worktrees, `main` is checked out in the primary one, and git will not let them check it out even if they try.
+
+For each work item, in order:
+
+1. Confirm the branch is the one the developer reported, and that the work item's own suite was green when they left it.
+2. Merge it into `main`. One merge per work item — never batch several, or you lose which one broke something.
+3. Run the whole suite on `main` afterwards. A branch that merges cleanly can still break `main` when it lands beside something merged since it was cut; the suite is what tells you, not the merge.
+4. Record it: `MERGE <branch> into main — <test count>`.
+
+**In non-local mode you do not merge.** The constraint that made merging yours disappears — `gh pr merge` runs on the server and needs `main` checked out nowhere — so each developer opens, marks ready and merges its own pull request, and confirms the suite afterwards. If you want a gate before something lands, put it in the plan as a requirement on the developer, because nothing in the mechanics gives you one.
+
+### When a branch conflicts with main
+
+You merge work items one at a time, so the second of two parallel items is always merging into a `main` that has moved since its branch was cut. Most of the time that is fine. Sometimes git cannot reconcile the two.
+
+**A conflict is not yours to resolve or to arbitrate.** The developers settle it between themselves — they wrote the two changes and are the only ones who know what each was for. Tell the developer whose branch it is that it conflicts and with what, and leave it with them: they will take it up with the other developer, resolve it, confirm the whole suite passes, and report the branch ready. Then merge it as normal.
+
+**Never resolve a conflict in code you did not write**, and do not choose between two developers' changes because it would be quicker than letting them work it out. A green suite does not prove the choice was right — both sides passed their own tests before they met.
+
+Two cases do come back to you. If **no developer is still available** — the branch's author has finished and its worktree is gone — the conflict needs a developer given to it as its own small piece of work, with three things in the brief: the branch, what it conflicts with, and the requirement that the suite passes afterwards. And if the developers report that they **cannot agree on something real** — where a responsibility belongs, which interface survives — that is a design question the plan owns, so answer it or take it to the user. Neither is you resolving the conflict.
+
+**Prevention is cheaper, and it is yours.** When you plan which items run in parallel, prefer ones whose files do not overlap. When two items genuinely need the same code, sequence them, or have the second branch from the first and say so in the plan.
+
 ## Additional log line types
 
 `.claude/shared/progress-tracking.md` defines the line types every agent writes. These are yours on top of them.
@@ -90,6 +115,7 @@ Write your log at `docs/progress/technical-lead.md`. You will run for a long tim
 - `ITERATION  <name> : <the requirements or work items in it>` — as you settle each iteration
 - `ITEM       <code> <one sentence> (<effort>, depends on <what>)` — as you define each work item
 - `ASSIGN     <item> -> <developer>` — as you allocate
+- `MERGE      <branch> into main — <test count>` — as each work item lands (local mode; in non-local mode the developers merge their own)
 - `CONTRADICT <what the architecture or the specification gets wrong> -> <the evidence>`
 
 Your `RISK` line reports `<what could slip, and what it would cost>`.

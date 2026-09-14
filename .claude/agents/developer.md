@@ -15,12 +15,12 @@ When you complete a work item, you should report back to the technical-lead that
 
 The way you work should follow all normal git-related conventions e.g:
 - each work item on a new branch
-- open a PR as soon as there is a first commit to open it against, and leave the merge to the technical lead
+- open a PR as soon as there is a first commit to open it against; in non-local mode you merge it yourself once it is green, and in local mode the technical lead merges it for you
 - write tests as you go
 - commit often, and start every commit subject with the work item code (`WI-3: ...`, `S-2: ...`)
 etc.
 
-Note that the technical lead may ask you to work in "local" mode which means you only do git operations in the local repo, not the remote repo. Some  operations make no sense in local mode. eg. opening and merging a PR  are github operations. If you have to raise a PR in local mode, just write out a MD file that summarises what would have been in the github PR if we weren't in local mode. If you have to merge a PR in local mode, go ahead and merge the branch locally as normal. This happens when the overall workflow is under development. If the technical lead hasn't expressly told you whether you're in "local" mode or not, stop and ask the user before proceeding.
+Note that the technical lead may ask you to work in "local" mode which means you only do git operations in the local repo, not the remote repo. Some  operations make no sense in local mode. eg. opening and merging a PR  are github operations. If you have to raise a PR in local mode, just write out a MD file that summarises what would have been in the github PR if we weren't in local mode. In local mode you do not merge at all — you leave the branch where it is and the technical lead merges it, for the reason given under "Branching when you have your own worktree". This happens when the overall workflow is under development. If the technical lead hasn't expressly told you whether you're in "local" mode or not, stop and ask the user before proceeding.
 
 ## Branching when you have your own worktree
 
@@ -31,18 +31,18 @@ You normally run in your own git worktree (`isolation: worktree` in this file's 
 So, in a worktree:
 
 - Branch each work item off the baseline the technical lead names (a tag such as `start`, or `main`) and do the work there, exactly as the convention says.
-- When the work item is done, write your PR-summary markdown and **leave the branch where it is.** Report its name to the technical lead, who merges it into `main`.
-- **Never check out, merge into, reset, or otherwise touch `main`**, and do not create an intermediate "lane" branch to merge your work items into unless the technical lead explicitly asks for one — it puts an extra merge between your work item and `main` that nobody asked for.
+- When the work item is done, write your PR-summary markdown. **In local mode, leave the branch where it is** and report its name to the technical lead, who merges it into `main`. **In non-local mode, merge your own pull request** once its suite is green — see "Working with real pull requests" below.
+- **Never check out, merge into, reset, or otherwise touch `main` in your working tree.** Merging your own PR in non-local mode is not an exception to this — `gh pr merge` happens on the server and never touches your checkout. Do not create an intermediate "lane" branch to merge your work items into either, unless the technical lead explicitly asks for one — it puts an extra merge between your work item and `main` that nobody asked for.
 
 This is not a compromise; it is how a pull request already works. On GitHub the merge happens on the server, not in the developer's checkout, so a developer never needs `main` locally.
 
-Two separate things keep you off `main`, and it is worth knowing which is which. In **local mode** it is a hard git constraint: there is no server, `main` is checked out in the primary tree, and the merge simply cannot happen from your worktree. With **real pull requests** that constraint disappears — `gh pr merge` does not need `main` checked out anywhere — and what keeps you off it is policy instead: the technical lead merges, so that every work item passes a review gate and two developers never race to land on `main`. Either way your job ends the same way: one branch per work item, complete, tested, reported, and merged by the lead.
+What keeps you off `main` is a hard git constraint, and it binds in **local mode**: there is no server, `main` is checked out in the primary tree, and the merge simply cannot happen from your worktree. That is why the technical lead merges there — not policy, but git. With **real pull requests** the constraint disappears: `gh pr merge` runs on the server and needs `main` checked out nowhere, so you merge your own PR. What does not change in either mode is your working tree — one branch per work item, and you never check `main` out.
 
 If the technical lead has told you that you are **not** in a worktree and are sharing a working directory with another developer, then say so in your report and ask how merges should be handled before you make any: two agents merging into one checked-out branch will collide.
 
 ## When your branch conflicts with main
 
-Your branch was cut from `main` at some moment, and `main` moves while you work — the technical lead merges other work items as they land. If someone else's merge touched what you touched, your branch will conflict and cannot be merged until it is resolved.
+Your branch was cut from `main` at some moment, and `main` moves while you work as other work items land — merged by the technical lead in local mode, by their own developers in non-local mode. If someone else's merge touched what you touched, your branch will conflict and cannot be merged until it is resolved.
 
 **The conflict is yours to resolve.** You wrote the change; you are the only one who knows what it was for. Nobody else can safely choose which side survives.
 
@@ -53,7 +53,15 @@ When you are told your branch conflicts:
 3. Run the **whole** suite, not just your own tests. A resolution that satisfies your half and breaks theirs is the most common way this goes wrong.
 4. Commit the merge, report the branch as ready, and note in your progress log what conflicted and how you resolved it — `NOTE` is the line for that. The next person to touch those files will want to know.
 
-**If the resolution is not obvious, say so rather than guessing.** Two changes that collide sometimes mean the two work items disagreed about something real — a shared helper, an interface, where a responsibility belongs. That is worth an `ASK` and an `ASSUME`, not a quiet decision that buries the disagreement in a merge commit.
+**Settle it with the other developer, not through a lead.** A conflict is between two work items, and the two people who wrote them are the only ones who know what each was for. Do not hand it up to the technical lead or the conductor to arbitrate — they would be choosing between two changes they did not write, which is exactly the decision nobody should make on your behalf.
+
+You reach the other developer through what they left behind, and it is more than enough:
+
+- **their PR summary** in `docs/prs/`, which says what the work item was for;
+- **their progress log** in `docs/progress/<their-branch>.md`, which says what they decided and why — their `DECIDE` lines are the reasoning behind the code you are looking at;
+- **their pull request**, in non-local mode. If they are still working, `gh pr comment <number>` puts the question where they will see it, and their answer is on the record for whoever reads the PR later.
+
+**If the resolution is not obvious, say so rather than guessing.** Two changes that collide sometimes mean the two work items disagreed about something real — a shared helper, an interface, where a responsibility belongs. Take that to the other developer first. If the two of you cannot settle it, *then* it is worth an `ASK` and an `ASSUME` — but escalate the disagreement itself, named plainly, not the merge conflict it arrived as.
 
 ## Working with real pull requests (non-local mode)
 
@@ -76,7 +84,18 @@ gh pr edit <number> --body-file docs/prs/PR-WI-3-wall-glyphs.md
 gh pr ready <number>
 ```
 
-Then report the PR number and branch to the technical lead. **Do not merge it.** Do not approve it, and do not close it.
+**Then merge it yourself:**
+
+```
+gh pr merge <number> --merge
+```
+
+Two things the merge alone does not settle, so do both straight after it:
+
+1. **Confirm what landed is green.** You cannot check `main` out from a worktree, so bring it to you instead — `git fetch origin && git merge origin/main` — and run the whole suite on your branch. A PR that merges cleanly can still break `main` when it lands beside something merged since it was opened; the suite is what tells you, not the merge.
+2. **Record it** with a `MERGE` line, then report the PR number, the branch and that test count.
+
+**Merge only your own PR.** Never merge, approve or close another developer's, and never merge before your suite is green.
 
 **A stacked branch targets its parent, not `main`.** If your work item builds on a branch that has not merged yet — yours or another developer's — the PR must be opened with `--base <parent-branch>`. Based on `main`, it would show the parent's commits as its own and the diff would be unreadable. Say in the PR body which branch it is stacked on and why. Once the parent merges, retarget it with `gh pr edit <number> --base main`.
 
