@@ -3,8 +3,8 @@
 **Branch:** `wi-13-launcher-robustness`, cut from `main` at `16b4dac`
 **Lane:** DEV-B, iteration M2
 **Mode:** local — this file stands in for the pull request. Nothing was pushed; no `gh` was used; the branch is not merged.
-**Suite:** `python3 -m unittest discover` from the repository root — **609 passed, 0 failed, 0 skipped** (8.3 s). `main` was 575.
-**Windows opened: 15. All 15 closed. The visible-window census returned to its starting value after every probe.**
+**Suite:** `python3 -m unittest discover` from the repository root — **658 passed, 0 failed, 0 skipped** (8.4 s), on this branch with `main` at `01628bd` merged in (620 + 34).
+**Windows opened: 17. All 17 closed. The visible-window census returned to its starting value after every probe.**
 
 ---
 
@@ -21,6 +21,10 @@ whether the game was asked to run for 5 seconds or for 12"*:
 
 Holds differ by 5 s; sessions differ by 4.99 s. The game runs its full length and the window closes
 cleanly afterwards.
+
+**Re-run on the merged tree** after `main` at `01628bd` — WI-11's loop and twelve plan edits — landed
+in this branch, because "it worked before those landed" is not the claim worth making: **3 s → 4.00 s,
+8 s → 8.95 s, differing by 4.96 s, both closed.** Two more windows, census returned.
 
 ## The first obligation, and why it was deletion rather than deprecation
 
@@ -87,7 +91,7 @@ their failure injection are already covered by WI-1** in `test_launcher_lifecycl
 **not duplicated** — a refused reference query still places at the documented default, a refused screen
 query still falls back to the documented screen, and both refused still produces a running window.
 
-`tests/test_launcher_robustness.py` adds 31 tests covering what WI-13 itself is for:
+`tests/test_launcher_robustness.py` adds 35 tests covering what WI-13 itself is for:
 
 | Class | What it holds |
 | --- | --- |
@@ -96,6 +100,7 @@ query still falls back to the documented screen, and both refused still produces
 | `TheWarningIsGoneBecauseTheDefectIs` | and the knowledge in it is not |
 | `NothingSurvivesAFailure` | every post-creation stage closes the captured identity — and a failure *before* the window exists closes nothing |
 | `C2BeatsC3WhenTheyDisagree` | a window that will not go idle is left open, named, with the reason saying *why* |
+| `AGameNothingBoundsButAPerson` | what happens when the command genuinely never ends — see below |
 | `GoingIsCheckedWithVisible` | `visible`, never `exists` |
 | `EveryCallIsStillBounded` | caution C4 |
 
@@ -113,8 +118,31 @@ every later automation call *including the cleanup itself* — so "reap anyway" 
 reaping.
 
 I practised it as well as tested it: every probe that found its command still alive at the bound left
-the window open rather than closing it. **In the event none had to — all 15 windows went idle and
+the window open rather than closing it. **In the event none had to — all 17 windows went idle and
 closed.**
+
+## A game nothing bounds but a person
+
+M0's `--hold` was scaffolding, and the technical lead ruled it was not a precedent: the real game
+exits on `q` and never on a timer. DEV-A is retiring it for `--seed`, which means **the launched
+command will be bounded by nothing the launcher controls.**
+
+That is correct for a game, and it is safe *only* because of the obligation this item exists for — the
+launcher waits on the process list and never closes a window something is running in. But it makes
+what happens at the end of the wait stop being hypothetical, so it is now tested rather than reasoned
+about: a game that never ends is never closed out from under itself; the wait still ends rather than
+hanging (caution C4); **the window left behind is named in the result**, because an orphan nobody can
+identify is a hunt rather than a nuisance; and — the pair, without which a launcher that never closed
+anything would pass all three — a player pressing `q` still gives the ordinary ending.
+
+**Anything that starts a game with nobody at the keyboard must arrange its own way out.** That is
+WI-14a's to carry, and it is the one consequence of the `--seed` change that reaches beyond DEV-A's
+lane.
+
+**Checked rather than carried:** I was told `--hold` is already gone from both sides. On `main` at
+`01628bd` it is **still there** — `game_command` still takes `hold_seconds` and still emits `--hold`.
+So the change has not landed, my measurement is reproducible on this tree, and when `--seed` does land
+the equivalent probe needs the new argument and the timing measurement wants re-running.
 
 ## One thing I got wrong, and the code was right
 
@@ -171,5 +199,7 @@ every probe without exception, and no modal sheet was raised at any point.**
 | | |
 | --- | --- |
 | `f180d1b` | WI-13: one answer to "is it still running", and the game stops being killed |
+| `5495fba` | WI-13: the finding and the PR summary |
+| `5764938` | WI-13: merge main, and harden for a game nothing bounds but a person |
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
