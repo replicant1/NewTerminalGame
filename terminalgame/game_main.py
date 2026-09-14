@@ -1,101 +1,80 @@
-"""The game process: draw one frame, wait a moment, give the terminal back.
+"""The game process: a whole game, in the window the launcher opened.
 
 Run it with::
 
     python3 -m terminalgame.game_main
 
-This is the M0 walking skeleton, not the game. Its whole job is to exercise
-the screen port end to end in a real terminal — raw mode on, one whole frame
-presented in one pass, a key read with a timeout, and the terminal handed
-back however the process ends. WI-11 replaces the loop below with the real
-one and WI-5b replaces the frame with the real picture; until then this is
-what the launcher (WI-1, WI-3) has to open a window on.
+This is the assembly point and almost nothing else. Every part it puts together
+was built and tested somewhere else, and this module's whole job is to hand each
+one to the next:
 
-It cannot block for ever. With no key at all it draws its frame, waits out
-`--hold` seconds and exits by itself, so a window running it is never left
-with a live process in it that nothing can end.
+* the **Domain** makes a maze and opens a game on it (WI-4, WI-7);
+* **Presentation** turns a state into a frame (WI-5a, WI-5b) and writes the
+  status row (WI-6);
+* the **screen port** puts that frame on the glass and reads keys (WI-2);
+* the **loop** decides when each of those happens (WI-11).
+
+It was the M0 skeleton until now — one frame, a `--hold` timer, and no game
+underneath it. Both are gone. The real game runs until the player presses `q`,
+which is END-6, and the window closing afterwards is the launcher's doing.
+
+## One seed names one whole game
+
+A single `random.Random` is built from `--seed` and handed **both** to
+`new_game_with`, which uses it for the maze and for the opening positions, and
+to the loop, which uses it for the ghost. That matters more than it looks: with
+two sources a seed would reproduce the maze but not the game played on it, and
+reproducing a whole game is precisely what the acceptance pack needs.
+
+With no seed the game is different every time, which is MAZE-4.
+
+## The status row is passed explicitly, and that is not a formality
+
+`compose(state, status_line=None)` leaves row 29 blank, and a frame with a blank
+row 29 is a perfectly well-formed frame — it composes without complaint and
+satisfies every test the frame builder has. So forgetting to pass the status row
+here would not break anything loudly; it would produce a game that quietly fails
+STAT-1 while looking entirely correct to every automated check above it. That is
+why :func:`build_frame` exists as a named function with a test of its own,
+rather than as an argument written inline at the call site.
 """
 
 from __future__ import annotations
 
 import argparse
+import random
 import sys
-import time
 
+from .application.loop import play
+from .domain.game_state import new_game_with
+from .presentation.frame_builder import compose
+from .presentation.status_line import status_row
 from .screen.curses_adapter import TerminalSession
-from .screen.port import Colour, Frame, ScreenTooSmall
-
-#: How long the skeleton holds its frame on screen before exiting on its own.
-DEFAULT_HOLD_SECONDS = 3.0
-
-#: How long a single key read waits. The real loop (WI-11) recomputes this
-#: every pass from the clock; the skeleton only needs it to be short enough
-#: that `q` feels immediate and bounded enough that it always comes back.
-KEY_POLL_SECONDS = 0.1
-
-TITLE = "Terminal Game"
-SKELETON_MESSAGE = "the screen port is alive"
-STATUS_LINE = " score 0    arrows, q quits"
+from .screen.port import ScreenTooSmall
 
 EXIT_OK = 0
 EXIT_SCREEN_TOO_SMALL = 2
 
 
-def build_skeleton_frame(width, height):
-    """A placeholder picture that puts every named colour on the screen.
+def build_frame(state):
+    """The real picture: the composed maze with the real status row on it.
 
-    Deliberately not the game's picture: WI-5b composes that from a game
-    state, and nothing here should be mistaken for it. What this frame is
-    for is showing a human, at a glance, that walls, dots, the player, the
-    ghost and the status line all reach the glass in their own colours.
+    The one line that joins WI-5b to WI-6. See the module docstring for why it
+    is a function with a name rather than an argument at the call site.
     """
-    frame = Frame(width, height)
-    maze_rows = height - 1
-    right = width - 1
-
-    frame.put_text(0, 0, "╔" + "═" * (right - 1) + "╗", Colour.WALL)
-    for row in range(1, maze_rows - 1):
-        frame.put(0, row, "║", Colour.WALL)
-        frame.put(right, row, "║", Colour.WALL)
-    frame.put_text(0, maze_rows - 1, "╚" + "═" * (right - 1) + "╝", Colour.WALL)
-
-    _centre(frame, 2, TITLE, Colour.WALL)
-    _centre(frame, 4, SKELETON_MESSAGE, Colour.DOT)
-
-    dots_row = maze_rows // 2
-    for column in range(4, right - 3, 2):
-        frame.put(column, dots_row, "▪", Colour.DOT)
-
-    _centre(frame, dots_row + 3, "▐█▌", Colour.PLAYER)
-    _centre(frame, dots_row + 5, "▐▓▌", Colour.GHOST)
-    _centre(frame, maze_rows - 3, "press q to quit", Colour.STATUS)
-
-    frame.put_text(0, height - 1, STATUS_LINE[:width].ljust(width),
-                   Colour.STATUS)
-    return frame
+    return compose(state, status_line=status_row(state))
 
 
-def _centre(frame, row, text, colour):
-    text = text[:frame.width]
-    frame.put_text((frame.width - len(text)) // 2, row, text, colour)
+def play_a_game(screen, seed=None):
+    """Open a game and play it until the player quits. Returns the last state.
 
-
-def run(screen, hold_seconds=DEFAULT_HOLD_SECONDS, clock=time.monotonic):
-    """Present one frame, then wait for `q` or for the hold to run out.
-
-    Returns the key that ended it, or None if the hold expired.
+    Separated from :func:`main` so that a test can play a whole game against a
+    stood-in screen without going near a terminal, an argument parser or an
+    exit code.
     """
-    width, height = screen.size()
-    screen.present(build_skeleton_frame(width, height))
-
-    deadline = clock() + hold_seconds
-    while True:
-        remaining = deadline - clock()
-        if remaining <= 0:
-            return None
-        key = screen.read_key(min(remaining, KEY_POLL_SECONDS))
-        if key is not None and key.is_printable and key.character in ("q", "Q"):
-            return key
+    random_source = random.Random(seed)
+    state = new_game_with(random_source)
+    return play(screen, state, random_source, build_frame)
 
 
 def main(argv=None, session_factory=TerminalSession, stderr=None):
@@ -103,7 +82,7 @@ def main(argv=None, session_factory=TerminalSession, stderr=None):
     stderr = stderr if stderr is not None else sys.stderr
     try:
         with session_factory() as screen:
-            run(screen, hold_seconds=arguments.hold)
+            play_a_game(screen, seed=arguments.seed)
     except ScreenTooSmall as too_small:
         # Loud, and after the terminal has been given back, so the message is
         # readable rather than scrawled across a curses screen.
@@ -116,15 +95,13 @@ def main(argv=None, session_factory=TerminalSession, stderr=None):
 def _parse_arguments(argv):
     parser = argparse.ArgumentParser(
         prog="terminalgame.game_main",
-        description="Draw one frame through the screen port and quit.")
+        description="Play a game of Terminal Game in this window.")
     parser.add_argument(
-        "--hold", type=float, default=DEFAULT_HOLD_SECONDS,
-        help="seconds to hold the frame before exiting on its own "
-             "(default: %(default)s). Never unbounded.")
-    arguments = parser.parse_args(argv)
-    if arguments.hold < 0:
-        parser.error("--hold cannot be negative")
-    return arguments
+        "--seed", type=int, default=None,
+        help="play a reproducible game: the same seed gives the same maze, "
+             "the same opening position and the same ghost. Omit it for a "
+             "fresh game every time.")
+    return parser.parse_args(argv)
 
 
 if __name__ == "__main__":

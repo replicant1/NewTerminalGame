@@ -14,13 +14,17 @@ adds a layer adds its cases here. **WI-4 added the domain-purity cases**
 nothing above it, which is the other half of plan §3 and of architecture
 caution C5.
 
-Still uncovered, and owned by WI-12 rather than by this file's current
-authors: nothing here walks `launcher/`, so the launcher half of the layer
-rule — that the launcher shares no code with the game — is not guarded yet.
+**WI-12 closed the last two gaps.** `ApplicationLayerTest` covers the loop —
+what it may import, and that nothing below it depends on it. `LauncherTest`
+walks `launcher/`, which nothing here did until now, so the launcher half of
+the layer rule — that the launcher shares no code with the game — is guarded
+by the suite rather than by hand.
 """
 
 from __future__ import annotations
 
+import ast
+import importlib.util
 import os
 import re
 import unittest
@@ -28,6 +32,10 @@ import unittest
 import terminalgame
 
 PACKAGE_ROOT = os.path.dirname(os.path.abspath(terminalgame.__file__))
+
+#: The repository root — the parent of the game package, and the directory the
+#: launcher lives beside.
+REPOSITORY_ROOT = os.path.dirname(PACKAGE_ROOT)
 
 #: The one module in the whole game process allowed to know curses exists.
 THE_ADAPTER = os.path.join("screen", "curses_adapter.py")
@@ -94,6 +102,93 @@ def domain_files():
 def presentation_files():
     """The Python files of the Presentation layer."""
     return files_under(THE_PRESENTATION)
+
+
+#: The Application layer — the loop, and nothing else. Added by WI-12.
+THE_APPLICATION = "application"
+
+#: Application may know the clock; it is the only layer that legitimately does.
+#: It may not know curses, and it may not drive the desktop (caution C11).
+FORBIDDEN_IN_APPLICATION = ("curses", "subprocess")
+
+#: What Application may import from the rest of the game. Plan §3: "Application
+#: depends on Presentation, Domain and the Screen port."
+APPLICATION_MAY_IMPORT = ("terminalgame.domain", "terminalgame.presentation",
+                          "terminalgame.screen.port")
+
+#: The launcher process, which is not part of the game package at all.
+LAUNCHER_ROOT = os.path.join(REPOSITORY_ROOT, "launcher")
+
+
+def application_files():
+    """The Python files of the Application layer."""
+    return files_under(THE_APPLICATION)
+
+
+def launcher_files():
+    """The Python files of the launcher, by their name within it."""
+    found = []
+    for directory, _, filenames in os.walk(LAUNCHER_ROOT):
+        for filename in sorted(filenames):
+            if filename.endswith(".py"):
+                path = os.path.join(directory, filename)
+                found.append((os.path.relpath(path, LAUNCHER_ROOT), path))
+    return found
+
+
+def top_level_imports(source, package=None):
+    """Every top-level module name this source imports, read with `ast`.
+
+    `ast` rather than the line scanning the rest of this file uses, because the
+    launcher question is different in kind: the other tests ask "does this
+    mention that name", where this one must enumerate **everything** a module
+    imports and judge each. A scan that missed one would be the whole failure.
+
+    `package` is the package a **relative** import resolves within — "launcher"
+    for a launcher module, "terminalgame" for a game one. It has to be told:
+    `from . import script` names no package in the source, and guessing one
+    would report the game's own relative imports as somebody else's. Left out,
+    a relative import is reported as `"."`, which belongs to nothing and so is
+    never mistaken for a real dependency.
+    """
+    names = set()
+    for node in ast.walk(ast.parse(source)):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                names.add(alias.name.split(".")[0])
+        elif isinstance(node, ast.ImportFrom):
+            if node.level:
+                names.add(package if package is not None else ".")
+            elif node.module:
+                names.add(node.module.split(".")[0])
+    return names
+
+
+def is_in_this_repository(module_name):
+    """Is that top-level name one of this project's own packages?
+
+    Answered from the tree rather than from a list of standard-library names,
+    which 3.9 does not offer and which would go stale anyway. Anything the
+    repository does not define is something the interpreter brought.
+    """
+    package = os.path.join(REPOSITORY_ROOT, module_name)
+    return os.path.isdir(package) or os.path.isfile(package + ".py")
+
+
+def is_standard_library(module_name):
+    """Is that importable, and from outside this repository?"""
+    if is_in_this_repository(module_name):
+        return False
+    try:
+        spec = importlib.util.find_spec(module_name)
+    except (ImportError, ValueError):
+        return False
+    if spec is None:
+        return False
+    origin = getattr(spec, "origin", None)
+    if origin in (None, "built-in", "frozen"):
+        return True
+    return not os.path.abspath(origin).startswith(REPOSITORY_ROOT + os.sep)
 
 
 def source_of(path):
@@ -415,6 +510,147 @@ class PresentationLayerTest(unittest.TestCase):
         self.assertEqual([], offenders,
                          "dependencies point inward only: Presentation → "
                          "Domain, never the other way")
+
+
+class ApplicationLayerTest(unittest.TestCase):
+    """Plan §3 — "Application depends on Presentation, Domain and the Screen
+    port. Nothing depends on Application."
+
+    Added by WI-12, which is where the layer stopped being hypothetical.
+    """
+
+    def test_the_application_layer_is_where_it_is_said_to_be(self):
+        names = [name for name, _ in application_files()]
+        self.assertIn(os.path.join(THE_APPLICATION, "loop.py"), names,
+                      "no Application found; the tests below would be "
+                      "checking an empty list of files")
+
+    def test_it_imports_nothing_it_has_no_business_with(self):
+        offenders = []
+        for name, path in application_files():
+            source = source_of(path)
+            for forbidden in FORBIDDEN_IN_APPLICATION:
+                if imports(source, forbidden):
+                    offenders.append((name, forbidden))
+        self.assertEqual([], offenders,
+                         "the loop drives the screen through the port and the "
+                         "desktop not at all (plan §3, caution C11)")
+
+    def test_it_reaches_only_for_the_layers_beneath_it(self):
+        offenders = []
+        for name, path in application_files():
+            for imported in imported_game_modules(source_of(path)):
+                if not imported.startswith(APPLICATION_MAY_IMPORT):
+                    offenders.append((name, imported))
+        self.assertEqual([], offenders,
+                         "Application may import the Domain, Presentation and "
+                         "the screen port, and nothing else")
+
+    def test_it_never_reaches_for_the_terminal_adapter(self):
+        # The port is an interface; the adapter behind it is the screen's
+        # business and not the loop's.
+        for name, path in application_files():
+            self.assertNotIn("curses_adapter", source_of(path), name)
+
+    def test_nothing_beneath_it_depends_on_the_application_layer(self):
+        """"Nothing depends on Application" — the half that is easy to lose.
+
+        The Domain, Presentation and the screen port must all be usable with
+        no loop anywhere, which is what lets them be tested by the thousand.
+        """
+        offenders = []
+        beneath = domain_files() + presentation_files() + files_under("screen")
+        for name, path in beneath:
+            for imported in imported_game_modules(source_of(path)):
+                if imported.startswith("terminalgame." + THE_APPLICATION):
+                    offenders.append((name, imported))
+        self.assertEqual([], offenders,
+                         "something below the loop imported it; nothing "
+                         "depends on Application (plan §3)")
+
+
+class LauncherTest(unittest.TestCase):
+    """The launcher half of the layer rule — the gap open since M0.
+
+    Plan §3: "The Launcher process shares no code with the game's Domain,
+    Presentation or Application. It knows nothing about mazes."
+
+    Until WI-12 nothing walked `launcher/` and this was checked by hand, which
+    is to say it was checked once. It is the suite's now.
+    """
+
+    def test_there_is_a_launcher_to_look_at(self):
+        # The same guard the other layers carry: a scan of nothing passes.
+        names = [name for name, _ in launcher_files()]
+        self.assertIn("game.py", names)
+        self.assertIn("lifecycle.py", names)
+        self.assertGreater(len(names), 4)
+
+    def test_the_launcher_imports_nothing_from_the_game(self):
+        offenders = []
+        for name, path in launcher_files():
+            for imported in top_level_imports(source_of(path), "launcher"):
+                if imported == "terminalgame":
+                    offenders.append(name)
+        self.assertEqual([], offenders,
+                         "the launcher process shares no code with the game "
+                         "(plan §3); it names the game as a string and starts "
+                         "it as a subprocess")
+
+    def test_every_launcher_import_is_the_standard_library_or_itself(self):
+        """The stronger form, and the one that catches what nobody predicted.
+
+        Not "does it avoid the game" but "what *does* it import" — enumerated
+        with `ast` and each one judged. A new dependency on anything at all
+        shows up here.
+        """
+        offenders = []
+        for name, path in launcher_files():
+            for imported in top_level_imports(source_of(path), "launcher"):
+                if imported == "launcher":
+                    continue
+                if not is_standard_library(imported):
+                    offenders.append((name, imported))
+        self.assertEqual([], offenders,
+                         "the launcher runs on the standard library and its "
+                         "own modules, and nothing else")
+
+    def test_the_game_never_imports_the_launcher_either(self):
+        offenders = []
+        for name, path in python_files():
+            if "launcher" in top_level_imports(source_of(path), "terminalgame"):
+                offenders.append(name)
+        self.assertEqual([], offenders,
+                         "the game process must not know the launcher exists "
+                         "(caution C11)")
+
+    def test_the_import_scan_sees_what_it_is_looking_for(self):
+        # A guard that enumerated nothing would pass every test above.
+        self.assertEqual({"os"}, top_level_imports("import os"))
+        self.assertEqual({"os"}, top_level_imports("import os.path"))
+        self.assertEqual({"os", "sys"}, top_level_imports("import os, sys"))
+        self.assertEqual({"terminalgame"},
+                         top_level_imports("from terminalgame.domain import x"))
+        self.assertEqual({"launcher"},
+                         top_level_imports("from . import script", "launcher"))
+        # The same line in the game resolves to the game, not the launcher.
+        self.assertEqual({"terminalgame"},
+                         top_level_imports("from .screen import port", "terminalgame"))
+        self.assertEqual({"."}, top_level_imports("from . import script"))
+        self.assertEqual({"launcher"},
+                         top_level_imports("from launcher.script import x"))
+        # Prose and comments are not imports, and `ast` cannot be fooled by
+        # them the way a line scan could.
+        self.assertEqual(set(), top_level_imports('"""import os."""'))
+        self.assertEqual(set(), top_level_imports("# import terminalgame"))
+
+    def test_the_standard_library_check_can_tell_the_difference(self):
+        self.assertTrue(is_standard_library("subprocess"))
+        self.assertTrue(is_standard_library("os"))
+        self.assertFalse(is_standard_library("terminalgame"))
+        self.assertFalse(is_standard_library("launcher"))
+        self.assertFalse(is_standard_library("tests"))
+        self.assertFalse(is_standard_library("no_such_module_anywhere"))
 
 
 if __name__ == "__main__":

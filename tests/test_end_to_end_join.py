@@ -104,12 +104,19 @@ class TheWindowRunsTheRealGame(unittest.TestCase):
         play(launcher, game_command())
         self.assertIn(GAME_MODULE, runner.source_of("open_window_running"))
 
-    def test_the_game_is_started_with_a_bounded_lifetime(self):
-        """Nothing the launcher opens may sit there for ever waiting on a
-        person who has walked away — there would be no way to end it."""
+    def test_the_game_runs_until_the_player_ends_it(self):
+        """No timer is imposed on the game, and that changed in WI-12.
+
+        Through M0 the launcher passed the skeleton a bounded `--hold`. The
+        real game ends on `q` (END-6), so the command carries no timer — and
+        the window is safe anyway, because the launcher never closes one with
+        something running in it and waits on the process list, not a clock.
+        """
         launcher, runner = build()
-        play(launcher, game_command(hold_seconds=9))
-        self.assertIn("--hold 9", runner.source_of("open_window_running"))
+        play(launcher, game_command())
+        source = runner.source_of("open_window_running")
+        self.assertNotIn("--hold", source)
+        self.assertIn(GAME_MODULE, source)
 
     def test_the_game_is_the_only_command_the_window_is_given(self):
         launcher, runner = build()
@@ -326,10 +333,15 @@ class TheJoinReportsWhatItDid(unittest.TestCase):
         self.assertIn(str(WINDOW_ID), out.getvalue())
         self.assertIn(GAME_MODULE, runner.source_of("open_window_running"))
 
-    def test_the_hold_on_the_command_line_reaches_the_window(self):
+    def test_a_seed_on_the_command_line_reaches_the_window(self):
         launcher, runner = build()
-        main(["--hold", "2"], launcher=launcher, out=io.StringIO())
-        self.assertIn("--hold 2", runner.source_of("open_window_running"))
+        main(["--seed", "2"], launcher=launcher, out=io.StringIO())
+        self.assertIn("--seed 2", runner.source_of("open_window_running"))
+
+    def test_no_seed_on_the_command_line_means_none_in_the_window(self):
+        launcher, runner = build()
+        main([], launcher=launcher, out=io.StringIO())
+        self.assertNotIn("--seed", runner.source_of("open_window_running"))
 
     def test_a_window_left_open_is_reported_as_a_failure(self):
         launcher, _ = build(
