@@ -61,7 +61,15 @@ FORBIDDEN_IN_PRESENTATION = ("curses", "subprocess", "os", "sys", "time")
 #: own docstring has said since WI-2 that "Presentation asks for
 #: `Colour.WALL`". See the WI-5a PR summary — this needs a ruling, and if it
 #: goes the other way it is this tuple that changes.
-PRESENTATION_MAY_IMPORT = ("terminalgame.domain", "terminalgame.screen.port")
+#:
+#: `terminalgame.presentation` is on the list because **a layer may import
+#: itself**. WI-5a wrote this tuple when Presentation had exactly one module,
+#: so nothing in it had anything to import from a sibling and the omission
+#: could not show. WI-5b's frame builder imports the wall-glyph table, and the
+#: rule failed on a case it should always have allowed. Recorded rather than
+#: quietly widened: the hole was in the guard, not in the code it guards.
+PRESENTATION_MAY_IMPORT = ("terminalgame.domain", "terminalgame.screen.port",
+                           "terminalgame.presentation")
 
 
 def python_files():
