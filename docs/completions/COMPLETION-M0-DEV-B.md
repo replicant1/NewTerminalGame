@@ -174,6 +174,12 @@ hard-coded anywhere in the Domain would fail them outright — worth more than t
 `DomainPurityTest`, which cannot catch a bare `40` typed by hand. **Later domain items should keep
 testing at sizes other than 19 x 29 for that reason, not merely for generality.**
 
+To keep the record straight in both directions: **the observation is the technical lead's and the
+tests are mine.** I built `OtherGridSizesTest` to show the invariants were the algorithm's rather
+than 19 x 29's, and did not see that it was also the answer to the C5 problem I had just flagged as
+unsolved two tests away. The lead saw that and I did not. Neither half of that is worth blurring — a
+guard nobody knows they have is only half a guard, and it took someone else to finish it.
+
 The text scan itself stays exactly as it is. I flagged it as weak rather than defending it; the ruling
 is that flagging was the right response and that extending the word list would not fix it. **No work
 is owed against it.**
