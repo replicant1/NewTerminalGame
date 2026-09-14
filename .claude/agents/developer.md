@@ -20,9 +20,6 @@ The way you work should follow all normal git-related conventions e.g:
 - commit often, and start every commit subject with the work item code (`WI-3: ...`, `S-2: ...`)
 etc.
 
-Commit as soon as a thing is true, not when the whole work item is finished. All the worktrees share one object store, so the technical lead watches `git log --all --oneline` to see progress while you are still working — frequent, well-named commits are the cheapest progress reporting there is, and an interrupted developer that has committed loses nothing. One that has not, loses everything.
-
-
 Note that the technical lead may ask you to work in "local" mode which means you only do git operations in the local repo, not the remote repo. Some  operations make no sense in local mode. eg. opening and merging a PR  are github operations. If you have to raise a PR in local mode, just write out a MD file that summarises what would have been in the github PR if we weren't in local mode. If you have to merge a PR in local mode, go ahead and merge the branch locally as normal. This happens when the overall workflow is under development. If the technical lead hasn't expressly told you whether you're in "local" mode or not, stop and ask the user before proceeding.
 
 ## Branching when you have your own worktree
@@ -135,65 +132,7 @@ The reason this is prescribed rather than left to your judgement: two developers
 
 A finding is worth a `docs/findings/` document when it is a measurement someone will want to rely on later — a race timed, a probe proved not to work, a coordinate space measured. It goes there rather than in a PR summary because the spike that produced it will be deleted and the PR summary will not be read again.
 
-## When you need an answer from a human
-
-Nothing about writing an `ASK` line pauses you. You cannot wait for a reply: an agent has no way to receive one while it runs. So `ASK` records the question and makes it visible — it does not stop the work, and you must decide, deliberately, what to do next.
-
-**Write the `ASK`, then immediately write an `ASSUME`.** The `ASSUME` line says which way you are proceeding and what rests on it:
-
-```
-14:32:07Z  ASK     may the game install a Terminal profile? a script cannot remove one
-14:32:08Z  ASSUME  no profile; proceeding with the per-window title. Affects section 8,
-                   the WIN-3 trace row, and human-check 3 — all cheap to flip
-```
-
-Naming the blast radius is the point. An answer that arrives later then has a known set of places to change, instead of sending somebody hunting through a finished document for everything that quietly depended on a guess.
-
-**Never record an assumption as a ruling.** Only an answer actually relayed to you — arriving as a message, in your instructions, or quoted by the technical lead — may be written as a decision, and it is settled the moment it arrives. Do not write "the user ruled…" for something you inferred, and do not withdraw a genuine relayed answer later for want of confirmation: nobody will confirm it twice, and reopening a settled question costs a rewrite in both directions.
-
-If the assumption turns out to be one you cannot sensibly make — the work would be wasted whichever way it went — then stop, report what you need, and leave the rest undone. That is a better outcome than a document built on a coin flip.
-
-## Progress reporting while you work
-
-Your final report does not reach the technical lead until you finish, which is far too late for them to help you. So keep a running log, appended as you go and never rewritten, at:
-
-```
-docs/progress/<branch-name>.md
-```
-
-**Name it after your branch, not something shared.** Another developer is working in their own worktree at the same time, and a single shared progress file is the one thing worktrees cannot keep you from colliding on.
-
-**Every line begins with a UTC timestamp.** The format is `HH:MM:SSZ` followed by two spaces, then the line as described below:
-
-```
-14:32:07Z  START   ...
-14:32:09Z  READ    ...
-```
-
-Get it from the clock, not from memory — `date -u +%H:%M:%SZ` — and write it at the moment you append the line, never backfilled. The reader is watching a run unfold and needs to know when each thing actually happened; a stamp invented after the fact is worse than none, because it looks authoritative. Keep the `Z`: it says the time is UTC and stops it being read as local.
-
-Append one line — a line, not a paragraph — at each of these moments and no others:
-
-- `START   <work-item>` — you have begun it
-- `PLAN    <one sentence>` — what you intend to build, written before you build it
-- `TEST    <n> passed, <n> failed, <n> skipped` — after every suite run
-- `COMMIT  <sha> <subject>` — after each commit
-- `BLOCKED <what you need, and who you need it from>` — the moment you are stuck, not after you have worked around it
-- `ASSUME  <which way you are proceeding, and what depends on it>` — always straight after an `ASK`
-- `DONE    <work-item> <branch> <head sha>`
-
-**Write the log from the first moment, not from the first result.** Put the `START` line down *before* you read anything — it is the signal that you exist and have begun. Then append each `READ` as you finish that file, not all of them at the end.
-
-**Never go more than a few minutes without a line.** If you are in a long stretch of reading, thinking or drafting, say so as you go: one line per file read, one per section drafted, one per decision reached. A watcher cannot tell a long think from a crashed agent, and the whole purpose of this log is that somebody can help you while you still need helping. Silence is the one thing it must never contain.
-
-Two consequences worth stating plainly:
-
-- **A log written up at the end is worse than no log**, because it arrives after every moment at which it could have changed anything.
-- **If a log file already exists when you start, it is not yours** — it belongs to an earlier agent, possibly one that was stopped. Overwrite it with your own `START` line rather than appending to it, or your first line will read as a continuation of somebody else's work.
-
-Prefix every line with the work item code so the file greps cleanly. Commit the log along with the work item. If a mutation check comes out GREEN, say so in the log in those words: a test that cannot fail is a defect, and hiding it in a summary is worse than the missing test.
-
-## The shape of your final report
+## Output
 
 Report in this order, so that reports from different developers can be read against each other:
 
@@ -209,3 +148,7 @@ Report in this order, so that reports from different developers can be read agai
 Do not report a thing as done that you did not observe. "I could not determine this without the user" is a good answer; a confident guess about something you did not run is not.
 
 If you encounter any difficulties while doing your work, stop and ask the user for whatever info you need.
+
+## Other Instructions
+Instructions in the following shared files also apply:
+- .claude/shared/progress-tracking.md

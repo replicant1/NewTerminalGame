@@ -1,4 +1,4 @@
-# Progres Tracking
+# Progress Tracking
 
 Create a suitably named (human readble) append-only log at `docs/progress/`, appended **as you go** — never written up at the end, which would defeat the point.
 
@@ -36,3 +36,7 @@ Two consequences worth stating plainly:
 - **If a log file already exists when you start, it is not yours** — it belongs to an earlier agent, possibly one that was stopped. Overwrite it with your own `START` line rather than appending to it, or your first line will read as a continuation of somebody else's work.
 
 `VERIFY` is the most valuable line you write. If you prototype a generator, parse a scripting dictionary, or check what a library actually does, say so on a `VERIFY` line with the number you got — the reader needs to know which parts were tested and which were reasoned.
+
+## Other instructions
+Instructions in the following shared files also apply:
+- .claude/shared/ask-a-human.md
