@@ -130,6 +130,8 @@ body.resizing{cursor:col-resize;user-select:none}
 .row{display:block;padding:4px 11px 5px;border-left:2px solid transparent}
 .rhead{display:flex;gap:8px;align-items:baseline}
 .ts{font-size:11px;color:var(--dim);font-variant-numeric:tabular-nums;flex:0 0 auto}
+.runtime{font-size:11px;color:var(--dim);font-variant-numeric:tabular-nums;flex:0 0 auto;margin-right:7px}
+.runtime.running{color:var(--verify)}
 .ts.seen{color:var(--dim)}          /* inferred: readable, but not the accent */
 .ts.log{color:var(--verify)}        /* written by the agent itself */
 body.nots .ts{display:none}
@@ -615,6 +617,8 @@ function renderPanes(panes) {
         <span class="age ${age < 30 ? 'fresh' : (stale ? 'stale' : '')}"
               title="How long since this agent wrote a line. It is silence, not death: an agent can be alive and quiet for many minutes."
               >${(p.state === 'gone' || p.state === 'done') ? '' : (p.mtime ? ago(age) : '')}</span>
+        <span class="runtime" data-start="${p.started || ''}" data-end="${p.ended || ''}"
+              title="How long this agent has been going, measured from its first log line to its last. Not how long the conductor waited for it: spawning and its closing report fall outside its own log."></span>
         <span class="role">${p.lines.length} lines</span>
         <button class="hide-x" title="Hide this pane" onclick="togglePane('${esc(p.id)}')">×</button></h2>
       <div class="src">${esc(p.source)}</div>
@@ -636,6 +640,7 @@ function renderPanes(panes) {
     if ($('#auto').checked) log.scrollTop = log.scrollHeight;
     else if (scrollPos[p.id] !== undefined) log.scrollTop = scrollPos[p.id];
   }
+  tickRuntimes();
   balanceRows();
 }
 
@@ -748,7 +753,21 @@ function tickElapsed() {
   el.innerHTML = 'run elapsed <b>' + hms(Date.now() / 1000 - runStart) + '</b>'
     + (runSource ? ' <span style="opacity:.75">since ' + esc(runSource) + '</span>' : '');
 }
+// Each agent's own run time, ticked on the same second as the run clock so a
+// live agent's figure advances smoothly rather than jumping on the 3s poll.
+// A finished agent is frozen at its last line -- data-end is set only once it
+// has stopped, so it never keeps counting after it is done.
+function tickRuntimes() {
+  for (const el of document.querySelectorAll('.runtime')) {
+    const start = parseFloat(el.dataset.start);
+    if (!start) { el.textContent = ''; continue; }
+    const end = parseFloat(el.dataset.end) || (Date.now() / 1000);
+    el.textContent = hms(end - start);
+    el.classList.toggle('running', !el.dataset.end);
+  }
+}
 setInterval(tickElapsed, 1000);
+setInterval(tickRuntimes, 1000);
 
 function renderProgress(pr) {
   if (!pr) return;
