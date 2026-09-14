@@ -722,3 +722,22 @@ The stronger guard is already built, though it was not framed as one. **The gene
 nine different grid sizes**, so a screen dimension hard-coded anywhere in the domain would fail those
 tests outright. Later domain items should keep testing at sizes other than 19 x 29 for that reason,
 not merely for generality.
+
+### 11.10 When the technical lead cannot reach the tree
+
+**A developer may apply the technical lead's exact words to this plan. A developer may not otherwise
+amend it, however right the edit.** When the lead is cut off from the working tree and a defect in the
+plan is known, the correction may be carried by whoever has access, under four conditions: the lead
+asks explicitly; the lead supplies the text; the developer applies it verbatim and attributes it; and
+the lead checks it word for word before the branch merges.
+
+**The third and fourth conditions are only checkable because of the second**, and that is the
+load-bearing half. Had the developer been asked to write the paragraph from the lead's intent, there
+would have been nothing to diff against, and "verbatim" would rest on goodwill instead of on an audit.
+Supplying the words is not ceremony — it is what makes the rest of the rule enforceable. A rule that
+cannot be checked is a convention, and this run has already watched a convention fail quietly: two
+developers agreed `tests/__init__.py` would be empty and identical on both sides, both believed it
+held, and it did not. It merged cleanly by luck.
+
+*(The distinction is DEV-B's, made while declining to apply an edit it had been offered and could have
+made unasked.)*
