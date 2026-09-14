@@ -41,4 +41,4 @@
 04:57:01Z  RISK    the five colours reach the terminal as five distinct attributes, but whether dim yellow reads as GOLD and bold magenta as PINK (SCRN-4, SCRN-5) is a human check and is listed as one — not recorded as verified.
 04:57:01Z  TEST    84 passed, 0 failed, 0 skipped  (python3 -m unittest discover)
 04:57:01Z  NOTE    WI-2 no window was opened on the user's screen at any point, no osascript was run and no macOS permission was requested. The real-terminal proof is a pseudo-terminal inside the test process.
-04:57:01Z  DONE    WI-2 wi-2-screen-port <head sha to follow in the final commit>
+04:57:01Z  DONE    WI-2 wi-2-screen-port 519fe3d (log's own commit follows; the branch head is what the lead merges)
