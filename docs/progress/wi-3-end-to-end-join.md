@@ -78,6 +78,18 @@ Branch `wi-3-end-to-end-join`, cut from `main` at 5269b67. DEV-A, local mode.
 05:21:58Z MEASURE WI-3 the join now works: --hold 5 takes 6.13s, --hold 12 takes
 05:21:58Z         12.92s. A 7s difference in the hold shows as 6.79s in the session.
 05:21:58Z         Nothing leaked either time; visible census 1 before and after.
-05:21:58Z NOTE    WI-3 windows: 28 opened across all measurement, 28 closed. Final
-05:21:58Z         visible census 7104 only, which is where it started.
+05:21:58Z TEST    238 passed, 0 failed, 0 skipped  (python3 -m unittest discover)
+05:21:58Z COMMIT  60ba089 WI-3: ask what is running, not whether the tab says busy
+
+05:23:08Z MEASURE WI-3 the q path, which a --hold expiry does not demonstrate.
+05:23:08Z         Window 7719 given a 30s hold; q delivered to that tab alone via
+05:23:08Z         do script "q" in selected tab of window id N (no focus stealing,
+05:23:08Z         no keystroke injection). Game running +0.76s, q sent +2.76s, game
+05:23:08Z         gone +2.90s -- 0.14s later and 27s before the hold. Window closed
+05:23:08Z         by the captured id, nothing leaked. So every clause of WI-3 is
+05:23:08Z         now observed: opens running the real game, the game runs, it
+05:23:08Z         exits on q, the window is closed, nothing is left behind.
+05:23:08Z NOTE    WI-3 windows: 29 opened across all measurement, 29 closed. Final
+05:23:08Z         visible census 7104 only, which is where it started.
+05:23:08Z DONE    WI-3 wi-3-end-to-end-join <head sha>
 ```
