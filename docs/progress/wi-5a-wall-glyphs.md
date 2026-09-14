@@ -17,3 +17,10 @@ Local mode. No push, no `gh`, no merge. Branch `wi-5a-wall-glyphs`, cut from `ma
 05:30:00Z  DRAFT   tests/test_layering.py extended with PresentationLayerTest — 5 tests. Presentation does no I/O and no waiting, imports only terminalgame.domain and terminalgame.screen.port, never the curses adapter, and the Domain never imports Presentation.
 05:30:16Z  TEST    296 passed, 0 failed, 0 skipped — `python3 -B -m unittest discover`, 7.0 s. 256 on main + 35 + 5 lands exactly.
 05:30:16Z  ASK     Plan §3 says "Presentation depends on Domain, and on nothing else" and in the same sentence says Presentation produces "a grid of characters and colours" — which it cannot name without `Colour` from the screen port. ASSUME Presentation may import the port's value vocabulary and nothing else behind it; pinned in PRESENTATION_MAY_IMPORT so a ruling the other way changes one tuple.
+05:30:30Z  COMMIT  8fe03d2 WI-5a: the wall-glyph table, measured from the specification's picture
+05:31:00Z  VERIFY  Checked the specification's own illustrative maze against WI-4's requirements, since parsing it made the check free: 0 open 2x2 blocks, 0 border breaches, 0 dead ends, 0 unreachable squares, 0 corridor squares off the odd lattice, 264 corridor squares against WI-4's measured 259..272. The maze somebody drew by hand before any generator existed is one the generator could have produced — independent corroboration of C8 from a source that predates it.
+05:31:05Z  DRAFT   docs/findings/WI-5a-glyph-table-from-the-picture.md and docs/prs/PR-WI-5a-wall-glyphs.md.
+05:31:10Z  VERIFY  main still at c4171fb and still an ancestor of this branch — checked rather than assumed, since it moved under the last branch mid-flight.
+05:31:18Z  TEST    296 passed, 0 failed, 0 skipped — `python3 -B -m unittest discover`, 7.0 s, final run.
+05:31:18Z  NOTE    Zero windows opened. Nothing here touched the desktop or started a subprocess.
+05:31:18Z  DONE    WI-5a wi-5a-wall-glyphs (head recorded in the commit below)
