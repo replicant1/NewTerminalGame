@@ -22,6 +22,7 @@ rule — that the launcher shares no code with the game — is not guarded yet.
 from __future__ import annotations
 
 import os
+import re
 import unittest
 
 import terminalgame
@@ -116,6 +117,37 @@ def imported_game_modules(source):
     return found
 
 
+def uses_global_random(source):
+    """Which interpreter-wide `random` functions this source reaches for.
+
+    `random.Random(...)` builds a generator of its own and is how the Domain is
+    meant to work — a caller hands one in, or names one with a seed. But
+    `random.choice(...)`, `random.shuffle(...)` and the rest of the module-level
+    functions share one generator belonging to the interpreter, which no test
+    can seed. A maze or an opening position built on those could not be
+    reproduced, and plan §3 is explicit that "randomness enters it only through
+    a seed or a random source passed in, so any maze or ghost behaviour can be
+    reproduced in a test".
+
+    `random_source.choice(...)` — a generator that was handed in — is not this
+    and does not match: the name before the dot has to be exactly `random`.
+    """
+    found = []
+    for line in source.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("#"):
+            continue
+        for match in re.finditer(r"(?<![\w.])random\.([A-Za-z_]\w*)", line):
+            if match.group(1) != "Random":
+                found.append(match.group(1))
+        if stripped.startswith("from random import "):
+            imported = stripped[len("from random import "):]
+            for name in imported.replace(",", " ").split():
+                if name != "Random":
+                    found.append(name)
+    return found
+
+
 def imports(source, module_name):
     """Does this source actually import that module?
 
@@ -192,6 +224,10 @@ class DomainPurityTest(unittest.TestCase):
                             .format(PACKAGE_ROOT, os.sep, THE_DOMAIN))
         self.assertIn(os.path.join(THE_DOMAIN, "maze.py"), names)
         self.assertIn(os.path.join(THE_DOMAIN, "maze_generator.py"), names)
+        # WI-7. Listed for the same reason as the two above: if the state
+        # module is moved or renamed, every scan below would go on passing
+        # while no longer looking at it.
+        self.assertIn(os.path.join(THE_DOMAIN, "game_state.py"), names)
 
     def test_the_domain_imports_nothing_impure(self):
         offenders = []
@@ -247,6 +283,42 @@ class DomainPurityTest(unittest.TestCase):
                          "a Domain module imported something outside the "
                          "Domain; the Domain sits at the bottom and depends "
                          "on nothing above it (implementation plan §3)")
+
+    def test_randomness_enters_the_domain_only_where_it_can_be_seeded(self):
+        """Plan §3, the clause the other purity tests do not reach.
+
+        "Randomness enters it only through a seed or a random source passed in,
+        so any maze or ghost behaviour can be reproduced in a test." A module
+        calling `random.choice` directly would still import nothing forbidden
+        and depend on nothing above it — it would pass every other test in this
+        class — while quietly making its output impossible to reproduce.
+
+        Added by WI-7, which places both actors from a random source, and it
+        guards WI-9's ghost policy for the same reason.
+        """
+        offenders = []
+        for name, path in domain_files():
+            for used in uses_global_random(source_of(path)):
+                offenders.append((name, "random." + used))
+        self.assertEqual(
+            [], offenders,
+            "the Domain reached for the interpreter's shared random generator; "
+            "nothing can seed that from a test, so what it produces cannot be "
+            "reproduced (implementation plan §3)")
+
+    def test_the_random_scan_can_tell_a_shared_generator_from_an_owned_one(self):
+        # The same guard as `test_the_scan_can_see_the_imports_it_is_looking
+        # _for`: a scan that saw nothing would pass for the wrong reason.
+        self.assertEqual(["choice"], uses_global_random("random.choice(xs)"))
+        self.assertEqual(["shuffle"], uses_global_random("    random.shuffle(xs)"))
+        self.assertEqual(["randint"], uses_global_random("from random import randint"))
+        # An owned generator is the whole point and must not be flagged.
+        self.assertEqual([], uses_global_random("random.Random(seed)"))
+        self.assertEqual([], uses_global_random("import random"))
+        self.assertEqual([], uses_global_random("from random import Random"))
+        self.assertEqual([], uses_global_random("random_source.choice(xs)"))
+        self.assertEqual([], uses_global_random("self.random.choice(xs)"))
+        self.assertEqual([], uses_global_random("# random.choice(xs)"))
 
     def test_the_domain_carries_no_screen_geometry(self):
         """Caution C5, as far as a text scan can state it.
