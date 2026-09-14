@@ -237,6 +237,24 @@ answer is one, the guard is a statement of intent and not yet a check. **The sec
 first real test of the rule**: treat its arrival as the moment to re-read the guard, not merely to
 extend it.
 
+**A guard can be wrong about the thing it guards, and that fault gets "fixed" by loosening the
+guard.** WI-12's import scanner hardcoded relative imports to the launcher package, so the *game's*
+`from .screen import port` was reported as importing the launcher. The guard was wrong; the code was
+right. The tempting repair is to relax the rule until the false report goes away, which removes a real
+check to silence a bug in the checker. Two things make it survivable. **Find it with the guard's own
+tests** — a guard needs tests as much as the code beneath it, and more than most, because nothing else
+is watching it. And when the guard cannot determine something, **make it refuse rather than assume**.
+That is §11.8 applied to a guard. **When a guard fires, establish which of the two is wrong before you
+touch either**, and the way to tell is to reproduce what the guard claims, not to reason about whether
+it is plausible.
+
+**A warning is not a guard.** WI-13 deleted `Desktop.is_busy` outright rather than adding a correct
+sibling beside it, and the reason is the sharpest statement of this the project produced: the correct
+answer had been documented at length for an entire work item, and the wrong one was still the default,
+so the defect survived on the path the docstring told people not to use. Where an interface has a
+right answer and a wrong one, the wrong one goes — a comment saying "do not use this" is not a
+mechanism, it is a hope.
+
 One consequence of that prohibition: `.claude/agents/developer.md` asks for a report section 5,
 "Mutation checks". **Write "not applicable — mutation checking is prohibited on this project" there.**
 The instruction is a leftover and it contradicts the prohibition in the same file.
@@ -979,3 +997,73 @@ is right — it is what let WI-5b and WI-6 proceed in either order — but it me
 WI-12 produces a blank status row that composes cleanly and passes every WI-5b test: a silent STAT-1
 violation wearing the costume of a legitimately blank row. **WI-12 must assert the status row is
 non-blank in the wired game.**
+
+### 11.15 `--seed`, `--hold`, and what the launcher passes the game
+
+**`--hold` is retired from both sides, in one commit.** It was M0 scaffolding and the WI-2 ruling said
+so; WI-12's real game exits on `q` and never on a timer. Changing both sides together was right and is
+the general rule: **where an interface change spans two components, it lands as one commit**, because
+either half alone leaves the launcher starting a game with an argument it will reject.
+
+**What that costs, recorded where the constant used to be:** the launched command is no longer bounded
+by anything the launcher controls. That is correct for a game with a person at the keyboard, and safe,
+because the launcher waits on the process list and never closes a busy window. But **anything that
+starts a game with nobody at the keyboard must arrange its own way out.** That is an obligation on
+**WI-14b**: it may not use a hold and may not launch an unbounded game and hope. It either drives `q`
+into the tab it created — WI-3 measured `do script "q" in selected tab of window id N` reaching the
+game in 0.14 s with no focus stealing — or it exercises the loop with no window at all.
+
+**`--seed` is accepted on both sides**, which this plan asked for on neither. The justification is that
+**one seed must name the whole game**: a single random source feeds both the maze and the loop, because
+with two sources a seed reproduces the maze but not the game played on it. Reproducing the maze alone
+would make a failing acceptance run an anecdote rather than a bug.
+
+**The boundary, which preserves MAZE-4:** the default path takes a fresh random seed every time, and
+nothing in the launcher's normal operation passes a fixed one. MAZE-4 describes what happens when a
+player starts a game, and that is unchanged. Assumption A8 permits exactly this much — "no
+command-line options beyond whatever the launcher must pass the game".
+
+### 11.16 What the specification does not say
+
+Distinct from §11.11, and the distinction matters: §11.11 is about requirements that state a mechanism
+**and** a purpose the mechanism does not deliver. This section is about cases the specification does
+not address at all. **A silence is not a contradiction, and reading one as the other invents a defect.**
+
+**A game that is never quit holds its window indefinitely.** END-6 governs a *finished* game; GAME-3
+rules out a time limit; nothing anywhere says what becomes of a game left running. The implementation
+is therefore correct in doing nothing, and this is recorded so that nobody later reports it as a bug
+**or adds a timer to close it** — a timer would breach GAME-3, which is explicit. It is also why
+retiring `--hold` needed a note rather than being a silent tidy-up: the silence is harmless with a
+person at the keyboard and is a trap for anything automated. See §11.15.
+
+### 11.17 The acceptance pack's boundary
+
+**Confirmed: the acceptance pack may import the launcher and must import nothing from the game.** It
+drives the assembled application from outside — opening a real window, running the real command,
+reading the picture back — and that is the whole of its value. A check that reaches inside the game can
+pass while the thing the player runs is broken, which is precisely the failure an acceptance pack
+exists to catch. **`tests/test_layering.py` guards this boundary** like the others; a new category with
+rules nobody enforces is §4.4's one-member guard waiting to happen.
+
+**Where the pack lives and what it is called are not this plan's to decide** — that is the developers',
+as §3 says, and it is worth saying so plainly in the one case where the lead was asked directly. What
+is the plan's is the dependency rule, and that is the paragraph above.
+
+**One item in WI-14a's brief is discharged elsewhere and must not be duplicated here.** The brief asked
+for "maze properties over many seeds"; WI-4's sweep already does that over 20 000 mazes inside the unit
+suite, where it belongs, because it is a property of the generator and not of the assembled
+application. The pack correctly does not reach into the domain to repeat it.
+
+### 11.18 WI-3's finding is superseded in one particular
+
+WI-3 measured that setting the grid alone makes Terminal's `busy` flag lie. **WI-13 could not reproduce
+that, and rather than report a fix to a defect it could not reproduce, it measured a 2 x 2**: `sleep`
+without the grid, 0 lies of 9; `sleep` with the grid, 0 of 8; a real game without the grid, 0 of 15; **a
+real game with the grid, 8 of 9. It takes both** — the grid *and* a real curses program in the tab.
+
+Nothing that was built on the original finding changes: every window this launcher opens has a grid and
+runs the real game, so the flag lies on all of them and §11.3's conclusion stands unaltered. What
+changes is the explanation, and an explanation that is wrong in its cause is how somebody later
+concludes the problem does not apply to their case. **`docs/findings/WI-3-busy-is-false-after-a-grid-resize.md`
+carries a pointer to WI-13's finding**, added by the technical lead rather than by editing another
+developer's measurement. Asking rather than amending it unasked was the right call.

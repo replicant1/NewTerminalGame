@@ -1,5 +1,14 @@
 # WI-3 — Terminal's `busy` flag stops telling the truth once the window has a grid
 
+> **Superseded in one particular, and only one — pointer added by the technical lead, not by editing
+> the measurement below.** WI-13 could not reproduce "the grid alone does it" and measured a 2 x 2:
+> it takes **both** the grid *and* a real curses program in the tab. `sleep` with the grid told no
+> lies in 8 samples; the real game with the grid lied in 8 of 9. See
+> `docs/findings/WI-13-what-actually-breaks-busy.md`. **Nothing built on this finding changes** —
+> every window this launcher opens has a grid and runs the real game, so the flag lies on all of
+> them — but the cause stated below is incomplete, and a cause stated wrongly is how somebody later
+> concludes the problem does not apply to their case.
+
 Measured on the development machine while joining the launcher to the real game
 process. macOS 25.6.0, Terminal.app, Python 3.9.6.
 
