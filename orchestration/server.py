@@ -371,6 +371,22 @@ def panes():
                 "lines": lines, "mtime": 0, "live": False, "worktree": d.name,
                 "state": "gone",
             })
+
+    # How long each agent has been going, from its own log. "started" is the
+    # first line it wrote; "ended" is the last, and is set only once the agent
+    # has actually stopped. A running agent gets ended=None so the browser can
+    # tick it against the current time; a finished one is frozen at its last
+    # line, because an agent that stopped an hour ago did not run for an hour.
+    #
+    # Deliberately per-agent and not derived from the run clock: agents start
+    # at different moments, and an archived pane belongs to an earlier run
+    # entirely, so measuring any of them from the run's start would be wrong.
+    for pane in result:
+        stamps = [l["ts"] for l in pane["lines"] if l.get("ts")]
+        pane["started"] = min(stamps) if stamps else None
+        stopped = pane.get("state") in ("done", "gone")
+        pane["ended"] = (max(stamps) if stamps else None) if stopped else None
+
     return result
 
 
@@ -490,30 +506,49 @@ def in_hand():
             "waiting": waiting, "lastMerge": last_merge}
 
 
+def _short_title(raw):
+    """A work item's title, however the plan happened to write it.
+
+    A table cell usually holds the whole description; the first sentence is
+    the title and the rest is detail a progress bar has no room for.
+    """
+    t = re.sub(r"\s+", " ", re.sub(r"\*+", "", raw)).strip()
+    m = re.match(r"(.+?[.!?])(\s|$)", t)
+    if m:
+        t = m.group(1).rstrip(".")
+    return t[:80].strip()
+
+
 def progress():
     """Roughly how far through the plan the project is.
 
-    The work items come from the plan's own "### WI-n — title" headings, which
-    is the list the technical lead actually wrote; an item counts as done when
-    a merge commit for it is reachable from main. That is deliberately coarse:
-    an item half-built on a branch counts for nothing, because a work item that
-    has not landed is not progress anyone can use.
+    The work items come from the plan itself, and the plan is free to lay them
+    out however its author chose -- a "### WI-n" heading, a row in an iteration
+    table, or only a bar in the gantt chart. Read all three and take the union.
+    Reading just one shape made the whole bar vanish the first time a technical
+    lead wrote its items as a table, and "no plan yet" is a bad way to say "I
+    could not parse the plan that is sitting right there".
+
+    The gantt is the sturdiest of the three, because technical-lead.md requires
+    every work item in the plan to appear as a bar; nothing requires a heading.
+
+    An item counts as done when a merge commit for it is reachable from main.
+    That is deliberately coarse: an item half-built on a branch counts for
+    nothing, because a work item that has not landed is not progress anyone
+    can use.
     """
     plan = ROOT / "docs" / "IMPLEMENTATION_PLAN.md"
     if not plan.is_file():
         return {"items": [], "done": 0, "total": 0, "percent": 0, "label": "no plan yet"}
 
     text = plan.read_text(encoding="utf-8", errors="replace")
-    items = []
-    for m in re.finditer(r"^###\s+(WI-\d+[a-z]?|S-\d+|HV-\d+)\s*[-—–]+\s*(.*)$", text, re.M):
-        items.append({"id": m.group(1), "title": m.group(2).strip()})
 
     # The gantt block carries the schedule the plan actually asserts: which
     # iteration each item belongs to, and when it starts. Without it the bar
     # lays items out in numeric order and implies a sequence nobody claimed --
     # WI-8 and WI-9 start on the same day and are not one after the other.
     section, starts = None, {}
-    sections, durations = {}, {}
+    sections, durations, bar_titles = {}, {}, {}
     # "excludes weekends" makes the plan's durations working days, not calendar
     # days; the bar chart has to lay them out on the same axis or contiguous
     # work appears to have gaps at every weekend.
@@ -524,22 +559,63 @@ def progress():
         if m:
             section = m.group(1).strip()
             continue
-        m = re.match(r"^(WI-\d+[a-z]?|S-\d+|HV-\d+)\b.*?:(.*)$", t)
+        m = re.match(r"^(WI-\d+[a-z]?|S-\d+|HV-\d+)\b([^:]*):(.*)$", t)
         if m and section:
             code = m.group(1)
+            bar_titles.setdefault(code, m.group(2).strip())
             sections.setdefault(code, section)
-            d = re.search(r"(\d{4}-\d{2}-\d{2})", m.group(2))
+            d = re.search(r"(\d{4}-\d{2}-\d{2})", m.group(3))
             if d:
                 starts.setdefault(code, d.group(1))
-            dur = re.search(r",\s*([\d.]+)\s*d\b", m.group(2))
+            dur = re.search(r",\s*([\d.]+)\s*d\b", m.group(3))
             durations.setdefault(code, float(dur.group(1)) if dur else 0.0)
+    # Titles, from whichever shapes the plan used. First one found wins.
+    titles = {}
+    for m in re.finditer(r"^###\s+(WI-\d+[a-z]?|S-\d+|HV-\d+)\s*[-—–]+\s*(.*)$", text, re.M):
+        titles.setdefault(m.group(1), m.group(2))
+    for m in re.finditer(r"^\|\s*\*{0,2}(WI-\d+[a-z]?|S-\d+|HV-\d+)\*{0,2}\s*\|\s*(.*?)\s*\|",
+                         text, re.M):
+        titles.setdefault(m.group(1), m.group(2))
+
+    # The gantt decides WHICH items exist, because technical-lead.md requires
+    # every work item to have a bar. Tables and headings only supply nicer
+    # titles: a bare code in some other table -- a dependency column, the
+    # contradictions list -- must not invent a work item that is not scheduled.
+    if bar_titles:
+        codes = list(bar_titles)
+        for code, label in bar_titles.items():
+            titles.setdefault(code, label)
+    else:
+        codes = list(titles)
+
+    items = [{"id": c, "title": _short_title(titles.get(c, c))} for c in codes]
+
     for it in items:
         it["section"] = sections.get(it["id"], "")
         it["start"] = starts.get(it["id"], "")
         it["days"] = durations.get(it["id"], 0.0)
 
-    log = sh(["git", "log", "main", "--oneline"]).lower()
-    merged_branches = " ".join(sh(["git", "branch", "--merged", "main"]).split()).lower()
+    # Only evidence from THIS run counts. Branch names repeat between runs --
+    # September's wi-3-glyphs-picture and this run's WI-3 share nothing but a
+    # number -- and every one of them is still merged into main. Matching on
+    # the code alone marked five unstarted items done, including two that were
+    # dispatched minutes earlier. Anything that landed before the run began
+    # cannot be one of this run's items.
+    start = run_clock().get("start")
+    since = ["--since", datetime.datetime.fromtimestamp(start).isoformat()] if start else []
+
+    log = sh(["git", "log", "main", "--oneline"] + since).lower()
+
+    merged = []
+    for row in sh(["git", "branch", "--merged", "main",
+                   "--format=%(refname:short) %(committerdate:unix)"]).splitlines():
+        parts = row.split()
+        if len(parts) != 2:
+            continue
+        name, when = parts[0], parts[1]
+        if not start or (when.isdigit() and int(when) >= start):
+            merged.append(name)
+    merged_branches = " ".join(merged).lower()
 
     # Items a developer is holding right now: a live worktree on a branch named
     # after the item. Distinct from "next", which is scheduled but unstarted.
@@ -581,7 +657,8 @@ def progress():
         "next": nxt,
         "excludesWeekends": excludes_weekends,
         "active": sorted(i["id"] for i in items if i["active"] and not i["done"]),
-        "label": ("%d of %d work items merged" % (done, total)) if total else "no plan yet",
+        "label": ("%d of %d work items merged" % (done, total)) if total
+                 else "plan found, but no work items could be read from it",
     }
 
 
