@@ -42,9 +42,10 @@ CALLS_ON_THE_CAPTURED_WINDOW = (
         "set_window_position",
         lambda: script.set_window_position(WINDOW_ID, Point(432, 332)),
     ),
-    ("window_is_busy", lambda: script.window_is_busy(WINDOW_ID)),
-    # WI-3: what is actually running in the tab. Added because `busy` stops
-    # tracking the process once the window has been given its 40x30 grid.
+    # What is actually running in the tab. This is the only thing that
+    # answers "is it safe to close" -- WI-3 added it because `busy` stops
+    # tracking the process once the window has been given its 40x30 grid,
+    # and WI-13 removed `window_is_busy` so there is no second answer.
     ("window_processes", lambda: script.window_processes(WINDOW_ID)),
     ("close_window", lambda: script.close_window(WINDOW_ID)),
     ("window_is_visible", lambda: script.window_is_visible(WINDOW_ID)),
@@ -222,14 +223,37 @@ class ConfiguringTheWindow(unittest.TestCase):
 
 
 class AskingWhetherItIsSafeToClose(unittest.TestCase):
-    def test_busy_is_read_from_the_captured_windows_own_tab(self):
-        source = script.window_is_busy(WINDOW_ID).source
-        self.assertIn("busy of selected tab of window id %d" % WINDOW_ID, source)
+    """Caution C2 turns on this answer, and there is exactly one of it.
 
-    def test_a_window_that_has_gone_away_reports_itself_not_busy(self):
-        source = script.window_is_busy(WINDOW_ID).source
+    WI-13 deleted `window_is_busy`. It read `busy of selected tab`, which
+    reports false for the whole life of a process in a window that has been
+    given a grid -- and WIN-2 means every window this launcher creates has
+    been. While both existed the wrong one was the default.
+    """
+
+    def test_the_process_list_is_read_from_the_captured_windows_own_tab(self):
+        source = script.window_processes(WINDOW_ID).source
+        self.assertIn("processes of selected tab of window id %d" % WINDOW_ID,
+                      source)
+
+    def test_a_window_that_has_gone_away_reports_nothing_running(self):
+        source = script.window_processes(WINDOW_ID).source
         self.assertIn("on error", source)
-        self.assertIn("set tabBusy to false", source)
+        self.assertIn("set runningProcesses to {}", source)
+
+    def test_nothing_in_the_module_reads_the_busy_flag_any_more(self):
+        # The removal, stated so that re-adding it is a deliberate act. A
+        # second answer to this question is what let the launcher close the
+        # window with the game still in it and report success.
+        import inspect
+        import launcher.script as module
+        body = inspect.getsource(module)
+        for line in body.splitlines():
+            stripped = line.strip()
+            if stripped.startswith("#"):
+                continue          # the tombstone comment explains the absence
+            self.assertNotIn("busy of selected tab", stripped)
+        self.assertFalse(hasattr(module, "window_is_busy"))
 
     def test_closing_names_the_captured_window_and_only_that(self):
         source = script.close_window(WINDOW_ID).source

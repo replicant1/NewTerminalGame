@@ -53,7 +53,7 @@ HAPPY_PATH = {
     # The reap that runs *inside* WindowLauncher.open when setup fails is WI-1's
     # and still asks the busy flag. That path is reached only by the failure
     # tests below; the session path uses the process list throughout.
-    "window_is_busy": "false",
+    "window_processes": "",
 }
 
 #: Ways of naming a window that are not the captured identity. None of these may
@@ -311,7 +311,7 @@ class WhenSetupFailsWithTheGameAlreadyStarted(unittest.TestCase):
         launcher, runner = build(
             {
                 "configure_window": AutomationError("the desktop said no"),
-                "window_is_busy": "true",
+                "window_processes": "python3",
             },
             failure_timeout=0.5,
         )

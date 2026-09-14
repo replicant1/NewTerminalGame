@@ -142,33 +142,11 @@ class WindowLauncher(object):
         Returns the :class:`ReapResult`. The window is the launcher's throughout
         and belongs to nobody else.
 
-        .. warning::
-
-           **This method can close the window while the command is still
-           running, and report success.** Do not build anything new on it.
-
-           *WI-13 deletes this warning when it lands the fix. If you are reading
-           it, the fix has not landed yet.*
-
-           ``run`` decides the command has finished by asking the tab whether it
-           is ``busy``. That flag stops tracking the process once the tab has
-           been given a fixed number of rows and columns — and :meth:`open`
-           gives every window it creates exactly that, because WIN-2 requires
-           it. Measured: a game alive from +0.9 s to +8.4 s with ``busy``
-           reporting false from +0.9 s onwards. A whole session then takes the
-           same 1.0 s whether the game was asked to run for 5 seconds or for
-           12, because in both cases it was killed and the launcher said
-           ``closed``.
-
-           What to use instead, and what :func:`launcher.game.play` does::
-
-               window = launcher.open(command)
-               launcher.reap(window.window_id, launcher.session_timeout,
-                             still_running=launcher.has_live_processes)
-
-           The process list keeps telling the truth where ``busy`` does not.
-           The measurement is in
-           ``docs/findings/WI-3-busy-is-false-after-a-grid-resize.md``.
+        It waits by :meth:`has_live_processes` — the tab's process list — which
+        is the only thing in this system that answers "is the command still
+        running" correctly for a window that has been given a grid. Until WI-13
+        this method waited on the tab's ``busy`` flag instead, and so closed the
+        window while the game was still in it and reported success.
         """
         window = self.open(command)
         return self.reap(window.window_id, self.session_timeout)
@@ -208,25 +186,36 @@ class WindowLauncher(object):
     # -- getting rid of it again ----------------------------------------
 
     def has_live_processes(self, window_id):
-        """Is anything running in that window, judged by its process list?
+        """Is anything running in that window?
 
-        The alternative to :meth:`Desktop.is_busy`, and the one to pass to
-        :meth:`reap` for any window that has been given a grid: ``busy`` was
-        measured reporting false for the whole life of a process in a window
-        whose rows and columns had been set, which is every window this
-        launcher creates. See :func:`launcher.script.window_processes`.
+        **This is the only answer to that question in the system**, and caution
+        C2 turns on it: closing a window with a live process in it raises a
+        modal sheet that only a person can dismiss, and every automation call
+        after that hangs behind it.
+
+        It reads the tab's process list. The tab's ``busy`` flag used to be a
+        second answer and was a wrong one — setting ``number of columns`` and
+        ``number of rows``, which WIN-2 requires and :meth:`open` therefore
+        does to every window it creates, makes ``busy`` report false for the
+        whole life of the process. It was removed in WI-13 rather than left
+        available, because one question with two answers is how the launcher
+        came to kill the game and report success.
+
+        See :func:`launcher.script.window_processes` and
+        ``docs/findings/WI-3-busy-is-false-after-a-grid-resize.md``.
         """
         return bool(self.desktop.processes(window_id))
 
     def wait_until_idle(self, window_id, timeout, still_running=None):
         """Is nothing running in that window? Polls, bounded, and gives up.
 
-        ``still_running`` is the question asked each time round, and defaults to
-        the tab's ``busy`` flag. Pass :meth:`has_live_processes` where that flag
-        cannot be trusted.
+        ``still_running`` is the question asked each time round. It defaults to
+        :meth:`has_live_processes`, which is the only thing that answers it
+        correctly for a window this launcher created; the parameter stays so a
+        test can inject one, not so that callers have a choice to get wrong.
         """
         if still_running is None:
-            still_running = self.desktop.is_busy
+            still_running = self.has_live_processes
         deadline = self.clock() + timeout
         while True:
             try:
@@ -254,7 +243,8 @@ class WindowLauncher(object):
         if not self.wait_until_idle(window_id, timeout, still_running):
             return ReapResult(
                 False,
-                "window %r is still busy after %.1fs and was left open on "
+                "something is still running in window %r after %.1fs and it "
+                "was left open on "
                 "purpose: closing a window with a live process in it raises a "
                 "modal sheet that only a person at the screen can dismiss, and "
                 "every automation call after that would hang behind it"

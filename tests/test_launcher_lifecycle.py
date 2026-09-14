@@ -38,7 +38,7 @@ HAPPY_PATH = {
     "configure_window": "ok",
     "window_size": "357,558",
     "set_window_position": honours_the_move,
-    "window_is_busy": "false",
+    "window_processes": "",
     "close_window": "closed",
     "window_is_visible": "false",
 }
@@ -306,26 +306,26 @@ class NeverCloseAWindowSomethingIsRunningIn(unittest.TestCase):
         launcher, runner, _ = build()
         launcher.run(COMMAND)
         self.assertLess(
-            runner.names.index("window_is_busy"), runner.names.index("close_window")
+            runner.names.index("window_processes"), runner.names.index("close_window")
         )
 
     def test_a_window_that_stays_busy_is_left_open_on_purpose(self):
-        launcher, runner, _ = build({"window_is_busy": "true"}, poll_interval=0.5)
+        launcher, runner, _ = build({"window_processes": "python3"}, poll_interval=0.5)
         result = launcher.reap(WINDOW_ID, timeout=2.0)
         self.assertFalse(result.closed)
         self.assertNotIn("close_window", runner.names)
-        self.assertIn("still busy", result.reason)
+        self.assertIn("still running", result.reason)
         self.assertIn("modal sheet", result.reason)
 
     def test_the_wait_for_idleness_gives_up_rather_than_polling_for_ever(self):
-        launcher, runner, clock = build({"window_is_busy": "true"}, poll_interval=0.5)
+        launcher, runner, clock = build({"window_processes": "python3"}, poll_interval=0.5)
         launcher.reap(WINDOW_ID, timeout=2.0)
         self.assertLessEqual(clock.now, 2.5)
-        self.assertLess(len(runner.calls_named("window_is_busy")), 10)
+        self.assertLess(len(runner.calls_named("window_processes")), 10)
 
-    def test_it_waits_while_the_window_is_busy_and_closes_once_it_is_not(self):
+    def test_it_waits_while_something_is_running_and_closes_once_nothing_is(self):
         launcher, runner, clock = build(
-            {"window_is_busy": ["true", "true", "false"]}, poll_interval=0.25
+            {"window_processes": ["python3", "python3", ""]}, poll_interval=0.25
         )
         result = launcher.reap(WINDOW_ID, timeout=10.0)
         self.assertTrue(result.closed)
@@ -333,7 +333,7 @@ class NeverCloseAWindowSomethingIsRunningIn(unittest.TestCase):
         self.assertIn("close_window", runner.names)
 
     def test_a_window_that_cannot_be_asked_is_not_closed_either(self):
-        runner = FailingQueryRunner(["window_is_busy"], HAPPY_PATH)
+        runner = FailingQueryRunner(["window_processes"], HAPPY_PATH)
         launcher, runner, _ = build(runner=runner)
         result = launcher.reap(WINDOW_ID, timeout=1.0)
         self.assertFalse(result.closed)
@@ -384,7 +384,7 @@ class AWholeSession(unittest.TestCase):
                 "configure_window",
                 "window_size",
                 "set_window_position",
-                "window_is_busy",
+                "window_processes",
                 "close_window",
                 "window_is_visible",
             ],
