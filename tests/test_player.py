@@ -348,35 +348,37 @@ class WhatAMoveIsNotAllowedToTouch(unittest.TestCase):
                              "%s was modified in place" % field)
 
 
-class AFinishedGameStillMoves(unittest.TestCase):
-    """Today's behaviour, pinned because it is a gap and not a decision.
+class AFinishedGameDoesNotMove(unittest.TestCase):
+    """END-5 — "the arrow keys do nothing".
 
-    `move_player` does not look at `outcome`, so it will move the player of a
-    game that has already been won or lost. Nothing in WI-8's brief says
-    otherwise and the outcome belongs to WI-10 — but END-5 and END-6 say the
-    finished picture stays and `q` is the only way out, so *something* must
-    stop arrow keys after the game ends. WI-10 or WI-11 is the natural owner.
-
-    These tests exist so that whoever closes the gap changes them on purpose
-    rather than discovering the behaviour by accident. **If you are here
-    because one of them failed, that is probably correct — delete it and say
-    so.**
+    These three replace the tests WI-8 left pinning the gap it had flagged:
+    `move_player` used not to look at `outcome`, so a won or lost game still
+    moved. **WI-10 decided that gap and closed it here**, at the primitive,
+    because a guard that can be bypassed by calling this function instead of
+    `rules.advance_player` is not a guard. The reasoning is in
+    `terminalgame/domain/rules.py`: END-5's "everything stops" is a statement
+    about the game, where END-6's "`q` is the only way out" is key handling and
+    stays with the loop.
     """
 
-    def test_a_lost_game_still_moves_the_player_today(self):
+    def test_a_lost_game_does_not_move_the_player(self):
         before = state_on_ring((2, 1), outcome=Outcome.CAUGHT)
-        after = move_player(before, EAST)
-        self.assertEqual((3, 1), after.player)
-        self.assertEqual(Outcome.CAUGHT, after.outcome)
+        self.assertIs(before, move_player(before, EAST))
 
-    def test_a_won_game_still_moves_the_player_today(self):
+    def test_a_won_game_does_not_move_the_player(self):
         before = state_on_ring((2, 1), dots=set(), outcome=Outcome.CLEARED)
-        after = move_player(before, EAST)
-        self.assertEqual((3, 1), after.player)
-        self.assertEqual(Outcome.CLEARED, after.outcome)
+        self.assertIs(before, move_player(before, EAST))
+
+    def test_the_very_same_press_would_have_worked_while_it_was_playing(self):
+        """Otherwise these tests pass against a move_player that never moves.
+
+        Same square, same direction, same open corridor — the only difference
+        is the outcome, so this is what makes the two above mean something.
+        """
+        playing = state_on_ring((2, 1), outcome=Outcome.PLAYING)
+        self.assertEqual((3, 1), move_player(playing, EAST).player)
 
     def test_a_finished_game_is_still_stopped_by_walls(self):
-        # Whatever is decided above, CTRL-3 does not stop applying.
         before = state_on_ring((2, 1), outcome=Outcome.CAUGHT)
         self.assertIs(before, move_player(before, NORTH))
 

@@ -23,9 +23,18 @@ because they are all consequences of the same step:
 player may now be standing on the ghost, or may have taken the last dot, and
 which of those matters is WI-10's ordered question, not this one's. It does not
 move the ghost and it does not read the ghost's position — a move into the
-ghost's square is a legal move that WI-10 then reads as a loss. And it leaves
-`outcome` exactly as it found it, so a finished game is not accidentally
-restarted by a stray key.
+ghost's square is a legal move that
+:func:`terminalgame.domain.rules.outcome_of` then reads as a loss. And it never
+writes `outcome`.
+
+**What it will not do, added by WI-10.** It will not move the player of a game
+that has already ended. END-5: *"Once a game has ended everything stops: the
+ghost stands still, the arrow keys do nothing, and the last picture stays on
+screen."* That is a statement about the game rather than about which keys the
+loop chooses to pass on, so it is enforced here, at the primitive, where it
+cannot be bypassed by calling this instead of
+:func:`terminalgame.domain.rules.advance_player`. END-6's "`q` is the only way
+to leave a finished game" is key handling and stays with the loop.
 """
 
 from __future__ import annotations
@@ -57,6 +66,12 @@ def move_player(state, direction):
         raise NotADirection(
             "%r is not one of the four directions (CTRL-1); the four are %s"
             % (direction, ", ".join(each.name for each in DIRECTIONS)))
+
+    # END-5 — everything stops. Same convention as CTRL-3 below: the state
+    # that comes back is the state that went in, so "nothing at all" is
+    # checkable by identity.
+    if state.is_over:
+        return state
 
     target = direction.from_square(*state.player)
 
