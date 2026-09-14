@@ -285,6 +285,59 @@ class C2BeatsC3WhenTheyDisagree(unittest.TestCase):
         self.assertIn("close_window", runner.names)
 
 
+class AGameNothingBoundsButAPerson(unittest.TestCase):
+    """What happens when the command genuinely never ends.
+
+    M0's `--hold` was scaffolding and the technical lead said it was not a
+    precedent: the real game exits on `q` and never on a timer. So once the
+    hold goes, **the launched command is bounded by nothing the launcher
+    controls** — a player at the keyboard is the only thing that ends it.
+
+    That is correct for a game, and it is safe here only because of the
+    obligation this item exists for: the launcher waits on the process list
+    and never closes a window something is running in. These tests pin what
+    happens at the end of that wait, because it is no longer hypothetical.
+
+    **Anything that starts a game with nobody at the keyboard must arrange its
+    own way out.** That is WI-14a's to carry.
+    """
+
+    def test_a_game_that_never_ends_is_never_closed_out_from_under_it(self):
+        launcher, runner, _ = build({"window_processes": PLAYING},
+                                    session_timeout=3.0, poll_interval=0.5)
+        result = launcher.run(COMMAND)
+        self.assertFalse(result.closed)
+        self.assertNotIn("close_window", runner.names)
+
+    def test_the_wait_still_ends_rather_than_hanging_for_ever(self):
+        # Caution C4. The game may be unbounded; the launcher's patience is
+        # not, or `run` would never return and nothing could report anything.
+        launcher, _, clock = build({"window_processes": PLAYING},
+                                   session_timeout=3.0, poll_interval=0.5)
+        launcher.run(COMMAND)
+        self.assertLessEqual(clock.now, 3.5)
+
+    def test_and_the_window_it_left_behind_is_named_in_the_result(self):
+        # An orphan window is a nuisance a person closes in one gesture. An
+        # orphan window nobody can identify is a hunt.
+        launcher, _, _ = build({"window_processes": PLAYING},
+                               session_timeout=3.0, poll_interval=0.5)
+        result = launcher.run(COMMAND)
+        self.assertEqual(WINDOW_ID, result.window_id)
+        self.assertIn(str(WINDOW_ID), result.reason)
+
+    def test_a_player_pressing_q_gives_the_ordinary_ending(self):
+        # The pair: the unbounded game does end, when a person ends it, and
+        # then everything above gives way to the normal path. Without this,
+        # a launcher that never closed anything would pass all three.
+        launcher, runner, _ = build(
+            {"window_processes": [PLAYING, PLAYING, FINISHED]},
+            session_timeout=30.0, poll_interval=0.25)
+        result = launcher.run(COMMAND)
+        self.assertTrue(result.closed)
+        self.assertIn("close_window", runner.names)
+
+
 class GoingIsCheckedWithVisible(unittest.TestCase):
     """Measured in WI-3: Terminal keeps a window addressable after a close."""
 
