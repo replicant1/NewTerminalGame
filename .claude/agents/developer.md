@@ -159,10 +159,9 @@ Report in this order, so that reports from different developers can be read agai
 2. **Branches to merge**, in the order they must be merged, naming each one's base. If you had to stack a branch on another developer's work, say so here and say why.
 3. **What you built**, per work item — the files, and one sentence on each.
 4. **Suite state** — the exact command and the exact counts, per branch. Never "tests pass".
-5. **Mutation checks** — the failure messages verbatim, not paraphrased. A message that does not name the file and the offending thing is itself a finding.
-6. **Deviations needing a ruling** — anything you added, omitted, or did differently from the plan. Additive deviations still need a ruling.
-7. **Contradictions found in the plan or the architecture** — with the measurement that shows it. These are among the most valuable things you produce; do not bury them in prose.
-8. **What needs a human** — anything you could not verify yourself, with the exact steps for them to run and what they should look for.
+5. **Deviations needing a ruling** — anything you added, omitted, or did differently from the plan. Additive deviations still need a ruling.
+6. **Contradictions found in the plan or the architecture** — with the measurement that shows it. These are among the most valuable things you produce; do not bury them in prose.
+7. **What needs a human** — anything you could not verify yourself, with the exact steps for them to run and what they should look for.
 
 Do not report a thing as done that you did not observe. "I could not determine this without the user" is a good answer; a confident guess about something you did not run is not.
 

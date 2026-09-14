@@ -401,15 +401,35 @@ def run_mode():
 
 
 def run_clock():
-    """When this run began, taken from the agents' own logs.
+    """When THIS run began, taken from the agents' own logs.
 
-    The earliest timestamp any agent wrote is the honest anchor: it is when
-    work started, not when this monitor was launched or when the page was
-    opened. Those three differ by hours and conflating them would make the
-    figure meaningless.
+    The conductor's START is the anchor, because a run begins when the
+    conductor begins and it overwrites its log at the start of each one.
+
+    Taking the earliest line across every pane was right while the monitor
+    could only ever see one run. It is not any more: the archive keeps the
+    logs of finished runs so that a removed worktree does not take its record
+    with it, and a previous run's developer reaches back hours. The figure
+    then quietly becomes the age of the oldest log on disk rather than the age
+    of the run, which is worse than showing nothing because it looks right.
+
+    With no conductor -- a lone architect, say -- fall back to the earliest
+    line among live panes, still skipping the archive for the same reason.
     """
+    all_panes = panes()
+
+    for pane in all_panes:
+        if pane.get("role") != "conductor":
+            continue
+        for line in pane["lines"]:
+            if line["label"] == "START" and line.get("ts"):
+                return {"start": line["ts"], "source": "conductor START",
+                        "now": time.time()}
+
     earliest, source = None, ""
-    for pane in panes():
+    for pane in all_panes:
+        if not pane.get("live"):
+            continue
         for line in pane["lines"]:
             ts = line.get("ts")
             if not ts:
@@ -710,6 +730,12 @@ def asks():
                 out.append({
                     "from": pane["title"], "label": line["label"],
                     "item": line["item"], "text": line["text"],
+                    # When it was asked. tsSource says whether the agent wrote
+                    # the stamp itself or the monitor is reporting when it first
+                    # saw the line, which the panel renders differently -- how
+                    # long a question has gone unanswered is the whole reason to
+                    # show a time here, so an inferred one must not read as exact.
+                    "ts": line.get("ts"), "tsSource": line.get("tsSource", "seen"),
                     "assumption": assumption,
                     "answered": line["text"][:120] in answered,
                     "key": ask_key(line["text"]),
