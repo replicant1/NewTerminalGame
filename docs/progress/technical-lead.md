@@ -106,3 +106,12 @@
 04:28:20Z  VERIFY  plan self-consistency -> 49 traceability rows (all codes, none extra); 16 work items, 16 gantt bars, every item has a bar; bar days per iteration 7/5/6/4 = 22, matching the iteration table; milestones M0..M3 at 19/22/25/28 Sep, matching the quoted boundaries.
 04:28:20Z  DONE    docs/IMPLEMENTATION_PLAN.md
 04:57:52Z  NOTE    DEV-B reports WI-2 ready on branch wi-2-screen-port head ebbd510, base d4c1a7f, 84 passed. Beginning merge checks.
+04:58:19Z  MERGE   wi-2-screen-port into main — 84 passed, 0 failed, 0 skipped (python3 -m unittest discover on main at 021db44)
+04:58:27Z  VERIFY  WI-2 on main -> python3 -m unittest discover: Ran 84 tests, OK, 0 failed, 0 skipped. Matches DEV-B's reported count exactly.
+04:58:27Z  DECIDE  WI-2 deviation 1, game_main holds the frame for --hold seconds -> ACCEPTED, because it exits by itself and honours q, so it neither blocks forever nor leaves WI-3 nothing to join to; it is M0 scaffolding only and WI-12's real game must exit on q and never on a timer.
+04:58:27Z  DECIDE  WI-2 deviation 2, tests/test_layering.py -> ACCEPTED and adopted as a standing obligation: every later item that adds a layer extends it, and WI-4/WI-7 add the domain-purity cases.
+04:58:27Z  DECIDE  WI-2 deviation 3, Frame.put raises out of range rather than clipping -> KEEP RAISING; no put_clipped. Measured: MAZE-3's border ring means an actor can only stand on squares 1..17, so its three-column glyph spans columns 1..35 of 0..36 and can never run off the edge. WI-5b must not add clipping; if it finds a real case, it comes back to me.
+04:58:27Z  DECIDE  WI-2 deviation 4, dim yellow for gold and bold magenta for pink -> ACCEPTED, because an eight-colour terminal has neither; it stays one dict so it is one edit, and whether it reads right to a person stays a human check in WI-14b.
+04:58:27Z  NOTE    DEV-B's finding on termios PENDIN (0x20000000 set after a clean curses session, every other bit identical on all four exit paths) is the kind of measurement a later restore test would otherwise fail on. WI-12 must mask that bit, not weaken the assertion.
+04:58:27Z  NOTE    The launcher importing nothing from the game package is already this plan's section 3 rule, not a new ruling; DEV-A's launcher takes its own name and imports nothing from terminalgame.
+04:58:27Z  DECIDE  COMPLETION-M0-DEV-B.md -> write it now covering M0 as it will actually stand, because the run is paused and WI-4 will not be dispatched.
