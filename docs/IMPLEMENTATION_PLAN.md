@@ -1067,3 +1067,84 @@ changes is the explanation, and an explanation that is wrong in its cause is how
 concludes the problem does not apply to their case. **`docs/findings/WI-3-busy-is-false-after-a-grid-resize.md`
 carries a pointer to WI-13's finding**, added by the technical lead rather than by editing another
 developer's measurement. Asking rather than amending it unasked was the right call.
+
+---
+
+## 12. The plan is complete — and what is left is a person
+
+**All sixteen work items are delivered and merged.** `main` carries **737 tests, 0 failed, 0 skipped**.
+Every one of the specification's 49 requirement codes is traced in §9 and implemented.
+
+**That is not the same as finished**, and the gap is the whole of this section.
+
+### 12.1 What the machine settled, and how far that goes
+
+The acceptance pack drove the assembled application in a real window and read the picture back off the
+glass: window at +0.12 s, game running at +0.39 s, the specification's own picture drawn at +0.65 s,
+`q` at +0.88 s, the game gone at +0.96 s, the window closed at +1.20 s, and the window census back
+where it started. Seven windows opened across the item, seven closed.
+
+Two things were settled live that had only ever been argued or simulated:
+
+- **GHOST-1 at 7.0 moves per second**, 78 samples over 5.97 s and 43 distinct ghost positions, against
+  a real clock rather than an injected one.
+- **CTRL-2's behavioural half**, observed: the player held one square for six seconds with nobody
+  pressing anything. §4.4 said the structural half was discharged by absence and the behavioural half
+  belonged to the loop; this is that half, seen.
+
+And one thread closed by observation rather than argument: **the `╬` crossing** — the single entry in
+the wall-glyph table with no worked example behind it, inferred from SCRN-3's word "crossings" and
+named by WI-5a as its own weakest row — **appeared in a real maze on a real screen**.
+
+### 12.2 The arrow keys are not settled, and nobody should pretend otherwise
+
+Four attempts were made to press an arrow key by machine. **Two produced confident wrong answers
+before being caught**, and the fourth had to be withdrawn when its own harness turned out to be the
+thing that was broken — it could not deliver `q` either, which meant it had never been delivering
+anything.
+
+The conclusion stands as the developer wrote it: **it cannot distinguish "the game drops arrow keys"
+from "`do script` does not reliably deliver an escape sequence".** Nothing there is evidence of a
+defect and nothing is evidence against one. `docs/findings/WI-14b-what-the-machine-could-not-settle.md`
+records all four attempts and why each fails to decide it.
+
+**Ruled: the probe does not go into the acceptance pack.** The finding is the artifact, and §4.3 names
+this exact case — *a probe proved not to work* — as what `docs/findings/` is for. The reason for
+keeping the script out is the project's own hardest-won lesson: **a note saying "this proves nothing"
+beside a probe that prints `0 of 10` is the same shape as a docstring saying "do not use this" beside a
+working default. A warning is not a guard.** A finding cannot be run and so cannot emit a number
+somebody mistakes for a result. The finding carries enough to rebuild the probe if the question is
+reopened, and rebuilding it is cheap compared with being misled by it.
+
+### 12.3 What needs a human, in the order that matters
+
+**Nobody has pressed an arrow key in a real window.** That is the one-line summary of everything below.
+
+| What | Requirement | Why no agent can settle it |
+| --- | --- | --- |
+| **Play the game** — arrows, a wall, a dot, a win or a loss | CTRL-1, CTRL-2, CTRL-3, GAME-2 | The machine could not deliver an arrow key by any method it could trust |
+| The colours as rendered | SCRN-3, SCRN-4, SCRN-5, SCRN-6 | `contents of selected tab` returns text; no automated check sees a colour |
+| The font's legibility | WIN-2 | "large enough to read comfortably" is a judgement |
+| Flicker | SCRN-7 | Requires watching a screen redraw |
+| The window landing visibly below and right | WIN-4 | Requires seeing where it landed |
+| Whether it is any good to play | — | Not a requirement, and the only question that matters |
+
+### 12.4 Decisions still open, none of which blocked the work
+
+- **Q1 — WIN-5 against END-5 and END-6.** Carried on assumption A1 throughout: the picture freezes and
+  the window closes when the player quits. **Most load-bearing in WI-12**; if it is ruled the other
+  way, that is the item that changes.
+- **Q2 — the macOS Automation permission.** Assumed available with a documented fallback. No agent can
+  grant or verify it.
+- **Q3 — which terminal may be automated.** Assumed the system-supplied one, per window, saved
+  preferences untouched.
+- **WIN-3** is recorded **not met**: two title components are outside the scripting dictionary and
+  governed by the player's saved profile, which A3 forbids changing. The title is set; the bar reads
+  more than the title.
+- **GHOST-1's confinement** — about 1 game in 62 confines the ghost to as little as 4.5 % of the maze.
+  Conformance is settled (§11.11); whether it is acceptable is a judgement about how the game feels.
+  The cheapest lever is WI-4's braid, and it is **safe under the C8 proof**, so the decision carries no
+  risk to the maze invariants.
+- **The five stale root executables** — `verify`, `launch-smoke`, `check-window-placement`, `play` and
+  `Terminal Game` — are still on disk, still broken, and still not authoritative. The technical lead's
+  recommendation throughout has been to delete them.
