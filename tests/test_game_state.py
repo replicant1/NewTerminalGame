@@ -30,7 +30,7 @@ from terminalgame.domain.game_state import (
     opening_heading,
     squared_distance,
 )
-from terminalgame.domain.maze import CORRIDOR, DIRECTIONS, WALL, Maze, solid
+from terminalgame.domain.maze import DIRECTIONS, Maze, solid
 from terminalgame.domain.maze_generator import generate_maze
 
 #: Enough seeds to be sure the placement rules are not true by luck on one maze,

@@ -48,9 +48,8 @@ exactly instead of tying or not according to floating-point error.
 from __future__ import annotations
 
 import random
-from typing import FrozenSet, Optional, Tuple
 
-from terminalgame.domain.maze import DIRECTIONS, Maze
+from terminalgame.domain.maze import DIRECTIONS
 from terminalgame.domain.maze_generator import generate_maze_with
 
 #: How START-2 is measured. Stated here so that "which metric?" has one answer

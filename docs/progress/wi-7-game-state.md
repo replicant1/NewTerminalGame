@@ -45,4 +45,26 @@ Branch `wi-7-game-state`, cut from `main` at c4171fb. DEV-A, lane A, M1, local m
 05:27:28Z         tests/test_game_state.py -- a name under neither DEV-B's prefix
 05:27:28Z         nor my launcher one. Extend tests/test_layering.py per the
 05:27:28Z         standing obligation.
+05:30:40Z NOTE    WI-7 three of my own tests failed first time and all three were
+05:30:40Z         the test's fault, not the code's. solid() returns rows rather
+05:30:40Z         than a Maze. My "the metrics disagree" example did not disagree
+05:30:40Z         -- (0,5) vs (4,4) ranks the same under Euclidean and Manhattan;
+05:30:40Z         (0,5) vs (3,3) is a pair that genuinely splits them, 25>18 one
+05:30:40Z         way and 5<6 the other, so the test now shows the choice matters.
+05:30:40Z         And my "well apart" bar was set against the whole grid diagonal
+05:30:40Z         when the reachable ceiling is the furthest corner from a
+05:30:40Z         near-centre player; rebased on that ceiling.
+05:30:40Z DECIDE  WI-7 the layering extension guards the §3 clause the other
+05:30:40Z         purity tests do not reach: the Domain may not use the
+05:30:40Z         interpreter's shared random generator. A module calling
+05:30:40Z         random.choice imports nothing forbidden and depends on nothing
+05:30:40Z         above it, so it passes every existing case, while making its
+05:30:40Z         output impossible to reproduce. It guards WI-9 as much as WI-7.
+05:30:40Z TEST    309 passed, 0 failed, 0 skipped  (python3 -m unittest discover)
+05:30:40Z COMMIT  c6d03a6 WI-7: the game state and the opening position
+05:30:40Z NOTE    WI-7 merged main on the rhythm asked for: main is still at
+05:30:40Z         c4171fb, already up to date, no drift to resolve.
+05:30:40Z NOTE    WI-7 windows opened: 0. Pure domain, nothing touched the
+05:30:40Z         desktop.
+05:30:40Z DONE    WI-7 wi-7-game-state c6d03a6 (docs commit follows)
 ```
