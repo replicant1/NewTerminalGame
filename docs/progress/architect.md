@@ -1,54 +1,25 @@
-00:05:34Z  START   architect run begins; clean-room, no prior source
-00:05:57Z  READ    docs/FUNCTIONAL_REQUIREMENTS.md — 49 codes across 10 sections, plus an ASCII mock-up of a game in progress
-00:05:57Z  VERIFY  repo state -> only docs/ + orchestration/ + .claude/; no source, no tests, nothing to be consistent with
-00:07:06Z  VERIFY  spec mock-up is 37 cols x 30 rows -> maze cell = 2 screen cols (cell c at col 2c, 0..36), 3-col right margin in a 40-wide window; MAZE-1 satisfied
-00:07:06Z  VERIFY  decoded every wall glyph in the mock-up -> a pure 4-bit N/S/E/W wall-neighbour mask, 16 cases, no exceptions (0000 -> BLACK SQUARE, 1111 -> CROSS unused but implied); SCRN-3 is a lookup table
-00:07:06Z  VERIFY  odd filler columns (2c+1) in the mock-up -> HORIZONTAL only when both flanking cells are wall, else blank; player/ghost are 3 chars wide and overwrite the two flanking fillers, which are provably blank because the entity stands on corridor
-00:07:06Z  VERIFY  ran MAZE-3/5/6 checks over the spec mock-up grid -> border solid, 0 corridor squares of degree<2, 264 corridors all mutually reachable, 287 walls; the mock-up is a legal maze and a usable golden fixture
-00:07:06Z  VERIFY  runtime inventory -> /usr/bin/python3 is 3.9.6 with curses (ncurses 6.0.20150808); /opt/homebrew/bin/python3 also present; pytest NOT installed on system python; unittest is
-00:07:40Z  VERIFY  decomposed the mock-up maze -> it is exactly a 9x14 node lattice: nodes at (odd,odd), pillars at (even,even), links at the square between; 126 nodes + 64 h-links + 74 v-links = 264 corridors; node degree histogram {2:102, 3:24}, zero leaves
-00:07:40Z  DECIDE  maze model -> 9x14 graph on the odd/odd lattice rather than a free 19x29 bitmap, because MAZE-2/5/6 then reduce to graph properties (1-wide corridors by construction, no dead ends = min degree 2, reachable = connected)
-00:07:40Z  VERIFY  host -> macOS 26.6.2 (Darwin 25.6.0, arm64); note the brief said macOS 15, the machine reports 26.6.2
-00:07:40Z  WEIGH   no-dead-ends algorithm : braided spanning tree (DFS/Prim then add an edge at every leaf) vs reject-and-retry vs random-cycle union
-00:09:21Z  VERIFY  braided-DFS generator prototyped on /usr/bin/python3 -> 5000 mazes, 0 failures on border/dead-end/connectivity/no-2x2-open, max 1 braid pass ever needed, mean 265.3 corridors (mock-up has 264), 0.642 ms per maze
-00:09:21Z  DECIDE  maze algorithm -> random-DFS spanning tree then one braid pass adding an edge at every degree-1 node, because a tree leaf always has a spare grid neighbour so braiding is single-pass, total and cheap
-00:09:21Z  VERIFY  curses probe under a 40x30 pty on /usr/bin/python3 3.9.6 -> LINES,COLS = (30,40); has_colors True; COLORS 256; COLOR_PAIRS 32767; use_default_colors ok; curs_set(0) ok; all 10 glyphs emitted verbatim and each advanced the cursor by exactly 1 column (none are double-width)
-00:09:21Z  VERIFY  system curses is the WIDE build -- the error text says addwstr(), so unicode box-drawing needs no acs_map fallback; 205 SGR 38;5;N sequences emitted, cursor-hide \e[?25l present in the byte stream
-00:09:21Z  VERIFY  addstr at (LINES-1, COLS-1) raises addwstr() returned ERR; insstr at the same cell succeeds -- classic curses trap, must be a caution for the status-line renderer
-00:09:21Z  VERIFY  input timing -> stdscr.timeout(50) returned after 51.1 ms; 200 refreshes cost 1.25 ms total (0.006 ms each), so a 143 ms tick has ~4 orders of magnitude of headroom
-00:09:57Z  VERIFY  parsed Terminal.sdef directly (sdef(1) needs Xcode, the .sdef file does not) -> tab has rw number of rows / number of columns / custom title / title displays custom title / font name / font size / background color, and READ-ONLY tty, processes, busy; window has rw bounds/position/frame and read-only id; do script returns a TAB not a window
-00:09:57Z  VERIFY  tab.busy and tab.processes are scriptable -> the launcher can poll for the game process having exited before it closes the window, which is the only safe close (a busy window raises a modal save sheet)
-00:10:31Z  VERIFY  TCC on this machine -> osascript works, Automation on Terminal granted (Terminal 2.15, 4 windows open), System Events reachable (frontmost app = Terminal); the agent itself has no controlling tty (tty says "not a tty"), confirming WIN-4 can only be closed out by a human
-00:10:31Z  DECIDE  WIN-4 reference window -> the Terminal window whose tab tty equals the launcher own os.ttyname(0), falling back to Terminal front window, because that is exactly "the window the player was last looking at" and needs no Accessibility permission
-00:11:23Z  VERIFY  end-to-end Terminal.app probe (window id 3811, captured at creation, closed by id) -> set number of columns 40 / number of rows 30 on the tab and the child process reported stty size = "30 40", tput colors = 256, TERM=xterm-256color
-00:11:23Z  VERIFY  read "contents of tab" back from the live window -> the glyphs came back exactly as written: U+2554 U+2550 U+2566 U+2557 row, then the dot / player / ghost / lone-wall row; Menlo-Regular at 18 pt applied without error
-00:11:23Z  VERIFY  safe-close protocol works -> polled busy of tab 1 (true,true,true,false) then closed by captured window id; no modal sheet, no other window touched
-00:11:23Z  VERIFY  the window did NOT close itself when the child shell exited -> this machine profile is not set to "close on exit", so WIN-5 must be done by the launcher closing the window by id, not by a Terminal preference
-00:12:21Z  VERIFY  geometry -> a 40x30 Terminal window in Menlo-Regular 18 measures 477 x 707 px; reading "position of front window" and writing "position of <new window>" use the same coordinate space, so WIN-4 is ref.position + (dx,dy) and the write landed exactly (asked -889,127 -> actual -889,127)
-00:12:21Z  RISK    WIN-3 is not satisfied by "custom title" alone -> window name came back as "rodneybailey - Terminal Game - sleep 4"; Terminal still appended a shell-set title and the active process name, and "active process name" has no AppleScript toggle
-00:12:21Z  WEIGH   WIN-3 title : AppleScript custom title only vs game emitting OSC 2 vs a dedicated Terminal profile written to prefs
-00:14:26Z  VERIFY  WIN-3 title decomposition -> OSC 2 and AppleScript "custom title" write the SAME title slot; with every scriptable component off the name still reads "<dir> - Terminal Game - <active process + args>"; the working-directory prefix and the active-process suffix have no AppleScript toggle and no key in com.apple.Terminal prefs (they are implicit defaults)
-00:15:23Z  VERIFY  WIN-3 SOLVED exactly, no prefs change needed -> name the game executable literally "Terminal Game" (shebang script, no arguments), have it emit ESC]7;BEL at startup to clear the working-directory prefix, and set title displays custom title to FALSE; window name read back as exactly "Terminal Game"
-00:15:23Z  DECIDE  WIN-3 mechanism -> process-name-as-title rather than AppleScript custom title, because Terminal has no scriptable toggle for the active-process component and this route needs neither a preference change nor Accessibility
-00:17:07Z  VERIFY  GHOST-1 clock -> a deadline loop using scr.timeout(remaining_ms) ran 70 ticks in 10.005 s = 6.997 ticks/s, mean drift 4.15 ms, max 5.08 ms (system py) and 6.997/s, max 5.00 ms (homebrew py 3.14.7); curses.set_escdelay present on both
-00:17:07Z  VERIFY  SCRN-7 repaint cost -> the naive full repaint, 1160 separate addstr calls plus one refresh, costs 0.25 ms per frame, 0.2% of a 143 ms tick; the per-row variant is 0.04 ms. No dirty-rectangle tracking is warranted
-00:17:07Z  DECIDE  language/runtime -> Python 3.9+ stdlib only (curses, random, unittest), shebang /usr/bin/env python3, because both interpreters present on this machine satisfy every measured requirement and the game then needs no install step
-00:17:07Z  DECIDE  architecture -> functional core / imperative shell, split across two PROCESSES (a launcher in the player shell, the game in its own Terminal window), because every rule in the spec except WIN-* and SCRN-7 is then a pure function over immutable state and testable with no tty
-00:17:07Z  RISK    WIN-5 ("window closes as soon as the game ends") contradicts END-5/END-6 ("the last picture stays on screen", "q is the only way to leave a finished game")
-00:17:07Z  ASK     does WIN-5 mean the window closes on the final frame, or when the player presses q after it?
-00:17:07Z  ASSUME  WIN-5 means the window closes when the game PROCESS exits, which END-6 says happens on q; proceeding that way. Affects section 4 (process lifecycle), the WIN-5 and END-5/END-6 traceability rows, and human-check H2 -- reversible by deleting one wait in the launcher
-00:17:07Z  ASK     START-2 "measured across the grid" -- Euclidean, Manhattan or Chebyshev distance, and what breaks a tie?
-00:17:07Z  ASSUME  squared Euclidean on (row,col), ties broken by lowest (row,col); proceeding. Affects rules.choose_ghost_start and its test only -- one function
-00:17:43Z  ASK     STAT-2/STAT-3 spacing -- the two quoted end-of-game lines do not align with each other (q quits at offset 19 in CAUGHT, 20 in CLEARED), and the mock-up puts one blank column before the status text that the quoted strings do not have
-00:17:43Z  ASSUME  reproduce the three quoted strings verbatim and start them at column 1 to match the mock-up; proceeding. Affects view.status_line and one test
-00:17:43Z  DRAFT   sections 1-3: purpose, chosen architecture, block diagram
-00:21:20Z  DRAFT   sections 1-3: architecture choice, runtime justification, block diagram
-00:21:20Z  DRAFT   section 4-5: two-process lifecycle and the pure core (maze, rules, view, theme)
-00:21:20Z  DRAFT   section 6: curses adapter, game loop, AppleScript adapter with the WIN-3 recipe
-00:21:20Z  DRAFT   sections 7-8: measurements table and the pure/impure split incl. six human checks
-00:21:20Z  DRAFT   section 9: two mermaid sequence diagrams (start-up, one loop iteration)
-00:21:20Z  DRAFT   section 10: 49-row traceability table
-00:21:20Z  DRAFT   sections 11-13: assumptions A1-A7, cautions C1-C11, what needs a human
-00:21:27Z  VERIFY  traceability check -> 49 requirement codes parsed out of the spec, 49 rows in the ARCHITECTURE.md table, 0 missing, 0 extra
-00:21:27Z  VERIFY  no stray Terminal windows left behind -> all 5 probe windows (3811, 3826, 3835, 3836, 3837, 3838) were closed by captured id; window count now matches the 4 that existed before the run
-00:21:27Z  DONE    /Users/rodneybailey/CursesProjects/NewTerminalGame/docs/ARCHITECTURE.md
+04:10:23Z  START   architect, fresh run: deriving the architecture from docs/FUNCTIONAL_REQUIREMENTS.md alone; previous run's documents deliberately not consulted
+04:10:23Z  READ    docs/FUNCTIONAL_REQUIREMENTS.md in full - 58 codes across GAME/WIN/SCRN/MAZE/START/CTRL/GHOST/SCORE/END/STAT
+04:10:23Z  READ    .claude/agents/architect.md, .claude/shared/progress-tracking.md, .claude/shared/ask-a-human.md
+04:11:25Z  VERIFY  counted requirement codes in the spec -> 49 unique (GAME 3, WIN 5, SCRN 7, MAZE 6, START 5, CTRL 5, GHOST 4, SCORE 5, END 6, STAT 3), not the 58 I was briefed with; coverage table will have 49 rows
+04:11:25Z  VERIFY  measured the sample picture -> 29 maze rows of 37 columns; each maze square is 2 screen columns (19x2=38, last join column blank), so MAZE-1 fits 40 cols with a 3-column right margin
+04:11:25Z  VERIFY  located actor glyphs in the sample -> ghost at col 1 for cell 1, player at col 19 for cell 10: actors draw 3 columns wide at 2c-1..2c+1, bleeding one column into the neighbour
+04:11:25Z  VERIFY  prototyped DFS perfect maze + braiding on a 19x29 grid over 300 seeds -> 0 dead ends, fully connected, solid border, no 2x2 open block, 269 corridor squares (268 dots) every time; MAZE-2..6 need no special architecture, only a domain-layer generator
+04:11:25Z  WEIGH   how the app gets its own macOS window : (a) automate a terminal emulator from a launcher process (b) open a native GUI window and paint a character grid (c) leave it to the user to size a terminal
+04:11:25Z  DECIDE  window ownership -> two candidates, (a) favoured and (b) as the alternative; (c) rejected because WIN-1..WIN-5 make window lifecycle the app's job, not the player's
+04:11:25Z  WEIGH   input vs the 7Hz ghost clock : (a) single-threaded loop with a timed key read (b) timer thread + input thread + shared state under a lock
+04:11:25Z  DECIDE  concurrency -> single-threaded loop with a timeout on the key read, because GHOST-1 needs two event sources, not two threads, and threads would buy nothing at this scale
+04:11:31Z  ASK     WIN-5 says the window closes as soon as the game ends, but END-5/END-6 say the final picture stays and q is the only way out - which wins at the moment of a win or loss?
+04:11:31Z  ASSUME  the final picture stays and the window closes when the session exits (on q, or on quit after an ending). Affects the WIN-5 and END-5/END-6 coverage rows and the second sequence diagram; cheap to flip - it moves one signal earlier in the same component
+04:11:31Z  ASK     may the game rely on the one-off macOS Automation/Accessibility permission needed to read the frontmost window's position (WIN-4) and to drive the terminal (WIN-1..3, WIN-5)?
+04:11:31Z  ASSUME  yes, with a documented fallback to a fixed default position if the query is refused. Affects WIN-4 coverage and the launcher component only
+04:11:31Z  ASK     which terminal application may be automated, and may its settings be changed - or must the game leave the user's terminal preferences untouched?
+04:11:31Z  ASSUME  the system-supplied terminal, driven per-window only, with no change to the user's saved preferences. Affects WIN-2 coverage and the launcher's window-setup step
+04:11:31Z  RISK    desktop automation is permission-gated and version-sensitive; a failed window query or a refused automation event must degrade to a usable default rather than abort the game
+04:11:31Z  RISK    closing a terminal window while its process is still running raises a modal sheet only a human can dismiss; the launcher must confirm the window is idle before closing it
+04:11:31Z  DRAFT   beginning docs/ARCHITECTURE.md
+04:12:49Z  DRAFT   docs/ARCHITECTURE.md written: drivers, two candidates with block and sequence diagrams, rejected alternatives, recommendation, two 49-row coverage tables, assumptions, cautions, open questions
+04:13:29Z  VERIFY  coverage tables checked by script -> 49 rows each, no missing, no extra, no duplicate codes, matching the 49 codes in the spec
+04:13:29Z  VERIFY  all 5 mermaid diagrams rendered with mmdc -> 5/5 OK after removing a <br/> and a semicolon from a sequence Note (both are mermaid syntax, not text)
+04:13:29Z  DECIDE  recommendation -> Candidate 1 (Launched Terminal Session with a Layered Game Core), because both candidates still need the same automation permission for WIN-4, so Candidate 2 buys a GUI toolkit and a hand-built text grid for an advantage it only partly delivers
+04:13:29Z  RISK    WIN-5 and END-5 cannot both hold at the instant of an ending; recorded as assumption A1 and open question Q1 with the two affected coverage rows named
