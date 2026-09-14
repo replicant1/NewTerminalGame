@@ -108,7 +108,18 @@ def advance_ghost(state, square, heading):
     The ghost neither eats dots nor hides them (SCORE-4), so nothing about the
     dots or the score changes here. Returns the state it was given if the game
     is already over: END-5's "the ghost stands still".
+
+    It also returns the same state when the ghost was told to stay where it is
+    — which happens when it has nowhere to go. `with_changes` builds a new
+    object whatever it is handed, so without this a ghost standing still would
+    look like a change to everything downstream, and the loop would redraw a
+    picture identical to the one already on the screen. Every other step in the
+    Domain returns the state it was given when nothing happened; this makes
+    that convention hold without exception.
     """
     if state.is_over:
         return state
-    return settle(state.with_changes(ghost=tuple(square), ghost_heading=heading))
+    square = tuple(square)
+    if square == state.ghost and heading == state.ghost_heading:
+        return settle(state)
+    return settle(state.with_changes(ghost=square, ghost_heading=heading))
