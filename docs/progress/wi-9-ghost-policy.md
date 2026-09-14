@@ -19,3 +19,9 @@ merge while nobody can reach the primary tree.
 05:36:10Z  RISK    That sits awkwardly with GHOST-1's "one ghost **roams the maze**". A ghost on 4.5% of the maze does not roam it. Not mine to fix — GHOST-2 and GHOST-3 are explicit and I implemented them — but it is a real tension and it goes to the technical lead with the measurement.
 05:36:20Z  DECIDE  whether to list ghost_policy.py in tests/test_layering.py's module list -> no, matching DEV-A's choice for player.py in WI-8, because domain_files() sweeps it automatically and an adjacent-line edit in one shared list is a predictable cross-lane conflict for no benefit. The equivalent assertion lives in my own test file, importing the layering helper rather than duplicating it. **This branch does not touch tests/test_layering.py at all.**
 05:36:38Z  TEST    344 passed, 0 failed, 0 skipped — `python3 -B -m unittest discover`, 7.7 s. 309 on the WI-7 branch + 35 lands exactly.
+05:36:50Z  COMMIT  0ef8a87 WI-9: the ghost's policy, with GHOST-4 enforced by the signature
+05:37:20Z  DRAFT   docs/findings/WI-9-the-ghost-that-cannot-get-out.md and docs/prs/PR-WI-9-ghost-policy.md. The finding records the lever — WI-4's braid, not the ghost — without recommending it, because whether one game in sixty being easy matters is a judgement about how the game feels and that is the user's.
+05:37:30Z  VERIFY  main still at c4171fb and still an ancestor of this branch; tests/test_layering.py untouched here, so WI-8 and WI-9 add no conflict to it.
+05:37:33Z  TEST    344 passed, 0 failed, 0 skipped — `python3 -B -m unittest discover`, 7.8 s, final run.
+05:37:33Z  NOTE    Zero windows opened. Nothing here touched the desktop or started a subprocess.
+05:37:33Z  DONE    WI-9 wi-9-ghost-policy (head in the commit below), stacked on wi-7-game-state at af4c6d9.
