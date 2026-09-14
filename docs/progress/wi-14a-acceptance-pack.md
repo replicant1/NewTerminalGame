@@ -18,3 +18,7 @@ Local mode. No push, no `gh`, no merge. Branch `wi-14a-acceptance-pack`, cut fro
 06:15:00Z  VERIFY  **Second real run, clean.** window created +0.13 s, configured +0.33 s, game running +0.41 s, **picture drawn +0.67 s**, q sent +0.90 s, **game gone +0.98 s — 0.08 s after the q**, window closed +1.22 s, visible=False. Census 1 before, 1 after. 8 exercises: 5 ok, 0 failed, 3 observed for a person. The captured picture is M0's skeleton, correctly — the real game arrives with WI-12, and the pack judges shape rather than contents precisely so it will still be right then.
 06:15:10Z  TEST    666 passed, 0 failed, 0 skipped — `python3 -B -m unittest discover`.
 06:15:15Z  NOTE    Windows opened for WI-14a: **2**, one per real run. Both closed by captured id, both confirmed with `visible`, census returned to 1 both times. No modal sheet.
+06:16:30Z  DRAFT   docs/prs/PR-WI-14a-acceptance-pack.md.
+06:16:40Z  VERIFY  `main` still at `01628bd` and still an ancestor of this branch.
+06:16:45Z  NOTE    tests/test_layering.py deliberately NOT touched — `acceptance/` is not a layer of the game, and the layering test walks terminalgame/ and launcher/. Recorded in both places per EDIT 11. If the lead wants the pack's boundaries guarded there too, it is a small addition and I would rather be asked than assume.
+06:16:50Z  DONE    WI-14a wi-14a-acceptance-pack. 666 passed, 0 failed, 0 skipped. 2 windows opened, 2 closed.
