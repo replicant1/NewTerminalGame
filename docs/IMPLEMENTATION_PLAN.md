@@ -653,3 +653,48 @@ script* — act on a captured id, never on "the front window" — and a test tha
 calls would watch a perfectly well-behaved adapter emit `close front window` and notice nothing. That
 is §4.4's rule about asserting the consequence rather than the shape, applied somewhere this plan had
 not thought to apply it. Later items that generate scripts should do the same.
+
+### 11.7 C8 is a proof, not a measurement — and the restriction cannot be relaxed
+
+Caution C8 tells implementers to restrict braiding to the same odd-coordinate lattice the carve used,
+and backs it with the architect's sweep: *"with the restriction I measured 0 such blocks … across 300
+generated mazes; without it, no such guarantee."* **That understates it. MAZE-2 holds by
+construction**, and WI-4 showed why:
+
+- An opened square is either a cell, at **(odd, odd)**, or the wall between two cells, which has
+  **exactly one even coordinate**. So a square with **both** coordinates even is never opened.
+- Every 2 x 2 block of squares contains **exactly one** both-even square, because exactly one of any
+  two adjacent coordinates is even.
+- Therefore every 2 x 2 block contains a wall, and no 2 x 2 block can be fully open — **at any size,
+  under any random source, for every seed there will ever be.**
+
+Verified independently before this was written: the real generator over 720 mazes at nine sizes
+produced **0 open squares with both coordinates even** and **0 fully-open 2 x 2 blocks**. The premise
+is a property of the code and was measured; the conclusion is arithmetic and was checked by hand.
+
+**Why this matters beyond tidiness.** A sweep invites the question *"the numbers are fine — could we
+relax the restriction?"* The answer is **no**, not *probably not*. Anyone tempted to braid an
+arbitrary wall is not weakening a safety margin, they are removing the only thing that makes MAZE-2
+true. The write-up is in `docs/findings/WI-4-maze-invariants-over-seeds.md`.
+
+### 11.8 Refusing beats silently degrading — now the rule in both lanes
+
+Two work items reached the same decision independently and it is worth stating once as policy.
+`Frame.put` **raises** on an out-of-range cell rather than clipping (WI-2), and `generate_maze`
+**raises** `MazeTooSmall` on an even dimension or a lattice under 2 x 2 cells rather than returning a
+grid that cannot satisfy MAZE-5 (WI-4). In both cases the input makes a requirement unsatisfiable, and
+a quietly degraded result would turn a geometry bug into a picture or a maze that is subtly wrong
+rather than obviously broken. **Later items follow the same rule**: where an argument makes a
+requirement impossible, refuse and say which requirement.
+
+### 11.9 On guarding C5, and a guard that already exists
+
+`tests/test_layering.py` grew a domain-purity case under the standing obligation from §11 — but its
+screen-geometry check is a text scan for the port's vocabulary and **cannot catch a bare `40` typed by
+hand**. WI-4 flagged that rather than defending it, which is the right behaviour and needs no work in
+response: extending the word list would not fix it.
+
+The stronger guard is already built, though it was not framed as one. **The generator is exercised at
+nine different grid sizes**, so a screen dimension hard-coded anywhere in the domain would fail those
+tests outright. Later domain items should keep testing at sizes other than 19 x 29 for that reason,
+not merely for generality.
