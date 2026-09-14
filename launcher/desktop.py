@@ -62,6 +62,16 @@ class Desktop(object):
     def is_busy(self, window_id):
         return self._bool(self.runner.run(script.window_is_busy(window_id)))
 
+    def processes(self, window_id):
+        """The names of the processes running in the captured window.
+
+        Empty when nothing is. More trustworthy than :meth:`is_busy` once the
+        window has been given its grid — see
+        :func:`launcher.script.window_processes`.
+        """
+        answer = self.runner.run(script.window_processes(window_id))
+        return [name for name in answer.strip().split("|") if name.strip()]
+
     def close(self, window_id):
         self.runner.run(script.close_window(window_id))
 
