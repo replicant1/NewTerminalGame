@@ -135,21 +135,39 @@ def glyph_for_neighbours(north, south, east, west):
     return BY_NEIGHBOURS[(bool(north), bool(south), bool(east), bool(west))]
 
 
-def wall_neighbours(maze, x, y):
-    """Which of the four sides of `(x, y)` are wall squares of this maze.
+def joins_up_with(maze, x, y):
+    """Is there a wall square *of this maze* at `(x, y)` to join up with?
 
-    Returns `(north, south, east, west)`. **`maze.contains` first**: without
-    it `square_at` would answer `WALL` for everything beyond the edge, which
-    is the right answer to "can I walk there" and the wrong answer to "does my
-    wall join up with it".
+    **This is not the same question as `maze.is_wall(x, y)`, and the two give
+    different answers on purpose.** They are one word apart and it would be
+    easy to unify them, so here is the difference written down:
+
+    * `maze.is_wall(x, y)` answers **"can an actor move there?"**. Beyond the
+      edge of the grid it says *yes, that is wall*, because MAZE-3 says nothing
+      leaves the maze and the world outside it is solid.
+    * `joins_up_with(maze, x, y)` answers **"should this glyph have an arm
+      pointing that way?"**. Beyond the edge it says *no*, because there is no
+      wall square out there to join to — which is what draws the border ring
+      as a rectangle rather than as a mesh of crossings.
+
+    Both answers are right. They are two questions that happen to be spelt with
+    the same words, which is why this one has its own name rather than being a
+    branch inside the other. Do not make them agree.
     """
-    def is_wall_square(nx, ny):
-        return maze.contains(nx, ny) and maze.is_wall(nx, ny)
+    return maze.contains(x, y) and maze.is_wall(x, y)
 
-    return (is_wall_square(x, y - 1),   # north: y counts down from the top
-            is_wall_square(x, y + 1),   # south
-            is_wall_square(x + 1, y),   # east
-            is_wall_square(x - 1, y))   # west
+
+def wall_neighbours(maze, x, y):
+    """Which of the four sides of `(x, y)` have a wall square to join up with.
+
+    Returns `(north, south, east, west)`. Asks `joins_up_with` rather than
+    `maze.is_wall` — see that function for why the difference matters and why
+    it is not a bug in either.
+    """
+    return (joins_up_with(maze, x, y - 1),   # north: y counts down from the top
+            joins_up_with(maze, x, y + 1),   # south
+            joins_up_with(maze, x + 1, y),   # east
+            joins_up_with(maze, x - 1, y))   # west
 
 
 def wall_glyph(maze, x, y):
@@ -157,7 +175,7 @@ def wall_glyph(maze, x, y):
 
     Raises `NotAWallSquare` if it is not a wall square.
     """
-    if not (maze.contains(x, y) and maze.is_wall(x, y)):
+    if not joins_up_with(maze, x, y):
         raise NotAWallSquare(x, y)
     return glyph_for_neighbours(*wall_neighbours(maze, x, y))
 

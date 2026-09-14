@@ -58,6 +58,7 @@ from terminalgame.presentation.wall_glyphs import (
     VERTICAL_AND_RIGHT,
     WALL_COLOUR,
     glyph_for_neighbours,
+    joins_up_with,
     wall_glyph,
     wall_glyphs,
     wall_neighbours,
@@ -84,9 +85,6 @@ def specification_picture():
     """
     with io.open(SPECIFICATION, encoding="utf-8") as handle:
         lines = handle.read().splitlines()
-    for index, line in enumerate(lines):
-        if line.strip() == "```" and lines[index + 1].startswith(VERTICAL_AND_RIGHT[0]):
-            pass  # not the fence we want; keep the check below honest
     fences = [index for index, line in enumerate(lines)
               if line.strip() == "```" and index + 1 < len(lines)
               and lines[index + 1].startswith(DOWN_AND_RIGHT)]
@@ -485,6 +483,49 @@ class RefusingTheQuestionTest(unittest.TestCase):
             wall_glyph(maze, -1, -1)
         with self.assertRaises(NotAWallSquare):
             wall_glyph(maze, maze.width, 0)
+
+
+class TwoQuestionsOneSpellingTest(unittest.TestCase):
+    """`is_wall` and `joins_up_with` disagree on purpose.
+
+    They are one word apart in English — *is that square a wall?* — and they
+    give different answers beyond the edge of the grid. Both are right:
+    `maze.is_wall` answers "can an actor move there", `joins_up_with` answers
+    "is there a wall square to join up with". The obvious tidy-up is to make
+    them agree, and it would silently break one of the two.
+
+    These tests exist so that tidy-up fails rather than ships.
+    """
+
+    def setUp(self):
+        self.maze = generate_maze(2)
+
+    def test_inside_the_grid_the_two_questions_have_the_same_answer(self):
+        # Which is why the difference is easy to miss: it shows up only at the
+        # edge, and every square a player ever stands on is inside.
+        for (x, y) in self.maze.squares():
+            self.assertEqual(self.maze.is_wall(x, y),
+                             joins_up_with(self.maze, x, y), (x, y))
+
+    def test_beyond_the_grid_they_deliberately_disagree(self):
+        beyond = [(-1, 0), (0, -1), (self.maze.width, 0),
+                  (0, self.maze.height), (-1, -1),
+                  (self.maze.width, self.maze.height)]
+        for square in beyond:
+            self.assertTrue(self.maze.is_wall(*square),
+                            "the world outside the maze is solid (MAZE-3): {0}"
+                            .format(square))
+            self.assertFalse(joins_up_with(self.maze, *square),
+                             "there is no wall square out there to join to: {0}"
+                             .format(square))
+
+    def test_the_border_ring_is_what_the_difference_buys(self):
+        # If the two were unified on `is_wall`, every corner of the ring would
+        # become a crossing. This is that consequence, named.
+        self.assertEqual(DOWN_AND_RIGHT, wall_glyph(self.maze, 0, 0))
+        self.assertNotEqual(CROSSING, wall_glyph(self.maze, 0, 0))
+        self.assertEqual((False, True, True, False),
+                         wall_neighbours(self.maze, 0, 0))
 
 
 class NeighbourQueryTest(unittest.TestCase):

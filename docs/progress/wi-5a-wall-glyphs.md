@@ -24,3 +24,6 @@ Local mode. No push, no `gh`, no merge. Branch `wi-5a-wall-glyphs`, cut from `ma
 05:31:18Z  TEST    296 passed, 0 failed, 0 skipped — `python3 -B -m unittest discover`, 7.0 s, final run.
 05:31:18Z  NOTE    Zero windows opened. Nothing here touched the desktop or started a subprocess.
 05:31:18Z  DONE    WI-5a wi-5a-wall-glyphs (head recorded in the commit below)
+05:34:07Z  DECIDE  the technical lead's "two questions, one spelling" trap -> give the presentation-side question its own name, `joins_up_with(maze, x, y)`, because the remedy is not to make the two agree but to stop them both being called "is this a wall". `maze.is_wall` answers "can an actor move there"; `joins_up_with` answers "is there a wall square to join up with". Both right, and the docstring says do not unify them.
+05:34:07Z  NOTE    Did NOT rename anything in terminalgame/domain/maze.py. It is shared with DEV-A's in-flight WI-7 and WI-8, and widening the edit surface of a queued branch to improve a name is not worth the conflict. The presentation side carries the distinction on its own.
+05:34:07Z  TEST    299 passed, 0 failed, 0 skipped — `python3 -B -m unittest discover`. 296 + 3 new in TwoQuestionsOneSpellingTest: inside the grid the two questions agree, beyond it they deliberately disagree, and the border ring is the consequence that a well-meaning unification would destroy.
