@@ -18,22 +18,25 @@ from launcher.lifecycle import LaunchFailed, WindowLauncher
 from launcher.runner import OsascriptRunner
 
 
-def main(argv=None):
+def main(argv=None, launcher=None, out=None, err=None):
     argv = list(sys.argv[1:] if argv is None else argv)
+    out = sys.stdout if out is None else out
+    err = sys.stderr if err is None else err
     if not argv:
-        sys.stderr.write("usage: python3 -m launcher <command> [args ...]\n")
+        err.write("usage: python3 -m launcher <command> [args ...]\n")
         return 2
 
     command = " ".join(argv)
-    launcher = WindowLauncher(Desktop(OsascriptRunner()))
+    if launcher is None:
+        launcher = WindowLauncher(Desktop(OsascriptRunner()))
 
     try:
         result = launcher.run(command)
     except LaunchFailed as failure:
-        sys.stderr.write("%s\n" % (failure,))
+        err.write("%s\n" % (failure,))
         return 1
 
-    sys.stdout.write("%s\n" % (result.reason,))
+    out.write("%s\n" % (result.reason,))
     return 0 if result.closed else 1
 
 
