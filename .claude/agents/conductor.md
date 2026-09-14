@@ -43,7 +43,7 @@ One or more developers will take the implementation plan and begin following it,
 
 **You do not merge.** Who does depends on the mode, and **telling the technical lead which mode the run is in is yours** — you have it from the user, and nothing downstream has another way to find out. The technical lead carries it on to the developers by stating it in the implementation plan, which is where they read their working practices. You tell one agent, not four; but if you tell nobody, every developer stops and asks the user before doing anything.
 
-**In local mode** there is no remote, and a developer cannot merge even if asked: they work in their own git worktrees, `main` is checked out in the primary one, and git will not let them check it out. The technical lead merges, one merge per work item, and runs the suite on `main` afterwards.
+**In local mode** there is no remote, and the technical lead merges — one merge per work item, with the suite run afterwards. It does so without checking `main` out: `main` is deliberately checked out in no tree at all, because git refuses to let a second tree touch a branch that is checked out somewhere, and this run lost hours to exactly that. If anyone reports being unable to merge because `main` is checked out, something has checked it out; that is a report for the user, not something to route around.
 
 **With real pull requests** that constraint disappears — `gh pr merge` runs on the server and needs `main` checked out nowhere — so each developer opens, marks ready and merges its own PR, then confirms the suite is still green.
 

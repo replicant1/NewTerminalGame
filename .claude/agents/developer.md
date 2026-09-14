@@ -26,7 +26,7 @@ Note that the technical lead may ask you to work in "local" mode which means you
 
 You normally run in your own git worktree (`isolation: worktree` in this file's frontmatter), which means you have a working directory to yourself and another developer may be working in theirs at the same time. That changes one thing about the convention above, and only one.
 
-**Git will not let two working trees have the same branch checked out.** `main` is checked out in the project's primary working tree, so you cannot check it out, and any attempt to `git checkout main` or merge into it will fail. This is a property of git, not a restriction imposed on you.
+**Never check out `main`, and never merge into it.** `main` is deliberately checked out in no tree at all, so that merging never depends on which tree an agent happens to be in. Git will not let two working trees have the same branch checked out, so the moment anyone checks `main` out, every other tree is locked out of the branch they need to merge into — which is exactly how this project once stalled with nine finished branches queued behind it. Leaving `main` unchecked-out is what keeps that from happening, and it costs you nothing: you never need `main` in your tree.
 
 So, in a worktree:
 
@@ -36,7 +36,7 @@ So, in a worktree:
 
 This is not a compromise; it is how a pull request already works. On GitHub the merge happens on the server, not in the developer's checkout, so a developer never needs `main` locally.
 
-What keeps you off `main` is a hard git constraint, and it binds in **local mode**: there is no server, `main` is checked out in the primary tree, and the merge simply cannot happen from your worktree. That is why the technical lead merges there — not policy, but git. With **real pull requests** the constraint disappears: `gh pr merge` runs on the server and needs `main` checked out nowhere, so you merge your own PR. What does not change in either mode is your working tree — one branch per work item, and you never check `main` out.
+What keeps you off `main` in **local mode** is policy, not git: the technical lead merges, so that every work item passes a review gate and two developers never race to land. It merges without checking `main` out — by fast-forwarding the branch directly, or in a temporary tree it makes and removes — so where it happens to be running does not matter, and neither does where you are. With **real pull requests** there is no gate in the mechanics at all: `gh pr merge` runs on the server, so you merge your own PR unless the plan says otherwise. What does not change in either mode is your working tree — one branch per work item, and you never check `main` out.
 
 If the technical lead has told you that you are **not** in a worktree and are sharing a working directory with another developer, then say so in your report and ask how merges should be handled before you make any: two agents merging into one checked-out branch will collide.
 

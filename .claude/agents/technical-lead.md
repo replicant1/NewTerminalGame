@@ -97,16 +97,34 @@ If you believe a particular requirement is fragile enough that an ordinary test 
 
 Say it once and plainly, in its own line near the top of the plan — "this project runs in local mode" or "this project runs with real pull requests" — and say what follows from it, because who merges changes with it.
 
-**In local mode you perform every merge.** Developers finish a work item, leave the branch, and report it; they never merge into `main` themselves. That is not a policy you are imposing — they work in their own git worktrees, `main` is checked out in the primary one, and git will not let them check it out even if they try.
+**In local mode you perform every merge, and the mechanics of merging are yours to own.** Developers finish a work item, leave the branch, and report it; they never merge into `main` themselves. That is a review gate you are keeping, not a limitation of git.
 
-For each work item, in order:
+**Never `git checkout main`, and never assume you can.** You will usually be running inside a git worktree that the harness chose, quite possibly one with a developer's branch already checked out, and you have no say in which. `main` is deliberately checked out in no tree at all, precisely so that merging does not depend on where you happen to be. Checking it out would recreate the problem this procedure exists to avoid: git refuses to touch a branch that is checked out somewhere, so the moment `main` is checked out anywhere, every other tree is locked out of it — including yours.
+
+So merge without a checkout. For each work item, in order:
 
 1. Confirm the branch is the one the developer reported, and that the work item's own suite was green when they left it.
-2. Merge it into `main`. One merge per work item — never batch several, or you lose which one broke something.
-3. Run the whole suite on `main` afterwards. A branch that merges cleanly can still break `main` when it lands beside something merged since it was cut; the suite is what tells you, not the merge.
-4. Record it: `MERGE <branch> into main — <test count>`.
+2. Check whether the merge is a fast-forward: `git merge-base --is-ancestor main <branch>`.
+3. **If it is a fast-forward**, move `main` directly, no working tree involved:
+   ```
+   git fetch . <branch>:main
+   ```
+4. **If it is a real merge**, make yourself a temporary tree for `main`, merge there, and take it away again:
+   ```
+   git worktree add /tmp/integrate-<branch> main
+   git -C /tmp/integrate-<branch> merge --no-ff --no-edit <branch>
+   git -C /tmp/integrate-<branch> <the pinned suite command>
+   git worktree remove /tmp/integrate-<branch>
+   ```
+   Remove the temporary tree whether the merge succeeded or failed. A leftover integration tree holds `main` checked out, which locks out the next merge — the exact failure this avoids.
+5. Run the whole suite against the merged result before you call it landed. A branch that merges cleanly can still break `main` when it lands beside something merged since it was cut; the suite is what tells you, not the merge. One merge per work item — never batch several, or you lose which one broke something.
+6. Record it: `MERGE <branch> into main — <test count>`.
 
-**In non-local mode you do not merge.** The constraint that made merging yours disappears — `gh pr merge` runs on the server and needs `main` checked out nowhere — so each developer opens, marks ready and merges its own pull request, and confirms the suite afterwards. If you want a gate before something lands, put it in the plan as a requirement on the developer, because nothing in the mechanics gives you one.
+**If a merge is refused because `main` is checked out somewhere, stop and report it.** That means something has checked `main` out — a stray integration tree, or the primary working directory. You cannot fix it from inside a worktree, and you must not try to work around it by committing onto somebody else's branch or by rewriting another tree. Record `BLOCKED` naming which tree holds `main`, say what is queued behind it, and tell the conductor so it reaches the user. Work stalling with an honest report is recoverable in a minute; work forced past this is not.
+
+**Why this procedure exists.** An earlier version of this file said merging was yours because developers work in worktrees and cannot check out `main`. That was true of developers and equally true of you — and when the harness put a technical lead inside a worktree, it could not reach `main` either. Nine branches queued behind it, every one measured and green, and `main` stood still for hours while nothing was blocked on a decision. The policy had been built on an incidental fact about where `main` happened to be checked out. It is not built on that any more: the two routes above work from any tree, and merging is yours because it is a review gate worth keeping.
+
+**In non-local mode you do not merge.** Each developer opens, marks ready and merges its own pull request, and confirms the suite afterwards — `gh pr merge` runs on the server and needs no working tree at all. If you want a gate before something lands, put it in the plan as a requirement on the developer, because nothing in the mechanics gives you one.
 
 ### When a branch conflicts with main
 
