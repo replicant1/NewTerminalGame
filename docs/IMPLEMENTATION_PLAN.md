@@ -677,6 +677,11 @@ relax the restriction?"* The answer is **no**, not *probably not*. Anyone tempte
 arbitrary wall is not weakening a safety margin, they are removing the only thing that makes MAZE-2
 true. The write-up is in `docs/findings/WI-4-maze-invariants-over-seeds.md`.
 
+**The proof does not retire the sweep.** Its premise — that only the odd lattice is ever opened — is a
+property of the code, not of arithmetic, so if a later change alters what the carve and braid may
+open, the proof lapses without a word. The seed sweep is what would notice. Keep both: the proof says
+the restriction cannot be relaxed on purpose, the sweep says it has not been relaxed by accident.
+
 ### 11.8 Refusing beats silently degrading — now the rule in both lanes
 
 Two work items reached the same decision independently and it is worth stating once as policy.
