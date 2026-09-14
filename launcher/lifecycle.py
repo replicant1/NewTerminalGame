@@ -141,6 +141,34 @@ class WindowLauncher(object):
 
         Returns the :class:`ReapResult`. The window is the launcher's throughout
         and belongs to nobody else.
+
+        .. warning::
+
+           **This method can close the window while the command is still
+           running, and report success.** Do not build anything new on it.
+
+           *WI-13 deletes this warning when it lands the fix. If you are reading
+           it, the fix has not landed yet.*
+
+           ``run`` decides the command has finished by asking the tab whether it
+           is ``busy``. That flag stops tracking the process once the tab has
+           been given a fixed number of rows and columns — and :meth:`open`
+           gives every window it creates exactly that, because WIN-2 requires
+           it. Measured: a game alive from +0.9 s to +8.4 s with ``busy``
+           reporting false from +0.9 s onwards. A whole session then takes the
+           same 1.0 s whether the game was asked to run for 5 seconds or for
+           12, because in both cases it was killed and the launcher said
+           ``closed``.
+
+           What to use instead, and what :func:`launcher.game.play` does::
+
+               window = launcher.open(command)
+               launcher.reap(window.window_id, launcher.session_timeout,
+                             still_running=launcher.has_live_processes)
+
+           The process list keeps telling the truth where ``busy`` does not.
+           The measurement is in
+           ``docs/findings/WI-3-busy-is-false-after-a-grid-resize.md``.
         """
         window = self.open(command)
         return self.reap(window.window_id, self.session_timeout)

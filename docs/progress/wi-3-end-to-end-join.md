@@ -92,4 +92,20 @@ Branch `wi-3-end-to-end-join`, cut from `main` at 5269b67. DEV-A, local mode.
 05:23:08Z NOTE    WI-3 windows: 29 opened across all measurement, 29 closed. Final
 05:23:08Z         visible census 7104 only, which is where it started.
 05:23:08Z DONE    WI-3 wi-3-end-to-end-join 72402a9 (this log commit follows it)
+
+05:33:23Z AMEND   WI-3 reopened for one documentation-only commit, on the
+05:33:23Z         technical lead's ruling: the third condition on the run()
+05:33:23Z         ruling was that the defect is stated where a reader of run
+05:33:23Z         meets it, and routing that to WI-13 would deliver the warning
+05:33:23Z         together with the fix -- i.e. never, during the interim that
+05:33:23Z         is the entire exposure. The warning goes in run()'s docstring,
+05:33:23Z         says what to use instead, and is written as something WI-13
+05:33:23Z         will obviously delete rather than as permanent documentation.
+05:33:23Z NOTE    WI-3 the amendment is 28 added lines inside one docstring, 0
+05:33:23Z         deletions, no code touched. It cannot disturb the evidence.
+05:33:23Z TEST    238 passed, 0 failed, 0 skipped  (python3 -m unittest discover)
+05:33:23Z         -- unchanged from 0f44bf9, as the ruling required.
+05:33:23Z NOTE    WI-3 windows opened by the amendment: 0. Nothing was re-run
+05:33:23Z         against the desktop; the 29-opened/29-closed census stands as
+05:33:23Z         measured.
 ```
