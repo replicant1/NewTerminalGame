@@ -53,7 +53,9 @@ import shlex
 import sys
 
 from launcher import script
-from launcher.__main__ import main as run_in_a_window
+from launcher.desktop import Desktop
+from launcher.lifecycle import LaunchFailed, WindowLauncher
+from launcher.runner import OsascriptRunner
 
 #: The game process, named as text. See the module docstring: the launcher may
 #: not import the game, so this is a string and stays a string.
@@ -82,6 +84,7 @@ DEFAULT_HOLD_SECONDS = 5.0
 #: report a genuinely too-small screen itself.
 GATE_ATTEMPTS = 60
 GATE_INTERVAL = 0.1
+
 
 
 def size_gate(columns=script.COLUMNS, rows=script.ROWS,
@@ -141,17 +144,52 @@ def game_command(repository_root=None, python_executable=None,
     return "/bin/sh -c %s" % (shlex.quote(inner),)
 
 
+def play(launcher, command):
+    """One whole session: open the window, let the game be played, take it back.
+
+    This is :meth:`WindowLauncher.run` with one difference, and the difference
+    is the whole of WI-3's risk. ``run`` decides the game has finished by asking
+    the tab whether it is ``busy``, and **that flag is false for the entire life
+    of a game in a window that has been given its 40 x 30 grid** — measured, the
+    game alive from +0.9 s to +8.4 s with ``busy`` false from +0.9 s onwards. So
+    ``run`` closes the window while the player is still playing.
+
+    Asking instead what processes the tab is running gives the true answer, and
+    an empty list is an unambiguous "nothing is running in there" that needs no
+    matching of names. It also covers the start-up gap for free: a window whose
+    login shell is still starting lists that shell, so it is never mistaken for
+    a window whose game has ended.
+    """
+    window = launcher.open(command)
+    return launcher.reap(
+        window.window_id,
+        launcher.session_timeout,
+        still_running=launcher.has_live_processes,
+    )
+
+
 def main(argv=None, launcher=None, out=None, err=None):
     """``python3 -m launcher.game`` — open a window, play, take the window back.
 
-    The reporting and the exit codes are WI-1's, reused rather than restated:
-    zero when the window was closed, one when it was left open or the launch
-    failed, and in the latter case the window id named so a human can deal with
-    what the launcher would not.
+    The exit codes are WI-1's: zero when the window was closed, one when it was
+    left open or the launch failed, and in the latter case the window id named
+    so a human can deal with what the launcher would not.
     """
     arguments = _parse_arguments(argv)
+    out = sys.stdout if out is None else out
+    err = sys.stderr if err is None else err
+    if launcher is None:
+        launcher = WindowLauncher(Desktop(OsascriptRunner()))
+
     command = game_command(hold_seconds=arguments.hold)
-    return run_in_a_window([command], launcher=launcher, out=out, err=err)
+    try:
+        result = play(launcher, command)
+    except LaunchFailed as failure:
+        err.write("%s\n" % (failure,))
+        return 1
+
+    out.write("%s\n" % (result.reason,))
+    return 0 if result.closed else 1
 
 
 def _parse_arguments(argv):

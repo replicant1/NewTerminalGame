@@ -179,12 +179,30 @@ class WindowLauncher(object):
 
     # -- getting rid of it again ----------------------------------------
 
-    def wait_until_idle(self, window_id, timeout):
-        """Is nothing running in that window? Polls, bounded, and gives up."""
+    def has_live_processes(self, window_id):
+        """Is anything running in that window, judged by its process list?
+
+        The alternative to :meth:`Desktop.is_busy`, and the one to pass to
+        :meth:`reap` for any window that has been given a grid: ``busy`` was
+        measured reporting false for the whole life of a process in a window
+        whose rows and columns had been set, which is every window this
+        launcher creates. See :func:`launcher.script.window_processes`.
+        """
+        return bool(self.desktop.processes(window_id))
+
+    def wait_until_idle(self, window_id, timeout, still_running=None):
+        """Is nothing running in that window? Polls, bounded, and gives up.
+
+        ``still_running`` is the question asked each time round, and defaults to
+        the tab's ``busy`` flag. Pass :meth:`has_live_processes` where that flag
+        cannot be trusted.
+        """
+        if still_running is None:
+            still_running = self.desktop.is_busy
         deadline = self.clock() + timeout
         while True:
             try:
-                if not self.desktop.is_busy(window_id):
+                if not still_running(window_id):
                     return True
             except AutomationError:
                 # A window we cannot even ask about is not one we should close.
@@ -193,19 +211,19 @@ class WindowLauncher(object):
                 return False
             self.sleeper(self.poll_interval)
 
-    def reap(self, window_id, timeout):
+    def reap(self, window_id, timeout, still_running=None):
         """Close the captured window once it is idle, and check that it went.
 
         Never raises: this is what runs on the failure path, where an exception
         of its own would bury the failure it was called to clean up after.
         """
         try:
-            return self._reap(window_id, timeout)
+            return self._reap(window_id, timeout, still_running)
         except BaseException as error:  # pragma: no cover - belt and braces
             return ReapResult(False, "reaping failed: %s" % (error,), window_id)
 
-    def _reap(self, window_id, timeout):
-        if not self.wait_until_idle(window_id, timeout):
+    def _reap(self, window_id, timeout, still_running=None):
+        if not self.wait_until_idle(window_id, timeout, still_running):
             return ReapResult(
                 False,
                 "window %r is still busy after %.1fs and was left open on "

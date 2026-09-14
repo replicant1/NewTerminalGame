@@ -3,11 +3,15 @@
 WI-1's tests proved the launcher behaves for *some* command; WI-2's proved the
 game behaves in *some* terminal. These are about the join: that the window the
 launcher opens is running the real game, that the whole session closes the
-window it opened by the identity it captured, and that when the game is still
-running the launcher leaves the window alone instead of raising a modal sheet.
+window it opened by the identity it captured, and that the launcher does not
+take the window away while the game is still being played.
 
 The seam is the subprocess runner, so what these tests read is the AppleScript
 that would have reached the desktop, in the order it would have reached it.
+
+The process lists below are the ones measured on the real desktop: a tab whose
+login shell is still starting up lists that shell, a tab running the game lists
+``login|Python``, and a tab whose command has ended lists nothing at all.
 """
 
 import io
@@ -15,12 +19,21 @@ import re
 import unittest
 
 from launcher.desktop import Desktop
-from launcher.game import GAME_MODULE, game_command, main
+from launcher.game import GAME_MODULE, game_command, main, play
 from launcher.lifecycle import LaunchFailed, WindowLauncher
 from launcher.runner import AutomationError
 from tests.launcher_fakes import FakeClock, RecordingRunner
 
 WINDOW_ID = 4211
+
+#: What the tab lists while the login shell is still starting up. Non-empty,
+#: which is what stops it being mistaken for a window whose game has ended.
+STARTING = "login|-zsh|ssh-add"
+#: What it lists while the game is running.
+PLAYING = "login|Python"
+#: What it lists once the game has exited. The launcher execs the command, so
+#: there is no shell left underneath it to keep the list populated.
+FINISHED = ""
 
 
 def honours_the_move(call):
@@ -35,9 +48,12 @@ HAPPY_PATH = {
     "configure_window": "ok",
     "window_size": "357,558",
     "set_window_position": honours_the_move,
-    "window_is_busy": "false",
     "close_window": "closed",
     "window_is_visible": "false",
+    # The reap that runs *inside* WindowLauncher.open when setup fails is WI-1's
+    # and still asks the busy flag. That path is reached only by the failure
+    # tests below; the session path uses the process list throughout.
+    "window_is_busy": "false",
 }
 
 #: Ways of naming a window that are not the captured identity. None of these may
@@ -53,8 +69,25 @@ POSITIONAL_OR_TITLE = (
 )
 
 
+def playing_then_finished():
+    """A window running the game, and then not.
+
+    A function rather than a list of answers because the number of times the
+    launcher asks is exactly what several of these tests are about, and a list
+    would run out and turn a behavioural difference into a fixture error.
+    """
+    asked = []
+
+    def answer(call):
+        asked.append(call)
+        return PLAYING if len(asked) == 1 else FINISHED
+
+    return answer
+
+
 def build(replies=None, **kwargs):
     merged = dict(HAPPY_PATH)
+    merged["window_processes"] = playing_then_finished()
     merged.update(replies or {})
     runner = RecordingRunner(merged)
     clock = FakeClock()
@@ -68,30 +101,27 @@ class TheWindowRunsTheRealGame(unittest.TestCase):
 
     def test_the_window_is_created_running_the_game_process(self):
         launcher, runner = build()
-        launcher.run(game_command())
+        play(launcher, game_command())
         self.assertIn(GAME_MODULE, runner.source_of("open_window_running"))
 
     def test_the_game_is_started_with_a_bounded_lifetime(self):
         """Nothing the launcher opens may sit there for ever waiting on a
-        person who has walked away — there would be no way to close the window
-        afterwards without the modal sheet."""
+        person who has walked away — there would be no way to end it."""
         launcher, runner = build()
-        launcher.run(game_command(hold_seconds=9))
+        play(launcher, game_command(hold_seconds=9))
         self.assertIn("--hold 9", runner.source_of("open_window_running"))
 
     def test_the_game_is_the_only_command_the_window_is_given(self):
         launcher, runner = build()
-        launcher.run(game_command())
-        created = [call for call in runner.calls
-                   if call.name == "open_window_running"]
-        self.assertEqual(1, len(created))
+        play(launcher, game_command())
+        self.assertEqual(1, len(runner.calls_named("open_window_running")))
 
 
 class AWholeCleanSession(unittest.TestCase):
 
     def test_it_asks_creates_configures_places_waits_and_closes_in_that_order(self):
         launcher, runner = build()
-        launcher.run(game_command())
+        play(launcher, game_command())
         self.assertEqual(
             [
                 "reference_window_geometry",
@@ -100,7 +130,8 @@ class AWholeCleanSession(unittest.TestCase):
                 "configure_window",
                 "window_size",
                 "set_window_position",
-                "window_is_busy",
+                "window_processes",   # still playing
+                "window_processes",   # finished
                 "close_window",
                 "window_is_visible",
             ],
@@ -109,7 +140,7 @@ class AWholeCleanSession(unittest.TestCase):
 
     def test_nothing_is_left_on_the_desktop(self):
         launcher, runner = build()
-        result = launcher.run(game_command())
+        result = play(launcher, game_command())
         self.assertTrue(result.closed)
         self.assertEqual(WINDOW_ID, result.window_id)
 
@@ -117,7 +148,7 @@ class AWholeCleanSession(unittest.TestCase):
         # Once the game's own window is open it is the frontmost one, and the
         # launcher would be placing the window relative to itself.
         launcher, runner = build()
-        launcher.run(game_command())
+        play(launcher, game_command())
         self.assertLess(
             runner.names.index("reference_window_geometry"),
             runner.names.index("open_window_running"),
@@ -129,13 +160,13 @@ class AWholeCleanSession(unittest.TestCase):
 
     def test_every_call_after_creation_names_the_captured_identity(self):
         launcher, runner = build()
-        launcher.run(game_command())
+        play(launcher, game_command())
         for source in runner.sources_after("open_window_running"):
             self.assertIn("window id %d" % (WINDOW_ID,), source)
 
     def test_no_call_after_creation_names_a_window_by_position_or_title(self):
         launcher, runner = build()
-        launcher.run(game_command())
+        play(launcher, game_command())
         for source in runner.sources_after("open_window_running"):
             for phrase in POSITIONAL_OR_TITLE:
                 self.assertNotIn(phrase, source)
@@ -144,69 +175,116 @@ class AWholeCleanSession(unittest.TestCase):
         # Terminal keeps a window object addressable after a close, so `exists`
         # would answer true for a window that has gone.
         launcher, runner = build()
-        launcher.run(game_command())
-        confirmation = runner.source_of("window_is_visible")
-        self.assertIn("visible of window id %d" % (WINDOW_ID,), confirmation)
+        play(launcher, game_command())
+        self.assertIn(
+            "visible of window id %d" % (WINDOW_ID,),
+            runner.source_of("window_is_visible"),
+        )
 
     def test_every_call_is_bounded(self):
         launcher, runner = build()
-        launcher.run(game_command())
+        play(launcher, game_command())
         for call in runner.calls:
             self.assertGreater(call.timeout, 0)
             self.assertIn("with timeout of", call.source)
 
 
-class TheGameEndsAndTheWindowGoes(unittest.TestCase):
+class TheGameIsNotInterruptedWhileItIsBeingPlayed(unittest.TestCase):
+    """The defect this join was written to find.
 
-    def test_the_launcher_waits_while_the_game_is_still_being_played(self):
+    Terminal's ``busy`` flag stops tracking the process running in a tab once
+    that tab has been given a fixed number of rows and columns — and WIN-2
+    requires exactly that, so it is true of every window this launcher creates.
+    Measured: the game alive from +0.9 s to +8.4 s with ``busy`` false from
+    +0.9 s onwards. A launcher that believes ``busy`` closes the window on the
+    player mid-game.
+
+    The process list keeps telling the truth, so that is what the join asks.
+    """
+
+    def test_a_window_still_running_the_game_is_not_closed(self):
         launcher, runner = build(
-            {"window_is_busy": ["true", "true", "false"]}, session_timeout=60.0
+            {"window_processes": [PLAYING, PLAYING, FINISHED]},
+            session_timeout=60.0,
         )
-        result = launcher.run(game_command())
+        result = play(launcher, game_command())
         self.assertTrue(result.closed)
-        self.assertEqual(3, len(runner.calls_named("window_is_busy")))
+        self.assertEqual(3, len(runner.calls_named("window_processes")))
 
-    def test_the_window_is_not_closed_until_the_game_has_gone_quiet(self):
+    def test_the_close_comes_after_the_last_sign_of_life_and_not_before(self):
         launcher, runner = build(
-            {"window_is_busy": ["true", "true", "false"]}, session_timeout=60.0
+            {"window_processes": [PLAYING, PLAYING, FINISHED]},
+            session_timeout=60.0,
         )
-        launcher.run(game_command())
-        last_busy = (
-            len(runner.names) - 1 - runner.names[::-1].index("window_is_busy")
+        play(launcher, game_command())
+        last_answer = (
+            len(runner.names) - 1 - runner.names[::-1].index("window_processes")
         )
-        self.assertLess(last_busy, runner.names.index("close_window"))
+        self.assertLess(last_answer, runner.names.index("close_window"))
+
+    def test_a_window_that_has_not_started_yet_is_not_taken_for_a_finished_one(self):
+        """A window exists before its command does.
+
+        The terminal creates the window, a login shell starts up inside it, and
+        only then does the game begin. A launcher that reads "nothing running"
+        during that gap closes the window before the game ever draws anything.
+        """
+        launcher, runner = build(
+            {"window_processes": [STARTING, STARTING, PLAYING, FINISHED]},
+            session_timeout=60.0,
+        )
+        result = play(launcher, game_command())
+        self.assertTrue(result.closed)
+        # All four answers were needed: neither start-up reading was taken for
+        # the game having ended.
+        self.assertEqual(4, len(runner.calls_named("window_processes")))
+        self.assertEqual(
+            runner.names.index("close_window"),
+            runner.names.index("window_processes") + 4,
+        )
+
+    def test_an_empty_process_list_is_what_means_it_is_over(self):
+        launcher, runner = build({"window_processes": FINISHED})
+        result = play(launcher, game_command())
+        self.assertTrue(result.closed)
+        self.assertEqual(1, len(runner.calls_named("window_processes")))
 
 
 class TheGameThatWillNotStop(unittest.TestCase):
     """Caution C2 beats caution C3 — plan §11.3."""
 
-    def test_a_window_still_running_the_game_is_left_alone(self):
-        launcher, runner = build({"window_is_busy": "true"}, session_timeout=1.0)
-        result = launcher.run(game_command())
+    def test_a_window_still_running_something_is_left_alone(self):
+        launcher, runner = build(
+            {"window_processes": PLAYING}, session_timeout=1.0
+        )
+        result = play(launcher, game_command())
         self.assertFalse(result.closed)
         self.assertEqual([], runner.calls_named("close_window"))
 
     def test_the_window_it_could_not_take_back_is_named_so_a_human_can(self):
-        launcher, runner = build({"window_is_busy": "true"}, session_timeout=1.0)
-        result = launcher.run(game_command())
+        launcher, runner = build(
+            {"window_processes": PLAYING}, session_timeout=1.0
+        )
+        result = play(launcher, game_command())
         self.assertEqual(WINDOW_ID, result.window_id)
         self.assertIn(str(WINDOW_ID), result.reason)
 
     def test_giving_up_is_bounded_by_the_timeout_it_was_given(self):
-        """One poll every 0.25s for 1.0s: at 0, 0.25, 0.5, 0.75 and 1.0.
+        """One ask every 0.25s for 1.0s: at 0, 0.25, 0.5, 0.75 and 1.0.
 
         Pinned to the exact budget rather than "more than one", so a change that
-        made the launcher poll for ever fails here rather than passing. A quarter
-        of a second because it is exact in binary — with 0.1 the fake clock
-        accumulates to 0.9999999999999999 and buys itself a twelfth poll, which
-        would put floating-point drift into the expected number and teach a
-        later reader nothing.
+        made the launcher poll for ever fails here rather than passing. A
+        quarter of a second because it is exact in binary — with 0.1 the fake
+        clock accumulates to 0.9999999999999999 and buys itself a twelfth poll,
+        putting floating-point drift into the expected number.
         """
         launcher, runner = build(
-            {"window_is_busy": "true"}, session_timeout=1.0, poll_interval=0.25
+            {"window_processes": PLAYING},
+            session_timeout=1.0,
+            poll_interval=0.25,
         )
-        launcher.run(game_command())
-        self.assertEqual(5, len(runner.calls_named("window_is_busy")))
+        play(launcher, game_command())
+        self.assertEqual(5, len(runner.calls_named("window_processes")))
 
 
 class WhenSetupFailsWithTheGameAlreadyStarted(unittest.TestCase):
@@ -216,7 +294,7 @@ class WhenSetupFailsWithTheGameAlreadyStarted(unittest.TestCase):
             {"configure_window": AutomationError("the desktop said no")}
         )
         with self.assertRaises(LaunchFailed) as caught:
-            launcher.run(game_command())
+            play(launcher, game_command())
         self.assertEqual(WINDOW_ID, caught.exception.window_id)
         self.assertIn(
             "window id %d" % (WINDOW_ID,), runner.source_of("close_window")
@@ -231,7 +309,7 @@ class WhenSetupFailsWithTheGameAlreadyStarted(unittest.TestCase):
             failure_timeout=0.5,
         )
         with self.assertRaises(LaunchFailed) as caught:
-            launcher.run(game_command())
+            play(launcher, game_command())
         self.assertFalse(caught.exception.reap.closed)
         self.assertEqual([], runner.calls_named("close_window"))
         self.assertIn(str(WINDOW_ID), str(caught.exception))
@@ -254,7 +332,9 @@ class TheJoinReportsWhatItDid(unittest.TestCase):
         self.assertIn("--hold 2", runner.source_of("open_window_running"))
 
     def test_a_window_left_open_is_reported_as_a_failure(self):
-        launcher, _ = build({"window_is_busy": "true"}, session_timeout=1.0)
+        launcher, _ = build(
+            {"window_processes": PLAYING}, session_timeout=1.0
+        )
         out = io.StringIO()
         self.assertEqual(1, main([], launcher=launcher, out=out))
         self.assertIn(str(WINDOW_ID), out.getvalue())
@@ -266,6 +346,36 @@ class TheJoinReportsWhatItDid(unittest.TestCase):
         err = io.StringIO()
         self.assertEqual(1, main([], launcher=launcher, err=err))
         self.assertIn(str(WINDOW_ID), err.getvalue())
+
+
+class AskingWhatIsRunningInTheWindow(unittest.TestCase):
+    """The signal itself: the script it sends and the answers it understands."""
+
+    def test_it_asks_the_captured_window_and_no_other(self):
+        launcher, runner = build()
+        play(launcher, game_command())
+        source = runner.calls_named("window_processes")[0].source
+        self.assertIn(
+            "processes of selected tab of window id %d" % (WINDOW_ID,), source
+        )
+
+    def test_an_empty_answer_means_nothing_is_running(self):
+        _, runner = build({"window_processes": ""})
+        self.assertEqual([], Desktop(runner).processes(WINDOW_ID))
+
+    def test_the_names_come_back_separated(self):
+        _, runner = build({"window_processes": "login|Python"})
+        self.assertEqual(["login", "Python"], Desktop(runner).processes(WINDOW_ID))
+
+    def test_a_window_that_has_gone_away_is_running_nothing(self):
+        # The script answers with an empty list rather than failing, because
+        # nothing is running in a window that no longer exists.
+        launcher, runner = build({"window_processes": ""})
+        self.assertFalse(launcher.has_live_processes(WINDOW_ID))
+
+    def test_a_window_running_the_game_is_running_something(self):
+        launcher, runner = build({"window_processes": PLAYING})
+        self.assertTrue(launcher.has_live_processes(WINDOW_ID))
 
 
 if __name__ == "__main__":
