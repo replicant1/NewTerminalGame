@@ -51,4 +51,37 @@ DEV-A, lane A, M2, local mode.
 05:41:19Z PLAN    WI-6 terminalgame/presentation/status_line.py: status_text,
 05:41:19Z         status_row, STATUS_COLOUR. Tests in tests/test_status_line.py --
 05:41:19Z         DEV-B's is test_wall_glyphs.py, so no collision.
+05:43:31Z MEASURE WI-6 ran DEV-B's own tests/test_layering.py from
+05:43:31Z         wi-5b-frame-composition against this tree, rather than assuming
+05:43:31Z         my module would satisfy the PresentationLayerTest their WI-5a
+05:43:31Z         added. All four Presentation guards pass on status_line.py:
+05:43:31Z         imports only the Domain and the screen port; never reaches for
+05:43:31Z         the terminal adapter; reads no key, writes no terminal, never
+05:43:31Z         sleeps; and the Domain does not import Presentation. The single
+05:43:31Z         failure is their test asserting wall_glyphs.py exists, which is
+05:43:31Z         on their branch and not mine -- an artefact of running their
+05:43:31Z         file against my tree alone, not a defect in either.
+05:43:31Z NOTE    WI-6 their test_layering.py is a STRICT SUPERSET of mine: it
+05:43:31Z         already carries my WI-7 uses_global_random work and my
+05:43:31Z         game_state.py line, because they merged wi-7-game-state. I have
+05:43:31Z         not touched that file in WI-6, so no conflict is expected.
+05:43:31Z NOTE    WI-6 their guard permits terminalgame.screen.port but their own
+05:43:31Z         comment records that as needing a ruling -- plan §3 says
+05:43:31Z         Presentation depends on the Domain "and on nothing else" while
+05:43:31Z         asking it to produce colours it cannot name without the port.
+05:43:31Z         status_line.py imports Colour and REQUIRED_WIDTH from there, so
+05:43:31Z         if that ruling goes the other way this module changes alongside
+05:43:31Z         wall_glyphs.py. Followed the convention already in the tree
+05:43:31Z         rather than opening a second front.
+05:43:31Z NOTE    WI-6 status_line.py deliberately NOT added to their
+05:43:31Z         PresentationLayerTest named-module list: files_under sweeps it
+05:43:31Z         automatically, naming one module already serves that list's
+05:43:31Z         purpose, and a second name is an adjacent-line edit to the one
+05:43:31Z         file the other lane is editing. Recorded in the commit message
+05:43:31Z         and the PR summary per EDIT 11.
+05:43:31Z TEST    400 passed, 0 failed, 0 skipped  (python3 -m unittest discover)
+05:43:31Z COMMIT  26232d6 WI-6: the status line
+05:43:31Z NOTE    WI-6 merged main on the rhythm: still c4171fb, up to date.
+05:43:31Z NOTE    WI-6 windows opened: 0. Pure presentation.
+05:43:31Z DONE    WI-6 wi-6-status-line (docs commit follows 26232d6)
 ```
