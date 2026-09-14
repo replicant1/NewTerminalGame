@@ -3,7 +3,7 @@
 **Branch:** `wi-5a-wall-glyphs`, cut from `main` at `c4171fb`
 **Lane:** DEV-B, iteration M1
 **Mode:** local — this file stands in for the pull request. Nothing was pushed; no `gh` was used; the branch is not merged.
-**Suite:** `python3 -m unittest discover` from the repository root — **296 passed, 0 failed, 0 skipped** (7.0 s).
+**Suite:** `python3 -m unittest discover` from the repository root — **299 passed, 0 failed, 0 skipped** (7.0 s).
 **Windows opened:** none. A glyph table drives nothing on the desktop.
 
 ---
@@ -21,8 +21,8 @@ It creates the **Presentation layer**, which did not exist before this branch.
 | File | What it is |
 | --- | --- |
 | `terminalgame/presentation/__init__.py` | The layer, and where screen geometry is allowed to live. |
-| `terminalgame/presentation/wall_glyphs.py` | `BY_NEIGHBOURS` (the table), `glyph_for_neighbours`, `wall_neighbours`, `wall_glyph`, `wall_glyphs`, `WALL_COLOUR`, `NotAWallSquare`. |
-| `tests/test_wall_glyphs.py` | 35 tests in six classes. |
+| `terminalgame/presentation/wall_glyphs.py` | `BY_NEIGHBOURS` (the table), `glyph_for_neighbours`, `joins_up_with`, `wall_neighbours`, `wall_glyph`, `wall_glyphs`, `WALL_COLOUR`, `NotAWallSquare`. |
+| `tests/test_wall_glyphs.py` | 38 tests in seven classes. |
 | `tests/test_layering.py` | **Extended**, not created — `PresentationLayerTest`, 5 tests. |
 | `docs/findings/WI-5a-glyph-table-from-the-picture.md` | The derivation, and the two things it incidentally proves. |
 | `docs/progress/wi-5a-wall-glyphs.md` | The progress log. |
@@ -66,8 +66,16 @@ convention:
 | off the grid **is** wall | 16 | **5** |
 
 Under the wrong convention the picture contradicts itself five times, one pattern being drawn seven
-different ways. **The specification settles it; nobody had to have an opinion.** `wall_neighbours`
-asks `contains()` before `is_wall()` and says why in place.
+different ways. **The specification settles it; nobody had to have an opinion.**
+
+The distinction has its own name rather than being a branch inside `is_wall`, because it is **two
+questions that happen to be spelt the same way** and not one question with two answers.
+`maze.is_wall(x, y)` answers *can an actor move there* — yes beyond the edge, the world outside the
+maze is solid. `joins_up_with(maze, x, y)` answers *is there a wall square to join up with* — no
+beyond the edge. **Both are right, and the obvious tidy-up that makes them agree would break one.**
+`TwoQuestionsOneSpellingTest` holds it: the two agree at every square inside the grid, which is why
+the difference is easy to miss; they disagree beyond it on purpose; and the border ring is the
+consequence a unification would destroy.
 
 ## How a lookup table was tested without testing it against itself
 
@@ -168,9 +176,10 @@ The alternative — Presentation defining its own colour names and Application t
 coherent but duplicates the five names the specification gives, and puts a translation table in
 Application where nothing else lives.
 
-**2. Additive: `wall_glyphs(maze)` and `wall_neighbours(maze, x, y)` are public.** The plan asks only
-for the mapping. `wall_glyphs` is what WI-5b will actually call; `wall_neighbours` is exposed because
-the off-the-grid rule lives in it and it deserves to be testable on its own. Neither adds behaviour
+**2. Additive: `wall_glyphs(maze)`, `wall_neighbours(maze, x, y)` and `joins_up_with(maze, x, y)` are
+public.** The plan asks only for the mapping. `wall_glyphs` is what WI-5b will actually call;
+`wall_neighbours` and `joins_up_with` are exposed because the off-the-grid rule lives in them and
+deserves both a name and a test of its own. Neither adds behaviour
 beyond the table.
 
 **3. Additive: `NotAWallSquare`.** Plan §11.8 — refuse where the argument makes the requirement
@@ -211,5 +220,7 @@ Two, neither of which an agent can settle, and both already on WI-14b's list.
 | | |
 | --- | --- |
 | `8fe03d2` | WI-5a: the wall-glyph table, measured from the specification's picture |
+| `7a2d678` | WI-5a: the finding, the PR summary, and the log |
+| `036e213` | WI-5a: name the second question rather than let it share the first's words |
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
