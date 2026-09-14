@@ -17,3 +17,7 @@
 04:53:59Z  DRAFT   WI-2 tests/test_screen_port.py, tests/test_curses_adapter.py
 04:53:59Z  TEST    57 passed, 0 failed, 0 skipped  (python3 -m unittest discover)
 04:53:59Z  VERIFY  runtime -> python3 --version reports 3.9.6, matching the plan's §2.
+04:54:49Z  COMMIT  94815df WI-2: the screen port and its curses adapter
+04:54:49Z  DRAFT   WI-2 terminalgame/game_main.py — the walking-skeleton game process: one frame, a bounded hold, q quits. Runs as `python3 -m terminalgame.game_main`.
+04:54:49Z  DECIDE  the skeleton's lifetime -> draw one frame, then poll for q until a bounded --hold (default 3 s) expires, because a process that quits instantly gives WI-3's launcher nothing to join to and one that waits for a key could block forever in a window nobody can close.
+04:54:49Z  TEST    73 passed, 0 failed, 0 skipped  (python3 -m unittest discover)
