@@ -34,5 +34,5 @@ Be sure to list any assumptions you have made and any cautions you might have fo
 
 ## Other Instructions
 Instructions in the following shared files also apply:
-- progress-tracking.md
-- ask-a-human.md
+- .claude/shared/progress-tracking.md
+- .claude/shared/ask-a-human.md
