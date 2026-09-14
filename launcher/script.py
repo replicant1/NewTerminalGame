@@ -269,39 +269,42 @@ def set_window_position(window_id, point, timeout=SET_TIMEOUT):
     )
 
 
-def window_is_busy(window_id, timeout=QUERY_TIMEOUT):
-    """Is something still running in the captured window?
-
-    Caution C2 turns on this answer. Closing a window whose process is alive
-    raises a modal sheet that only a human can dismiss, and while it is up every
-    later automation call hangs behind it. Returns ``true`` or ``false``; a
-    window that has gone away answers ``false``, because nothing is running in a
-    window that no longer exists.
-    """
-    ref = window_ref(window_id)
-    source = _bounded(
-        "try\n"
-        '\ttell application "Terminal"\n'
-        "\t\tset tabBusy to busy of selected tab of %s\n"
-        "\tend tell\n"
-        "on error\n"
-        "\tset tabBusy to false\n"
-        "end try" % (ref,),
-        timeout,
-    )
-    return ScriptCall("window_is_busy", source + "\ntabBusy as text", timeout)
+# There was a `window_is_busy` here, reading `busy of selected tab`. WI-13
+# deleted it rather than deprecating it. It answered the same question as
+# `window_processes` below and answered it wrongly for every window this
+# launcher creates, and while both existed the wrong one was the default —
+# which is how `WindowLauncher.run` came to close the window with the game
+# still in it and report success. Caution C2 turns on this answer, so there is
+# now exactly one of it.
 
 
 def window_processes(window_id, timeout=QUERY_TIMEOUT):
     """What is running in the captured window, by name, ``|``-separated.
 
-    This exists because ``busy`` cannot be trusted once the window has been
-    given its 40 x 30 grid. Measured: setting ``number of columns`` and
-    ``number of rows`` on a tab makes ``busy`` report false for the entire life
-    of the process running in it — the game was demonstrably alive from +0.9 s
-    to +8.4 s while ``busy`` said false from +0.9 s onwards. Font, colours and
-    title are all harmless; it is the grid alone, and WIN-2 requires the grid.
-    See ``docs/findings/WI-3-busy-is-false-after-a-grid-resize.md``.
+    This exists because ``busy`` cannot be trusted for a window running this
+    game. Measured in WI-3: the game was alive from +0.9 s to +8.4 s while
+    ``busy`` said false from +0.9 s onwards. Re-measured in WI-13 against the
+    real command, twice: ``busy`` went false at +0.75 s while ``login|Python``
+    ran on to +4.2 s, nine lying samples per run.
+
+    **It takes both the grid and the game**, which is worth knowing before
+    anyone tries to keep ``busy`` by not setting the grid. Four cells, one
+    window each (WI-13):
+
+    ==================  ==========  ==========================
+    command             grid?       samples where ``busy`` lied
+    ==================  ==========  ==========================
+    ``sleep``           no          0 of 9
+    ``sleep``           yes         0 of 8
+    the real game       no          0 of 15
+    the real game       yes         **8 of 9**
+    ==================  ==========  ==========================
+
+    So the grid is necessary and not sufficient, and a simple command will not
+    show the defect however the window is configured. WIN-2 requires the grid,
+    so the combination is not avoidable. See
+    ``docs/findings/WI-3-busy-is-false-after-a-grid-resize.md`` and
+    ``docs/findings/WI-13-what-actually-breaks-busy.md``.
 
     The process list stays accurate throughout, and because the launcher
     ``exec``s the command — so the login shell is replaced rather than left

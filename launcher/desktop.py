@@ -59,15 +59,16 @@ class Desktop(object):
         x, y = self._ints(answer, 2, "window position")
         return Point(x, y)
 
-    def is_busy(self, window_id):
-        return self._bool(self.runner.run(script.window_is_busy(window_id)))
-
     def processes(self, window_id):
         """The names of the processes running in the captured window.
 
-        Empty when nothing is. More trustworthy than :meth:`is_busy` once the
-        window has been given its grid — see
-        :func:`launcher.script.window_processes`.
+        Empty when nothing is, and **the only way this launcher asks whether
+        anything is still running**. There was an ``is_busy`` here that read
+        the tab's ``busy`` flag; WI-13 removed it, because that flag reports
+        false for the whole life of a process in a window that has been given
+        a grid — which is every window this launcher creates — and a wrong
+        second answer to one question is worse than no second answer at all.
+        See :func:`launcher.script.window_processes`.
         """
         answer = self.runner.run(script.window_processes(window_id))
         return [name for name in answer.strip().split("|") if name.strip()]

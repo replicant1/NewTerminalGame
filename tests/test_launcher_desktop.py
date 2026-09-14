@@ -36,13 +36,21 @@ class ReadingTheDesktopsAnswers(unittest.TestCase):
         desktop = Desktop(RecordingRunner({"set_window_position": "0,25"}))
         self.assertEqual(Point(0, 25), desktop.move(7653, Point(-40, -10)))
 
-    def test_busy_and_visible_come_back_as_booleans(self):
-        desktop = Desktop(
-            RecordingRunner({"window_is_busy": ["true", "false"], "window_is_visible": "false"})
-        )
-        self.assertIs(True, desktop.is_busy(7653))
-        self.assertIs(False, desktop.is_busy(7653))
+    def test_visible_comes_back_as_a_boolean(self):
+        desktop = Desktop(RecordingRunner({"window_is_visible": "false"}))
         self.assertIs(False, desktop.is_visible(7653))
+
+    def test_the_process_list_comes_back_as_names_and_empty_means_idle(self):
+        desktop = Desktop(RecordingRunner(
+            {"window_processes": ["login|Python", "", "   "]}))
+        self.assertEqual(["login", "Python"], desktop.processes(7653))
+        self.assertEqual([], desktop.processes(7653))
+        self.assertEqual([], desktop.processes(7653))
+
+    def test_there_is_no_second_way_to_ask_whether_it_is_safe_to_close(self):
+        # WI-13 removed `is_busy`. Stated as a test so that putting it back is
+        # a deliberate act rather than a convenience somebody adds in passing.
+        self.assertFalse(hasattr(Desktop, "is_busy"))
 
     def test_a_window_the_desktop_can_no_longer_address_is_not_visible(self):
         desktop = Desktop(RecordingRunner({"window_is_visible": "gone"}))
@@ -64,9 +72,9 @@ class WhenTheAnswerIsNonsense(unittest.TestCase):
         )
         self.assertRaises(AutomationError, desktop.open_window_running, "/bin/echo hi")
 
-    def test_a_busy_answer_that_is_neither_true_nor_false_is_refused(self):
-        desktop = Desktop(RecordingRunner({"window_is_busy": "maybe"}))
-        self.assertRaises(AutomationError, desktop.is_busy, 7653)
+    def test_a_visible_answer_that_is_neither_true_nor_false_is_refused(self):
+        desktop = Desktop(RecordingRunner({"window_is_visible": "maybe"}))
+        self.assertRaises(AutomationError, desktop.is_visible, 7653)
 
 
 class WhatTheAdapterSends(unittest.TestCase):
