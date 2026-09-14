@@ -13,8 +13,9 @@ from launcher.runner import AutomationError
 class RecordingRunner(object):
     """A runner that records every script and answers from a script of replies.
 
-    ``replies`` maps a call name to either a string (the answer), or an
-    exception instance (raised instead), or a list of those consumed in turn.
+    ``replies`` maps a call name to either a string (the answer), an exception
+    instance (raised instead), a callable taking the call and returning the
+    answer, or a list of those consumed in turn.
     """
 
     def __init__(self, replies=None):
@@ -32,6 +33,8 @@ class RecordingRunner(object):
             reply = reply.pop(0)
         if isinstance(reply, BaseException):
             raise reply
+        if callable(reply):
+            reply = reply(call)
         if reply is None:
             raise AssertionError(
                 "the test did not say what %s should answer" % (call.name,)

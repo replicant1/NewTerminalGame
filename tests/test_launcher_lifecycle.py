@@ -6,6 +6,7 @@ AppleScript that would have reached the desktop, in the order it would have
 reached it — which is the thing the cautions are actually about.
 """
 
+import re
 import unittest
 
 from launcher.desktop import Desktop
@@ -17,6 +18,17 @@ from tests.launcher_fakes import FailingQueryRunner, FakeClock, RecordingRunner
 WINDOW_ID = 7653
 COMMAND = "/repo/Terminal Game"
 
+
+def honours_the_move(call):
+    """A desktop that puts the window exactly where it was asked to.
+
+    The real one does not always — see
+    ``test_where_the_window_went_is_read_back_rather_than_assumed`` — so the
+    answer is read out of the script rather than assumed by the fake.
+    """
+    x, y = re.search(r"to \{(-?\d+), (-?\d+)\}", call.source).groups()
+    return "%s,%s" % (x, y)
+
 # A reference window at (400, 300), 600 by 500, on a 1440 by 900 screen, and a
 # game window 357 by 558 — the real size measured for 40x30 at Menlo 14.
 HAPPY_PATH = {
@@ -25,7 +37,7 @@ HAPPY_PATH = {
     "open_window_running": str(WINDOW_ID),
     "configure_window": "ok",
     "window_size": "357,558",
-    "set_window_position": "432,332",
+    "set_window_position": honours_the_move,
     "window_is_busy": "false",
     "close_window": "closed",
     "window_is_visible": "false",
@@ -141,8 +153,18 @@ class WhereTheWindowLands(unittest.TestCase):
     def test_the_window_is_moved_to_the_remembered_geometry_plus_the_offset(self):
         launcher, runner, _ = build()
         window = launcher.open(COMMAND)
-        self.assertEqual(Point(432, 332), window.position)
+        self.assertEqual(Point(432, 332), window.asked_for)
         self.assertIn("to {432, 332}", runner.source_of("set_window_position"))
+
+    def test_where_the_window_went_is_read_back_rather_than_assumed(self):
+        # Measured on the real desktop: a window asked for y = -1353, on a
+        # display above the main one, landed at y = 30, because macOS
+        # constrains a window to the screen it is on. A launcher that recorded
+        # its own arithmetic would believe something untrue about the desktop.
+        launcher, _, _ = build({"set_window_position": "-876,30"})
+        window = launcher.open(COMMAND)
+        self.assertEqual(Point(432, 332), window.asked_for)
+        self.assertEqual(Point(-876, 30), window.position)
 
     def test_the_offset_is_applied_to_the_reference_and_not_to_the_new_window(self):
         # The new window was created wherever the terminal felt like putting it.

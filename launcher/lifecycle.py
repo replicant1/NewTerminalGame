@@ -45,9 +45,21 @@ POLL_INTERVAL = 0.1
 class GameWindow(object):
     """A window this launcher created, and what it knows about it."""
 
-    def __init__(self, window_id, position=None, size=None, reference=None, screen=None):
+    def __init__(
+        self,
+        window_id,
+        position=None,
+        size=None,
+        reference=None,
+        screen=None,
+        asked_for=None,
+    ):
         self.window_id = window_id
+        #: Where the window actually ended up, as the desktop reports it.
         self.position = position
+        #: Where the launcher's arithmetic asked for it to go. The two differ
+        #: when macOS constrains the window to the screen it is on.
+        self.asked_for = asked_for
         self.size = size
         #: The frame of the window the player was last looking at, or ``None``
         #: if the desktop would not say and a default position was used.
@@ -148,16 +160,22 @@ class WindowLauncher(object):
             self.desktop.configure(window_id)
             size = self.desktop.window_size(window_id)
             if reference is None:
-                position = self.default_position
+                asked_for = self.default_position
             else:
-                position = target_position(reference, size, screen, self.offset)
-            self.desktop.move(window_id, position)
+                asked_for = target_position(reference, size, screen, self.offset)
+            # Where it *went*, not where it was asked to go. macOS constrains a
+            # window to the screen it is on, and it was measured doing exactly
+            # that on this machine: a window asked for y = -1353, on a display
+            # above the main one, landed at y = 30 instead. Recording the
+            # arithmetic rather than the outcome would mean the launcher
+            # believed something about the player's desktop that is not true.
+            position = self.desktop.move(window_id, asked_for)
         except BaseException as cause:
             raise LaunchFailed(
                 cause, window_id, self.reap(window_id, self.failure_timeout)
             ) from cause
 
-        return GameWindow(window_id, position, size, reference, screen)
+        return GameWindow(window_id, position, size, reference, screen, asked_for)
 
     # -- getting rid of it again ----------------------------------------
 
