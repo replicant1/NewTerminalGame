@@ -163,6 +163,25 @@ not log it. There is no mutation sweep on this project and no work item that run
 test, **say so** — name it and why, in your progress log and your report. That is the right answer and
 it costs a line of text.
 
+**Ask what a green result would look like if the thing you are testing were absent.** This is the most
+reusable practice this project has produced, and all three times it came up, the check and the
+flattering reading of it had quietly come apart:
+
+- A grid of **solid wall** satisfies MAZE-2, MAZE-3, MAZE-5 and MAZE-6 vacuously — so the maze sweep
+  asserts a corridor count as well, or it is a true statement about nothing.
+- A **word-list scan** for the screen's vocabulary passes against a bare `40` typed by hand — so it is
+  not the guard it appears to be, and the nine-size tests are.
+- **"I built it"** is true of a test whose point was missed.
+
+The whole of the work is noticing that they have come apart. Nothing needs running.
+
+**This is not the prohibited practice wearing a new coat, and the difference is worth being precise
+about.** You never touch the code. You never make anything fail. You ask what your test would say
+about a system that had *never* had the property you think you are testing — and if the honest answer
+is "it would still pass", the test is measuring something else and the remedy is to rewrite the
+assertion. Breaking working code to watch a test go red remains prohibited; asking what a test would
+say about a system you never build is just reading.
+
 One consequence of that prohibition: `.claude/agents/developer.md` asks for a report section 5,
 "Mutation checks". **Write "not applicable — mutation checking is prohibited on this project" there.**
 The instruction is a leftover and it contradicts the prohibition in the same file.
