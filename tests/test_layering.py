@@ -40,6 +40,29 @@ THE_DOMAIN = "domain"
 #: it, and cannot reach `sys.argv` or the interpreter either.
 FORBIDDEN_IN_DOMAIN = ("curses", "subprocess", "os", "sys", "time")
 
+#: The Presentation layer, added by WI-5a. It turns a domain state into
+#: characters and colours: "It never reads a key, never writes to a terminal,
+#: never sleeps" (plan §3).
+THE_PRESENTATION = "presentation"
+
+#: Presentation is not pure in the Domain's sense — it is allowed to know what
+#: a screen is — but it does no I/O and no waiting, so the same list applies.
+FORBIDDEN_IN_PRESENTATION = ("curses", "subprocess", "os", "sys", "time")
+
+#: What Presentation may import from the rest of the game. The Domain, whose
+#: state it renders, and the screen **port**, whose `Colour` names are the
+#: vocabulary it renders into — but never the terminal adapter behind that
+#: port, and never the Application above it.
+#:
+#: The port entry is a judgement and it is recorded here rather than left
+#: implicit: plan §3 says "Presentation depends on Domain, and on nothing
+#: else" and in the same breath says Presentation produces "a grid of
+#: characters and colours", which it cannot name without the port. The port's
+#: own docstring has said since WI-2 that "Presentation asks for
+#: `Colour.WALL`". See the WI-5a PR summary — this needs a ruling, and if it
+#: goes the other way it is this tuple that changes.
+PRESENTATION_MAY_IMPORT = ("terminalgame.domain", "terminalgame.screen.port")
+
 
 def python_files():
     for directory, _, filenames in os.walk(PACKAGE_ROOT):
@@ -49,10 +72,20 @@ def python_files():
                 yield os.path.relpath(path, PACKAGE_ROOT), path
 
 
+def files_under(layer):
+    """The Python files of one layer, by their name within the package."""
+    return [(name, path) for name, path in python_files()
+            if name.split(os.sep)[0] == layer]
+
+
 def domain_files():
     """The Python files of the Domain, by their name within the package."""
-    return [(name, path) for name, path in python_files()
-            if name.split(os.sep)[0] == THE_DOMAIN]
+    return files_under(THE_DOMAIN)
+
+
+def presentation_files():
+    """The Python files of the Presentation layer."""
+    return files_under(THE_PRESENTATION)
 
 
 def source_of(path):
@@ -309,6 +342,71 @@ class DomainPurityTest(unittest.TestCase):
         self.assertEqual([], offenders,
                          "screen vocabulary has leaked into the Domain "
                          "(architecture caution C5)")
+
+
+class PresentationLayerTest(unittest.TestCase):
+    """Plan §3 — Presentation renders the Domain and does no I/O.
+
+    Added by WI-5a, which created the layer. The Domain half above says
+    nothing may point *down* into the Domain's dependencies; this says
+    Presentation may not point *up* or sideways.
+    """
+
+    def test_the_presentation_layer_is_where_it_is_said_to_be(self):
+        names = [name for name, _ in presentation_files()]
+        self.assertNotEqual([], names,
+                            "no Presentation layer found under {0}{1}{2}; the "
+                            "tests below would be checking nothing"
+                            .format(PACKAGE_ROOT, os.sep, THE_PRESENTATION))
+        self.assertIn(os.path.join(THE_PRESENTATION, "wall_glyphs.py"), names)
+
+    def test_presentation_reads_no_key_writes_no_terminal_and_never_sleeps(self):
+        offenders = []
+        for name, path in presentation_files():
+            source = source_of(path)
+            for forbidden in FORBIDDEN_IN_PRESENTATION:
+                if imports(source, forbidden):
+                    offenders.append((name, forbidden))
+        self.assertEqual([], offenders,
+                         "Presentation turns a state into characters and "
+                         "colours and does nothing else: no {0} "
+                         "(implementation plan §3)"
+                         .format(", ".join(FORBIDDEN_IN_PRESENTATION)))
+
+    def test_presentation_imports_only_the_domain_and_the_screen_port(self):
+        offenders = []
+        for name, path in presentation_files():
+            for imported in imported_game_modules(source_of(path)):
+                if not any(imported == allowed or imported.startswith(allowed + ".")
+                           for allowed in PRESENTATION_MAY_IMPORT):
+                    offenders.append((name, imported))
+        self.assertEqual([], offenders,
+                         "Presentation may import {0} and nothing else in the "
+                         "game — in particular never the terminal adapter, "
+                         "which is what keeps curses below the port"
+                         .format(" or ".join(PRESENTATION_MAY_IMPORT)))
+
+    def test_presentation_never_reaches_for_the_terminal_adapter(self):
+        # Implied by the test above, and stated separately because it is the
+        # one that would actually break the layer rule rather than merely
+        # blur it: the adapter is the only module that knows curses exists.
+        offenders = [name for name, path in presentation_files()
+                     if "curses_adapter" in source_of(path)]
+        self.assertEqual([], offenders)
+
+    def test_the_domain_does_not_import_the_presentation_layer(self):
+        # The other direction, and the one that would be a real inversion.
+        # Covered by `test_the_domain_depends_on_nothing_above_it`; named here
+        # too because the Presentation layer now exists to be imported and a
+        # reader of this class should see the pair.
+        offenders = []
+        for name, path in domain_files():
+            for imported in imported_game_modules(source_of(path)):
+                if imported.startswith("terminalgame." + THE_PRESENTATION):
+                    offenders.append((name, imported))
+        self.assertEqual([], offenders,
+                         "dependencies point inward only: Presentation → "
+                         "Domain, never the other way")
 
 
 if __name__ == "__main__":
