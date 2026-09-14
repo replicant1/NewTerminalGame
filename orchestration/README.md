@@ -11,8 +11,8 @@ Standard library only. No install, no build step, no dependencies.
 
 ## What it shows
 
-One scrollable pane per agent, in workflow order — architect, then technical
-lead, then one per developer — each rendering that agent's append-only progress
+One scrollable pane per agent, in workflow order — conductor, architect,
+technical lead, then one per developer — each rendering that agent's append-only progress
 log with the line types colour-coded. `ASK` and `BLOCKED` are highlighted,
 because those are the ones that stall a run.
 

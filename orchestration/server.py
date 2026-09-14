@@ -454,12 +454,17 @@ def in_hand():
     inflight.sort(key=lambda x: x["item"])
 
     waiting = sum(1 for a in asks() if not a["answered"] and not a["cleared"])
-    last_merge = ""
-    if conductor:
-        for line in reversed(conductor["lines"]):
-            if line["label"] == "MERGE":
-                last_merge = line["text"]
-                break
+
+    # Who merges depends on the mode: the technical lead in local mode, and each
+    # developer its own pull request with real PRs. The conductor records every
+    # landing as well, but it no longer performs any of them and is no longer the
+    # only agent that writes MERGE -- so take the most recent across every pane
+    # rather than reading the conductor's log alone, which would go stale the
+    # moment it missed one.
+    merges = [(line.get("ts") or 0, line["text"])
+              for pane in all_panes for line in pane["lines"]
+              if line["label"] == "MERGE"]
+    last_merge = max(merges)[1] if merges else ""
 
     return {"iteration": iteration, "inflight": inflight,
             "waiting": waiting, "lastMerge": last_merge}

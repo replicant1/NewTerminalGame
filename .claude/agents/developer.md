@@ -178,6 +178,7 @@ Write your log at `docs/progress/<branch-name>.md`. **Name it after your branch,
 - `TEST    <n> passed, <n> failed, <n> skipped` — after every suite run
 - `COMMIT  <sha> <subject>` — after each commit
 - `BLOCKED <what you need, and who you need it from>` — the moment you are stuck, not after you have worked around it
+- `NOTE    <what a later reader needs to know>` — a conflict you resolved and how, or anything else the next person to touch those files would want
 
 Your `START` line names the work item, and your `DONE` line reports `<work-item> <branch> <head sha>` rather than a document path. Prefix every line with the work item code so the file greps cleanly, and commit the log along with the work item.
 
