@@ -101,6 +101,14 @@ Say it once and plainly, in its own line near the top of the plan — "this proj
 
 **Never `git checkout main`, and never assume you can.** You will usually be running inside a git worktree that the harness chose, quite possibly one with a developer's branch already checked out, and you have no say in which. `main` is deliberately checked out in no tree at all, precisely so that merging does not depend on where you happen to be. Checking it out would recreate the problem this procedure exists to avoid: git refuses to touch a branch that is checked out somewhere, so the moment `main` is checked out anywhere, every other tree is locked out of it — including yours.
 
+**Before you accept any work items, check that `main` is free.** The two merge routes below both fail if `main` is checked out in any tree, and the cheapest time to discover that is before a queue has formed behind you:
+
+```
+git worktree list        # no line may show [main]
+```
+
+If a tree holds `main`, record `BLOCKED` naming that tree and tell the conductor before dispatching anything. The same failure found at the first merge has a queue of finished branches sitting behind it.
+
 So merge without a checkout. For each work item, in order:
 
 1. Confirm the branch is the one the developer reported, and that the work item's own suite was green when they left it.
