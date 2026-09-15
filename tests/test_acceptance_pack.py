@@ -63,20 +63,26 @@ HAPPY_PATH = {
 }
 
 
-def build(replies=None, runner=None):
-    """A recording runner and a clock that only moves when the code sleeps.
+def happy_path(**overrides):
+    """A fresh copy of `HAPPY_PATH`, list replies and all.
 
-    The list replies are copied per call. `RecordingRunner` shallow-copies its
-    replies dict and then *consumes* any list in it, so a module-level
-    `HAPPY_PATH` would be drained by the first test that used it and every
-    later one would see an empty queue. Found the hard way.
+    `RecordingRunner` shallow-copies its replies dict and then *consumes* any
+    list in it, so a runner built straight from the module-level `HAPPY_PATH`
+    drains it: the first test that used one would pass and every later test
+    would see an empty queue. Found the hard way. Any test building its own
+    runner goes through here.
     """
+    fresh = {name: list(reply) if isinstance(reply, list) else reply
+             for name, reply in HAPPY_PATH.items()}
+    for name, reply in overrides.items():
+        fresh[name] = list(reply) if isinstance(reply, list) else reply
+    return fresh
+
+
+def build(replies=None, runner=None):
+    """A recording runner and a clock that only moves when the code sleeps."""
     if runner is None:
-        merged = {name: list(reply) if isinstance(reply, list) else reply
-                  for name, reply in HAPPY_PATH.items()}
-        for name, reply in (replies or {}).items():
-            merged[name] = list(reply) if isinstance(reply, list) else reply
-        runner = RecordingRunner(merged)
+        runner = RecordingRunner(happy_path(**(replies or {})))
     clock = FakeClock()
     return runner, clock
 
@@ -227,6 +233,66 @@ class TheWindowIsReapedByConstruction(unittest.TestCase):
         with window:
             pass
         self.assertIn("type_into_tab", runner.names)
+
+    def test_a_failure_while_configuring_still_closes_the_window(self):
+        # The gap `__exit__` cannot cover. Python calls `__exit__` only for an
+        # `__enter__` that RETURNED, so a failure between creating the window
+        # and handing back `self` leaves one on the desktop for good unless
+        # `__enter__` reaps for itself. `WindowLauncher.open` has always done
+        # this; the pack did not.
+        runner = FailingQueryRunner(
+            ["configure_window"], happy_path(window_processes=FINISHED))
+        clock = FakeClock()
+        window = WindowUnderTest(runner, COMMAND, clock=clock.time,
+                                 sleeper=clock.sleep)
+        with self.assertRaises(AutomationError):
+            with window:
+                self.fail("the body must not run when __enter__ failed")
+        self.assertIn("close_window", runner.names)
+        self.assertIn("window id %d" % WINDOW_ID,
+                      runner.source_of("close_window"))
+
+    def test_and_the_configure_failure_is_the_one_that_comes_out(self):
+        # The reap runs on the failure path, so it must not bury the failure
+        # it was called to clean up after -- and not only when the reap fails
+        # in the way it expects to. `AutomationError` is the documented way a
+        # desktop call goes wrong; anything else escaping the reap would
+        # replace the real diagnosis with a worse one.
+        class CloseBreaksOddly(FailingQueryRunner):
+            def run(self, call):
+                if call.name == "close_window":
+                    raise RuntimeError("the runner itself fell over")
+                return FailingQueryRunner.run(self, call)
+
+        runner = CloseBreaksOddly(
+            ["configure_window"], happy_path(window_processes=FINISHED))
+        clock = FakeClock()
+        window = WindowUnderTest(runner, COMMAND, clock=clock.time,
+                                 sleeper=clock.sleep)
+        try:
+            with window:
+                pass
+        except AutomationError as error:
+            self.assertIn("configure_window", str(error))
+        else:
+            self.fail("the configure failure was lost behind the reap")
+        # And the reap that went wrong is recorded rather than silently
+        # forgotten: the window is still out there.
+        self.assertEqual(WINDOW_ID, window.abandoned)
+
+    def test_a_configure_failure_over_a_live_game_names_the_window_it_left(self):
+        # Caution C2 still beats C3 on this path: a window with something
+        # running in it is left open, and named, rather than closed.
+        runner = FailingQueryRunner(
+            ["configure_window"], happy_path(window_processes=PLAYING))
+        clock = FakeClock()
+        window = WindowUnderTest(runner, COMMAND, clock=clock.time,
+                                 sleeper=clock.sleep)
+        with self.assertRaises(AutomationError):
+            with window:
+                pass
+        self.assertEqual(WINDOW_ID, window.abandoned)
+        self.assertNotIn("close_window", runner.names)
 
     def test_a_reap_that_cannot_ask_leaves_the_window_rather_than_guessing(self):
         runner = FailingQueryRunner(["window_processes"], HAPPY_PATH)

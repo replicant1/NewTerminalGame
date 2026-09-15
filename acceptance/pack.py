@@ -160,6 +160,12 @@ class WindowUnderTest(object):
     waits for the process list to empty, and closes by the captured id — and
     if the game will not end it **leaves the window open and records its id**,
     because closing it would raise the sheet.
+
+    "On the way out" includes the way in. A failure between creating the
+    window and handing back ``self`` never reaches ``__exit__`` — Python runs
+    it only for an ``__enter__`` that returned — so ``__enter__`` reaps for
+    itself before re-raising. :meth:`reap` never raises, so the failure that
+    caused it is the one the caller sees.
     """
 
     def __init__(self, runner, command, clock=time.time, sleeper=time.sleep):
@@ -178,7 +184,17 @@ class WindowUnderTest(object):
         self.opened_at = self.clock()
         self.window_id = self.desktop.open_window_running(self.command)
         self._note("window %d created" % self.window_id)
-        self.desktop.configure(self.window_id)
+        try:
+            self.desktop.configure(self.window_id)
+        except BaseException:
+            # `__exit__` cannot cover this gap: Python calls it only for an
+            # `__enter__` that RETURNED. So everything between the window
+            # existing and `self` being handed back has to reap for itself, or
+            # a refused permission here leaves a window on the player's
+            # desktop that nothing in this pack will ever close.
+            # `WindowLauncher.open` has always done this; this did not.
+            self.reap()
+            raise
         self._note("configured")
         return self
 
@@ -279,7 +295,12 @@ class WindowUnderTest(object):
             self.desktop.close(window_id)
             gone = not self.desktop.is_visible(window_id)
             self._note("window %d closed, visible=%s" % (window_id, not gone))
-        except AutomationError as error:
+        except BaseException as error:
+            # Never raises, like `WindowLauncher.reap` and for the same reason:
+            # this runs on the failure path, where an exception of its own
+            # would bury the failure it was called to clean up after. An
+            # `AutomationError` is the expected way in; anything else still
+            # must not escape.
             self.abandoned = window_id
             self._note("window %d could not be reaped: %s" % (window_id, error))
 
