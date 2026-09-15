@@ -144,9 +144,28 @@ class CursesScreen(Screen):
             return Key.LEFT
         if code == curses_module.KEY_RIGHT:
             return Key.RIGHT
-        if 0 <= code < 256:
+        if _is_printable(code):
             return Key.printable(chr(code))
+        # Control codes and anything wider than a byte are things the loop
+        # discards (CTRL-5), and they are not printable, so they must not
+        # arrive claiming to be. An ESC used to reach the loop as
+        # `Key.printable("\x1b")`, which was discarded anyway -- the game never
+        # behaved wrongly, but `is_printable` was not true of it.
         return Key.other(code)
+
+
+def _is_printable(code):
+    """Is this byte a character the player could have meant to type?
+
+    The printable ASCII range and nothing else. Below 32 are the control
+    codes, 127 is delete, and at 128 and above `curses.getch` is handing back
+    the individual BYTES of a multi-byte character rather than a character —
+    `chr()` on one of those would invent a Latin-1 letter nobody pressed.
+    Only `q` and `Q` are ever consulted (CTRL-4), so nothing here turns on the
+    wider range; the point is that `Key.printable` should be true of what it
+    says it is.
+    """
+    return 32 <= code < 127
 
 
 def _timeout_in_milliseconds(timeout_seconds):

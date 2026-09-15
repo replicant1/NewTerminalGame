@@ -199,6 +199,23 @@ class ReadKeyTest(unittest.TestCase):
         self.assertFalse(key.is_arrow)
         self.assertFalse(key.is_printable)
 
+    def test_a_control_code_is_not_reported_as_a_printable_key(self):
+        # ESC used to arrive as `Key.printable("\x1b")`. The loop discarded it
+        # either way -- it is not one of the four arrows and it is not `q` --
+        # so the game never behaved wrongly; `is_printable` was simply not
+        # true of it. CTRL-5 discards it as "something else" now, which is
+        # what it is.
+        for code in (27, 9, 10, 0, 127):
+            self.window.press(code)
+            key = self.screen.read_key(1.0)
+            self.assertFalse(key.is_printable, "code %d" % code)
+            self.assertFalse(key.is_arrow, "code %d" % code)
+
+    def test_the_printable_range_still_arrives_carrying_its_character(self):
+        for character in ("q", "Q", " ", "~", "A", "0"):
+            self.window.press(ord(character))
+            self.assertEqual(Key.printable(character), self.screen.read_key(1.0))
+
     def test_a_timeout_of_zero_polls_and_returns_immediately(self):
         started = self.curses.now
         self.assertIsNone(self.screen.read_key(0.0))

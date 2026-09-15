@@ -21,10 +21,14 @@ test that says so, because a checklist an agent can tick is not a checklist.
 
 from __future__ import annotations
 
+import contextlib
 import inspect
+import io
 import unittest
 
 from acceptance import checks, pack
+from acceptance.__main__ import EXIT_OK
+from acceptance.__main__ import main as acceptance_main
 from acceptance.pack import (
     Observation,
     WindowUnderTest,
@@ -365,6 +369,36 @@ class EveryCallNamesTheCapturedIdentity(unittest.TestCase):
             source = builder().source
             self.assertNotIn("quit", source, name)
             self.assertNotIn("close every", source, name)
+
+
+class AskingForTheChecksOpensNothing(unittest.TestCase):
+    """`--list` is the default, so the half that needs no desktop is the half
+    you get by accident. It also has to be the half you get when you ask.
+    """
+
+    def _run(self, argv):
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            code = acceptance_main(argv)
+        return code, out.getvalue()
+
+    def test_with_no_arguments_it_prints_the_register(self):
+        code, said = self._run([])
+        self.assertEqual(EXIT_OK, code)
+        self.assertIn("THE HUMAN CHECKS", said)
+
+    def test_and_asking_for_it_explicitly_does_the_same(self):
+        # `--list` was declared and then never read -- the branch tested
+        # `not arguments.run` -- so this passed for the wrong reason and
+        # `--run --list` ran the desktop exercises.
+        self.assertEqual(self._run([]), self._run(["--list"]))
+
+    def test_asking_for_both_is_refused_rather_than_silently_resolved(self):
+        with contextlib.redirect_stderr(io.StringIO()) as complaint:
+            with self.assertRaises(SystemExit) as refused:
+                acceptance_main(["--run", "--list"])
+        self.assertEqual(2, refused.exception.code)
+        self.assertIn("not allowed with argument", complaint.getvalue())
 
 
 class TheHumanChecksCannotBeTicked(unittest.TestCase):

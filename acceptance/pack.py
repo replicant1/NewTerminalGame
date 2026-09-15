@@ -35,11 +35,12 @@ cleanup itself (caution C2 beats C3, plan §11.3).
 from __future__ import annotations
 
 import collections
+import math
 import time
 
 from launcher import script
 from launcher.desktop import Desktop
-from launcher.geometry import Point, Size
+from launcher.geometry import Size
 from launcher.runner import AutomationError, OsascriptRunner
 
 #: How long to wait for the game to appear in the tab's process list before
@@ -73,9 +74,13 @@ def _bounded(body, timeout=CALL_TIMEOUT):
 
     The pack writes its own rather than importing the launcher's private
     helper: it depends on the launcher's public vocabulary and none of its
-    internals.
+    internals. That is a boundary worth holding and it puts the burden here:
+    the copy has to be a faithful one. It rounds UP and floors at one second,
+    as `launcher.script._bounded` does, because `int(0.5)` is `0` and
+    `with timeout of 0 seconds` is not a bound, it is an instant refusal.
     """
-    return "with timeout of %d seconds\n%s\nend timeout" % (int(timeout), body)
+    return "with timeout of %d seconds\n%s\nend timeout" % (
+        max(1, int(math.ceil(timeout))), body)
 
 
 def type_into_tab(window_id, text, timeout=CALL_TIMEOUT):
