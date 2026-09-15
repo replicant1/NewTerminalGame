@@ -8,6 +8,22 @@ is given with each one.
 
 The suite was green throughout: 730 tests, 0 failures.
 
+## Status
+
+| # | Finding | Severity | Status |
+|---|---|---|---|
+| 1 | The acceptance pack leaks a window when `configure` fails | high | **Fixed** — [PR #18](https://github.com/replicant1/NewTerminalGame/pull/18) |
+| 2 | `target_position`'s stated guarantee is not a guarantee | medium | Open |
+| 3 | `game.play` duplicates `WindowLauncher.run`, with a stale docstring | medium | Open |
+| 4 | Two docstrings describe work items that have since landed | low | Open |
+| 5 | The launcher polls the desktop with a subprocess ten times a second | medium | Open |
+| 6 | The pack's copy of `_bounded` dropped a guard | low | Open |
+| 7 | Smaller things | low | Open |
+
+Findings are recorded as they stood at the time of review. Where one has since
+been fixed the original account is left intact — it is the reason the change was
+made — and what was done is stated under the heading.
+
 ## Summary
 
 This is good code. The hexagonal layering is real rather than aspirational and
@@ -19,18 +35,20 @@ The two hard-won operational lessons of the run — that `busy` lies for a windo
 with a grid, and that a window must never be closed with a live process in it —
 are both written down where the next reader will hit them.
 
-Seven findings follow. One is a defect that leaks a terminal window onto the
-user's desktop. One is a documented guarantee the code does not provide. The
-rest are staleness, duplication and one efficiency problem. None of them is in
-the game's domain logic, which I could not fault.
+Seven findings follow. One was a defect that leaked a terminal window onto the
+user's desktop, and it has since been fixed. One is a documented guarantee the
+code does not provide. The rest are staleness, duplication and one efficiency
+problem. None of them is in the game's domain logic, which I could not fault.
 
 ---
 
 ## 1. The acceptance pack leaks a window when `configure` fails
 
-**`acceptance/pack.py:177-183`** — severity: high
+**`acceptance/pack.py:177-183`** — severity: high — **FIXED**
 
-> **Status: fixed.** `__enter__` now reaps for itself before re-raising, and `reap` no longer lets anything escape. Three regression tests, each confirmed failing against the code as reviewed.
+> **Fixed** in [PR #18](https://github.com/replicant1/NewTerminalGame/pull/18),
+> commit `ac85181`. What follows describes the defect as it stood at review;
+> what was done about it is at the end of the section.
 
 `WindowUnderTest.__enter__` creates the window, then configures it, then returns
 `self`:
@@ -82,6 +100,42 @@ except BaseException as cause:
 **Fix:** wrap everything after `open_window_running` in `__enter__` in
 `try/except BaseException`, call `self.reap()` and set `self.abandoned` before
 re-raising.
+
+### What was done
+
+Two changes, and the second is why the first can be relied on:
+
+- **`__enter__` reaps for itself.** Everything after the window exists is
+  wrapped; on any failure it reaps, then re-raises.
+- **`reap` catches `BaseException` rather than only `AutomationError`**, as
+  `WindowLauncher.reap` already does. A reap runs on the failure path, so an
+  exception of its own would bury the failure it was called to clean up after.
+  `AutomationError` is the expected way in; the point is that nothing else
+  escapes either. Without this, the reap `__enter__` now depends on could
+  replace the real diagnosis with a worse one.
+
+Three regression tests in `TheWindowIsReapedByConstruction`, **each confirmed
+failing against the code as reviewed** — verified by reverting the fix and
+re-running, not by assertion:
+
+| Test | Asserts |
+|---|---|
+| `test_a_failure_while_configuring_still_closes_the_window` | `close_window` is called, naming the captured id |
+| `test_and_the_configure_failure_is_the_one_that_comes_out` | the `AutomationError` still reaches the caller even when the reap itself falls over, and the abandoned window is recorded |
+| `test_a_configure_failure_over_a_live_game_names_the_window_it_left` | a window with a live game is left open and **named** — caution C2 still beats C3 on this path |
+
+```
+fix reverted:  FAILED (failures=3)
+fix applied:   OK
+whole suite:   Ran 733 tests — OK   (730 before, +3)
+```
+
+One test-helper change came with it: `happy_path()` was lifted out of `build()`
+in `tests/test_acceptance_pack.py`. The new tests construct their own runner,
+and `RecordingRunner` *consumes* list replies, so passing the module-level
+`HAPPY_PATH` drains it and every later test sees an empty queue. `build`'s
+docstring warned about exactly this and the first attempt walked into it anyway,
+turning four unrelated tests red. The warning is now a function.
 
 ---
 
@@ -300,11 +354,13 @@ Two things stand out as better than usual:
   absent. A human check cannot be recorded as verified because there is nowhere
   to write it. That is a structural answer to a governance problem.
 
-One gap, which is finding 1's other half: there is no test that
-`WindowUnderTest` reaps a window when `configure` fails. `tests/test_acceptance_pack.py`
-stubs `configure_window` to `"ok"` and never exercises the failure path, which
-is why the leak is there. The launcher's equivalent path *is* tested, in
-`tests/test_launcher_lifecycle.py`.
+One gap, which was finding 1's other half: there was no test that
+`WindowUnderTest` reaps a window when `configure` fails.
+`tests/test_acceptance_pack.py` stubbed `configure_window` to `"ok"` and never
+exercised the failure path, which is why the leak was there — the launcher's
+equivalent path *is* tested, in
+`tests/test_launcher_lifecycle.py:255`. **Closed** by the three tests listed
+under finding 1.
 
 ---
 
@@ -336,9 +392,16 @@ nothing wrong with any of them. Particular things worth keeping:
 
 ## Suggested order
 
-1. Finding 1 — it puts a window on the user's desktop that nothing closes.
-2. Finding 3 and finding 4 together — one pass over the stale docstrings.
-3. Finding 2 — decide which rule is the guarantee, then make doc, code and test
+- ~~Finding 1 — it puts a window on the user's desktop that nothing closes.~~
+  **Done**, [PR #18](https://github.com/replicant1/NewTerminalGame/pull/18).
+
+What is left, in the order I would take it:
+
+1. Finding 3 and finding 4 together — one pass over the stale docstrings.
+   Finding 3 is the one to do first regardless of size: it warns readers away
+   from the right function on grounds that no longer exist, and it does so about
+   the `busy` defect, which is the project's most important operational lesson.
+2. Finding 2 — decide which rule is the guarantee, then make doc, code and test
    agree.
-4. Finding 5 — a backoff in `wait_until_idle`.
-5. Findings 6 and 7 as cleanup.
+3. Finding 5 — a backoff in `wait_until_idle`.
+4. Findings 6 and 7 as cleanup.
