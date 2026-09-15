@@ -96,17 +96,45 @@ def target_position(reference, size, screen, offset=DEFAULT_OFFSET):
     and never grow it:
 
     1. Start a little below and to the right of the reference window.
-    2. Do not let that carry the new window's top-left corner outside the
-       reference window's own frame. The reference window is the one the player
-       was just looking at, so every point inside it is over a real display —
-       which means the new window's corner, with its title bar and its close
-       button, lands somewhere the player can see and reach. This is the only
-       part of the placement that is a *guarantee* rather than a best effort,
-       and it is what WIN-4's "so it always lands visible" rests on.
+    2. Prefer to keep the new window's top-left corner inside the reference
+       window's own frame. The reference window is the one the player was just
+       looking at, so every point inside it is over a real display — which
+       means a corner placed there, with its title bar and its close button,
+       is somewhere the player can see and reach.
     3. Then pull the window back so the whole of it fits on the screen, where
        the screen is large enough to hold it; if it is not, pin the corner to
        the screen's own top-left rather than letting it drift off the top or
        the left, where the title bar would be unreachable.
+
+    **Rule 3 wins, and rule 2 is a preference rather than a guarantee.** They
+    conflict whenever the reference window sits near an edge and the game
+    window is large next to the room that is left, and because rule 3 is
+    applied last it is the one that holds. On a 1440 x 900 screen with the
+    reference window at ``(1300, 800)-(1440, 900)``, a 357 x 558 game window is
+    placed at ``(1083, 342)`` — fully on screen, and 217 points to the *left*
+    of the reference window it was supposed to sit below and right of.
+
+    This was chosen deliberately, and it costs something worth naming. The
+    screen rectangle comes from :func:`launcher.script.visible_screen_bounds`,
+    which on a machine with more than one display is the *union* of them all —
+    measured here as ``-3509,-1440,1611,982``, a rectangle much of which is
+    over no display at all. So "on the screen rectangle" is a weaker promise
+    than "on a display", and in the corner case above, on a multi-display
+    desktop, rule 3 can put the corner somewhere rule 2 would not have. What it
+    reliably prevents is the window drifting somewhere absurd, and in every
+    ordinary case — a reference window with room around it — the two rules
+    agree and the question does not arise.
+
+    Reversing the order would make rule 2 the guarantee, at the price of
+    letting the window overhang a screen edge. It is not obviously wrong; it is
+    simply not what this does. If it is ever wanted, swap the two blocks below
+    and clamp rule 2 on both sides rather than only the upper one.
+
+    WIN-4's "so it always lands visible" therefore rests on rule 3 — and on
+    macOS, which constrains a window to the display it is on when
+    ``set position`` is applied. :meth:`launcher.lifecycle.WindowLauncher.open`
+    records where the window actually *went* rather than where it was asked to
+    go, for exactly that reason.
     """
     x = reference.left + offset.dx
     y = reference.top + offset.dy

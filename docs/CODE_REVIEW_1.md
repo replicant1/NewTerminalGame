@@ -13,7 +13,7 @@ The suite was green throughout: 730 tests, 0 failures.
 | # | Finding | Severity | Status |
 |---|---|---|---|
 | 1 | The acceptance pack leaks a window when `configure` fails | high | **Fixed** — [PR #18](https://github.com/replicant1/NewTerminalGame/pull/18) |
-| 2 | `target_position`'s stated guarantee is not a guarantee | medium | Open |
+| 2 | `target_position`'s stated guarantee is not a guarantee | medium | **Fixed** — [PR #21](https://github.com/replicant1/NewTerminalGame/pull/21) |
 | 3 | `game.play` duplicates `WindowLauncher.run`, with a stale docstring | medium | **Fixed** — [PR #20](https://github.com/replicant1/NewTerminalGame/pull/20) |
 | 4 | Two docstrings describe work items that have since landed | low | **Fixed** — [PR #20](https://github.com/replicant1/NewTerminalGame/pull/20) |
 | 5 | The launcher polls the desktop with a subprocess ten times a second | medium | Open |
@@ -36,9 +36,9 @@ with a grid, and that a window must never be closed with a live process in it �
 are both written down where the next reader will hit them.
 
 Seven findings follow. One was a defect that leaked a terminal window onto the
-user's desktop; it has since been fixed, along with the duplication and the two
-stale docstrings. What remains open is a documented guarantee the code does not
-provide, one efficiency problem, and cleanup. None of them is in the game's
+user's desktop; it has since been fixed, along with the duplication, the stale
+docstrings, and the placement guarantee the code did not provide. What remains
+open is one efficiency problem and some cleanup. None of them is in the game's
 domain logic, which I could not fault.
 
 ---
@@ -142,7 +142,11 @@ turning four unrelated tests red. The warning is now a function.
 
 ## 2. `target_position`'s stated guarantee is not a guarantee
 
-**`launcher/geometry.py:99-125`** — severity: medium
+**`launcher/geometry.py:99-125`** — severity: medium — **FIXED**
+
+> **Fixed** in [PR #21](https://github.com/replicant1/NewTerminalGame/pull/21), by ruling rather than by rewriting the
+> arithmetic. What follows describes the contradiction as it stood at review;
+> the ruling is at the end of the section.
 
 The docstring says of rule 2:
 
@@ -188,6 +192,61 @@ behaviour says it comes from the screen, and neither is unconditionally true.
 frame containment is best-effort), or apply rule 2 last so it holds. Do not
 leave the claim standing as written. Whichever way it goes, add a test at the
 bottom-right case that asserts the property the docstring picks.
+
+### The ruling, and what was done
+
+**The screen clamp wins.** The user was asked, because the two readings are
+materially different work and the choice is about how the product behaves, not
+about which is tidier. The arithmetic is unchanged; what changed is that three
+places now agree about what it does.
+
+The two only disagree when the reference window sits near an edge and the game
+window is large next to the room left over. Measured across the cases the
+suite already carries:
+
+| case | today | frame-wins alternative |
+|---|---|---|
+| roomy screen, roomy reference | `(432, 332)` | `(432, 332)` — same |
+| the measured two-display desktop | `(-847, 116)` | `(-847, 116)` — same |
+| a 10 x 8 reference window | `(109, 107)` | `(109, 107)` — same |
+| reference at the bottom-right of 1440 x 900 | `(1083, 342)` | `(1300, 800)` |
+
+So one case in four, and only at an edge.
+
+**What the ruling costs is written down rather than glossed.** The screen
+rectangle is `visible_screen_bounds`, the *union* of every display — measured
+`-3509,-1440,1611,982`, much of it over no display at all. "On the screen
+rectangle" is therefore a weaker promise than "on a display", and in the
+bottom-right case on a multi-display desktop the clamp can put the corner
+somewhere the frame rule would not have. `target_position` now says this, says
+that reversing the order is not obviously wrong, and says exactly what to swap
+if it is ever wanted.
+
+Three changes, so that nothing is left claiming otherwise:
+
+- **`launcher/geometry.py`** — rule 2 is described as a preference, rule 3 as
+  the rule that holds, with the conflict worked through in numbers and WIN-4's
+  "always lands visible" attributed to rule 3 *and* to macOS, which constrains
+  a window to its display on `set position` (which is why
+  `WindowLauncher.open` records where the window went rather than where it was
+  asked to go).
+- **`launcher/script.py`** — `visible_screen_bounds` said *"The guarantee in
+  `target_position` comes from the reference window, not from this"*. It did
+  not, and the two files contradicted each other. It now says this bound is
+  applied last and therefore wins, and notes that the old claim was wrong.
+- **`acceptance/checks.py`** — `WINDOW_PLACEMENT` told a person to look for a
+  corner "down and right of the window you were looking at", which the code
+  openly does not always produce. A person hitting the edge case would have
+  reported a non-defect. It now names the exception, adds a step that walks
+  deliberately into it, and explains that which rule wins is a ruling a person
+  is being asked to judge.
+
+One test added, `test_the_screen_clamp_beats_the_reference_frame_when_they_conflict`,
+which pins the precedence directly instead of leaving it to emerge. The old
+`test_the_offset_never_leaves_the_reference_windows_own_frame` claimed the
+guarantee in its name while using a 5120 x 2422 screen where the clamp cannot
+bite; it is renamed `..._stays_inside_the_reference_frame_where_it_can` and says
+what it is worth. 734 tests, all passing.
 
 ---
 
@@ -443,10 +502,12 @@ nothing wrong with any of them. Particular things worth keeping:
 - ~~Findings 3 and 4 — one pass over the duplication and the stale docstrings.~~
   **Done**, [PR #20](https://github.com/replicant1/NewTerminalGame/pull/20).
 
+- ~~Finding 2 — decide which rule is the guarantee, then make doc, code and
+  test agree.~~ **Done**, [PR #21](https://github.com/replicant1/NewTerminalGame/pull/21) — ruled in favour of the screen clamp.
+
 What is left, in the order I would take it:
 
-1. Finding 2 — decide which rule is the guarantee, then make doc, code and test
-   agree. It is the last finding where the code and its own documentation
-   disagree about something load-bearing.
-2. Finding 5 — a backoff in `wait_until_idle`.
-3. Findings 6 and 7 as cleanup.
+1. Finding 5 — a backoff in `wait_until_idle`. The only open finding with a
+   cost attached to it: an `osascript` subprocess ten times a second for the
+   whole of a game.
+2. Findings 6 and 7 as cleanup.

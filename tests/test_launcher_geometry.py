@@ -45,6 +45,9 @@ class TheOffset(unittest.TestCase):
 
 class TheClamp(unittest.TestCase):
     def test_a_reference_window_at_the_bottom_right_is_pulled_back_on_screen(self):
+        # Note where this lands: outside the reference window's own frame. That
+        # is the documented precedence, not an oversight -- see
+        # `test_the_screen_clamp_beats_the_reference_frame_when_they_conflict`.
         screen = Rect(0, 0, 1440, 900)
         reference = Rect(1300, 800, 1440, 900)
         position = target_position(reference, GAME_SIZE, screen, Offset(32, 32))
@@ -68,15 +71,42 @@ class TheClamp(unittest.TestCase):
         position = target_position(reference, GAME_SIZE, screen, Offset(32, 32))
         self.assertEqual(Point(0, 0), position)
 
-    def test_the_offset_never_leaves_the_reference_windows_own_frame(self):
-        # This is the guarantee WIN-4's "always lands somewhere visible" rests
-        # on: the reference window is the one the player was looking at, so a
-        # point inside it is a point on a real display.
+    def test_the_offset_stays_inside_the_reference_frame_where_it_can(self):
+        # A preference, not a guarantee -- see the precedence test below. The
+        # reference window is the one the player was looking at, so a point
+        # inside it is a point on a real display, and that is worth having
+        # wherever the screen clamp does not overrule it. Here the screen is
+        # enormous, so nothing overrules it.
         screen = Rect(-3509, -1440, 1611, 982)
         reference = Rect(100, 100, 110, 108)  # ten points wide, eight deep
         position = target_position(reference, GAME_SIZE, screen, Offset(32, 32))
         self.assertEqual(Point(109, 107), position)
         self.assertTrue(reference.contains_point(position))
+
+    def test_the_screen_clamp_beats_the_reference_frame_when_they_conflict(self):
+        """Which of the two rules wins, pinned rather than left to emerge.
+
+        They conflict when the reference window is near an edge and the game
+        window is large next to the room that is left. Rule 3 is applied last,
+        so rule 3 holds: the window comes back onto the screen even though that
+        carries its corner out of the frame it was meant to sit inside. Ruled
+        this way deliberately; `target_position` says why, and says what it
+        costs.
+        """
+        screen = Rect(0, 0, 1440, 900)
+        reference = Rect(1300, 800, 1440, 900)
+        position = target_position(reference, GAME_SIZE, screen, Offset(32, 32))
+
+        # The screen clamp got its way...
+        self.assertTrue(screen.contains_point(position))
+        landed = Rect.from_origin_and_size(position, GAME_SIZE)
+        self.assertLessEqual(landed.right, screen.right)
+        self.assertLessEqual(landed.bottom, screen.bottom)
+
+        # ...and the frame preference did not. 217 points to the LEFT of a
+        # window it was asked to sit below and to the right of.
+        self.assertFalse(reference.contains_point(position))
+        self.assertLess(position.x, reference.left)
 
     def test_a_reference_window_with_no_area_still_yields_its_own_corner(self):
         reference = Rect(500, 400, 500, 400)

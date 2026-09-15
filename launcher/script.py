@@ -132,9 +132,15 @@ def visible_screen_bounds(timeout=QUERY_TIMEOUT):
     On a machine with more than one display this is the union of them all, so it
     is an outer bound rather than a guarantee of visibility — measured on the
     development machine as ``-3509,-1440,1611,982``, a rectangle much of which
-    is over no display at all. The guarantee in
-    :func:`launcher.geometry.target_position` comes from the reference window,
-    not from this; this only stops a window being placed somewhere absurd.
+    is over no display at all.
+
+    Know what rests on it. :func:`launcher.geometry.target_position` applies
+    this bound **last**, so where it conflicts with sitting below and right of
+    the reference window, this wins. That makes the rectangle above the outer
+    limit of where the game window can be put — which stops a window being
+    placed somewhere absurd, and is weaker than "on a display". A previous
+    version of this docstring said the guarantee came from the reference window
+    instead; it does not, and the two files disagreed about it.
 
     Returns ``left,top,right,bottom``.
     """
