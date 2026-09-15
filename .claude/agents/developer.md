@@ -134,6 +134,26 @@ That includes all of these, which are the same thing wearing different clothes:
 
 **If you doubt a test, say so.** Record the doubt in your progress log and in your report, and name the test and why. Someone will decide what to do about it. That is a better outcome than an agent quietly mutating a working system, and it costs a line of text rather than a cycle of damage and repair.
 
+## Where a test belongs: assert the seam, not both sides of it
+
+**An integration test asserts that the seam is connected. It does not re-assert what sits on either side of it.**
+
+When you wire two units together, the only thing the wiring test owns is the join: that A really calls B, and really uses what B returned. Everything B *says* is already owned by B's own unit tests. Proving it a second time through a bigger object adds a test, adds maintenance, and adds nothing.
+
+Worked example from a previous run. `build_frame` joins the frame composer to the status-line builder. The right test is the one asserting the bottom row is **exactly what the status module says it should be** — it fails if and only if the wiring breaks. The wrong tests, and there were five of them alongside it, re-asserted that the row is not blank, carries the real score, changes when the game ends, is cyan, and is absent from the rows above. Every one of those is already pinned by the status module's own 29 unit tests.
+
+The cost is measurable. On that run a single injected fault in scoring turned **fifteen tests red across four files**; a single broken wiring call turned **twelve red across three**. One defect, fifteen failures, four files to read before you know what actually broke.
+
+**How to decide, without breaking anything.** You are forbidden from mutating code to find this out — see the section above, which still applies without exception. Reason about ownership instead:
+
+- Name the requirement the test is about. Ask which module *owns* it.
+- If the owning module has a unit test for it, the integration test must not repeat it. Assert the join and stop.
+- If no unit test owns it, that is the finding. Write the unit test at the level that owns the behaviour, then assert only the join above it.
+
+**Where this does not apply.** Architecture guards, tests that keep a scanner from passing vacuously, and tests backed by a measurement recorded in `docs/findings/` are not duplicates of anything. Leave them alone.
+
+**If you are unsure whether a test duplicates another, say so** in your progress log and your report, naming both. Do not delete somebody else's test to satisfy this rule; raise it and let it be decided.
+
 ## Where documents go, and what they are called
 
 Do not invent a name. Every document you write goes in one of four places, named exactly like this:

@@ -32,6 +32,7 @@ from terminalgame.presentation.frame_builder import (
     WIDTH,
     column_of,
 )
+from terminalgame.presentation.status_line import status_text
 from terminalgame.screen.port import Colour, Key
 from tests.loop_fakes import FakeClock, ScriptedScreen, StillGhost
 
@@ -86,12 +87,18 @@ class PlayedToALoss(unittest.TestCase):
     def test_the_game_really_was_lost(self):
         self.assertEqual(Outcome.CAUGHT, self.final.outcome)
 
-    def test_the_last_picture_says_caught_and_gives_the_final_score(self):
+    def test_the_last_picture_carries_the_finished_game_s_status_row(self):
+        """The seam at an ending: the final frame shows the *final* state.
+
+        It asserts equality with what `status_line` produces rather than
+        picking out "CAUGHT", the score and the absence of "arrows" one
+        substring at a time. All three of those are owned one layer down —
+        `test_status_line` pins the loss wording, the final score and the fact
+        that an ended line offers only `q`. Equality catches any divergence,
+        including the ones nobody thought to write a substring for.
+        """
         row = row_text(self.frame, STATUS_ROW)
-        self.assertIn("CAUGHT", row)
-        self.assertIn("score 1", row,
-                      "the dot under the ghost was eaten on the way in")
-        self.assertNotIn("arrows", row, "a finished game offers only q")
+        self.assertEqual(status_text(self.final), row.rstrip())
 
     def test_the_ghost_is_drawn_over_the_player(self):
         """END-4 — "on a loss the ghost is drawn over the player".
@@ -124,11 +131,10 @@ class PlayedToAWin(unittest.TestCase):
         self.assertEqual(Outcome.CLEARED, self.final.outcome)
         self.assertEqual(0, self.final.dots_remaining)
 
-    def test_the_last_picture_says_cleared_and_gives_the_final_score(self):
+    def test_the_last_picture_carries_the_finished_game_s_status_row(self):
+        """The win half of the same seam — see the loss class for why equality."""
         row = row_text(self.frame, STATUS_ROW)
-        self.assertIn("CLEARED", row)
-        self.assertIn("score 1", row)
-        self.assertNotIn("arrows", row)
+        self.assertEqual(status_text(self.final), row.rstrip())
 
     def test_the_two_actors_are_drawn_separately(self):
         self.assertNotEqual(self.final.player, self.final.ghost)
@@ -150,37 +156,30 @@ class TheStatusRowIsNeverBlankInAWiredGame(unittest.TestCase):
     STAT-1 has been lost in a way nothing else would notice.
     """
 
-    def test_every_frame_of_a_played_game_carries_a_status_row(self):
-        start = state_on_ring(player=(1, 1), ghost=(3, 3),
-                              dots={(2, 1), (3, 1), (3, 2)})
-        _, screen = played(start, [(0.01, Key.RIGHT), (0.02, Key.RIGHT),
-                                   (0.03, Key.DOWN),
-                                   (0.5, Key.printable("q"))])
-        self.assertGreater(len(screen.presented), 2)
-        for index, frame in enumerate(screen.presented):
-            row = row_text(frame, STATUS_ROW)
-            self.assertNotEqual("", row.strip(),
-                                "frame %d has a blank status row" % index)
-            self.assertIn("score", row)
+    def test_every_frame_the_loop_presents_carries_this_game_s_status_row(self):
+        """The seam: the loop draws frames built by `build_frame`, not bare ones.
 
-    def test_the_score_on_the_glass_follows_the_score_in_the_game(self):
+        What the row *says* is `status_line`'s (29 tests) and its colour and
+        placement are `frame_builder`'s. The only thing unowned here is whether
+        the **loop** presents rows that track the game as it is played, so that
+        is all this asserts. It replaces three tests that also re-checked the
+        colour and the wording.
+        """
         start = state_on_ring(player=(1, 1), ghost=(3, 3),
                               dots={(2, 1), (3, 1)})
         final, screen = played(start, [(0.01, Key.RIGHT), (0.02, Key.RIGHT),
                                        (0.5, Key.printable("q"))])
         self.assertEqual(2, final.score)
-        scores = [row_text(frame, STATUS_ROW).strip() for frame in screen.presented]
-        self.assertTrue(any("score 0" in row for row in scores))
-        self.assertTrue(any("score 1" in row for row in scores))
-        self.assertTrue(any("score 2" in row for row in scores))
-
-    def test_the_status_row_is_cyan_on_every_frame(self):
-        start = state_on_ring(player=(1, 1), ghost=(3, 3), dots={(2, 1)})
-        _, screen = played(start, [(0.01, Key.RIGHT), (0.5, Key.printable("q"))])
-        for frame in screen.presented:
-            for column in range(WIDTH):
-                self.assertEqual(Colour.STATUS,
-                                 frame.cell(column, STATUS_ROW).colour)
+        self.assertGreater(len(screen.presented), 2)
+        rows = [row_text(frame, STATUS_ROW) for frame in screen.presented]
+        for index, row in enumerate(rows):
+            self.assertNotEqual("", row.strip(),
+                                "frame %d has a blank status row" % index)
+        # The score climbing 0 -> 1 -> 2 across the frames is what proves the
+        # row is rebuilt from the live state each pass rather than drawn once.
+        for expected in ("score 0", "score 1", "score 2"):
+            self.assertTrue(any(expected in row for row in rows),
+                            "no presented frame ever showed %r" % expected)
 
 
 class EveryFrameIsTheWholeWindow(unittest.TestCase):

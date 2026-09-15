@@ -79,41 +79,35 @@ def row_text(frame, row):
 
 
 class TheStatusRowReachesTheFrame(unittest.TestCase):
-    """STAT-1, and the silent way it could have been lost."""
+    """STAT-1, and the silent way it could have been lost.
 
-    def setUp(self):
-        self.state = new_game_with(random.Random(3))
+    **The seam only.** What the row *says* is `status_line`'s to own and it has
+    29 tests for it; where the row goes and what colour it is are
+    `frame_builder`'s, which pins the row, the colour and the rows above it.
+    Neither owns the one thing that can still go wrong here: whether
+    `build_frame` passes **this** state's row into `compose` at all.
 
-    def test_the_bottom_row_is_not_blank(self):
-        frame = build_frame(self.state)
-        self.assertNotEqual("", row_text(frame, STATUS_ROW).strip(),
-                            "row 29 is blank: the status line was never "
-                            "passed to compose (STAT-1)")
+    This replaces six tests that re-asserted the wording, the score, the ending,
+    the colour and the rows above — every one of them already owned one layer
+    down. One injected fault used to turn all six red at once.
+    """
 
-    def test_it_carries_the_real_score_and_not_a_placeholder(self):
-        scored = self.state.with_changes(score=41)
-        self.assertIn("score 41", row_text(build_frame(scored), STATUS_ROW))
-
-    def test_it_is_exactly_what_the_status_module_says_it_should_be(self):
-        row = row_text(build_frame(self.state), STATUS_ROW)
-        self.assertEqual(status_text(self.state), row.rstrip())
-
-    def test_it_changes_when_the_game_ends(self):
-        caught = self.state.with_changes(outcome=Outcome.CAUGHT, score=9)
-        row = row_text(build_frame(caught), STATUS_ROW)
-        self.assertIn("CAUGHT", row)
-        self.assertIn("score 9", row)
-
-    def test_it_is_cyan(self):
-        frame = build_frame(self.state)
-        for column in range(WIDTH):
-            self.assertEqual(Colour.STATUS,
-                             frame.cell(column, STATUS_ROW).colour)
-
-    def test_the_rows_above_it_are_not_the_status_line(self):
-        frame = build_frame(self.state)
-        for row in range(STATUS_ROW):
-            self.assertNotIn("arrows, q quits", row_text(frame, row))
+    def test_the_row_is_what_the_status_module_says_for_this_state(self):
+        # Not only the opening state, and that matters. At score 0 and outcome
+        # "playing", a build_frame that passed a *fresh* state instead of the
+        # real one would produce an identical row and this test would pass
+        # while the bug shipped. The scored and finished states have no such
+        # coincidence.
+        base = new_game_with(random.Random(3))
+        for state in (base,
+                      base.with_changes(score=41),
+                      base.with_changes(outcome=Outcome.CAUGHT, score=9)):
+            with self.subTest(score=state.score, outcome=state.outcome):
+                row = row_text(build_frame(state), STATUS_ROW)
+                self.assertEqual(status_text(state), row.rstrip(),
+                                 "row 29 is not this state's status line: "
+                                 "build_frame is not passing it to compose "
+                                 "(STAT-1)")
 
 
 class TheFrameIsTheWholeWindow(unittest.TestCase):
