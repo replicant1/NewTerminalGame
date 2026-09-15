@@ -106,10 +106,15 @@ WINDOW_PLACEMENT = HumanCheck(
         "Run the pack and watch where the game window appears.",
         "If you have more than one display, repeat with the other window on "
         "each display in turn.",
+        "Then do it once more with that window dragged hard into the "
+        "BOTTOM-RIGHT corner of a display, which is the case the two placement "
+        "rules disagree about.",
     ),
     look_for=(
         "the game window fully on screen, never half off an edge",
-        "its corner down and right of the window you were looking at",
+        "its corner down and right of the window you were looking at — EXCEPT "
+        "from the bottom-right corner, where it is expected to be pulled back "
+        "left and up instead, and that is not a defect (see below)",
         "on the SAME display as the window you were looking at",
     ),
     why_machine_cannot=
@@ -117,7 +122,17 @@ WINDOW_PLACEMENT = HumanCheck(
         "so the number is checked — but `set position` is a request macOS may "
         "constrain, measured twice on this project (asked for y = -1352, "
         "landed at y = 30). Whether the result is somewhere a person can "
-        "actually see is not a number.",
+        "actually see is not a number.\n\n"
+        "     **Two rules, and which one wins is a ruling rather than a "
+        "measurement.** `target_position` puts the window below and right of "
+        "the reference window, then pulls it back onto the screen — and where "
+        "those conflict, the pull back onto the screen wins. So from a "
+        "reference window in the bottom-right corner the game window appears "
+        "up and to the LEFT of it: on a 1440x900 screen, 217 points left. The "
+        "screen it is pulled onto is the UNION of every display, much of which "
+        "may be over no display at all, so on a multi-display desktop this is "
+        "the one placement a machine cannot vouch for. Looking at it is the "
+        "only way to know whether the ruling was right.",
 )
 
 TITLE_BAR = HumanCheck(
