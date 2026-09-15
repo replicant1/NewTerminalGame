@@ -148,30 +148,6 @@ def game_command(repository_root=None, python_executable=None, seed=None,
     return "/bin/sh -c %s" % (shlex.quote(inner),)
 
 
-def play(launcher, command):
-    """One whole session: open the window, let the game be played, take it back.
-
-    This is :meth:`WindowLauncher.run` with one difference, and the difference
-    is the whole of WI-3's risk. ``run`` decides the game has finished by asking
-    the tab whether it is ``busy``, and **that flag is false for the entire life
-    of a game in a window that has been given its 40 x 30 grid** — measured, the
-    game alive from +0.9 s to +8.4 s with ``busy`` false from +0.9 s onwards. So
-    ``run`` closes the window while the player is still playing.
-
-    Asking instead what processes the tab is running gives the true answer, and
-    an empty list is an unambiguous "nothing is running in there" that needs no
-    matching of names. It also covers the start-up gap for free: a window whose
-    login shell is still starting lists that shell, so it is never mistaken for
-    a window whose game has ended.
-    """
-    window = launcher.open(command)
-    return launcher.reap(
-        window.window_id,
-        launcher.session_timeout,
-        still_running=launcher.has_live_processes,
-    )
-
-
 def main(argv=None, launcher=None, out=None, err=None):
     """``python3 -m launcher.game`` — open a window, play, take the window back.
 
@@ -187,7 +163,7 @@ def main(argv=None, launcher=None, out=None, err=None):
 
     command = game_command(seed=arguments.seed)
     try:
-        result = play(launcher, command)
+        result = launcher.run(command)
     except LaunchFailed as failure:
         err.write("%s\n" % (failure,))
         return 1

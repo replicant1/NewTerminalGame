@@ -56,10 +56,22 @@ repainting only what moved would leave debris.
 ## Row 29 is a seam, not this module's row
 
 The plan gives row 29 to WI-6 and rows 0 to 28 to WI-5b, deliberately, so the
-two lanes own disjoint rows. **WI-6 has not landed yet**, so `compose` leaves
-row 29 blank unless a caller hands it a status line. When WI-6 arrives it
-supplies that string — including whatever it decides about the leading space,
-which is its question — and nothing in this module needs to change.
+two lanes own disjoint rows. `compose` leaves row 29 blank unless a caller hands
+it a status line, and takes that string exactly as given — including whatever
+WI-6 decided about the leading space, which was its question and not this
+module's.
+
+WI-6 has since landed: `terminalgame.presentation.status_line` writes the row
+and `game_main.build_frame` is the one line that joins the two. Nothing here
+changed when it arrived, which was the point of cutting the seam this way.
+
+The consequence is a trap rather than a nicety, and it is worth knowing before
+you call `compose` yourself. **A frame with a blank row 29 is perfectly
+well-formed**: it composes without complaint and satisfies every test in this
+module. So a caller that forgets the status line fails STAT-1 silently, looking
+entirely correct to everything above it. That is why `build_frame` is a named
+function with a test of its own rather than an argument written at the call
+site.
 """
 
 from __future__ import annotations

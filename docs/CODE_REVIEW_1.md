@@ -14,8 +14,8 @@ The suite was green throughout: 730 tests, 0 failures.
 |---|---|---|---|
 | 1 | The acceptance pack leaks a window when `configure` fails | high | **Fixed** — [PR #18](https://github.com/replicant1/NewTerminalGame/pull/18) |
 | 2 | `target_position`'s stated guarantee is not a guarantee | medium | Open |
-| 3 | `game.play` duplicates `WindowLauncher.run`, with a stale docstring | medium | Open |
-| 4 | Two docstrings describe work items that have since landed | low | Open |
+| 3 | `game.play` duplicates `WindowLauncher.run`, with a stale docstring | medium | **Fixed** — [PR #20](https://github.com/replicant1/NewTerminalGame/pull/20) |
+| 4 | Two docstrings describe work items that have since landed | low | **Fixed** — [PR #20](https://github.com/replicant1/NewTerminalGame/pull/20) |
 | 5 | The launcher polls the desktop with a subprocess ten times a second | medium | Open |
 | 6 | The pack's copy of `_bounded` dropped a guard | low | Open |
 | 7 | Smaller things | low | Open |
@@ -36,9 +36,10 @@ with a grid, and that a window must never be closed with a live process in it �
 are both written down where the next reader will hit them.
 
 Seven findings follow. One was a defect that leaked a terminal window onto the
-user's desktop, and it has since been fixed. One is a documented guarantee the
-code does not provide. The rest are staleness, duplication and one efficiency
-problem. None of them is in the game's domain logic, which I could not fault.
+user's desktop; it has since been fixed, along with the duplication and the two
+stale docstrings. What remains open is a documented guarantee the code does not
+provide, one efficiency problem, and cleanup. None of them is in the game's
+domain logic, which I could not fault.
 
 ---
 
@@ -192,7 +193,10 @@ bottom-right case that asserts the property the docstring picks.
 
 ## 3. `game.play` duplicates `WindowLauncher.run`, and its docstring explains a difference that no longer exists
 
-**`launcher/game.py:151-172`** — severity: medium
+**`launcher/game.py:151-172`** — severity: medium — **FIXED**
+
+> **Fixed** in [PR #20](https://github.com/replicant1/NewTerminalGame/pull/20). What follows describes the duplication as it
+> stood at review; what was done is at the end of the section.
 
 The two are now behaviourally identical:
 
@@ -232,11 +236,36 @@ of it in the seam module is where they will meet it first.
 anything worth keeping from the docstring onto `run`. If `play` is kept as a
 named seam, rewrite the docstring to say it is `run` under a local name.
 
+### What was done
+
+`play` is deleted. `game.main` calls `launcher.run(command)`, which is what
+`launcher/__main__.py` already did — so both entry points now take one route
+into the launcher instead of two.
+
+One paragraph of `play`'s docstring was worth keeping and is not stated
+anywhere else, so it moved onto `run`: that an empty process list is
+unambiguous because `open_window_running` `exec`s the command and leaves no
+login shell alive underneath it, and that this covers the start-up gap for free
+— a window whose login shell has not finished starting lists that shell, so it
+is never mistaken for one whose game has ended. A short note on `run` records
+that the copy existed and why, so the next reader meets the history rather than
+rediscovering it.
+
+The 20 call sites in `tests/test_end_to_end_join.py` now call
+`launcher.run(game_command())`. Every assertion is unchanged, and the coverage
+improves: the class that pins the `busy` defect
+(`TheGameIsNotInterruptedWhileItIsBeingPlayed`) now exercises the production
+path rather than a copy of it.
+
+Nothing was lost by deleting the function: `WindowLauncher.run` is directly
+tested at ten call sites in `tests/test_launcher_lifecycle.py`.
+
 ---
 
 ## 4. Two docstrings describe work items that have since landed
 
-Severity: low, but both sit in module headers where they are read first.
+Severity: low — **FIXED** in [PR #20](https://github.com/replicant1/NewTerminalGame/pull/20) — but both sat in module headers
+where they are read first.
 
 - **`terminalgame/presentation/frame_builder.py:56-62`** — *"Row 29 is a seam,
   not this module's row […] **WI-6 has not landed yet**, so `compose` leaves row
@@ -254,6 +283,23 @@ Severity: low, but both sit in module headers where they are read first.
 
 **Fix:** both are one-sentence edits. Worth doing together with finding 3, since
 all three are the same class of rot.
+
+### What was done
+
+Both rewritten, and in each case the design point the stale sentence was
+carrying is kept rather than deleted with it:
+
+- **`frame_builder.py`** now records that WI-6 landed and that nothing here had
+  to change when it did, which was the point of cutting the seam that way. The
+  trap is spelled out where a caller will meet it: a frame with a blank row 29
+  is well-formed and passes every test in the module, so forgetting the status
+  line fails STAT-1 *silently* — which is why `build_frame` is a named function
+  with a test of its own.
+- **`pack.py`** now gives a reason for not pinning a fixed picture that outlasts
+  the skeleton: the pack runs `game_command()` with **no seed**, so MAZE-4 gives
+  it a different maze every run and there is no fixed frame to pin. Seeding it
+  would buy one at the price of no longer exercising the real command as a
+  player gets it. Shape is what SCRN-1 states and what holds for every maze.
 
 ---
 
@@ -394,14 +440,13 @@ nothing wrong with any of them. Particular things worth keeping:
 
 - ~~Finding 1 — it puts a window on the user's desktop that nothing closes.~~
   **Done**, [PR #18](https://github.com/replicant1/NewTerminalGame/pull/18).
+- ~~Findings 3 and 4 — one pass over the duplication and the stale docstrings.~~
+  **Done**, [PR #20](https://github.com/replicant1/NewTerminalGame/pull/20).
 
 What is left, in the order I would take it:
 
-1. Finding 3 and finding 4 together — one pass over the stale docstrings.
-   Finding 3 is the one to do first regardless of size: it warns readers away
-   from the right function on grounds that no longer exist, and it does so about
-   the `busy` defect, which is the project's most important operational lesson.
-2. Finding 2 — decide which rule is the guarantee, then make doc, code and test
-   agree.
-3. Finding 5 — a backoff in `wait_until_idle`.
-4. Findings 6 and 7 as cleanup.
+1. Finding 2 — decide which rule is the guarantee, then make doc, code and test
+   agree. It is the last finding where the code and its own documentation
+   disagree about something load-bearing.
+2. Finding 5 — a backoff in `wait_until_idle`.
+3. Findings 6 and 7 as cleanup.
