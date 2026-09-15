@@ -16,9 +16,9 @@ The suite was green throughout: 730 tests, 0 failures.
 | 2 | `target_position`'s stated guarantee is not a guarantee | medium | **Fixed** — [PR #21](https://github.com/replicant1/NewTerminalGame/pull/21) |
 | 3 | `game.play` duplicates `WindowLauncher.run`, with a stale docstring | medium | **Fixed** — [PR #20](https://github.com/replicant1/NewTerminalGame/pull/20) |
 | 4 | Two docstrings describe work items that have since landed | low | **Fixed** — [PR #20](https://github.com/replicant1/NewTerminalGame/pull/20) |
-| 5 | The launcher polls the desktop with a subprocess ten times a second | medium | Open |
-| 6 | The pack's copy of `_bounded` dropped a guard | low | Open |
-| 7 | Smaller things | low | Open |
+| 5 | The launcher polls the desktop with a subprocess ten times a second | medium | **Fixed** — [PR #22](https://github.com/replicant1/NewTerminalGame/pull/22) |
+| 6 | The pack's copy of `_bounded` dropped a guard | low | **Fixed** — [PR #22](https://github.com/replicant1/NewTerminalGame/pull/22) |
+| 7 | Smaller things | low | **Fixed** — [PR #22](https://github.com/replicant1/NewTerminalGame/pull/22) |
 
 Findings are recorded as they stood at the time of review. Where one has since
 been fixed the original account is left intact — it is the reason the change was
@@ -35,11 +35,12 @@ The two hard-won operational lessons of the run — that `busy` lies for a windo
 with a grid, and that a window must never be closed with a live process in it —
 are both written down where the next reader will hit them.
 
-Seven findings follow. One was a defect that leaked a terminal window onto the
-user's desktop; it has since been fixed, along with the duplication, the stale
-docstrings, and the placement guarantee the code did not provide. What remains
-open is one efficiency problem and some cleanup. None of them is in the game's
-domain logic, which I could not fault.
+Seven findings follow, **all since fixed**. One was a defect that leaked a
+terminal window onto the user's desktop; the rest were a placement guarantee
+the code did not provide, a duplicated function whose docstring misdescribed
+the original, stale documentation, a poll that spent thousands of subprocesses
+on a single game, and cleanup. None of them was in the game's domain logic,
+which I could not fault.
 
 ---
 
@@ -364,7 +365,9 @@ carrying is kept rather than deleted with it:
 
 ## 5. The launcher polls the desktop with a subprocess ten times a second, for the life of the game
 
-**`launcher/lifecycle.py:42, 209-229`** — severity: medium (efficiency)
+**`launcher/lifecycle.py:42, 209-229`** — severity: medium (efficiency) — **FIXED**
+
+> **Fixed** in [PR #22](https://github.com/replicant1/NewTerminalGame/pull/22).
 
 `POLL_INTERVAL = 0.1`, and `wait_until_idle` calls `has_live_processes` →
 `Desktop.processes` → `OsascriptRunner.run` → `subprocess.run(['/usr/bin/osascript', '-'])`
@@ -396,11 +399,42 @@ pack's own `POLL` (`acceptance/pack.py:51`) has the same value and the same
 justification available, but its waits are bounded at 15 s so it matters far
 less there.
 
+### What was done
+
+Two speeds rather than a ramp, because the thing being waited on has two
+phases and not a continuum: `POLL_INTERVAL = 0.1` for the first
+`SETTLE_AFTER = 2.0` seconds, then `SETTLED_POLL_INTERVAL = 1.0`. A ten-minute
+game costs about **620 asks instead of 6,000**.
+
+The fast phase is the one that carries correctness — a command that fails at
+once, or a login shell that has not started yet, resolves within a second or
+two of the window being created — so it is untouched. The settled phase only
+answers "has the player quit yet", and nobody notices a window closing a
+second after they press `q`.
+
+Two details worth naming:
+
+- **`poll_interval` is a floor, not just the opening speed.** Settling can
+  only ever slow the loop down, so a caller that asks for a slow poll is never
+  quietly given a fast one.
+- **The bound did not loosen.** The last sleep is cut to whatever is left
+  before the deadline, so a slower poll cannot overshoot by most of an
+  interval. Caution C4.
+
+Five tests, including the number the change exists for and the bound it must
+not cost. Every existing cadence assertion is unchanged — they all measure
+inside the first two seconds, which is why the fast phase was left alone.
+
+The pack's `POLL` is deliberately not changed: its waits are bounded at 15 s
+and it wants responsiveness during start-up.
+
 ---
 
 ## 6. The pack's copy of `_bounded` dropped the guard the launcher's has
 
-**`acceptance/pack.py:71-78`** vs **`launcher/script.py:88-92`** — severity: low
+**`acceptance/pack.py:71-78`** vs **`launcher/script.py:88-92`** — severity: low — **FIXED**
+
+> **Fixed** in [PR #22](https://github.com/replicant1/NewTerminalGame/pull/22).
 
 ```python
 # launcher/script.py
@@ -422,9 +456,14 @@ hold. The copy just has to be a faithful one.
 
 **Fix:** `max(1, int(math.ceil(timeout)))`, matching the original.
 
+### What was done
+
+Exactly that. The docstring now says why the copy exists *and* what that
+obliges: the boundary is worth holding, so the copy has to be a faithful one.
+
 ---
 
-## 7. Smaller things
+## 7. Smaller things — **FIXED** in [PR #22](https://github.com/replicant1/NewTerminalGame/pull/22)
 
 | Where | What |
 |---|---|
@@ -435,6 +474,20 @@ hold. The copy just has to be a faithful one.
 | `terminalgame/presentation/frame_builder.py:131-145` | `compose` builds a fixed 40 x 30 `Frame` and never checks the maze fits it. A maze wider than 19 or deeper than 29 fails with a raw `IndexError` from `Frame.put`, where every other "this argument makes the requirement impossible" case in the codebase raises a named error naming the requirement (plan §11.8 — `NotAWallSquare`, `StatusLineWillNotFit`, `NoCorridorToStartOn`, `MazeTooSmall`). |
 | `acceptance/__main__.py:29-37` | `--list` is declared and never read; the branch tests `not arguments.run`. Benign, since `--list` is the default, but `--run --list` runs. |
 | `launcher/lifecycle.py:179` | `except BaseException as cause` converts a `KeyboardInterrupt` during launch into a `LaunchFailed`, which `game.main` turns into exit code 1. Reaping the window first is right; swallowing the interrupt's identity is a side effect worth a comment at least. |
+
+### What was done
+
+All seven, and three of them turned out to be behaviour rather than wording:
+
+| item | what changed |
+|---|---|
+| unused imports | the five `typing` names in `maze.py` and `Point` in `pack.py` are gone; a scan over all three packages now reports none |
+| `Key.printable` | `_is_printable(code)` is `32 <= code < 127`. Control codes, DEL and the individual bytes of a multi-byte character now arrive as `Key.other`, which is what they are. **No behaviour change in the game** — the loop discarded them before too, via a dict miss — but `is_printable` is now true of what it says. Two tests. |
+| `advance_ghost`'s docstring | the claim is now one step weaker and correct: the convention is *nothing changed means nothing new*, not *this call never allocates*. `settle` must return a new state when the outcome moves on, or an ending would never be recorded. |
+| `compose` and oversized mazes | a named `MazeWillNotFit` naming MAZE-1, SCRN-1 and both sizes, instead of an `IndexError` about a cell coordinate. Plan §11.8, as `NotAWallSquare` and `StatusLineWillNotFit` already do. Four tests, including the 19 x 29 boundary. |
+| `acceptance --list` | `--list` and `--run` are a mutually exclusive group, and `--list` is now actually read. `--run --list` used to run; it is now refused by name. Three tests — `acceptance/__main__.py` had none at all. |
+| `lifecycle.open`'s `BaseException` | kept, and the trade written down: `LaunchFailed` carries the `ReapResult`, which on a Ctrl-C is exactly what the person needs to be told about the window. Re-raising the interrupt unchanged would throw that away. |
+
 
 ---
 
@@ -504,10 +557,8 @@ nothing wrong with any of them. Particular things worth keeping:
 
 - ~~Finding 2 — decide which rule is the guarantee, then make doc, code and
   test agree.~~ **Done**, [PR #21](https://github.com/replicant1/NewTerminalGame/pull/21) — ruled in favour of the screen clamp.
+- ~~Findings 5, 6 and 7 — the poll backoff and the cleanup.~~ **Done**, [PR #22](https://github.com/replicant1/NewTerminalGame/pull/22).
 
-What is left, in the order I would take it:
-
-1. Finding 5 — a backoff in `wait_until_idle`. The only open finding with a
-   cost attached to it: an `osascript` subprocess ten times a second for the
-   whole of a game.
-2. Findings 6 and 7 as cleanup.
+**All seven are closed.** The suite went from 730 tests to 748 across the four
+changes, and no finding was closed by deleting the test that would have caught
+it.

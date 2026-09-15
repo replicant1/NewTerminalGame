@@ -27,6 +27,7 @@ from terminalgame.domain.game_state import GameState, Outcome, new_game
 from terminalgame.domain.maze import CORRIDOR, NORTH, WALL, Maze
 from terminalgame.domain.maze_generator import generate_maze
 from terminalgame.presentation.frame_builder import (
+    MazeWillNotFit,
     ACTOR_WIDTH,
     DOT,
     GHOST_GLYPH,
@@ -478,6 +479,43 @@ class TheStatusRowSeamTest(unittest.TestCase):
         for seed in range(10):
             frame = compose(new_game(seed))
             self.assertEqual(BLANK * WIDTH, frame.text_rows()[STATUS_ROW], seed)
+
+    def test_a_maze_too_big_for_the_window_is_refused_by_name(self):
+        # `Frame.put` would have raised an IndexError about a cell coordinate:
+        # true, but it names the symptom rather than the requirement, and a
+        # reader has to work out which of the two is wrong. Plan §11.8.
+        too_wide = Maze([[WALL] * 21 for _ in range(29)])
+        state = GameState(maze=too_wide, player=(1, 1), ghost=(3, 1),
+                          ghost_heading=NORTH, dots=frozenset())
+        with self.assertRaises(MazeWillNotFit):
+            compose(state)
+
+    def test_a_maze_too_deep_for_the_window_is_refused_too(self):
+        too_deep = Maze([[WALL] * 19 for _ in range(31)])
+        state = GameState(maze=too_deep, player=(1, 1), ghost=(3, 1),
+                          ghost_heading=NORTH, dots=frozenset())
+        with self.assertRaises(MazeWillNotFit):
+            compose(state)
+
+    def test_the_maze_refusal_names_the_requirements_and_the_sizes(self):
+        too_wide = Maze([[WALL] * 21 for _ in range(29)])
+        state = GameState(maze=too_wide, player=(1, 1), ghost=(3, 1),
+                          ghost_heading=NORTH, dots=frozenset())
+        try:
+            compose(state)
+        except MazeWillNotFit as refused:
+            said = str(refused)
+            self.assertIn("MAZE-1", said)
+            self.assertIn("SCRN-1", said)
+            self.assertIn("21", said)
+        else:
+            self.fail("a maze the window cannot hold was drawn anyway")
+
+    def test_the_maze_the_game_actually_makes_is_not_refused(self):
+        # The boundary, so the refusal is off by nothing: 19 x 29 is exactly
+        # what MAZE-1 asks for and must still compose.
+        frame = compose(new_game(27))
+        self.assertEqual(WIDTH, frame.width)
 
     def test_a_status_line_wider_than_the_window_is_refused(self):
         with self.assertRaises(StatusLineTooWide):

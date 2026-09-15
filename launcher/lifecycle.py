@@ -39,7 +39,25 @@ SESSION_TIMEOUT = 4 * 60 * 60.0
 #: longer changes nothing and only delays the report.
 FAILURE_TIMEOUT = 2.0
 
+#: How often to ask while the answer is still likely to be changing — a window
+#: whose login shell has only just started, or whose command has only just
+#: failed, settles within a second or two of being created.
 POLL_INTERVAL = 0.1
+
+#: How long to keep asking that often before settling down.
+SETTLE_AFTER = 2.0
+
+#: And how often to ask after that. Every ask is an ``osascript`` process and
+#: an Apple event to Terminal: a trivial round trip was measured at 36 ms on
+#: this machine, and the real call is an Apple event on top of that. At a tenth
+#: of a second, a ten-minute game spends about 6,000 processes and 215 seconds
+#: of subprocess time beside the game it is watching — and a game lasts as long
+#: as the player wants it to, so there is no start-up window to bound it.
+#:
+#: Nothing needs that rate. The question being asked is "has the player quit
+#: yet", and nobody notices a window closing a second after they press ``q``.
+#: The same ten minutes costs about 620 asks this way.
+SETTLED_POLL_INTERVAL = 1.0
 
 
 class GameWindow(object):
@@ -121,6 +139,8 @@ class WindowLauncher(object):
         session_timeout=SESSION_TIMEOUT,
         failure_timeout=FAILURE_TIMEOUT,
         poll_interval=POLL_INTERVAL,
+        settle_after=SETTLE_AFTER,
+        settled_poll_interval=SETTLED_POLL_INTERVAL,
         clock=time.monotonic,
         sleeper=time.sleep,
     ):
@@ -131,6 +151,8 @@ class WindowLauncher(object):
         self.session_timeout = session_timeout
         self.failure_timeout = failure_timeout
         self.poll_interval = poll_interval
+        self.settle_after = settle_after
+        self.settled_poll_interval = settled_poll_interval
         self.clock = clock
         self.sleeper = sleeper
 
@@ -189,6 +211,19 @@ class WindowLauncher(object):
             # believed something about the player's desktop that is not true.
             position = self.desktop.move(window_id, asked_for)
         except BaseException as cause:
+            # `BaseException`, and that is deliberate rather than careless. A
+            # window exists by this point, so caution C3 says deal with the
+            # window before dealing with the error -- and that is as true of a
+            # Ctrl-C as of an `AutomationError`.
+            #
+            # The cost is that a `KeyboardInterrupt` here comes out as a
+            # `LaunchFailed` rather than as itself, so the interrupt does not
+            # propagate as an interrupt. That is the better trade: `LaunchFailed`
+            # carries the `ReapResult`, which is how anybody learns whether the
+            # window was taken back or is still sitting on the desktop, and on a
+            # Ctrl-C that is exactly what the person needs to be told. Re-raising
+            # the interrupt unchanged would throw that away. The original is
+            # kept as `cause` and chained with `from`.
             raise LaunchFailed(
                 cause, window_id, self.reap(window_id, self.failure_timeout)
             ) from cause
@@ -225,10 +260,18 @@ class WindowLauncher(object):
         :meth:`has_live_processes`, which is the only thing that answers it
         correctly for a window this launcher created; the parameter stays so a
         test can inject one, not so that callers have a choice to get wrong.
+
+        **The asking slows down.** Each ask costs a subprocess and an Apple
+        event, and this loop runs for the whole length of a game — see
+        :data:`SETTLED_POLL_INTERVAL`. So it asks quickly while the answer is
+        still likely to be changing and then settles, which is
+        :meth:`_interval_after`. The bound is unaffected: no sleep ever runs
+        past the deadline.
         """
         if still_running is None:
             still_running = self.has_live_processes
-        deadline = self.clock() + timeout
+        started = self.clock()
+        deadline = started + timeout
         while True:
             try:
                 if not still_running(window_id):
@@ -236,9 +279,24 @@ class WindowLauncher(object):
             except AutomationError:
                 # A window we cannot even ask about is not one we should close.
                 return False
-            if self.clock() >= deadline:
+            now = self.clock()
+            if now >= deadline:
                 return False
-            self.sleeper(self.poll_interval)
+            # Never sleep past the deadline: giving up late is still late.
+            self.sleeper(min(self._interval_after(now - started), deadline - now))
+
+    def _interval_after(self, elapsed):
+        """How long to wait before asking again, ``elapsed`` seconds in.
+
+        Two speeds rather than a ramp, because the thing being waited on has
+        two phases and not a continuum: a window is either still settling into
+        existence, or it is running a game that will end whenever the player
+        decides. Never shorter than ``poll_interval``, so a caller that asks
+        for a slow poll is not quietly given a fast one.
+        """
+        if elapsed < self.settle_after:
+            return self.poll_interval
+        return max(self.poll_interval, self.settled_poll_interval)
 
     def reap(self, window_id, timeout, still_running=None):
         """Close the captured window once it is idle, and check that it went.
