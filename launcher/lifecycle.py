@@ -147,6 +147,18 @@ class WindowLauncher(object):
         running" correctly for a window that has been given a grid. Until WI-13
         this method waited on the tab's ``busy`` flag instead, and so closed the
         window while the game was still in it and reported success.
+
+        An empty process list is an unambiguous "nothing is running in there"
+        and needs no matching of names, because :func:`launcher.script.open_window_running`
+        ``exec``s the command and leaves no login shell alive underneath it. It
+        covers the start-up gap for free as well: a window whose login shell has
+        not finished starting lists that shell, so it is never mistaken for a
+        window whose game has ended.
+
+        ``launcher.game`` had its own copy of this called ``play``, written when
+        ``run`` still consulted ``busy``. WI-13 removed that difference and the
+        copy outlived it, warning readers away from this method on grounds that
+        no longer existed. There is one route now, and this is it.
         """
         window = self.open(command)
         return self.reap(window.window_id, self.session_timeout)

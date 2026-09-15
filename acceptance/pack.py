@@ -381,10 +381,17 @@ def _try(question):
 def exercise_the_picture(shown):
     """What the tab was showing, judged only on what text can show.
 
-    Deliberately not compared against a fixed picture: on `main` the game
-    process is still M0's walking skeleton and the real one arrives with
-    WI-12, so an exercise that pinned today's frame would pass now and fail
-    the moment the game it is meant to check turns up.
+    **Deliberately not compared against a fixed picture**, and the reason
+    outlasts the walking skeleton this was first written against. The pack runs
+    `game_command()` with no seed, so MAZE-4 gives it a different maze every
+    time and there is no fixed frame to pin. Seeding it would buy one at the
+    price of no longer exercising the thing this pack exists for — the real
+    command, exactly as a player gets it.
+
+    So this judges the shape instead, which is what SCRN-1 actually states and
+    what holds for every maze the generator can produce: thirty rows, none of
+    them wider than forty columns. What the picture *contains* is reported as a
+    number for a person to compare against the specification, not judged here.
     """
     rows = shown.splitlines() if shown else []
     drawn = looks_like_a_frame(shown)
