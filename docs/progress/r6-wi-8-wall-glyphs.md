@@ -14,3 +14,6 @@
 05:00:03Z  WI-8 DECIDE  dropped two tests that re-asserted behaviour test_maze.py already owns (off-grid neighbours at the four corners, and a weaker only-two-colours check) -> 43 new instead of 45, because the border ring and the colour rule are each now asserted once, at the level that owns them
 05:00:06Z  WI-8 TEST    392 passed, 0 failed, 0 skipped -- /usr/bin/python3 -m unittest discover -t . -s . -p test_*.py ; 43 new over the 349 baseline
 05:00:09Z  WI-8 VERIFY  tkinter._default_root is None after the whole 392-test suite -> True; no Tk interpreter created, property preserved
+05:00:59Z  WI-8 COMMIT  50add73 WI-8: the PR summary, the glyph census, and two tests removed as duplicates -- pushed
+05:01:44Z  WI-8 READ    amendments 2 and 3 (landed on main while I worked). WI-8's own entry is unchanged. Three things bear on me: WI-8 is now on the critical path to WI-18 via WI-12; nothing that is not a test may depend on test code; tests/specimen.py is to move out of tests/ at DEV-B's call
+05:01:47Z  WI-8 TEST    417 passed, 0 failed, 0 skipped after merging origin/main 6cee5c9 (WI-9, WI-9a, amendments) -- clean merge, no conflict; 43 of those are WI-8's
