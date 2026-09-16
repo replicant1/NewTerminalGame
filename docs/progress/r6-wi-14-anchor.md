@@ -11,3 +11,7 @@
 05:18:00Z  WI-14 TEST    603 passed, 0 failed, 0 skipped -- /usr/bin/python3 -m unittest discover -t . -s . -p test_*.py ; 29 new over the 574 baseline; all six house rules clean
 05:18:28Z  WI-14 DRAFT   docs/findings/WI-14-anchor-query.md -- records the dialog evidence, the multi-display obstacle that A2's permission would not clear, the defect the probe found in my own guard, and the section 4 contradiction
 05:19:17Z  WI-14 TEST    634 passed, 0 failed, 0 skipped after merging origin/main (WI-16, WI-17 and their records landed); clean merge, no conflict; all six house rules still clean
+05:20:10Z  WI-14 MERGE   PR #54 merged to main as 43996cf; fetched and merged origin/main back and re-ran the whole suite
+05:20:14Z  WI-14 TEST    634 passed, 0 failed, 0 skipped on main at 43996cf -- /usr/bin/python3 -m unittest discover -t . -s . -p test_*.py ; what landed is green
+05:20:18Z  WI-14 NOTE    zero windows opened in WI-14. Probe ran twice, root withdrawn before anything could be mapped, root state 'withdrawn' and tkinter._default_root None on both; pgrep found only orchestration/server.py, which is not mine. Screen gate released to the conductor explicitly.
+05:20:21Z  WI-14 DONE    WI-14 r6/wi-14-anchor 43996cf -- merged as PR #54; docs/completions/COMPLETION-M2-DEV-C.md and docs/findings/WI-14-anchor-query.md landed with it

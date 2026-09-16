@@ -777,6 +777,16 @@ hole could be hiding, named now rather than found later:
 | A real `q` and a real close button ending the process with no orphan left behind | **WI-17**, confirmed at **WI-21** |
 | The real surface painting the real glyphs at the right cells | **WI-16**, by eye — this one is honestly only ever provable by a person |
 
+**When the suite cannot reach something at all** *(added in amendment 9)*. Two of the
+surface's functions need a live toolkit interpreter, which this plan forbids the suite — so
+they have **no automated test**, and DEV-B declared that rather than working around it by
+quietly constructing an interpreter in a test, which would have broken the rule silently.
+That was the right call and the hole is real. **The answer is not to pretend otherwise but
+to label it:** such code is *covered by observation, not by test*, and the observation has
+to be recorded in `docs/findings/` and cited. An observation nobody wrote down is not
+coverage; a recorded one is a weaker but honest kind. **Never let a sweep row claim test
+coverage for something only a person has seen work.**
+
 **And the limit on all of the above** *(added in amendment 6)*. Everything in that table is
 a **positive**: a key arrives, a window is reaped, a failure is noticed. You can exercise a
 positive. **You cannot exercise a negative into existence.** A claim that *nothing*
@@ -870,6 +880,7 @@ arrives later, the "rests on it" column is the complete list of places to change
 | **A4** | *"Large enough to read comfortably"* is one named font-size constant, checked by eye. No objective test exists. | **WI-2**'s metrics constant; looked at in **WI-16** and **WI-21** |
 | **A5** | The game may **not** create or modify a profile or anything else in the user's preferences. | Nothing: candidate 2 needs no profile, so the blast radius is empty. Recorded so an answer has somewhere to land. |
 | **A6** | The specimen picture is normative for the grid-to-screen mapping. | Section 5, and through it **WI-1**, **WI-8**, **WI-12** |
+| **A11** | *(Added in amendment 9.)* **A modified arrow moves the player.** The key seam carries no modifier state, so control-Up cannot be told from Up; modified *letters* are rejected, so control-Q correctly does nothing. CTRL-5 is therefore honoured for letters and **not** for modified arrows. Deliberate, not accidental — see WI-9. | **WI-3**'s key seam and **WI-9**'s translator with its tests. Widening the seam is the whole cost, and it is a landed file in a lane with no agent. |
 | **A10** | *(Added in amendment 6.)* SCRN-3's walls **do** "join up neatly" on screen. Four developers each declined to convert the advance-width measurement into this answer, and they were right: **equal advance proves the cells line up, not that the strokes touch.** No test can settle it. | The SCRN-3 row of the sweep, and **WI-16**'s joinery view — which is the only thing on this project that has ever rendered a crossing glyph, since the specimen picture contains none |
 | **A2 revised** | *(Amended in amendments 6 and 7.)* The anchor is the **pointer position**, not a window, and **an anchor that cannot be bounded to a known screen rectangle counts as nothing seen** and falls back. A2's literal reading resolves to "no anchor window is visible without Accessibility, ever" and so degenerates to a fixed corner, which does not satisfy WIN-4 either; both readings deviate, and this one serves WIN-4's stated purpose. **And permission is not the only obstacle** — see C-7: on a multi-display desktop the toolkit gives the pointer in whole-desktop coordinates but describes only the primary, so the anchor is unbounded and the game falls back *whatever* the user grants. | **WI-14** alone, one constant, fallback path already tested |
 | **A9** | *(Added in amendment 4.)* STAT-3's `CLEARED  score 274` is a **format exemplar, not a reachability claim**. A full game is worth 259–271, mean 264.5, so 274 cannot occur. The two STAT-3 strings stay normative as formats; no test and no sweep row may assert 274 as an achieved score. | **WI-13**'s formatting tests, **WI-19**'s win path, **WI-20a**/**WI-20b**'s sweep rows |
@@ -1001,6 +1012,14 @@ an unchanged frame produces the same picture; that a missing font raises rather 
 substitutes; that no image, bitmap or geometric primitive is ever emitted. These tests run
 with **no window**: the toolkit is stood in for by a recording double.
 
+*Amendment 9 — a trap worth carrying forward, found by DEV-B.* **The toolkit's own
+"fixed font" alias is not fixed width.** `TkFixedFont` resolves to the system UI font here,
+reports `fixed = 0`, and has **six distinct advance widths** across the glyphs this game
+draws. A surface built on it would read as entirely reasonable in the source and produce a
+wrong-sized window with walls that do not line up — no review would catch it and no unit
+test would have either. **Pin the font by name and refuse anything that does not measure
+fixed.** This is why this item's metrics check fails loudly rather than substituting.
+
 *Also produces.* `docs/findings/WI-2-cell-metrics.md` — the font chosen, its measured cell
 width and height, the resulting window size in pixels, and whether the double-line
 box-drawing glyphs and the block glyphs render at the right advance width. This is the
@@ -1120,6 +1139,14 @@ than inventing a second one**. WI-7 or WI-9, whichever lands first, also settles
 direction and heading vocabulary for the whole project — announce it per the first-lander
 rule, because WI-11 and WI-15 will both conform to it.
 
+*Amendment 9 — how often the ghost actually chooses, measured.* **About 4.79 ticks in
+100.** A choice needs straight-on blocked *and* another way open; measured over 30 generated
+mazes at 2,000 ticks each, with 65.3% mean corridor coverage and no cycle lock. GHOST-3's
+wording — "picks one of the other ways on at random" — reads like the common case and is in
+fact the rare one. **Anyone reasoning about ghost behaviour should use the number rather
+than the sentence**, including WI-20b's sweep, and any test that wants to see a choice must
+build a junction deliberately rather than hope a random maze provides one.
+
 *Tests must establish.* On hand-built mazes: that in a straight corridor it continues,
 every time, for many draws; that at a T-junction it never chooses the square it came from
 while another exit exists; that in a dead end — which the real generator will not produce,
@@ -1152,6 +1179,23 @@ the border ring resolve to the glyphs the specimen picture shows at the corners 
 
 **WI-9 — The input translator** · DEV-B · **1 day** · depends on **WI-1** ·
 `r6/wi-9-input-translator`
+
+*Amendment 9 — modified arrows move the player, and that is a decision.* The key seam
+carries no modifier state. Modified letters map to nothing, so control-Q is correctly
+rejected; **control-Up cannot be distinguished from Up and therefore moves the player.**
+DEV-B found this, recommended leaving it, and asked for it to be *decided* rather than left
+as an accident. That instinct is right, and the decision is: **leave it.**
+
+Two reasons, and the honest one is second. The text bears it: CTRL-1 says "the four arrow
+keys move the player", and a player pressing control-Up has pressed an arrow key; CTRL-5's
+"no other key" most naturally means other *keys*, not other modifier combinations. And the
+cost decides it: fixing it means widening a landed seam that WI-3 owns, in a lane whose
+agent has ended, with WI-18 in flight against that same seam — real risk to a green suite,
+at the end of a run, for a case no player will hit.
+
+**So it is recorded as a known gap, not as coverage.** A11 in section 6, and WI-20b's
+CTRL-5 row must say "letters yes, modified arrows no" rather than ticking it. The user may
+overturn it; the blast radius is one seam and one translator.
 
 *Outcome.* Raw key events become intents: the four arrow keys become Move up, down, left
 and right; `q` **and** `Q` become Quit; **every other key is discarded** and nothing is
@@ -1248,6 +1292,12 @@ the score or the dot field; after an outcome is set, applying another move chang
 
 **WI-12 — The frame composer** · DEV-B · **3 days** · depends on **WI-1**, **WI-6**,
 **WI-8** · `r6/wi-12-frame-composer`
+
+*Amendment 9 — approved deviation.* This item requires a maze that **fits** the picture
+rather than one that is exactly 19 × 29. **Approved**, and the plan was at fault: it asked
+in the same breath for "a small hand-built maze composes to a known picture", which is
+impossible if the composer insists on full size. MAZE-1 is untouched — **the generator is
+what fixes 19 × 29**, and the real game still hands one over.
 
 *Outcome.* A game state becomes rows 0–28 of a frame value: 37 columns of maze — square
 *c* at column 2c, connectors in the odd columns — and a **blank 3-column right margin**.
@@ -1526,7 +1576,15 @@ its own tests; do not re-assert any of it here. One defect should turn one test 
 **WI-19 — The scripted game** · DEV-B · **3 days** · depends on **WI-15** ·
 `r6/wi-19-scripted-game`
 
-*Outcome.* A whole game played **headless**, in the suite: a seeded maze, a fake clock, a
+*Amendment 9 — two approved deviations.* Hand-built games construct the game state
+directly rather than going through the session's own opening, because **a seeded 19 × 29
+picture cannot be read as text** and a readable test is worth more than a uniform one. That
+is right *provided both exist*, and both do: readable hand-built games for the rules, and a
+seeded whole game for the machinery. Also approved: the ghost policy accepting "has not
+moved yet" in place of a heading, so that WI-6 need not invent an initial direction it has
+no basis for — a fiction avoided is better than a fiction tested.
+
+*Outcome.* A whole game played **headless**, in the suite: a seeded maze, a driven tick, a
 scripted sequence of key presses, and the frames asserted as text. At least a **win path**
 — every dot eaten, the status line reading `CLEARED`, the ghost stopped, further keys doing
 nothing, `q` ending it — and a **loss path** — the ghost and the player meeting, the ghost
@@ -1663,6 +1721,14 @@ ever been argued:
   input → session → resolver chain agrees with itself through a real window.
 - **SCRN-3 cannot be closed by the sweep.** It needs A10 and a person; cite WI-16's joinery
   view and say so, and note that the specimen picture contains no crossing glyph.
+- **CTRL-5 is honoured for letters and not for modified arrows** (A11). Say so; do not
+  tick it. A modified arrow moves the player, deliberately.
+- **Two surface functions have no automated test at all** — the ones that need a live
+  toolkit interpreter, which the suite is forbidden. They are **covered by observation, not
+  by test**: cite the real-window exercises in `docs/findings/` and the project ledger of
+  windows opened and reaped. A row claiming test coverage there would be false.
+- **The ghost chooses on about 4.79 ticks in 100.** Use the measurement, not GHOST-3's
+  wording, which reads like the common case and describes the rare one.
 - **WIN-4 rests on A2 revised** — the pointer anchor — **and on C-7**, the geometry that
   makes it fall back regardless of any permission. A row citing only the permission would
   imply a fix that does not exist.
