@@ -7,3 +7,9 @@
 05:35:18Z  COMMIT  9db697c WI-22: the join - one Presentation function owns the whole picture
 05:35:34Z  NOTE    draft PR 64 open, url ends pull/64
 05:35:50Z  COMMIT  772aa30 WI-22: completion record and progress log
+05:36:53Z  MERGE   PR 64 merged as 95d4b3b; origin/main brought back to the branch
+05:36:56Z  TEST    747 passed, 0 failed, 0 skipped  on the branch with origin/main merged back in, after PR 64 landed
+05:36:59Z  DONE    WI-22 r6/wi-22-the-join 95d4b3b
+05:37:11Z  NOTE    three early lines never reached this file - two READs and the baseline TEST - because the brace-group append form I used silently wrote nothing. Not backfilled. Restating the lost measurement below with the time I am writing it, not the time I took it.
+05:37:14Z  VERIFY  baseline before any edit, measured at about 05:33Z on main at 238f4dd -> 740 passed, 0 failed, 0 skipped
+05:37:17Z  READ    restating what was read: IMPLEMENTATION_PLAN sections 1, 2, 3, 4 and WI-22 under amendment 10; the four call sites at the_look.py, scripted.py, window_manners.py, shell/game.py
