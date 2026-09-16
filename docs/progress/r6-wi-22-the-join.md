@@ -6,3 +6,4 @@
 05:34:54Z  TEST    747 passed, 0 failed, 0 skipped  after the join landed and the four call sites were pointed at it
 05:35:18Z  COMMIT  9db697c WI-22: the join - one Presentation function owns the whole picture
 05:35:34Z  NOTE    draft PR 64 open, url ends pull/64
+05:35:50Z  COMMIT  772aa30 WI-22: completion record and progress log
