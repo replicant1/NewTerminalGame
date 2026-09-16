@@ -36,7 +36,7 @@ launcher sends input to the game and nothing should.
 
 ## Its other half
 
-``needs_a_person`` is the register of what no machine can settle — the
+``manual_smoketest`` is the register of what no machine can settle — the
 colours, the legibility, a real key pressed by a real finger. The two are
 meant as a pair: this puts the game on the screen, and that says what to look
 at while it is there.

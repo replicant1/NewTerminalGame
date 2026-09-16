@@ -1,7 +1,7 @@
 """``python3 -m smoketest`` — run the exercises against the real desktop.
 
 One window is opened and taken back again. Unlike the register in
-``needs_a_person``, this one really does something to the machine it is run
+``manual_smoketest``, this one really does something to the machine it is run
 on, which is why it is a separate command rather than a flag: nobody should
 reach the desktop by leaving an argument off.
 """
@@ -12,7 +12,7 @@ import argparse
 import sys
 
 from launcher.game import game_command
-from needs_a_person import checks
+from manual_smoketest import checks
 from smoketest import pack
 
 EXIT_OK = 0
@@ -64,7 +64,7 @@ def main(argv=None):
         print("left it rather than making things worse. Close it when you")
         print("are ready.")
     print("")
-    print("Now run `python3 -m needs_a_person`: %d of the requirements this "
+    print("Now run `python3 -m manual_smoketest`: %d of the requirements this "
           "project makes" % len(checks.CODES_NEEDING_A_PERSON))
     print("cannot be settled by any of the above, and none of them is recorded")
     print("as verified anywhere.")

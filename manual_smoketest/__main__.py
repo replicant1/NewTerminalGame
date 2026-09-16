@@ -1,4 +1,4 @@
-"""``python3 -m needs_a_person`` — print the register, and open nothing.
+"""``python3 -m manual_smoketest`` — print the register, and open nothing.
 
 It takes no arguments deliberately. There is nothing to configure about a list
 of things a person has to look at, and a flag would only invite somebody to
@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import sys
 
-from needs_a_person import checks
+from manual_smoketest import checks
 
 EXIT_OK = 0
 
@@ -23,7 +23,7 @@ def main(argv=None):
     argv = list(sys.argv[1:] if argv is None else argv)
     if argv:
         sys.stderr.write(
-            "usage: python3 -m needs_a_person   (no arguments)\n"
+            "usage: python3 -m manual_smoketest   (no arguments)\n"
             "to run the machine's half instead: python3 -m smoketest\n")
         return 2
     print(checks.render())

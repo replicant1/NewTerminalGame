@@ -17,9 +17,9 @@ import inspect
 import io
 import unittest
 
-from needs_a_person import checks
-from needs_a_person.__main__ import EXIT_OK
-from needs_a_person.__main__ import main as register_main
+from manual_smoketest import checks
+from manual_smoketest.__main__ import EXIT_OK
+from manual_smoketest.__main__ import main as register_main
 
 
 class AskingForTheRegisterOpensNothing(unittest.TestCase):
@@ -52,7 +52,7 @@ class AskingForTheRegisterOpensNothing(unittest.TestCase):
         # `main(["--run"])` passes either way.
         import sys as _sys
         saved = _sys.argv
-        _sys.argv = ["python3 -m needs_a_person", "--run"]
+        _sys.argv = ["python3 -m manual_smoketest", "--run"]
         try:
             with contextlib.redirect_stderr(io.StringIO()) as complaint:
                 with contextlib.redirect_stdout(io.StringIO()):

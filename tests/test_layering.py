@@ -129,10 +129,10 @@ SMOKETEST_ROOT = os.path.join(REPOSITORY_ROOT, "smoketest")
 #: `terminalgame` and it could assert against the frame builder's own output
 #: instead of against what reached the screen.
 #:
-#: `needs_a_person` is here because `__main__` prints a closing line counting
+#: `manual_smoketest` is here because `__main__` prints a closing line counting
 #: the codes only a person can settle. That is a register of strings and
 #: imports nothing itself, so it cannot carry the game in behind it.
-SMOKETEST_MAY_IMPORT = ("smoketest", "launcher", "needs_a_person")
+SMOKETEST_MAY_IMPORT = ("smoketest", "launcher", "manual_smoketest")
 
 
 def application_files():
@@ -702,18 +702,18 @@ class SmokeTestStaysOutsideTest(unittest.TestCase):
         self.assertGreater(len(names), 2)
 
     def test_the_register_is_a_separate_package_that_imports_nothing(self):
-        """`needs_a_person` is a register, not an instrument.
+        """`manual_smoketest` is a register, not an instrument.
 
         It was split out of the same directory as the smoke test, and the
         split only means anything while it stays inert: the moment it imports
         something it stops being a list of what a person must do and becomes
         a second thing that runs.
         """
-        root = os.path.join(REPOSITORY_ROOT, "needs_a_person")
+        root = os.path.join(REPOSITORY_ROOT, "manual_smoketest")
         self.assertTrue(os.path.isdir(root), "the register should be its own package")
         checks = os.path.join(root, "checks.py")
         self.assertTrue(os.path.isfile(checks))
-        imported = top_level_imports(source_of(checks), "needs_a_person")
+        imported = top_level_imports(source_of(checks), "manual_smoketest")
         not_stdlib = sorted(m for m in imported if not is_standard_library(m))
         self.assertEqual(
             [], not_stdlib,

@@ -17,8 +17,8 @@ that no hold is reached for.
 failure between creating the window and handing back the context manager never
 reaches ``__exit__``, so ``__enter__`` reaps for itself.
 
-The register that used to share this file is now `needs_a_person`, and its
-tests are in ``tests/test_needs_a_person.py``.
+The register that used to share this file is now `manual_smoketest`, and its
+tests are in ``tests/test_manual_smoketest.py``.
 """
 
 from __future__ import annotations
@@ -30,7 +30,7 @@ import unittest
 
 from launcher.geometry import Size
 from launcher.runner import AutomationError
-from needs_a_person import checks
+from manual_smoketest import checks
 from smoketest import pack
 from smoketest.pack import (
     Observation,
