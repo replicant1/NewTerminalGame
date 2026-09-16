@@ -811,7 +811,40 @@ So, for every item that touches the Shell:
    DEV-A said this unprompted while asking for the screen, having just built the thing:
    *"it is unbounded by design and that is exactly the thing an agent must not start."*
    The developer who builds the one process with no backstop noticing that it has no
-   backstop is how this rule came to be written, and it is the last one this plan needed.
+   backstop is how this rule came to be written.
+
+### A faithful route and an unconditional route are not the same route
+
+*(Added in amendment 12. This is the most valuable thing this plan learned, and it was
+learned three separate times.)*
+
+In this architecture the Shell owns the window and the loop, and the session is a
+collaborator it calls. So **there is always a second way to end things**: ask the session
+to stop, or simply take the window away. Both make the window disappear. **The pixel is
+identical.** One of them leaves the session believing the game is still being played.
+
+It has bitten **three times**, each on a different route out:
+
+| Route | What was scheduled or bound | What the session thought |
+| --- | --- | --- |
+| The close button | the window owner's own shutdown | still playing |
+| A crash inside a timer callback | nothing — the toolkit swallowed it | the caller never learned |
+| A scheduled deadline | the window owner's own shutdown | still playing |
+
+Each time the window closed correctly. Each time it was found **on a real screen, never by
+the suite** — and *that* is the part to fix, because it need not have been:
+
+- **Assert the phase the session reached, not that the window closed.** A double records
+  "the window was told to close" under *both* routes, which is why the seam I specified
+  cannot tell them apart. The session's phase can, and it is assertable headless. All three
+  of these were catchable without a screen by the test nobody wrote.
+- **When you add a new way for the game to end** — a key, a button, a timer, a failure —
+  ask *does the session learn?* The faithful route goes through the session. The
+  unconditional route is a **backstop underneath it**, scheduled later, never instead.
+- More generally, and this is the transferable part: **a correct observable effect does not
+  mean the route that produced it was correct.**
+
+WI-21 put it best and its sentence is the title of this rule.
 
 **What this plan still owes a real-medium exercise.** These are the places where the same
 hole could be hiding, named now rather than found later:
@@ -1725,7 +1758,10 @@ the finished game so that a person can answer the three questions nobody else ca
    somewhere visible?** (A2)
 3. **Is the type large enough to read comfortably?** (A4)
 
-The answers are written down in `docs/findings/WI-21-human-answers.md`, with what was run
+The answers are written down in `docs/findings/WI-21-the-five-questions.md` *(renamed in
+amendment 12 — the plan said `WI-21-human-answers.md`, and WI-21's objection is right: a
+file called "human answers" holding five unanswered questions is the one name most likely
+to be misread. The tree is right and the plan was wrong.)*, with what was run
 and what was seen. An unanswered question is reported as unanswered.
 
 *Tests must establish.* That the script cannot run unbounded — it exits by itself within its
@@ -1825,6 +1861,17 @@ ever been argued:
   input → session → resolver chain agrees with itself through a real window.
 - **SCRN-3 cannot be closed by the sweep.** It needs A10 and a person; cite WI-16's joinery
   view and say so, and note that the specimen picture contains no crossing glyph.
+- **Nobody has ever played this game to an ending** *(amendment 12)*. Every on-screen run
+  finished undecided; a game reaching `CAUGHT` or `CLEARED` exists only headless, in
+  WI-19's scripted games. So GAME-2, END-1 and END-2 are established **by test and not by
+  observation** — the exact inverse of the surface functions two rows below, and the sweep
+  should say so in both directions rather than letting either look like full coverage.
+- **The screen ledger for the whole run: 39 windows opened, 39 reaped, no modal sheet ever
+  raised** *(amendment 12)*. Put the number in. It is the single best evidence that the
+  care taken over the user's machine was real rather than asserted.
+- **The three occurrences of the faithful-versus-unconditional defect** (section 4) are
+  worth a row of their own, because they are the only defect class on this project that
+  recurred after being fixed, and the only one the test seam is structurally blind to.
 - **CTRL-5 is honoured for letters and not for modified arrows** (A11). Say so; do not
   tick it. A modified arrow moves the player, deliberately.
 - **Two surface functions have no automated test at all** — the ones that need a live
