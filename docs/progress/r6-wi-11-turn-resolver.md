@@ -1,0 +1,9 @@
+04:50:18Z  START   WI-11 The turn resolver. DEV-A. Deciding the base: WI-7 is PR #33, open and out of draft but not merged.
+04:51:17Z  DECIDE  base -> stacked on r6/wi-7-ghost-policy, because PR #33 is out of draft but not merged and DEV-A holds the critical path. WI-7 s merge base is edcb5a3, my own WI-6 merge, so the stack already contains everything WI-11 needs.
+04:51:17Z  READ    DEV-B s WI-7: next_step(maze, square, heading, random_source) -> GhostStep(direction, square), heading Optional. Their comment on PR #32 asks me to decide where the heading is carried and recommends putting it in GameState.
+04:51:17Z  DECIDE  ghost heading -> GameState gains ghost_heading: Optional[Direction], as DEV-B recommended, because a GameState that cannot say which way the ghost was going is not the whole state and WI-19 has to rebuild a game from one.
+04:51:17Z  DECIDE  END-3 -> make it structural twice over: the step order lives in one visible list, AND an outcome once decided cannot be replaced, so the win test cannot overwrite a collision however the code is later rearranged. No mutation test, which is prohibited.
+04:52:54Z  PLAN    terminal_game/domain/turn_resolver.py with resolve_move and resolve_tick, each opening with its step order written out; GameState gains ghost_heading.
+04:52:54Z  VERIFY  END-3 case run by hand: one dot left, on the ghost s square, player adjacent, score 6. resolve_move EAST gives outcome CAUGHT, score 7, dots 0 -- so the winning condition really did hold in the same turn and the collision took precedence.
+04:52:54Z  DECIDE  what happens to the dot on the losing turn -> it is still eaten and still scores, because the plan s step order puts eat after collision rather than instead of it. Pinned in a test and flagged in the PR as a judgement call.
+04:52:54Z  TEST    330 passed, 0 failed, 0 skipped  (/usr/bin/python3 -m unittest discover -t . -s . -p "test_*.py", 3.74s). 25 of them are WI-11 s.

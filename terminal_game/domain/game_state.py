@@ -24,8 +24,10 @@ from __future__ import annotations
 import dataclasses
 from enum import Enum
 
+from typing import Optional
+
 from .dot_field import DotField
-from .maze import Maze, Square
+from .maze import Direction, Maze, Square
 
 __all__ = ["Score", "Outcome", "GameState"]
 
@@ -108,6 +110,20 @@ class GameState:
     score: Score
     outcome: Outcome = Outcome.UNDECIDED
 
+    #: Which way the ghost was last going, or ``None`` before it has moved.
+    #:
+    #: GHOST-2 — *"keeps going in a straight line for as long as the corridor
+    #: lets it"* — is only meaningful if something remembers which line, and
+    #: this is that something.  It belongs in the state rather than in
+    #: whatever is running the game, so that a state on its own is a whole
+    #: game and WI-19 can rebuild one from a value.
+    #:
+    #: It sits last only because every field before it has no default.  At
+    #: the opening position it is ``None``: the ghost has been placed but has
+    #: not moved, so it has not come from anywhere and every way on is open
+    #: to it.
+    ghost_heading: Optional[Direction] = None
+
     # ------------------------------------------------------------------
     # Asking
     # ------------------------------------------------------------------
@@ -131,6 +147,9 @@ class GameState:
 
     def with_ghost_at(self, square: Square) -> "GameState":
         return dataclasses.replace(self, ghost=square)
+
+    def with_ghost_heading(self, heading: Optional[Direction]) -> "GameState":
+        return dataclasses.replace(self, ghost_heading=heading)
 
     def with_dots(self, dots: DotField) -> "GameState":
         return dataclasses.replace(self, dots=dots)
