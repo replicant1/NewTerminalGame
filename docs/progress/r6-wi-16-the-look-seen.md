@@ -14,3 +14,6 @@
 05:13:16Z  NOTE    SCREEN GATE RELEASED - telling the conductor now so DEV-A can have it
 05:14:45Z  NOTE    merged main, bringing DEV-Cs WI-10 house-rules guard. WI-16 passes all of it: the tool declares no wall glyph, draws no image, and the specimen move I landed as PR #50 is what lets rule 6 hold
 05:14:45Z  TEST    605 passed, 0 failed, 0 skipped  [/usr/bin/python3 -m unittest discover -t . -s . -p "test_*.py"] with the architecture guard merged in
+05:16:00Z  MERGE   PR #53 merged to main; fetched and fast-forwarded; whole suite re-run on the landed tree
+05:16:00Z  TEST    605 passed, 0 failed, 0 skipped  [/usr/bin/python3 -m unittest discover -t . -s . -p "test_*.py"] on the landed tree
+05:16:00Z  DONE    WI-16 r6/wi-16-the-look-seen (merged as PR #53). All three human questions recorded UNANSWERED with the command to answer each
