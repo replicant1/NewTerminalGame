@@ -25,25 +25,12 @@ from terminal_game.domain.maze_generator import (
     generate_maze,
 )
 
-#: Many seeds, not one.
-SEEDS: Tuple[int, ...] = tuple(range(200))
+from .generated_mazes import SEEDS, mazes_for_every_seed
 
 #: Floods from every corridor square are quadratic, so only a few seeds get
 #: the exhaustive treatment; the rest are flooded from one square, which is
 #: equivalent given that reachability across corridor squares is symmetric.
 SEEDS_FLOODED_FROM_EVERY_SQUARE: Tuple[int, ...] = SEEDS[:3]
-
-
-_LAID_OUT = {}
-
-
-def mazes_for_every_seed():
-    """The 200 mazes, laid out once and shared by every test that wants them."""
-    if not _LAID_OUT:
-        _LAID_OUT.update(
-            (seed, generate_maze(random.Random(seed))) for seed in SEEDS
-        )
-    return _LAID_OUT
 
 
 def reachable_from(maze: Maze, start: Square) -> Set[Square]:

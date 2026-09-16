@@ -9,9 +9,25 @@ What is here so far:
 
 * :mod:`terminal_game.domain.maze` — ``Square``, ``Direction``,
   ``SquareKind`` and the immutable ``Maze``, which owns the query surface the
-  rest of the system asks its questions through.
+  rest of the system asks its questions through (WI-5).
 * :mod:`terminal_game.domain.maze_invariants` — MAZE-2, MAZE-3, MAZE-5 and
-  MAZE-6 as predicates over a finished grid.
+  MAZE-6 as predicates over a finished grid (WI-5).
 * :mod:`terminal_game.domain.maze_generator` — ``generate_maze``: carve a
-  spanning tree, braid away every dead end, verify, then hand the maze out.
+  spanning tree, braid away every dead end, verify, then hand the maze out
+  (WI-5).
+* :mod:`terminal_game.domain.dot_field` — ``DotField``, the dots along the
+  corridors and what happens when one is taken (WI-6).
+* :mod:`terminal_game.domain.game_state` — ``Score``, ``Outcome`` and
+  ``GameState``, the vocabulary a game is carried in.  It is a **value**: a
+  rule that must change nothing is asserted by comparing two whole states
+  (WI-6).
+* :mod:`terminal_game.domain.opening_position` — where everything stands the
+  moment the window opens, as a pure function of the maze (WI-6).
+* :mod:`terminal_game.domain.ghost` — ``next_step``: straight on while the
+  corridor allows it, otherwise one of the *other* ways on at random, and
+  back the way it came only as a last resort.  The player is not a
+  parameter, so it cannot hunt even by mistake (WI-7).
+
+Still to come: the turn resolver, in which the fixed order of the rules of a
+turn lives in one readable place (WI-11).
 """
