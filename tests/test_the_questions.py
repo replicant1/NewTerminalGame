@@ -612,17 +612,31 @@ class TheHarnessComposesNoPictureOfItsOwn(unittest.TestCase):
         )
         self.assertNotIn("terminal_game.presentation.status_line", imported)
 
-    def test_the_window_it_asks_for_is_the_games_own(self):
-        # The one join this tool owns: what it puts on the screen is the
-        # assembled game, not a reproduction of it. The title is the visible
-        # end of that, and it is the game's constant rather than a string
-        # typed here.
+    def test_it_never_types_the_title_it_asks_a_person_to_look_at(self):
+        # A1's question quotes the titlebar, so if the title ever changes
+        # the question has to change with it. It is derived from
+        # window_owner's own constant; a copy typed here would go stale
+        # silently and send somebody to look for the wrong string.
+        #
+        # Deliberately NOT asserted here: that the window the game asks for
+        # carries that title. WI-18 owns that join and pins it already
+        # (tests/test_game.py), and amendment 11's rule applies -- one
+        # defect should turn one test red.
+        for node in ast.walk(module_source_tree()):
+            if isinstance(node, ast.Constant) and isinstance(node.value, str):
+                self.assertNotEqual(
+                    WINDOW_TITLE,
+                    node.value.strip(),
+                    "the tool has typed the window title; it must come from "
+                    "WINDOW_TITLE so the question follows a change to it",
+                )
+
+    def test_the_record_reports_the_title_from_that_constant(self):
         toolkit = RecordingToolkit()
         toolkit.event_loop_body = lambda: run_everything_that_is_due(toolkit)
 
         record = a_sitting(a_stage(toolkit), seconds=20)
 
-        self.assertEqual(WINDOW_TITLE, toolkit.window_spec.title)
         self.assertEqual(WINDOW_TITLE, record["asked_for"]["title"])
 
 

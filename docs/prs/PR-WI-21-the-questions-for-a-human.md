@@ -1,8 +1,9 @@
 # WI-21 — the questions for a human
 
-**Branch** `r6/wi-21-human-questions`, based on `main` at `238f4dd`.
+**Branch** `r6/wi-21-human-questions`, based on `main` at `238f4dd`, with
+`origin/main` merged in twice as WI-22 and amendment 11 landed underneath it.
 **Suite** `/usr/bin/python3 -m unittest discover -t . -s . -p "test_*.py"` →
-**787 passed, 0 failed, 0 skipped** (740 on `main`, +47 here).
+**796 passed, 0 failed, 0 skipped** (747 on `main` at `b11a8a6`, +49 here).
 
 ---
 
@@ -29,7 +30,7 @@ say which of the two it came from**:
 
 | | What it is | What it can answer |
 | --- | --- | --- |
-| **the harness** — `tools/the_questions.py` | `build_game` with everything at its default, at the real anchor, painted by the real surface, under a hard deadline | the titlebar, where the window landed, whether the type is comfortable |
+| **the harness** — `tools/the_questions.py` | `build_game` with everything at its default, at the real anchor, painted by the real surface, under two deadlines | the titlebar, where the window landed, whether the type is comfortable |
 | **the real game** — `/usr/bin/python3 -m terminal_game` | the shipped exit path, unbounded, **the user's to start** | a whole game played to an ending, a real `q` out of a *finished* game, a close button pressed by a hand, the process exiting |
 
 The harness creates the window identically, which is why it answers the first
@@ -41,8 +42,9 @@ in as many words.
 | File | What it is |
 | --- | --- |
 | `tools/the_questions.py` | the five questions and five rulings as data; the C-7 warning; option parsing with two caps; `a_sitting`, which opens one window on the real assembled game and reaps it |
-| `tests/test_the_questions.py` | 47 tests. No window is created anywhere in it |
+| `tests/test_the_questions.py` | 49 tests. No window is created anywhere in it |
 | `docs/findings/WI-21-the-five-questions.md` | the checklist written down, question by question, with what is open and what it would cost to change |
+| `docs/completions/COMPLETION-M5-DEV-A.md` | the completion record |
 | `docs/progress/r6-wi-21-human-questions.md` | the log |
 
 ## What the suite owns here, per the plan
@@ -57,10 +59,11 @@ on its own; four windows at the per-window maximum is four minutes of somebody's
 screen and every one of them passes the first cap.
 
 Beyond the parser, driven through WI-3's `RecordingToolkit` on virtual time:
-the deadline is on the scheduler **before** the event loop is entered; with
-**nothing pressed at all** the window is destroyed exactly once; and the virtual
-clock at that moment is `<= seconds * 1000`, so it ended *by its stated time*
-rather than merely eventually.
+**both** deadlines are on the scheduler **before** the event loop is entered;
+with **nothing pressed at all** the session reaches phase `ended` and the window
+is destroyed exactly once; and the virtual clock at that moment is within the
+stated time plus the backstop margin, so it ended *by its stated time* rather
+than merely eventually.
 
 **It reaps its window on the failure path.** A surface that will not build —
 a collaborator handed in by the test, with no production code altered anywhere —
@@ -76,11 +79,12 @@ record rather than raised, and the event loop never entered.
   `terminal_game.__main__`, and calls nothing that launches a process. Per
   amendment 6: an observation covers one run on one machine, an absence covers
   every run on every machine, and a guard is a flag somebody can flip.
-- **No fifth copy of the state-to-frame binding.** WI-22 is consolidating the
-  `compose_frame(state, status_row(...))` binding out of four call sites.
-  `a_sitting` leaves `build_game`'s composer at its default, so the picture comes
-  from the production join in `terminal_game/shell/game.py`; there is an AST test
-  that this module never calls or imports either half.
+- **No fifth copy of the state-to-frame binding.** WI-22 consolidated the
+  `compose_frame(state, status_row(...))` binding out of four call sites into
+  `terminal_game.presentation.picture.frame_for`, and landed while this branch
+  was open. `a_sitting` leaves `build_game`'s composer at its default, so the
+  picture comes from that one place and this tool declares nothing; there is an
+  AST test that the module never calls or imports either half of the binding.
 
 ## C-7 — the warning that has to come first
 
@@ -102,11 +106,36 @@ permission would not change it, and appears **above** the placement question.
 
 ## Proved against the real toolkit
 
-Per "proved by a double is not proved", the one thing exercised against real Tk,
-and what was observed, is in `docs/findings/WI-21-the-five-questions.md` §
-*"What the harness did on a real screen"*, with the window count and the reap
-count. Everything in this PR body that is a *decision* rather than an
-observation is marked as such.
+**Nine windows opened, nine reaped, no modal sheet, no orphan afterwards.**
+Short-first: one 2-second window to prove the mechanics and the reap before
+anything longer. `pgrep` then found no tool process under any of the six names
+this project has used and System Events counted **0** processes named "Python".
+The full table is in `docs/findings/WI-21-the-five-questions.md` § 9.
+
+**The real screen caught one defect the suite would not have.** The sitting
+originally scheduled one deadline, `owner.end_session`, and window 1 came back
+with the session's phase still `playing` — the deadline had taken the window out
+from under the session rather than asking it to stop, which is the same shape of
+defect WI-17 measured on the close button. It now schedules **two**, both before
+the event loop is entered: `session.quit` at N seconds, which is what
+`--seconds` already does on the production entry point and which leaves the
+phase `ended`, and `owner.end_session` 1.5 s under it, which asks nobody's
+permission. A faithful route and an unconditional route are not the same route.
+
+**Three of the nine windows were not for this item.** WI-22 changed two on-screen
+tools and had no desktop slot, so both of its call sites were run here, this
+being the last screen turn of the run. `the_look.py --view game` painted **698**
+canvas items and `--view joinery` **714** — exactly WI-16's figures from before
+the change — and `window_manners.py --exercise keys` behaved identically to
+WI-17's record. Its judgement that `frame_for` is character-for-character the
+expression it replaced holds on a real screen as well as in the suite.
+
+**Amendment 11 applied to one of my own tests.** A test here asserted that the
+window `build_game` asks for carries `WINDOW_TITLE` — which WI-18 already pins.
+Per "one defect should turn one test red", that assertion is gone, replaced by
+one that owns something nobody else does: the tool must never *type* the title
+it asks a person to look at, so that A1's question follows a change to the
+constant instead of going stale silently.
 
 ## Deviations needing a ruling
 
