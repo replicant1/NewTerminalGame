@@ -375,6 +375,66 @@ def domain_names_nothing_above_it(
     )
 
 
+#: The layers, lowest first.  A layer may name the ones below it and itself,
+#: and nothing above.  `Shell -> Presentation -> Application -> Domain`, as the
+#: implementation plan fixes it.
+LAYERS = ("domain", "application", "presentation", "shell")
+
+
+def no_layer_names_one_above_it(
+    root: str = REPOSITORY_ROOT, application: Optional[str] = None
+) -> Report:
+    """Rule 6.  The dependency rule, for every layer and not only the Domain.
+
+    Rule 2 guards the Domain, which is the layer it costs most to lose --
+    everything about the maze, the ghost and the rules stays testable with no
+    window only because nothing above it may be named there.  But the plan
+    fixes the whole chain, and until this rule existed the middle of it was
+    unguarded: **the Application layer could import Presentation or the Shell
+    and no rule anywhere would notice.**  Measured on a temporary tree, a
+    module under ``application`` importing both passed every rule in
+    ``TREE_RULES``.
+
+    That gap is the interesting kind.  The rule was written down, ruled on,
+    and cited in a later ruling as the thing that had been guarded -- and the
+    citation was true of the Domain and not of the rest.  A rule in prose that
+    nothing re-runs is a guard waiting to have never been exercised.
+
+    The toolkit is rule 1's business and the clock and the global random
+    generator are rule 2's; this rule is only about a layer naming one above
+    it.  Overlap with rule 2 on the Domain is deliberate: two rules reporting
+    the same breach is cheap, and a Domain guarded twice is not a problem.
+    """
+    application = application or _sole_root_package(root)
+    inspected: List[str] = []
+    violations: List[Violation] = []
+    for height, layer in enumerate(LAYERS):
+        above = tuple(
+            "{0}.{1}".format(application, higher) for higher in LAYERS[height + 1:]
+        )
+        if not above:
+            continue
+        within = "{0}/{1}".format(application, layer).replace("/", os.sep)
+        files = python_files(root, within)
+        inspected.extend(files)
+        for path in files:
+            for module, line in imports_of(root, path):
+                for higher in above:
+                    if _is_within(module, higher):
+                        violations.append(
+                            Violation(
+                                path,
+                                line,
+                                "imports {0}; {1} names nothing above it".format(
+                                    module, layer.capitalize()
+                                ),
+                            )
+                        )
+    return _report(
+        "no layer names one above it", inspected, violations
+    )
+
+
 def _global_random_uses(root: str, path: str) -> List[Violation]:
     """Calls on :mod:`random` itself, rather than on a source handed in."""
     tree = _parse(root, path)
@@ -652,4 +712,5 @@ TREE_RULES = (
     nothing_draws_an_image,
     exactly_one_root_package,
     nothing_but_tests_depends_on_tests,
+    no_layer_names_one_above_it,
 )

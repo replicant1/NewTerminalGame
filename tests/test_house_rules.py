@@ -43,6 +43,7 @@ from tests.house_rules import (
     TREE_RULES,
     Report,
     domain_names_nothing_above_it,
+    no_layer_names_one_above_it,
     exactly_one_root_package,
     imports_of,
     no_tk_interpreter_constructed,
@@ -208,6 +209,9 @@ class ItCannotPassOverAnEmptySet(unittest.TestCase):
             "nothing but tests depends on test code": (
                 "tools/walking_skeleton.py"
             ),
+            "no layer names one above it": (
+                "terminal_game/application/session.py"
+            ),
         }
 
         for rule in TREE_RULES:
@@ -276,6 +280,92 @@ class RuleOneNoticesTheToolkitBelowTheShell(PlantedTree):
         )
 
         self.assertEqual("app/domain/clockless.py", violation.path)
+
+
+class RuleSixGuardsTheWholeChainAndNotOnlyTheDomain(PlantedTree):
+    """The gap this rule was written for.
+
+    Rule 2 guards the Domain. The plan fixes the whole chain — Shell to
+    Presentation to Application to Domain — and until this rule existed the
+    middle of it was unguarded: a module under `application` could import
+    Presentation or the Shell and every rule in `TREE_RULES` passed. That was
+    measured, not supposed.
+    """
+
+    def test_the_application_reaching_up_into_presentation_is_named(self):
+        plant(
+            self.root,
+            "app/application/session.py",
+            "from app.presentation.frame_composer import compose\n",
+        )
+
+        violation = self.only(
+            no_layer_names_one_above_it(self.root, application="app")
+        )
+
+        self.assertEqual("app/application/session.py", violation.path)
+        self.assertIn("app.presentation.frame_composer", violation.detail)
+        self.assertIn("Application", violation.detail)
+
+    def test_the_application_reaching_up_into_the_shell_is_named(self):
+        plant(
+            self.root,
+            "app/application/session.py",
+            "from ..shell.tk_grid import create_surface\n",
+        )
+
+        self.assertEqual(
+            "app/application/session.py",
+            self.only(
+                no_layer_names_one_above_it(self.root, application="app")
+            ).path,
+        )
+
+    def test_presentation_reaching_up_into_the_shell_is_named(self):
+        plant(
+            self.root,
+            "app/presentation/frame_composer.py",
+            "from app.shell.grid_surface import paint\n",
+        )
+
+        self.assertIn(
+            "Presentation",
+            self.only(
+                no_layer_names_one_above_it(self.root, application="app")
+            ).detail,
+        )
+
+    def test_naming_a_layer_below_is_not_a_breach(self):
+        """The rule must permit the dependency it exists to direct."""
+        plant(
+            self.root,
+            "app/application/session.py",
+            "from app.domain.game_state import GameState\n",
+        )
+        plant(
+            self.root,
+            "app/presentation/frame_composer.py",
+            "from app.application.session import Session\n",
+        )
+        plant(
+            self.root,
+            "app/shell/window.py",
+            "from app.presentation.frame_composer import compose\n",
+        )
+
+        self.assertEqual(
+            (), no_layer_names_one_above_it(self.root, application="app").violations
+        )
+
+    def test_the_shell_may_name_anything_and_the_domain_is_still_guarded(self):
+        plant(self.root, "app/shell/window.py", "from app.domain.maze import Maze\n")
+        plant(self.root, "app/domain/leaky.py", "from app.shell.window import W\n")
+
+        violation = self.only(
+            no_layer_names_one_above_it(self.root, application="app")
+        )
+
+        self.assertEqual("app/domain/leaky.py", violation.path)
 
 
 class RuleTwoNoticesTheDomainReachingUpward(PlantedTree):

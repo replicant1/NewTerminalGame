@@ -628,6 +628,26 @@ Named so that nobody has to re-derive why they are absent.
   it every tick and letting the toolkit's double buffer emit only what changed
   is both simpler and already flicker-free. Tracking dirty rectangles would be
   optimising a cost nobody is paying.
+
+  **Reversed during implementation, and recorded here because it was not.**
+  `CharacterGridSurface.paint` compares each cell against the frame it last
+  painted and touches only the ones that differ
+  (`terminal_game/shell/grid_surface.py`). Three tests pin that behaviour,
+  including one that asserts a player move costs five cell updates rather
+  than twelve hundred. Nothing in the implementation plan rules on the
+  departure; it was found afterwards by an automated review of the pull
+  requests, which is late.
+
+  It is kept rather than reverted. The reasoning above still holds — the cost
+  was not being paid, so this optimises nothing anybody needed — but the code
+  exists, is measured and is guarded by tests, and deleting working tested
+  code to satisfy a pre-implementation preference is the worse trade. What
+  makes it safe is narrower than it looks and is worth writing down: the
+  cached frame cannot go stale because `grid_surface` is the only writer to
+  the canvas, `clear()` resets the cache, and nothing binds `<Configure>` or
+  resizes the surface after construction. **If any of those three stops being
+  true, this optimisation becomes a defect** — a cell the cache believes is
+  already correct will not be repainted.
 - **An entity/component system for the player and the ghost.** There are two
   actors and there will never be more — GAME-3 says so in as many words.
 - **A publish/subscribe or observer link between the model and the view.** With
