@@ -14,16 +14,19 @@ own *every other key means nothing*.  Re-asserting any of them here would turn
 one defect into several red files across several items, which is the thing
 section 4 of the plan tells us not to do.
 
-So this module owns four joins and one rule that nothing owned before:
+So this module owns three joins and one rule that nothing owned before:
 
 * the exercise script is **bounded** and cannot be asked for something that
   would never happen;
 * its report tells the truth about reaping and about failure;
 * :func:`exit_code_for` **notices a failure the event loop did not raise** —
-  the hazard WI-18 inherits;
-* a key becomes a move, a quit, or nothing, *at the session*;
+  the hazard WI-18 inherited, and now checks for itself;
 * **no production module constructs a text-entry widget**, which is SCRN-7's
   half that lives in the window rather than on the surface.
+
+*What used to be here and no longer is:* the key-to-intent dispatch.  It
+belonged to nobody when this was written; WI-18 has since landed the real
+one and ``tests/test_game.py`` owns it.
 """
 
 import ast

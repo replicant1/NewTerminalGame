@@ -57,10 +57,13 @@ that cost a probe run in WI-3.
 
 What this script deliberately does not do
 -----------------------------------------
-It does not build the game.  :class:`KeyDispatcher` below is three lines of
-key-to-intent translation that exist here so that a real arrow key can be
-seen to move a real player; **the production one is WI-18's**, where the plan
-puts it, and this class is not a proposal for it.
+It does not build the game; WI-18 does, and its entry point has exercises of
+its own in ``tools/play_the_game.py``.  :class:`KeyDispatcher` below once
+held three throwaway lines of key-to-intent translation, written because
+WI-18 had not landed and explicitly not a proposal for it.  WI-18 has landed,
+so it now **delegates to the real**
+:class:`~terminal_game.shell.game.GameCollaborator` and keeps only its
+notebook.
 """
 
 from __future__ import annotations
@@ -101,7 +104,7 @@ EXERCISE_SEED = 20260916
 
 #: Tk's name for the message a window manager sends when the close button is
 #: pressed.  Invoking the command Tk registered against it is the same route
-#: the close button takes; see :func:`_press_the_close_button`.
+#: the close button takes; see :func:`press_the_close_button`.
 CLOSE_PROTOCOL = "WM_DELETE_WINDOW"
 
 
@@ -318,7 +321,7 @@ def expected_to_fail(exercise_name: str) -> bool:
 # ---------------------------------------------------------------------------
 
 
-def _still_there(target) -> bool:  # pragma: no cover - needs a real widget
+def window_still_there(target) -> bool:  # pragma: no cover - needs a real widget
     """Is the window we created still in existence?
 
     Asked of the handle captured at creation and of no other.  Never "the
@@ -342,7 +345,7 @@ def _widget_kinds(widget):  # pragma: no cover - needs a real widget
     return kinds
 
 
-def _press_the_close_button(root):  # pragma: no cover - needs a real window
+def press_the_close_button(root):  # pragma: no cover - needs a real window
     """Take the same route the window's own close button takes.
 
     A window manager does not call a Python function: it sends the toplevel a
@@ -518,7 +521,7 @@ def _exercise_window(toolkit, tk_grid, metrics, pixel_size, lifetime_ms):
     exercise.at(500, measure)
     exercise.at(900, resize_request)
     exercise.at(1300, exercise.owner.end_session)
-    return exercise.run(on_open=on_open, still_there=_still_there)
+    return exercise.run(on_open=on_open, still_there=window_still_there)
 
 
 def _exercise_keys(toolkit, tk_grid, metrics, pixel_size, lifetime_ms):
@@ -577,7 +580,7 @@ def _exercise_keys(toolkit, tk_grid, metrics, pixel_size, lifetime_ms):
         })
         return report
 
-    return finish(exercise.run(on_open=on_open, still_there=_still_there))
+    return finish(exercise.run(on_open=on_open, still_there=window_still_there))
 
 
 def _exercise_fail_collaborator(toolkit, tk_grid, metrics, pixel_size, lifetime_ms):
@@ -604,7 +607,7 @@ def _exercise_fail_collaborator(toolkit, tk_grid, metrics, pixel_size, lifetime_
         surface = _surface_on(tk_grid, metrics, target)
         del surface
 
-    report = exercise.run(on_open=on_open, still_there=_still_there)
+    report = exercise.run(on_open=on_open, still_there=window_still_there)
     report["measured"].update({
         "ticks_before_the_failure": collaborator.ticks,
         "the_exception_came_back_out_of_run": report["error"] is not None,
@@ -661,7 +664,7 @@ def _exercise_fail_session(toolkit, tk_grid, metrics, pixel_size, lifetime_ms):
         held["surface"] = _surface_on(tk_grid, metrics, target)
         session.start()
 
-    report = exercise.run(on_open=on_open, still_there=_still_there)
+    report = exercise.run(on_open=on_open, still_there=window_still_there)
     report["measured"].update({
         "pictures_composed": composed["count"],
         "ticks_delivered": dispatcher.ticks,
@@ -696,9 +699,9 @@ def _exercise_close(toolkit, tk_grid, metrics, pixel_size, lifetime_ms):
         held["root"] = target.winfo_toplevel()
         session.start()
 
-    exercise.at(900, lambda: _press_the_close_button(held["root"]))
+    exercise.at(900, lambda: press_the_close_button(held["root"]))
 
-    report = exercise.run(on_open=on_open, still_there=_still_there)
+    report = exercise.run(on_open=on_open, still_there=window_still_there)
     report["measured"].update({
         "ticks_delivered": dispatcher.ticks,
         "phase_at_the_end": session.phase.value,
