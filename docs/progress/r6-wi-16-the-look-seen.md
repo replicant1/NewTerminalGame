@@ -1,0 +1,19 @@
+05:09:43Z  START   WI-16 the look seen (DEV-B, run 6) on branch r6/wi-16-the-look-seen, based on main
+05:09:43Z  READ    the WI-16 entry in section 8, section 4 window hygiene, DEV-Cs tools/walking_skeleton.py (the proven bounded self-reaping pattern) and WI-8s glyph census finding
+05:09:43Z  NOTE    detoured first to answer DEV-Cs time-critical question on PR #45 and land the specimen move as PR #50, because WI-10 rule 6 could not go green until it was done
+05:09:43Z  PLAN    tools/the_look.py with THREE views a person can step through in one run: the real game, a joinery contact sheet showing every wall junction at once, and a colour card. Pure frame builders importable and tested with no toolkit; only main() touches a window
+05:09:43Z  DECIDE  the joinery view is DERIVED from WI-8s wall_layer on a lattice maze, not hand-drawn, because WI-8 owns every wall glyph and I must declare none. Verified the lattice yields all 11 junctions including the crossing that the specimen picture happens not to contain
+05:11:25Z  VERIFY  rendered all three views as text with no window: the joinery lattice shows corners, tees, crossings and straights all joining; the colour card labels each of the four visible things in its own colour and carries the REAL status line on row 29; the game view is the real composer over a real generated maze
+05:11:25Z  NOTE    first run of the suite with these tests took 16.3s because every view rebuilt a generated maze. Cached the three frame builders; back to 4.3s. A frame is immutable so sharing one is safe
+05:11:25Z  TEST    564 passed, 0 failed, 0 skipped  [/usr/bin/python3 -m unittest discover -t . -s . -p "test_*.py"]; 31 of them are WI-16s and none opens a window
+05:11:25Z  BLOCKED SCREEN GATE - amendment 4 says two lanes must never run on-screen exercises at once and the conductor holds the gate. Everything in WI-16 that does not need a window is DONE and pushed. I have opened NO window. Waiting on the conductor to grant the screen before running tools/the_look.py; DEV-A is on WI-17 which also opens windows
+05:12:03Z  NOTE    SCREEN GATE GRANTED by the conductor. Starting with the shortest possible run - one view, 2 seconds - to confirm the mechanics and the reap before asking the users screen for anything longer
+05:13:16Z  VERIFY  SCREEN RUNS COMPLETE. 8 windows opened, 8 reaped, window_reaped true on every one, no modal sheet, no error. ps shows no tool process left and System Events counts 0 GUI Python processes. Project ledger now 16 opened, 16 reaped
+05:13:16Z  VERIFY  on the real screen at every size: title read back "Terminal Game" all 8 times; canvas_item_kinds ["text"] every time, so nothing but characters reached the screen; game view 698 items, joinery 714, colour card 96
+05:13:16Z  VERIFY  A4 comparison run: 14pt cell 8x16 window 320x480; 16pt 10x19 400x570; 18pt 11x21 440x630; 20pt 12x24 480x720. All four painted 698 items and all four reaped
+05:13:16Z  NOTE    SCREEN GATE RELEASED - telling the conductor now so DEV-A can have it
+05:14:45Z  NOTE    merged main, bringing DEV-Cs WI-10 house-rules guard. WI-16 passes all of it: the tool declares no wall glyph, draws no image, and the specimen move I landed as PR #50 is what lets rule 6 hold
+05:14:45Z  TEST    605 passed, 0 failed, 0 skipped  [/usr/bin/python3 -m unittest discover -t . -s . -p "test_*.py"] with the architecture guard merged in
+05:16:00Z  MERGE   PR #53 merged to main; fetched and fast-forwarded; whole suite re-run on the landed tree
+05:16:00Z  TEST    605 passed, 0 failed, 0 skipped  [/usr/bin/python3 -m unittest discover -t . -s . -p "test_*.py"] on the landed tree
+05:16:00Z  DONE    WI-16 r6/wi-16-the-look-seen (merged as PR #53). All three human questions recorded UNANSWERED with the command to answer each
