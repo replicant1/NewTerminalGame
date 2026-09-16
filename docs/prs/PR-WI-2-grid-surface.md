@@ -15,6 +15,9 @@ for WI-1 to merge. **WI-1 merged first (PR #23), so the stack collapsed**:
 this branch is cut from a tree identical to `main` and its PR targets `main`
 directly. There is nothing to retarget later.
 
+`origin/main` has since been merged in, bringing WI-5 (PR #24) and WI-3
+(PR #25) — see the last two sections.
+
 ## What is in it
 
 | File | What it is |
@@ -100,41 +103,78 @@ flicker is a property of a mapped window. The measurement says the work is
 0.5 % of a tick and that nothing is ever cleared; it does not say the window
 looks right.
 
-## The WI-2 / WI-3 boundary — DEV-C, this is the call
+## The WI-2 / WI-3 boundary — settled with DEV-C's landed work
 
-The plan says WI-3 owns the window, the timer and key delivery; WI-2 owns
-everything inside the pixels, and the two of us agree the shape of the one
-call between them. DEV-C had not pushed a branch when this was written, so
-here is what WI-2 offers, and it is easy to change if DEV-C wants it
-differently:
+WI-3 (PR #25) merged while this branch was in flight, so the boundary was
+settled against what DEV-C actually built rather than guessed at. Two things
+came out of it, both resolved here by conforming to WI-3, which landed first.
+
+### One `PixelSize`, not two
+
+DEV-C declared `PixelSize` on the toolkit seam in
+`terminal_game/shell/toolkit.py`, where it is what the window owner is *told*;
+their docstring explicitly leaves the *computation* to WI-2. I had declared a
+second one. **Mine is gone and `grid_surface` imports theirs.** I compute it,
+they consume it, and there is one type on the boundary. There is a test that
+the thing my surface hands over is the type their `WindowOwner` declares.
+
+### The measurement has to happen before the window exists
+
+`WindowOwner(toolkit, size, collaborator)` is told its pixel size *at
+construction*, and it is also the thing that creates the window. So the font
+cannot be measured through the game's window — it does not exist yet. Added:
 
 ```python
-from terminal_game.shell.tk_grid import create_surface
+from terminal_game.shell.tk_grid import grid_pixel_size, measure_metrics, surface_on
 
-surface = create_surface(root)        # raises SurfaceFontError if the font
-                                      # is missing, substituted or not fixed
-width, height = surface.pixel_size()  # -> PixelSize(400, 570)
-root.geometry("%dx%d+%d+%d" % (width, height, x, y))
-surface.canvas.pack()                 # the window owner places it; the
-                                      # surface does not know where it sits
-surface.paint(frame)                  # the only game-facing call
+metrics = measure_metrics()                      # no window anywhere
+size    = grid_pixel_size()                      # -> PixelSize(400, 570)
+owner   = WindowOwner(TkToolkit(), size, session)
+target  = owner.open()                           # DEV-C's canvas
+surface = surface_on(target, metrics)            # WI-2 paints into it
+surface.paint(frame)                             # the only game-facing call
 ```
 
-Three things that are deliberately **not** in that list, because they are
-DEV-C's: the surface never creates a window, never reads a clock or starts a
-timer, and never binds or looks at a key event. `create_surface(master)` takes
-the master it is given and creates only a `Canvas` inside it.
+`measure_metrics()` with no master makes a Tk interpreter of its own,
+**withdraws it before the event loop can be entered so it is never mapped**,
+measures, and destroys it. Verified: `tkinter._default_root` is `None` both
+before and after, so it leaves nothing behind, and a later real `Tk()` works
+normally.
+
+`create_surface(master)` is kept for the case where no canvas exists yet — the
+walking skeleton, and looking at the thing by hand.
+
+Three things deliberately **not** on WI-2's side, because they are DEV-C's:
+the surface never creates a window, never reads a clock or starts a timer, and
+never binds or looks at a key event.
+
+### Verified against the real thing, headlessly
+
+Painting a canvas configured the way `TkToolkit.create_window` configures it
+gives 696 items, all of kind `text`, at 400 x 570 — and `WindowOwner` accepts
+the size unchanged. No window was mapped to establish this.
 
 ## Suite
 
 ```
 /usr/bin/python3 -m unittest discover -t . -s . -p "test_*.py"
-Ran 104 tests — 104 passed, 0 failed, 0 skipped
+Ran 228 tests — 228 passed, 0 failed, 0 skipped
 ```
 
-57 of those are new in this branch. **None of them constructs a toolkit
-object.** `grid_surface.py` does not import `tkinter` at all, and the tests
-drive it through `tests/doubles.RecordingCanvas`.
+That is on the merge of `origin/main` (WI-3 and WI-5 landed) into this branch.
+59 of the 228 are new here. **None of them constructs a toolkit object.**
+`grid_surface.py` does not import `tkinter` at all, and the tests drive it
+through `tests/doubles.RecordingCanvas`.
+
+## Merging main — one conflict, resolved
+
+WI-3 had also created `terminal_game/shell/__init__.py`. Resolved by combining
+the two docstrings rather than picking a side: DEV-C's framing of the layer,
+my "no automated test may construct a toolkit window" rule and the WI-2 / WI-3
+responsibility boundary, and — the substantive correction — **both**
+toolkit-naming modules named. DEV-C's text said only `tk_toolkit` names the
+toolkit; with this branch that is no longer true, and `tk_grid` is named
+alongside it so WI-10's architecture guard and the next reader both see two.
 
 ## What the tests own
 

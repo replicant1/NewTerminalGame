@@ -29,9 +29,17 @@ from terminal_game.shell.grid_surface import (
     CharacterGridSurface,
     font_specification,
     measure_cell_metrics,
+    pixel_size_for,
 )
+from terminal_game.shell.toolkit import PixelSize
 
-__all__ = ["TkFontProbe", "create_surface"]
+__all__ = [
+    "TkFontProbe",
+    "measure_metrics",
+    "grid_pixel_size",
+    "surface_on",
+    "create_surface",
+]
 
 
 class TkFontProbe:
@@ -70,25 +78,77 @@ class TkFontProbe:
         return self._font(family, point_size).metrics("linespace")
 
 
+def measure_metrics(
+    master=None,
+    family: str = FONT_FAMILY,
+    point_size: int = FONT_POINT_SIZE,
+) -> CellMetrics:
+    """Measure one character cell, before there is a window to put it in.
+
+    The window owner (WI-3) is *told* its pixel size when it is built, and it
+    is the thing that creates the window — so the measurement has to happen
+    first, with no window anywhere.  Given no *master*, this makes a Tk
+    interpreter of its own, **withdraws it before the event loop can be
+    entered so it is never mapped**, measures, and destroys it again.  Nothing
+    reaches the screen and there is nothing to reap.
+
+    Raises a :class:`~terminal_game.shell.grid_surface.SurfaceFontError` if
+    the pinned font is missing, substituted, or not fixed width — see
+    :mod:`terminal_game.shell.grid_surface` for why a quiet substitution is
+    the worst outcome available.
+    """
+    if master is not None:
+        return measure_cell_metrics(TkFontProbe(master), family, point_size)
+
+    scratch = tkinter.Tk()
+    scratch.withdraw()
+    try:
+        return measure_cell_metrics(
+            TkFontProbe(scratch), family, point_size
+        )
+    finally:
+        scratch.destroy()
+
+
+def grid_pixel_size(
+    family: str = FONT_FAMILY, point_size: int = FONT_POINT_SIZE
+) -> PixelSize:
+    """The pixels a 40 x 30 grid needs in this font — what WI-3 is told."""
+    return pixel_size_for(measure_metrics(None, family, point_size))
+
+
+def surface_on(
+    target,
+    metrics: CellMetrics,
+    family: str = FONT_FAMILY,
+    point_size: int = FONT_POINT_SIZE,
+) -> CharacterGridSurface:
+    """Paint into a drawing target somebody else made.
+
+    *target* is what :meth:`WindowOwner.open` hands back — the canvas inside
+    the game's window.  This is the join between WI-3 and WI-2, and it is the
+    only thing that crosses between them.
+    """
+    return CharacterGridSurface(
+        target, metrics, font=font_specification(family, point_size)
+    )
+
+
 def create_surface(
     master,
     family: str = FONT_FAMILY,
     point_size: int = FONT_POINT_SIZE,
 ) -> CharacterGridSurface:
-    """Build the real surface inside *master*, or raise.
+    """Measure the font and build a surface on a new canvas inside *master*.
 
-    Raises a :class:`~terminal_game.shell.grid_surface.SurfaceFontError` if
-    the pinned font is missing, substituted, or not fixed width — see that
-    module for why a quiet substitution is the worst outcome available.
+    A convenience for the case where the canvas has not already been made —
+    the walking skeleton, and looking at the thing by hand.  When the window
+    owner has already created a drawing target, use :func:`measure_metrics`
+    and :func:`surface_on` instead, so there is one canvas and not two.
 
     The canvas is created but not placed: where it sits in the window is the
-    window owner's business (WI-3), not the surface's.  Ask the returned
-    surface for :meth:`~CharacterGridSurface.pixel_size` to size the window.
+    window owner's business (WI-3), not the surface's.
     """
-    metrics: CellMetrics = measure_cell_metrics(
-        TkFontProbe(master), family, point_size
-    )
+    metrics = measure_metrics(master, family, point_size)
     canvas = tkinter.Canvas(master, background=GROUND, highlightthickness=0)
-    return CharacterGridSurface(
-        canvas, metrics, font=font_specification(family, point_size)
-    )
+    return surface_on(canvas, metrics, family, point_size)

@@ -47,6 +47,12 @@ from terminal_game.presentation.frame import (
     Frame,
 )
 
+# One PixelSize on the WI-2 / WI-3 boundary, not two.  WI-3 declared it first
+# on the toolkit seam, where it is what the window owner is *told*; working
+# out that 40 x 30 character cells come to that many pixels is this module's
+# job, so this is the side that computes it and that side that consumes it.
+from terminal_game.shell.toolkit import PixelSize
+
 __all__ = [
     "FONT_FAMILY",
     "FONT_POINT_SIZE",
@@ -62,6 +68,7 @@ __all__ = [
     "GridGeometry",
     "CharacterGridSurface",
     "measure_cell_metrics",
+    "pixel_size_for",
     "font_specification",
 ]
 
@@ -138,11 +145,16 @@ class CellMetrics(NamedTuple):
     height: int
 
 
-class PixelSize(NamedTuple):
-    """A size in pixels, as the window owner needs it."""
+def pixel_size_for(metrics: CellMetrics) -> PixelSize:
+    """How many pixels a whole 40 x 30 grid of *metrics*-sized cells needs.
 
-    width: int
-    height: int
+    This is the number the window owner is told (WIN-2).  It is a free
+    function as well as a property of :class:`GridGeometry` so that the
+    wiring can ask for it before there is a window to build a surface in.
+    """
+    return PixelSize(
+        FRAME_COLUMNS * metrics.width, FRAME_ROWS * metrics.height
+    )
 
 
 class GridGeometry:
@@ -173,10 +185,7 @@ class GridGeometry:
     @property
     def pixel_size(self) -> PixelSize:
         """The pixels a whole 40 x 30 grid needs — WIN-2, multiplied out."""
-        return PixelSize(
-            FRAME_COLUMNS * self._metrics.width,
-            FRAME_ROWS * self._metrics.height,
-        )
+        return pixel_size_for(self._metrics)
 
     def cell_origin(self, row: int, column: int) -> Tuple[int, int]:
         """The top-left pixel of cell (*row*, *column*)."""

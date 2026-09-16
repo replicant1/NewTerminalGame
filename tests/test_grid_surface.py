@@ -32,7 +32,9 @@ from terminal_game.shell.grid_surface import (
     PixelSize,
     font_specification,
     measure_cell_metrics,
+    pixel_size_for,
 )
+from terminal_game.shell.toolkit import PixelSize as ToolkitPixelSize
 
 from tests.doubles import (
     FakeFontProbe,
@@ -157,6 +159,19 @@ class HowManyPixelsFortyByThirtyNeeds(unittest.TestCase):
         _, surface = a_surface(CellMetrics(11, 21))
 
         self.assertEqual(PixelSize(440, 630), surface.pixel_size())
+
+    def test_the_size_can_be_had_without_building_a_surface_first(self):
+        # The window owner is told its size when it is built, and it is the
+        # thing that makes the window — so the number has to be available
+        # before there is anything to paint into.
+        self.assertEqual(PixelSize(400, 570), pixel_size_for(MEASURED))
+
+    def test_the_size_handed_over_is_the_type_the_window_owner_declares(self):
+        # WI-2 / WI-3 seam: one PixelSize on the boundary, not two.
+        _, surface = a_surface()
+
+        self.assertIsInstance(surface.pixel_size(), ToolkitPixelSize)
+        self.assertIs(PixelSize, ToolkitPixelSize)
 
     def test_a_cell_cannot_be_zero_pixels(self):
         with self.assertRaises(ValueError):
