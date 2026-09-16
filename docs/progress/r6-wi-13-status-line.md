@@ -17,3 +17,7 @@
 05:00:33Z  WI-13 DECIDE  no automated scanner forbidding the literal elsewhere -> not written, because WI-19's picture assertions are honest work it would fail; amendment 2's lesson is that a rule stated wrongly is worse than no rule
 05:01:27Z  WI-13 COMMIT  f539a63 WI-13: row 29, the status line, as a value
 05:01:27Z  WI-13 NOTE    pushed r6/wi-13-status-line; draft PR #44 opened --base main (https://github.com/replicant1/NewTerminalGame/pull/44)
+05:02:12Z  WI-13 MERGE   PR #44 merged by DEV-A as 671f0e5; main was still at 6cee5c9 so the merge was clean and no retarget was needed
+05:02:12Z  WI-13 TEST    402 passed, 0 failed, 0 skipped on main at 671f0e5 — /usr/bin/python3 -m unittest discover -t . -s . -p "test_*.py"
+05:02:12Z  WI-13 DONE    WI-13 r6/wi-13-status-line 671f0e5
+05:02:12Z  WI-13 NOTE    these last four lines were written after the merge, so they are committed on r6/wi-15-session-controller — the WI-13 log is DEV-A's own file in both directions
