@@ -32,3 +32,6 @@
 05:48:34Z  DRAFT   three additions relayed from the technical lead: (1) "say it in both directions" -- GAME-2/END-1/END-2 pinned by TEST and NOT observed, the exact inverse of section 3a which is observed and NOT tested; (2) finding 11, the recurring defect class "a faithful route and an unconditional route are not the same route", three occurrences with the transferable rule ASSERT THE PHASE THE SESSION REACHED, NOT THAT THE WINDOW CLOSED; (3) ledger 39/39 already carried
 05:48:34Z  VERIFY  /usr/bin/python3 -m unittest discover -t . -s . -p "test_*.py" -> Ran 815 tests, OK
 05:48:34Z  TEST    815 passed, 0 failed, 0 skipped
+05:49:31Z  MERGE   PR #68 merged to main at 05:48:59Z. Fetched, merged origin/main (which had moved to 2732b62 plus amendment 12 and two close-the-log branches), re-ran the WHOLE suite on the landed tree: 815 passed, 0 failed, 0 skipped
+05:49:31Z  TEST    815 passed, 0 failed, 0 skipped (on the landed tree)
+05:49:31Z  DONE    WI-20b r6/wi-20b-spec-sweep-final 18f2ecf
