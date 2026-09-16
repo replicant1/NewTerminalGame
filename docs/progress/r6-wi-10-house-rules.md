@@ -10,3 +10,7 @@
 05:10:36Z  WI-10 NOTE    draft PR #52 opened -- https://github.com/replicant1/NewTerminalGame/pull/52 , base main
 05:11:18Z  WI-10 READ    amendment 4 landed while I worked: WI-17 moves DEV-C -> DEV-A; WI-20a/WI-20b stay with DEV-C; new section 4 rule that two lanes must not put real windows on the live desktop at once, conductor holds the gate. WI-10 unaffected.
 05:11:22Z  WI-10 TEST    574 passed, 0 failed, 0 skipped after merging origin/main 4c82efe -- all six rules still clean; /usr/bin/python3 -m unittest discover -t . -s . -p test_*.py
+05:12:13Z  WI-10 MERGE   PR #52 merged to main as bc27760; fetched and merged origin/main back and re-ran the whole suite
+05:12:17Z  WI-10 TEST    574 passed, 0 failed, 0 skipped on main at bc27760 -- /usr/bin/python3 -m unittest discover -t . -s . -p test_*.py ; what landed is green
+05:12:21Z  WI-10 NOTE    no window was opened at any point in WI-10 -- the guard reads files and one live interpreter attribute; zero windows, nothing to reap
+05:12:25Z  WI-10 DONE    WI-10 r6/wi-10-house-rules bc27760 -- merged as PR #52; docs/completions/COMPLETION-M1-DEV-C.md landed with it
