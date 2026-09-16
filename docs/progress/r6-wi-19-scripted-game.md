@@ -10,3 +10,6 @@
 05:21:11Z  TEST    637 passed, 0 failed, 0 skipped  [/usr/bin/python3 -m unittest discover -t . -s . -p "test_*.py"]; 32 of them are WI-19s
 05:22:22Z  COMMIT  WI-19 committed and pushed; PR #58 opened as a draft against main
 05:22:22Z  TEST    693 passed, 0 failed, 0 skipped  [/usr/bin/python3 -m unittest discover -t . -s . -p "test_*.py"] with WI-14 and WI-17 merged in. Clean merge, no conflicts
+05:23:29Z  MERGE   PR #58 merged to main; fetched and merged origin/main back; whole suite re-run on the landed tree
+05:23:29Z  TEST    693 passed, 0 failed, 0 skipped  [/usr/bin/python3 -m unittest discover -t . -s . -p "test_*.py"] on the landed tree
+05:23:29Z  DONE    WI-19 r6/wi-19-scripted-game (merged as PR #58)
