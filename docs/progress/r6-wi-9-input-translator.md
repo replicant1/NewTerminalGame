@@ -1,0 +1,20 @@
+04:52:56Z  START   WI-9 the input translator (DEV-B, run 6) on branch r6/wi-9-input-translator, based on main 5e878b5
+04:52:56Z  READ    amendment 1 of docs/IMPLEMENTATION_PLAN.md: section 0a, the first-lander rule and the ownership table in section 2, the announce rule, and the WI-9 entry in section 8
+04:52:56Z  READ    terminal_game/shell/toolkit.py KeyPress (DEV-C) and tests/test_tk_toolkit.py: a key crosses the seam as keysym plus char, measured Up -> ("Up",""), q -> ("q","q"), Q -> ("Q","Q"). There is NO modifier state on the value
+04:52:56Z  NOTE    ANNOUNCE (first-lander rule 4): the direction vocabulary for this project is terminal_game.domain.maze.Direction, landed by DEV-As WI-5 on day 1. WI-7 conformed to it and WI-9 conforms to it. WI-11 and WI-15 should use the same and NOT define a second one
+04:52:56Z  NOTE    ANNOUNCE: WI-9 lands the INTENT vocabulary that WI-15 will consume - Intent, IntentKind, the QUIT constant and move(direction), in terminal_game/presentation/input_translator.py
+04:53:55Z  DECIDE  translate(keysym, char) takes two plain strings, NOT DEV-Cs KeyPress, because Presentation may not name the Shell. The Shell key handler is the caller and unpacks it: translate(key.keysym, key.char)
+04:53:55Z  DECIDE  char is REQUIRED, not defaulted, because a default of "" would silently turn a caller that forgot it into one whose quit key had stopped working
+04:53:55Z  RISK    LIMIT of what this seam can see: a key crosses as keysym+char with NO modifier state, so control-Q is correctly rejected (its char is a control character, not q) but control-Up CANNOT be told from Up, because an arrow types no character either way. The plan asks that modified keys map to nothing; modified ARROWS are the case I cannot honour. Raising with DEV-C, whose KeyPress it is
+04:53:55Z  NOTE    two of my own assertions were weaker than they looked and I fixed them rather than leaving them: a check that the module lacks "print" in vars() could never fail, since builtins are not module globals; and a loop that only asserted inside an if. Replaced with a stdout/stderr capture over every key, a module-import check, and a source check
+04:53:55Z  TEST    349 passed, 0 failed, 0 skipped  [/usr/bin/python3 -m unittest discover -t . -s . -p "test_*.py"]
+04:55:58Z  COMMIT  WI-9 committed and pushed; PR #40 opened as a draft against main
+04:55:58Z  NOTE    DEV-A took the ghost_heading recommendation I raised on PR #32: GameState now carries ghost_heading with a wither, and WI-11 resolve_tick calls next_step. The gap is closed and nothing of mine changed
+04:55:58Z  NOTE    announced the intent vocabulary to DEV-A on PR #39 (WI-15 is theirs and consumes it) and raised the modifier-state question with DEV-C on PR #25. My recommendation to DEV-C was NOT to add it - control-Up moving the player is harmless and a Tk bitmask would spoil a toolkit-neutral value - but it should be a decision rather than an accident
+04:55:58Z  NOTE    CONTRADICTION in amendment 1: the ownership table gives "directions and headings" to DEV-B in WI-7 or WI-9, but the first-lander rule in the same section gives them to whatever landed first, which is DEV-As WI-5 Direction from day one. WI-7, WI-9 and now WI-11 all use it, so the tree is consistent; the table row is what is wrong. Flagged, no code moved
+04:55:58Z  TEST    374 passed, 0 failed, 0 skipped  [/usr/bin/python3 -m unittest discover -t . -s . -p "test_*.py"] with WI-11 merged in
+04:57:05Z  COMMIT  488565c WI-9: merge main, and record that WI-11 fits the intent vocabulary
+04:57:05Z  MERGE   PR #40 merged to main as 0e15213; fetched and fast-forwarded; whole suite re-run on the landed tree
+04:57:05Z  TEST    374 passed, 0 failed, 0 skipped  [/usr/bin/python3 -m unittest discover -t . -s . -p "test_*.py"] on the landed tree
+04:57:05Z  NOTE    these closing lines and the M1 completion record are committed on r6/wi-9a-completion-record, because WI-9 had already merged when they were written
+04:57:05Z  DONE    WI-9 r6/wi-9-input-translator 488565c (merged as 0e15213)
