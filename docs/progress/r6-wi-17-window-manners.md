@@ -10,3 +10,5 @@ WI-17  VERIFY  05:15:42Z  Window 4 (fail-session, 0.534 s, reaped). THE HEADLINE
 WI-17  VERIFY  05:15:42Z  Window 5 (close, 0.981 s, reaped). The real WM_DELETE_WINDOW Tcl command, the route the window manager takes, ended the process at 0.981 s against a 4 s backstop, no orphan. NOTE: phase_at_the_end was "playing" — the close button reaches WindowOwner.end_session and never reaches the session. See the finding; it is a WI-18 wiring note, not a WI-17 defect.
 WI-17  VERIFY  05:15:42Z  Screen ledger for this lane: 5 windows opened, 5 reaped, 0 modal sheets, 0 orphans. pgrep empty; System Events counts 0 GUI Python processes. Releasing the screen to the conductor.
 WI-17  TEST    05:17:50Z  601 passed, 0 failed, 0 skipped  (/usr/bin/python3 -m unittest discover -t . -s . -p "test_*.py"). Base at 67de3f1 measured separately at 574, so this branch adds 27.
+WI-17  COMMIT  05:18:21Z  bbf0b4a WI-17: the real-medium exercises, and what five real windows said
+WI-17  COMMIT  05:18:21Z  d95d90f WI-17: the tests that need no window, the finding, and the PR body
