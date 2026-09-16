@@ -12,3 +12,8 @@
 04:53:32Z  VERIFY  draft PR #39 opened with --base r6/wi-7-ghost-policy, stacked on DEV-B s branch. Told DEV-B on PR #33 that I will retarget to main as soon as they merge.
 04:54:18Z  NOTE    WI-7 merged while PR #39 was in draft. Retargeted #39 to main and merged origin/main onto the branch: clean, no conflict. No merge-order constraint remains.
 04:54:18Z  TEST    349 passed, 0 failed, 0 skipped with origin/main merged in  (/usr/bin/python3 -m unittest discover -t . -s . -p "test_*.py", 3.72s)
+04:55:10Z  MERGE   PR #39 merged into main as 7eb6ff0; origin/main brought back onto the branch.
+04:55:10Z  TEST    349 passed, 0 failed, 0 skipped on main at 7eb6ff0  (/usr/bin/python3 -m unittest discover -t . -s . -p "test_*.py")
+04:55:10Z  ASK     on the losing turn, should the dot the player walked onto still be eaten and still score? As built it is: outcome CAUGHT, score 7 rather than 6.
+04:55:10Z  ASSUME  proceeding with the dot eaten, because the plan s step order puts eat after collision rather than instead of it. One line in resolve_move if the other reading is wanted; nothing downstream depends on it but the number on the CAUGHT status line.
+04:55:10Z  DONE    WI-11 r6/wi-11-turn-resolver 7eb6ff0
