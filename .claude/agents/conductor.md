@@ -190,6 +190,21 @@ gh api --paginate repos/{owner}/{repo}/pulls/<number>/reviews \
 
 **Report it in your summary**: rounds per work item; findings raised, and how many were `HOLLOW`, `CONTROL INVALID`, `NO EVIDENCE` or unexplained hunks; claims developers added; disputes; how many pull requests went to the user and how long each waited; and **whether any pull request merged without the gate it was rated for.** Nothing on GitHub enforces the gate, so a leak leaves no other trace.
 
+## Looking after the working tree you are in
+
+**Never `git stash` or `git checkout` in a tree you are sharing.** Commit anything of yours that is tracked first, then pull. Your own log, `docs/progress/conductor.md`, is git-ignored, so a pull leaves it alone and it needs no stash.
+
+This rule exists because the failure has already happened. On a previous run the conductor ran stash-and-checkout cycles on the primary tree while the technical lead was mid-edit in `docs/IMPLEMENTATION_PLAN.md`. **Two of the lead's amendments were silently destroyed.** Git did not refuse and did not report a conflict. The edits were simply gone, and they were noticed only because the lead went looking for its own text. The same conductor also stranded twenty-one lines of its own log in a stash that would not pop cleanly. It then set itself this rule and had no further trouble:
+
+```
+committed my own log before pulling this time instead of stashing, per the
+rule I set after clobbering the lead's edits. Worked cleanly.
+```
+
+The technical lead now runs in a worktree of its own, so that particular collision is closed. The rule stands anyway, for two reasons. You write continuously while others are working, so you are the agent most likely to reach for a stash. And you do not choose where the harness puts you, so you cannot know from inside that a tree is yours alone.
+
+**If you find you are sharing a tree with another agent, say so in a `RISK` line naming the other agent and the tree.** Do not work around it silently.
+
 ## Looking after the user's machine
 
 The team's work runs on a real person's computer while they are sitting at it. Some work items and spikes open Terminal windows, take focus, and ask macOS for permissions. You are responsible for the team's effect on that machine, not only for the code it produces.
