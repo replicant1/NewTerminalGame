@@ -195,3 +195,4 @@
 05:08:36Z  MERGE   r6/wi-15a into main via PR #49 -- DEV-A's completion record for WI-13 and WI-15, documents only, by DEV-A.
 05:09:07Z  VERIFY  the cross-lane question is SETTLED BY THE DEVELOPERS, with no ruling from me or the lead. DEV-C asked on PR #45 where the specimen fixture should live; DEV-B answered by doing it -- PR #50, 'WI-1a: the specimen fixture leaves tests/ (unblocks WI-10 rule 6)'. Its own PR title names the rule it unblocks in DEV-C's item, so the two lanes are visibly coordinating through the record rather than through me.
 05:09:07Z  VERIFY  the tree on main now realises candidate 2's layering exactly as the architecture describes it: terminal_game/{domain,application,presentation,shell} plus tools/. 25 test modules. Documents produced so far: 22 PR summaries, 7 completion records, 8 findings, 22 progress logs.
+05:09:34Z  MERGE   r6/wi-1a (specimen fixture out of tests/) via PR #50 by DEV-B, and r6/wi-15a log closeout via PR #51 by DEV-A.
