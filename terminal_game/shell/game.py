@@ -67,9 +67,8 @@ from typing import Any, Callable, Optional
 from ..application.session import Session, new_session
 from ..domain.game_state import GameState
 from ..domain.maze_generator import generate_maze
-from ..presentation.frame_composer import compose_frame
 from ..presentation.input_translator import IntentKind, translate
-from ..presentation.status_line import status_row
+from ..presentation.picture import frame_for
 from .anchor import WindowAnchor
 from .toolkit import KeyPress, PixelSize, ScreenPosition, Toolkit
 from .window_owner import WindowOwner
@@ -86,17 +85,20 @@ __all__ = [
 def compose_picture(state: GameState):
     """A game state in, the whole picture out — WI-15's ``compose`` seam.
 
-    Two lines, and they are the join between WI-12's rows 0–28 and WI-13's
-    row 29: the composer places whatever status row it is handed and writes
-    nothing there itself.  **This is the production home of that join.**
+    **The join itself now lives in Presentation**, in
+    :func:`terminal_game.presentation.picture.frame_for`, where amendment 10
+    of the plan rules it belongs: it is the one place SCRN-1's *"29 rows of
+    maze, one row of status"* is a single statement.  DEV-A wrote the two
+    lines here and said why — the natural Presentation home was another
+    lane's landed file — and WI-22 moved them.
 
-    A note for whoever tidies up: the same two lines also exist in
-    ``tools/the_look.py`` and ``tests/scripted.py``, both DEV-B's, and in
-    ``tools/window_manners.py``, mine.  This is the only one in production.
-    Consolidating the other three is a one-line change each and is not done
-    here, because three of the four are another lane's files.
+    What is left here is the composition root doing what a composition root
+    does: naming which Presentation function the Shell hands to the session.
+    It is kept as a name of its own because it is the default for
+    :func:`build_game`'s ``compose`` argument and ``tools/play_the_game.py``
+    imports it.
     """
-    return compose_frame(state, status_row(state.score.points, state.outcome))
+    return frame_for(state)
 
 
 class GameCollaborator:

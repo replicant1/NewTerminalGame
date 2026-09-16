@@ -82,9 +82,8 @@ if __name__ == "__main__" and __package__ is None:  # pragma: no cover
 from terminal_game.application.session import Session, new_session
 from terminal_game.domain.game_state import GameState
 from terminal_game.domain.maze_generator import generate_maze
-from terminal_game.presentation.frame_composer import compose_frame
 from terminal_game.presentation.input_translator import translate
-from terminal_game.presentation.status_line import status_row
+from terminal_game.presentation.picture import frame_for
 from terminal_game.shell.game import GameCollaborator
 from terminal_game.shell.toolkit import KeyPress, PixelSize, ScreenPosition
 from terminal_game.shell.window_owner import WindowOwner
@@ -359,8 +358,13 @@ def press_the_close_button(root):  # pragma: no cover - needs a real window
 
 
 def real_compose(state: GameState):
-    """The real composer over the real status line: a state in, a frame out."""
-    return compose_frame(state, status_row(state.score.points, state.outcome))
+    """The real picture the player sees: a state in, a frame out.
+
+    One call now rather than two lines: WI-22 moved the join of WI-12's rows
+    0-28 and WI-13's row 29 into Presentation, so this exercise composes the
+    picture by the same route the game does and cannot drift from it.
+    """
+    return frame_for(state)
 
 
 def _real_game_session(show, compose=real_compose):
