@@ -10,10 +10,10 @@ three.
 
 Run it with::
 
-    python3 -m smoketest                  # opens one window, and takes it back
-    python3 -m smoketest --show-picture   # and prints what the tab showed
+    python3 -m auto_smoketest                  # opens one window, and takes it back
+    python3 -m auto_smoketest --show-picture   # and prints what the tab showed
 
-Each exercise returns an :class:`~smoketest.pack.Observation` — what it did,
+Each exercise returns an :class:`~auto_smoketest.pack.Observation` — what it did,
 what it saw, and whether what it saw is what the requirement asks for.
 **Exercises report; they do not assert**, because this is run by a person who
 needs to see the numbers even when they are right. ``ok`` is ``True``,

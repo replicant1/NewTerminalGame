@@ -28,8 +28,8 @@ whole reason this is code rather than a markdown checklist.
 
 ## Its other half
 
-``smoketest`` is what a machine *can* establish about the assembled game, and
-the two are meant as a pair: ``python3 -m smoketest`` puts the real game on
+``auto_smoketest`` is what a machine *can* establish about the assembled game, and
+the two are meant as a pair: ``python3 -m auto_smoketest`` puts the real game on
 the screen, and this says what to look at while it is there. They are separate
 packages because they have different contracts — one reports numbers and exits,
 the other is read by a person and never passes or fails at all.

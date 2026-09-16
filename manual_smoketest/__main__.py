@@ -24,11 +24,11 @@ def main(argv=None):
     if argv:
         sys.stderr.write(
             "usage: python3 -m manual_smoketest   (no arguments)\n"
-            "to run the machine's half instead: python3 -m smoketest\n")
+            "to run the machine's half instead: python3 -m auto_smoketest\n")
         return 2
     print(checks.render())
     print("None of the above is recorded as verified anywhere, and none of it")
-    print("can be. `python3 -m smoketest` is the half a machine can do.")
+    print("can be. `python3 -m auto_smoketest` is the half a machine can do.")
     return EXIT_OK
 
 

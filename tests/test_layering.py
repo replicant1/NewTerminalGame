@@ -120,7 +120,7 @@ APPLICATION_MAY_IMPORT = ("terminalgame.domain", "terminalgame.presentation",
 LAUNCHER_ROOT = os.path.join(REPOSITORY_ROOT, "launcher")
 
 #: The smoke test, which is part of neither and drives both from outside.
-SMOKETEST_ROOT = os.path.join(REPOSITORY_ROOT, "smoketest")
+SMOKETEST_ROOT = os.path.join(REPOSITORY_ROOT, "auto_smoketest")
 
 #: What the smoke test may import. The launcher, because it starts the game
 #: the way a player does — and **nothing from the game**, ruled in WI-14a for
@@ -132,7 +132,7 @@ SMOKETEST_ROOT = os.path.join(REPOSITORY_ROOT, "smoketest")
 #: `manual_smoketest` is here because `__main__` prints a closing line counting
 #: the codes only a person can settle. That is a register of strings and
 #: imports nothing itself, so it cannot carry the game in behind it.
-SMOKETEST_MAY_IMPORT = ("smoketest", "launcher", "manual_smoketest")
+SMOKETEST_MAY_IMPORT = ("auto_smoketest", "launcher", "manual_smoketest")
 
 
 def application_files():
@@ -151,7 +151,7 @@ def launcher_files():
     return found
 
 
-def smoketest_files():
+def auto_smoketest_files():
     """The Python files of the smoke test, by their name within it."""
     found = []
     for directory, _, filenames in os.walk(SMOKETEST_ROOT):
@@ -684,7 +684,7 @@ class SmokeTestStaysOutsideTest(unittest.TestCase):
 
     Ruled in WI-14a, and the reason is its whole purpose: **a check that
     reaches inside the game can pass while the thing the player runs is
-    broken.** If `smoketest/` could import `terminalgame`, it could assert
+    broken.** If `auto_smoketest/` could import `terminalgame`, it could assert
     against the frame builder's own output rather than against what actually
     arrived on the screen, and it would stop being a test of the assembled
     thing at all.
@@ -696,7 +696,7 @@ class SmokeTestStaysOutsideTest(unittest.TestCase):
 
     def test_there_is_a_smoke_test_to_look_at(self):
         # A scan of nothing passes. This is the guard on the guard.
-        names = [name for name, _ in smoketest_files()]
+        names = [name for name, _ in auto_smoketest_files()]
         self.assertIn("pack.py", names)
         self.assertIn("__main__.py", names)
         self.assertGreater(len(names), 2)
@@ -722,8 +722,8 @@ class SmokeTestStaysOutsideTest(unittest.TestCase):
 
     def test_the_pack_imports_nothing_from_the_game(self):
         offenders = []
-        for name, path in smoketest_files():
-            for imported in top_level_imports(source_of(path), "smoketest"):
+        for name, path in auto_smoketest_files():
+            for imported in top_level_imports(source_of(path), "auto_smoketest"):
                 if imported == "terminalgame":
                     offenders.append(name)
         self.assertEqual([], offenders,
@@ -735,8 +735,8 @@ class SmokeTestStaysOutsideTest(unittest.TestCase):
         # The stronger form, as with the launcher: not "does it avoid the
         # game" but "what *does* it import", enumerated and each one judged.
         offenders = []
-        for name, path in smoketest_files():
-            for imported in top_level_imports(source_of(path), "smoketest"):
+        for name, path in auto_smoketest_files():
+            for imported in top_level_imports(source_of(path), "auto_smoketest"):
                 if imported in SMOKETEST_MAY_IMPORT:
                     continue
                 if not is_standard_library(imported):
@@ -749,8 +749,8 @@ class SmokeTestStaysOutsideTest(unittest.TestCase):
         # Otherwise the test above passes on a pack that imports nothing and
         # therefore does nothing.
         imported = set()
-        for _, path in smoketest_files():
-            imported.update(top_level_imports(source_of(path), "smoketest"))
+        for _, path in auto_smoketest_files():
+            imported.update(top_level_imports(source_of(path), "auto_smoketest"))
         self.assertIn("launcher", imported)
 
     def test_neither_the_game_nor_the_launcher_imports_the_pack(self):
@@ -758,11 +758,11 @@ class SmokeTestStaysOutsideTest(unittest.TestCase):
         # on it.
         offenders = []
         for name, path in python_files():
-            if "smoketest" in top_level_imports(source_of(path), "terminalgame"):
-                offenders.append(("terminalgame/" + name, "smoketest"))
+            if "auto_smoketest" in top_level_imports(source_of(path), "terminalgame"):
+                offenders.append(("terminalgame/" + name, "auto_smoketest"))
         for name, path in launcher_files():
-            if "smoketest" in top_level_imports(source_of(path), "launcher"):
-                offenders.append(("launcher/" + name, "smoketest"))
+            if "auto_smoketest" in top_level_imports(source_of(path), "launcher"):
+                offenders.append(("launcher/" + name, "auto_smoketest"))
         self.assertEqual([], offenders,
                          "nothing that ships may depend on the test harness")
 

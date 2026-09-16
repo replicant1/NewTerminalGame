@@ -1,4 +1,4 @@
-"""``python3 -m smoketest`` — run the exercises against the real desktop.
+"""``python3 -m auto_smoketest`` — run the exercises against the real desktop.
 
 One window is opened and taken back again. Unlike the register in
 ``manual_smoketest``, this one really does something to the machine it is run
@@ -10,19 +10,27 @@ from __future__ import annotations
 
 import argparse
 import sys
+import time
 
 from launcher.game import game_command
 from manual_smoketest import checks
-from smoketest import pack
+from auto_smoketest import pack
 
 EXIT_OK = 0
 EXIT_FAILED = 1
 EXIT_LEFT_A_WINDOW = 2
 
 
-def main(argv=None):
+def main(argv=None, runner=None, clock=time.time, sleeper=time.sleep):
+    """Open one window, run the game in it, report, and take the window back.
+
+    `runner`, `clock` and `sleeper` are injectable for the same reason they
+    are in `launcher.game.main`: without a seam here, nothing can exercise
+    this function except a real desktop, and so nothing did — every line of
+    it was unreached by the suite. They are not for callers to vary.
+    """
     parser = argparse.ArgumentParser(
-        prog="python3 -m smoketest",
+        prog="python3 -m auto_smoketest",
         description="Open one window, run the real game in it, and take the "
                     "window back. Reports what it observed.")
     parser.add_argument("--show-picture", action="store_true",
@@ -34,7 +42,8 @@ def main(argv=None):
     print("Opening one window. It will end itself with `q` — this never uses")
     print("a hold and never starts a game it cannot stop.")
     print("")
-    observations, shown, window = pack.run(game_command())
+    observations, shown, window = pack.run(
+        game_command(), runner=runner, clock=clock, sleeper=sleeper)
     for observation in observations:
         print(observation)
     print("")

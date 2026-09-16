@@ -26,13 +26,15 @@ from __future__ import annotations
 import contextlib
 import inspect
 import io
+import sys
 import unittest
 
 from launcher.geometry import Size
 from launcher.runner import AutomationError
 from manual_smoketest import checks
-from smoketest import pack
-from smoketest.pack import (
+from auto_smoketest import pack
+from auto_smoketest.__main__ import main as smoketest_main
+from auto_smoketest.pack import (
     Observation,
     WindowUnderTest,
     census,
@@ -465,6 +467,86 @@ class WhatTheExercisesReport(unittest.TestCase):
         self.assertIn("ok", str(Observation("a", ("X-1",), True, "d")))
         self.assertIn("FAIL", str(Observation("a", ("X-1",), False, "d")))
         self.assertIn("note", str(Observation("a", ("X-1",), None, "d")))
+
+
+class TheCommandLineItself(unittest.TestCase):
+    """`python3 -m auto_smoketest`, which nothing reached until now.
+
+    Every line of `__main__.main` was unexecuted by the suite: the entry
+    point called `pack.run(game_command())` with no seam, so the only way to
+    reach it was a real desktop. That is the same shape as the bug found in
+    the register's entry point an hour earlier — a function whose tests all
+    called it directly while the command itself was never exercised.
+    """
+
+    #: A capture the size SCRN-1 asks for. `HAPPY_PATH`'s is three rows,
+    #: which is right for the exercises that never look at it and wrong here:
+    #: the whole run reports a failure if no picture was drawn.
+    A_REAL_FRAME = "\n".join(["#" * 37 + "   "] * 29
+                             + [" score 0    arrows, q quits".ljust(40)])
+
+    def _main(self, argv=None, replies=None):
+        merged = {"tab_contents": self.A_REAL_FRAME}
+        merged.update(replies or {})
+        runner, clock = build(merged)
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            code = smoketest_main(argv or [], runner=runner,
+                                  clock=clock.time, sleeper=clock.sleep)
+        return code, out.getvalue(), runner
+
+    def test_a_clean_run_reports_and_exits_zero(self):
+        code, said, runner = self._main()
+        self.assertEqual(0, code)
+        self.assertIn("THE EXERCISES", said)
+        self.assertIn("the game starts in its window", said)
+        self.assertIn("close_window", runner.names)
+
+    def test_it_runs_the_real_game_command_and_only_one_window(self):
+        _, _, runner = self._main()
+        self.assertIn("terminalgame.game_main",
+                      runner.source_of("open_window_running"))
+        self.assertEqual(1, len(runner.calls_named("open_window_running")))
+
+    def test_a_failing_exercise_exits_one(self):
+        # Nothing ever ran in the tab: the game did not start.
+        code, said, _ = self._main(replies={"window_processes": FINISHED})
+        self.assertEqual(1, code)
+        self.assertIn("FAIL", said)
+
+    def test_a_window_left_open_exits_two_and_names_it(self):
+        code, said, runner = self._main(replies={"window_processes": PLAYING})
+        self.assertEqual(2, code)
+        self.assertIn("WINDOW %d WAS LEFT OPEN" % WINDOW_ID, said)
+        self.assertIn("modal sheet", said)
+        self.assertNotIn("close_window", runner.names)
+
+    def test_show_picture_prints_the_capture_and_is_off_by_default(self):
+        _, without, _ = self._main()
+        _, with_it, _ = self._main(["--show-picture"])
+        self.assertNotIn("what the tab was showing", without)
+        self.assertIn("what the tab was showing", with_it)
+        self.assertIn("| score 0", with_it)
+
+    def test_it_sends_the_reader_to_the_other_half(self):
+        _, said, _ = self._main()
+        self.assertIn("python3 -m manual_smoketest", said)
+        self.assertIn(str(len(checks.CODES_NEEDING_A_PERSON)), said)
+
+    def test_the_real_command_line_reaches_it(self):
+        # The bug class this class exists for: a `main` whose arguments are
+        # only ever supplied by a test passes while the command ignores them.
+        runner, clock = build()
+        saved = sys.argv
+        sys.argv = ["python3 -m auto_smoketest", "--show-picture"]
+        try:
+            out = io.StringIO()
+            with contextlib.redirect_stdout(out):
+                smoketest_main(runner=runner, clock=clock.time,
+                               sleeper=clock.sleep)
+        finally:
+            sys.argv = saved
+        self.assertIn("what the tab was showing", out.getvalue())
 
 
 class TheStaleExecutablesAreNotResurrected(unittest.TestCase):

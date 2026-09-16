@@ -6,8 +6,8 @@ register has nowhere to write an answer — not a field set to False, no field
 at all — and there is a test that says so, because a checklist an agent can
 tick is not a checklist.
 
-The instrument that runs the other half is `smoketest`, tested in
-``tests/test_smoketest.py``.
+The instrument that runs the other half is `auto_smoketest`, tested in
+``tests/test_auto_smoketest.py``.
 """
 
 from __future__ import annotations
@@ -43,7 +43,7 @@ class AskingForTheRegisterOpensNothing(unittest.TestCase):
         with contextlib.redirect_stderr(io.StringIO()) as complaint:
             code = register_main(["--run"])
         self.assertEqual(2, code)
-        self.assertIn("python3 -m smoketest", complaint.getvalue())
+        self.assertIn("python3 -m auto_smoketest", complaint.getvalue())
 
     def test_the_refusal_is_reachable_from_the_real_command_line(self):
         # The bug this catches: `main()` took argv=None from `__main__` and
@@ -60,11 +60,11 @@ class AskingForTheRegisterOpensNothing(unittest.TestCase):
         finally:
             _sys.argv = saved
         self.assertEqual(2, code)
-        self.assertIn("python3 -m smoketest", complaint.getvalue())
+        self.assertIn("python3 -m auto_smoketest", complaint.getvalue())
 
     def test_it_points_at_the_half_that_a_machine_can_do(self):
         _, said = self._run([])
-        self.assertIn("python3 -m smoketest", said)
+        self.assertIn("python3 -m auto_smoketest", said)
 
 
 class TheHumanChecksCannotBeTicked(unittest.TestCase):
