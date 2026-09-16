@@ -165,3 +165,98 @@ Two things it must not forget:
   is set. A failure inside a tick is routed to the shutdown path rather than
   raised, because Tk swallows a raise from an `after()` callback; if nobody
   reads `failure`, a crashed game exits looking like a clean one.
+
+---
+
+# COMPLETION — M3, DEV-A, second record: **WI-17**
+
+**Added by the agent that took the lane over after WI-15.** Everything above
+this line is the previous agent's record of WI-13 and WI-15 and is left
+exactly as it was written. WI-17 is an M3 item in this lane and belongs in
+this file, and the four document shapes allow one completion per lane per
+iteration — so it is recorded here as a second, separately-headed record
+rather than by rewriting somebody's finished document or by inventing a
+fifth filename. **Flagged as a deviation for a ruling.**
+
+**Work item finished:** **WI-17 — the window's manners**
+**Mode:** non-local — real pull request, merged by DEV-A
+**Amendment 4** moved this item into this lane from DEV-C.
+
+---
+
+## What was finished
+
+Branch `r6/wi-17-window-manners`, cut from `main` at `67de3f1`. Pull request
+**#56**.
+
+| File | What it is |
+| --- | --- |
+| `tools/window_manners.py` | five bounded, self-closing exercises against real Tk |
+| `tests/test_window_manners.py` | 27 tests, no window anywhere |
+| `docs/findings/WI-17-real-window-manners.md` | what five real windows said |
+| `docs/prs/PR-WI-17-window-manners.md` | the pull request's body |
+| `docs/progress/r6-wi-17-window-manners.md` | the progress log |
+
+**No production code was changed.** Amendment 2 shrank this item to mostly
+verification and it stayed shrunk: the force-focus and the close-button
+wiring had already landed from WI-4's branch, and they are verified here
+rather than rebuilt.
+
+## The suite
+
+```
+/usr/bin/python3 -m unittest discover -t . -s . -p "test_*.py"
+```
+
+**601 passed, 0 failed, 0 skipped** on the branch. The base at `67de3f1` was
+measured separately at **574**, by moving this branch's one test module aside
+and running the same command, so the 27 reconcile exactly and nobody has
+retyped a number.
+
+## The screen
+
+**Five windows opened, five reaped, no modal sheet, no orphan.** Lifetimes
+0.496 s to 1.483 s, each ended on its own Tk scheduler well inside a 4 s
+backstop, each reaped in a `finally`, each acted on only through the handle
+captured at the moment of creation. Afterwards `pgrep` was empty and System
+Events counted 0 GUI Python processes.
+
+The screen gate from amendment 4 was used as intended: held exclusively,
+granted by the conductor after DEV-B released it, and released the moment
+the last window was gone so DEV-C could have it.
+
+## The one thing this item found
+
+**A crashed game exits looking clean.** A real `Session` whose composer
+raised inside the event loop had its window reaped, reached Ended, printed
+nothing, returned from `owner.run()` with **no exception**, and would have
+exited **0**. The only evidence was `session.failure`.
+
+That is not a defect — it is WI-15 doing what amendment 1 required, because
+Tk swallows an exception raised inside an `after()` callback. It is a
+measurement that turns amendment 5's instruction to WI-18 from a reasoned
+precaution into an observed fact.
+
+## What the next item in this lane inherits
+
+**WI-18 (the wiring)**, on top of what the previous record already listed:
+
+- **Check `session.failure` after `run()` returns.** Now measured, section 1
+  of the finding. `exit_code_for` in `tools/window_manners.py` shows the
+  shape in four lines, and this branch's tests pin it.
+- **Rebind the close request after `open()`.** `WindowOwner.open()` binds it
+  to its own `end_session`, so the close button never reaches the session —
+  measured, `phase_at_the_end` was `playing`. `bind_close_request` is
+  last-writer-wins, so WI-18 rebinds it to the session's `quit` and needs
+  **no change to `WindowOwner`**, which matters because that is DEV-C's file.
+- **The `KeyDispatcher` in `tools/window_manners.py` is not a proposal.**
+  Amendment 5 puts the intent dispatch in WI-18's collaborator. The one in
+  the script is three throwaway lines that exist so a real arrow key could be
+  seen moving a real player.
+
+## What is still with the user, and unchanged
+
+- **A1 — the titlebar.** Tk read `Terminal Game` back on all five windows.
+  Still not a person seeing a titlebar. Not converted into one here.
+- **SCRN-3 — do the double lines' strokes meet.** Not measurable, not
+  touched. Five developers have now left that line alone.

@@ -242,6 +242,85 @@ DEV-B answered DEV-C's question by landing it, which is the first-lander rule wo
 
 ---
 
+## 0f. Amendment 6 — a rule of mine that could not be obeyed, and the anchor
+
+`main` green through twenty-three landings; WI-16 at **605 passed, 0 failed, 0 skipped**.
+**Twenty-one windows opened, twenty-one reaped, no modal sheet ever raised.**
+
+### You cannot exercise a negative into existence
+
+This is the sharpest thing anyone has said about the plan, and it is DEV-C's. Section 4
+owed WI-14 *"the real anchor query, on this machine, confirmed not to raise a permission
+prompt — a stub cannot prove the absence of a dialog."* The standing window rules
+simultaneously forbid running anything that might prompt, because a dialog is modal, a
+modal sheet blocks scripting, and the next call in the run hangs behind it unwatched.
+**Those two only both held because the query DEV-C actually built cannot prompt.** Had it
+built the privileged one, they would have contradicted each other outright.
+
+So the rule was wrong, and here is the corrected one:
+
+> **A negative about the user's environment — no dialog appeared, nothing was installed, no
+> permission was asked for — cannot be established by an agent running the thing that might
+> do it.** There are exactly two honest routes. **Make the route structurally absent and
+> show that it is absent.** Or **ask the person.** Nothing else counts.
+
+And the absence is the *better* evidence, not the weaker one: **an observation covers one
+run on one machine; an absence covers every run on every machine.** DEV-C put it exactly
+right — *"the privileged route is absent, not guarded"* — and **"absent, not guarded" is now
+the standard for anything that could prompt the user**, because a guard is a flag somebody
+can flip and an absence is not.
+
+Section 4's owed-exercise table is corrected accordingly, and **WI-21 will meet this same
+shape** — it is written down there now rather than discovered there.
+
+Note what this does *not* change. "Proved by a double is not proved" stands untouched for
+**positive** behaviours: a key arriving, a window being reaped, an exception being noticed.
+You can exercise a positive. You cannot exercise a negative into existence.
+
+### WI-14's anchor: approved, as A2 revised
+
+DEV-C went nowhere near a privileged query, which leaves A2's literal reading resolving to
+*"no anchor window is visible without Accessibility, ever"* — and therefore WIN-4 satisfied
+by a fixed corner. It used the **pointer position** instead. That is a deviation from A2's
+word *window*, and DEV-C raised it rather than quietly taking it.
+
+**Approved.** The reasoning matters more than the verdict: A2's literal reading does not
+actually satisfy WIN-4 either — a fixed corner is not "below and to the right of whatever
+window the player was last looking at", and on a second monitor it is not reliably
+somewhere the player is looking. **Both options deviate. Take the one that serves the
+requirement's own stated purpose** — *"so it always lands somewhere visible"* — and the
+pointer follows the player where a fixed corner cannot. Recorded as **A2 revised**, still an
+assumption and still the user's to overturn, and it is one constant's worth of change either
+way with the fallback path already tested.
+
+### WI-18: the instruction is now measured, and there is a second trap beside it
+
+Amendment 5 told WI-18 to check the session's recorded failure. That is no longer reasoning.
+**Measured on real Tk:** a composer that raised mid-game left the window reaped, the phase
+Ended, **stderr empty**, `run()` returning **normally** and `error` **null**. The only
+evidence the game had crashed at all was `session.failure`.
+
+**And a second trap that would defeat the first.** The window owner binds the close request
+to its own shutdown, so **the close button takes the window and the process away without
+ever reaching the session** — skipping its shutdown and, worse, skipping the failure check.
+WI-18 must **rebind the close request to the session's quit after opening**. The binding is
+last-writer-wins, so this needs no change to the window owner, which is another lane's
+landed file. This is not a WI-17 defect; everything WI-17 promises still holds.
+
+### A10 — do the strokes actually meet?
+
+**Four developers have each declined to convert the advance-width measurement into an answer
+about whether the wall strokes join**, and each said so explicitly. They are right, and it
+deserves recording rather than passing: **equal advance proves the cells line up; it does
+not prove the strokes touch.** SCRN-3's "join up neatly" is a human judgement, now
+assumption **A10** and the fifth question in section 13.
+
+With a sting in it: **the specimen picture in the requirements contains no crossing glyph at
+all.** A check of SCRN-3 against the specimen alone would never exercise a crossing, and
+WI-16's joinery view is the only thing on this project that has ever put one on a screen.
+
+---
+
 ## 1. The architecture we are building, and why
 
 ### The ruling
@@ -604,9 +683,27 @@ hole could be hiding, named now rather than found later:
 | --- | --- |
 | A real key press reaching a real window, and being acted on | **WI-17**, and again in the finished game at **WI-21** |
 | A real exception inside a real `after()` callback, with the window confirmed reaped | **WI-17** — Tk swallows it, so a double will happily report success |
-| The real anchor query, on this machine, confirmed not to raise a permission prompt | **WI-14** — a stub cannot prove the absence of a dialog |
+| ~~The real anchor query, confirmed not to raise a permission prompt~~ **Corrected in amendment 6: this was not askable.** Instead — **show that the privileged route is absent from the code**, which is stronger than any observation | **WI-14** — and see the rule below, which now governs every claim of this shape |
 | A real `q` and a real close button ending the process with no orphan left behind | **WI-17**, confirmed at **WI-21** |
 | The real surface painting the real glyphs at the right cells | **WI-16**, by eye — this one is honestly only ever provable by a person |
+
+**And the limit on all of the above** *(added in amendment 6)*. Everything in that table is
+a **positive**: a key arrives, a window is reaped, a failure is noticed. You can exercise a
+positive. **You cannot exercise a negative into existence.** A claim that *nothing*
+happened to the user's environment — no dialog appeared, nothing was installed, no
+permission was asked for — cannot be established by running the thing that might do it,
+because if it does do it, the result is modal and only a person can clear it. Two honest
+routes and no third:
+
+- **Make the route structurally absent, and show the absence.** This is the strong form: an
+  observation covers one run on one machine, an absence covers every run on every machine.
+  "Absent, not guarded" — a guard is a flag somebody can flip.
+- **Ask the person.**
+
+This is not a technicality. Section 4 originally asked WI-14 to run the real permission
+query and confirm no prompt appeared, while the window rules below forbade running anything
+that might prompt. Both only held because the query that got built cannot prompt. WI-21
+will meet the same shape; meet it this way.
 
 ### If your work puts a window on the user's screen
 
@@ -676,6 +773,8 @@ arrives later, the "rests on it" column is the complete list of places to change
 | **A4** | *"Large enough to read comfortably"* is one named font-size constant, checked by eye. No objective test exists. | **WI-2**'s metrics constant; looked at in **WI-16** and **WI-21** |
 | **A5** | The game may **not** create or modify a profile or anything else in the user's preferences. | Nothing: candidate 2 needs no profile, so the blast radius is empty. Recorded so an answer has somewhere to land. |
 | **A6** | The specimen picture is normative for the grid-to-screen mapping. | Section 5, and through it **WI-1**, **WI-8**, **WI-12** |
+| **A10** | *(Added in amendment 6.)* SCRN-3's walls **do** "join up neatly" on screen. Four developers each declined to convert the advance-width measurement into this answer, and they were right: **equal advance proves the cells line up, not that the strokes touch.** No test can settle it. | The SCRN-3 row of the sweep, and **WI-16**'s joinery view — which is the only thing on this project that has ever rendered a crossing glyph, since the specimen picture contains none |
+| **A2 revised** | *(Amended in amendment 6.)* The anchor is the **pointer position**, not a window. A2's literal reading resolves to "no anchor window is visible without Accessibility, ever" and so degenerates to a fixed corner, which does not satisfy WIN-4 either. Both readings deviate; this one serves WIN-4's stated purpose — "so it always lands somewhere visible". Fixed offset remains the fallback. | **WI-14** alone, one constant, fallback path already tested |
 | **A9** | *(Added in amendment 4.)* STAT-3's `CLEARED  score 274` is a **format exemplar, not a reachability claim**. A full game is worth 259–271, mean 264.5, so 274 cannot occur. The two STAT-3 strings stay normative as formats; no test and no sweep row may assert 274 as an achieved score. | **WI-13**'s formatting tests, **WI-19**'s win path, **WI-20a**/**WI-20b**'s sweep rows |
 | **A8** | *(Added in amendment 3.)* On the losing turn the dot under the player **is** still taken and still scored — the player is caught *and* the dot counts. Not a coin flip: **END-3's own wording presupposes it** — "*eating* the last dot on the square the ghost is standing on is a loss, not a win" says the eating happens and only the outcome changes. | **WI-11** alone, already landed. A reversal is a WI-11 follow-up branch, **never** a WI-15 change — scattering the step order is the exact failure caution C6 exists to prevent. |
 | **A7 — restated in amendment 5** | The prohibition is on **authoring** a status-line string outside WI-13, **not** on a frame that happens to contain one. Any other item that needs row 29 obtains it from WI-13's own function, so a derived row follows a reversal automatically and a typed one would not. *(Without this, WI-19's whole-frame assertions and A7 contradict each other outright: a live row 29 is `score 0    arrows, q quits` padded to 40.)* | **WI-19**'s expected frames, and any later item composing a whole picture |
@@ -1119,10 +1218,21 @@ for by a double — no real window, no real permission prompt, in the suite.
 *Also produces.* `docs/findings/WI-14-anchor-query.md` — what the query actually returns on
 this machine, and whether it prompted. Assumption A2 is the thing being measured.
 
-*Amendment 2.* That findings document is not optional and it is not paperwork: **a stub
-cannot prove the absence of a permission dialog.** Per section 4, the real query must be
-run for real, once, and what happened written down. WI-3 is the cautionary case — green
-tests, passing probe, and a defect that only a real key press could have found.
+~~*Amendment 2.* The real query must be run for real, once.~~ **Withdrawn in amendment 6 —
+that instruction could not be obeyed.** Running a query that might prompt is exactly what
+the window rules forbid, and if it does prompt, the sheet is modal and only a person can
+clear it. The honest requirement is the opposite one: **show that the privileged route is
+absent from the code**, which covers every run on every machine rather than one run on
+this one. Absent, not guarded.
+
+*Amendment 6 — the anchor as built, approved as A2 revised.* A2's literal reading resolves
+to "no anchor window is visible without Accessibility, ever", so it degenerates to a fixed
+corner — which is not "below and to the right of whatever window the player was last
+looking at" either. Both readings deviate. **Anchor on the pointer position**, which is
+permission-free and serves WIN-4's own stated purpose — *"so it always lands somewhere
+visible"* — better than a fixed corner does, since it follows the player across monitors.
+The fixed offset stays as the fallback. One constant reverses it if the user rules
+otherwise.
 
 ---
 
@@ -1275,6 +1385,16 @@ callback — so propagation does not work and there is nothing to catch. If this
 not look at that record, **a crashed game exits looking clean.** Assert it: a session that
 failed mid-loop produces a non-clean exit.
 
+*Amendment 6 — that is now measured, and there is a second trap beside it.* On real Tk a
+composer that raised mid-game left the window reaped, the phase Ended, **stderr empty**,
+`run()` returning **normally** and `error` **null**. The only evidence of the crash was the
+recorded failure. And: **the window owner binds the close request to its own shutdown, so
+the close button takes the window and the process away without ever reaching the session** —
+skipping its shutdown and skipping the failure check with it. **Rebind the close request to
+the session's quit after opening.** The binding is last-writer-wins, so this needs no change
+to the window owner, which is another lane's landed file. Assert both: a close-button exit
+reaches the session, and a failed session does not exit clean.
+
 **The intent dispatch lands here**, not in WI-15. A key reaches the session as
 `move(Direction)` or `quit()` rather than as an `Intent`, because the layer rule forbids the
 Application layer naming Presentation, where `Intent` lives. That is three lines of
@@ -1399,6 +1519,20 @@ what it is touching before it starts. See section 10.
 caveated rows (WIN-2, WIN-4, WIN-5, SCRN-2) recorded with their assumption and the finding
 that supports them, and the human answers from WI-21 cited by document name. The final
 statement of what is proved, what rests on an assumption, and what is still open.
+
+*Amendment 6 — four observations to cite rather than re-derive.* Each was measured on a real
+window and each is worth a sweep row, because each is a requirement that had previously only
+ever been argued:
+
+- **SCRN-2 observed, not just guarded.** Across eight real windows the surface emitted text
+  items and nothing else. Under candidate 2 "no images" is a convention (caution C5), so an
+  observation is worth having beside WI-10's rule 3.
+- **CTRL-3 observed on a screen.** A press into a wall did nothing at all, and the squares
+  the player visited matched exactly what the pure Domain predicts for that seed — so the
+  input → session → resolver chain agrees with itself through a real window.
+- **SCRN-3 cannot be closed by the sweep.** It needs A10 and a person; cite WI-16's joinery
+  view and say so, and note that the specimen picture contains no crossing glyph.
+- **WIN-4 rests on A2 revised** — the pointer anchor. Say which reading the row depends on.
 
 *Tests must establish.* The same automated completeness check as WI-20a, now over all 49
 codes, plus that every finding and human-check document the sweep cites actually exists.
@@ -1664,7 +1798,7 @@ more than that, it is their call to make; I am not building it in.
 
 ## 13. What needs a human
 
-Four questions, none of which any of us can answer:
+Five questions, none of which any of us can answer:
 
 1. **Look at the titlebar of the running game window and say whether it reads exactly
    *Terminal Game*.** First asked at WI-4, confirmed at WI-21. (Assumption A1.)
@@ -1689,6 +1823,14 @@ Four questions, none of which any of us can answer:
    sees, so it deserves a ruling even though we have a defensible reading. It lands in
    **WI-11**, which has already merged, so a reversal is a small follow-up branch rather
    than a redesign. (Contradiction C-5.)
+
+5. **Look at the maze and say whether the blue walls join up neatly** — corners, tees and
+   crossings, with no gaps where two strokes meet. *(Added in amendment 6, assumption A10.)*
+   **Four developers have each declined to answer this from the advance-width measurement,
+   and each was right to: equal advance proves the cells line up, it does not prove the
+   strokes touch.** No test can settle it. Use **WI-16's joinery view**, not a game screen —
+   the specimen picture in the requirements contains no crossing glyph at all, so a game may
+   never show you one.
 
 And two smaller ones, both decided here and flagged rather than re-opened.
 
