@@ -7,8 +7,12 @@ blanks everywhere else. The frame composer can lay dots and actors over it
 without naming a single wall character. `wall_layer_text` is the same thing
 as lines, for asserting a picture.
 
-**Branch:** `r6/wi-8-wall-glyphs`, based on `main` at `6eb731e`.
+**Branch:** `r6/wi-8-wall-glyphs`, cut from `main` at `6eb731e` and merged up
+to `6cee5c9` (WI-9, WI-9a, amendments 2 and 3) cleanly, with no conflict.
 **Developer:** DEV-C. **Depends on:** WI-1 and WI-5, both landed long since.
+
+Amendment 3 notes that WI-8 is now effectively on the critical path to WI-18
+via WI-12. Acknowledged; this is why the branch is short.
 
 ---
 
@@ -107,6 +111,21 @@ already records it as open, and **WI-16 asks it properly**.
 
 ---
 
+## Proved by a double is not proved — what was exercised against the real thing
+
+**Nothing, and nothing here needs to be.** Section 4 of the plan asks every
+item touching the Shell to name the one thing it exercised against the real
+toolkit. WI-8 touches no Shell code, imports no toolkit, opens no window and
+has no double in its tests: every test runs against real `Maze` values and
+the real resolver, and the one picture that matters is compared as text.
+
+The honest sentence the rule asks for is therefore this: **the thing a real
+medium would tell us about this item is whether the strokes join, and that is
+not something a script can observe.** It is on the plan's own owed-exercise
+table as WI-16's, by eye.
+
+---
+
 ## Tests
 
 `tests/test_wall_glyphs.py`, 43 tests.
@@ -144,10 +163,12 @@ already records it as open, and **WI-16 asks it properly**.
 
 ```
 /usr/bin/python3 -m unittest discover -t . -s . -p "test_*.py"
-392 passed, 0 failed, 0 skipped
+392 passed, 0 failed, 0 skipped   # before merging main
+417 passed, 0 failed, 0 skipped   # after merging origin/main 6cee5c9
 ```
 
-349 before this branch, so 43 new. No window is opened by any of them, and
+349 before this branch, so 43 new; 374 on `main` after WI-9 landed, so still
+43 new. No window is opened by any of them, and
 `tkinter._default_root` was confirmed `None` after running the whole suite in
 one interpreter — the existing test that asserts it is untouched and passes.
 
@@ -178,6 +199,15 @@ and they exist so WI-12 need not re-derive the layout. Announced above per
 first-lander rule 4. Flagged for a ruling as an additive deviation.
 
 Nothing was omitted and nothing was done differently.
+
+**One conform owed to somebody else's decision, not done here.** Amendment 2
+rules that the specimen picture is to move out of `tests/` into a file both a
+test and a tool can depend on, and that where it goes is DEV-B's call.
+`tests/test_wall_glyphs.py` imports `tests.specimen`, as WI-1's own tests and
+the walking skeleton already do. That import will need changing when the
+fixture moves — one line, in this file, and nobody should pre-empt DEV-B's
+choice of where to put it. No production file in this branch depends on test
+code.
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
