@@ -119,16 +119,20 @@ APPLICATION_MAY_IMPORT = ("terminalgame.domain", "terminalgame.presentation",
 #: The launcher process, which is not part of the game package at all.
 LAUNCHER_ROOT = os.path.join(REPOSITORY_ROOT, "launcher")
 
-#: The acceptance pack, which is part of neither and drives both from outside.
-ACCEPTANCE_ROOT = os.path.join(REPOSITORY_ROOT, "acceptance")
+#: The smoke test, which is part of neither and drives both from outside.
+SMOKETEST_ROOT = os.path.join(REPOSITORY_ROOT, "smoketest")
 
-#: What the pack may import. The launcher, because it starts the game the way
-#: a player does — and **nothing from the game**, ruled in WI-14a for the
-#: reason that is the whole point of the pack: *a check that reaches inside
-#: the game can pass while the thing the player runs is broken.* Import
-#: `terminalgame` and the pack could assert against the frame builder's own
-#: output instead of against what reached the screen.
-ACCEPTANCE_MAY_IMPORT = ("acceptance", "launcher")
+#: What the smoke test may import. The launcher, because it starts the game
+#: the way a player does — and **nothing from the game**, ruled in WI-14a for
+#: the reason that is the whole point of it: *a check that reaches inside the
+#: game can pass while the thing the player runs is broken.* Import
+#: `terminalgame` and it could assert against the frame builder's own output
+#: instead of against what reached the screen.
+#:
+#: `needs_a_person` is here because `__main__` prints a closing line counting
+#: the codes only a person can settle. That is a register of strings and
+#: imports nothing itself, so it cannot carry the game in behind it.
+SMOKETEST_MAY_IMPORT = ("smoketest", "launcher", "needs_a_person")
 
 
 def application_files():
@@ -147,14 +151,14 @@ def launcher_files():
     return found
 
 
-def acceptance_files():
-    """The Python files of the acceptance pack, by their name within it."""
+def smoketest_files():
+    """The Python files of the smoke test, by their name within it."""
     found = []
-    for directory, _, filenames in os.walk(ACCEPTANCE_ROOT):
+    for directory, _, filenames in os.walk(SMOKETEST_ROOT):
         for filename in sorted(filenames):
             if filename.endswith(".py"):
                 path = os.path.join(directory, filename)
-                found.append((os.path.relpath(path, ACCEPTANCE_ROOT), path))
+                found.append((os.path.relpath(path, SMOKETEST_ROOT), path))
     return found
 
 
@@ -675,35 +679,55 @@ class LauncherTest(unittest.TestCase):
         self.assertFalse(is_standard_library("no_such_module_anywhere"))
 
 
-class AcceptancePackTest(unittest.TestCase):
-    """The pack checks the game from outside, and must stay outside.
+class SmokeTestStaysOutsideTest(unittest.TestCase):
+    """The smoke test checks the game from outside, and must stay outside.
 
-    Ruled in WI-14a, and the reason is the pack's whole purpose: **a check
-    that reaches inside the game can pass while the thing the player runs is
-    broken.** If `acceptance/` could import `terminalgame`, it could assert
+    Ruled in WI-14a, and the reason is its whole purpose: **a check that
+    reaches inside the game can pass while the thing the player runs is
+    broken.** If `smoketest/` could import `terminalgame`, it could assert
     against the frame builder's own output rather than against what actually
-    arrived on the screen, and the acceptance run would stop being acceptance.
+    arrived on the screen, and it would stop being a test of the assembled
+    thing at all.
 
     Added by WI-14b rather than left as a ruling nobody enforces — a new
     category with rules in prose only is a guard waiting to have never been
     exercised.
     """
 
-    def test_there_is_a_pack_to_look_at(self):
+    def test_there_is_a_smoke_test_to_look_at(self):
         # A scan of nothing passes. This is the guard on the guard.
-        names = [name for name, _ in acceptance_files()]
+        names = [name for name, _ in smoketest_files()]
         self.assertIn("pack.py", names)
-        self.assertIn("checks.py", names)
+        self.assertIn("__main__.py", names)
         self.assertGreater(len(names), 2)
+
+    def test_the_register_is_a_separate_package_that_imports_nothing(self):
+        """`needs_a_person` is a register, not an instrument.
+
+        It was split out of the same directory as the smoke test, and the
+        split only means anything while it stays inert: the moment it imports
+        something it stops being a list of what a person must do and becomes
+        a second thing that runs.
+        """
+        root = os.path.join(REPOSITORY_ROOT, "needs_a_person")
+        self.assertTrue(os.path.isdir(root), "the register should be its own package")
+        checks = os.path.join(root, "checks.py")
+        self.assertTrue(os.path.isfile(checks))
+        imported = top_level_imports(source_of(checks), "needs_a_person")
+        not_stdlib = sorted(m for m in imported if not is_standard_library(m))
+        self.assertEqual(
+            [], not_stdlib,
+            "checks.py must import nothing but the standard library; it "
+            "reaches for %s" % (not_stdlib,))
 
     def test_the_pack_imports_nothing_from_the_game(self):
         offenders = []
-        for name, path in acceptance_files():
-            for imported in top_level_imports(source_of(path), "acceptance"):
+        for name, path in smoketest_files():
+            for imported in top_level_imports(source_of(path), "smoketest"):
                 if imported == "terminalgame":
                     offenders.append(name)
         self.assertEqual([], offenders,
-                         "the acceptance pack drives the game from outside, "
+                         "the smoke test drives the game from outside, "
                          "the way a player does; importing it would let a "
                          "check pass while what the player runs is broken")
 
@@ -711,9 +735,9 @@ class AcceptancePackTest(unittest.TestCase):
         # The stronger form, as with the launcher: not "does it avoid the
         # game" but "what *does* it import", enumerated and each one judged.
         offenders = []
-        for name, path in acceptance_files():
-            for imported in top_level_imports(source_of(path), "acceptance"):
-                if imported in ACCEPTANCE_MAY_IMPORT:
+        for name, path in smoketest_files():
+            for imported in top_level_imports(source_of(path), "smoketest"):
+                if imported in SMOKETEST_MAY_IMPORT:
                     continue
                 if not is_standard_library(imported):
                     offenders.append((name, imported))
@@ -725,8 +749,8 @@ class AcceptancePackTest(unittest.TestCase):
         # Otherwise the test above passes on a pack that imports nothing and
         # therefore does nothing.
         imported = set()
-        for _, path in acceptance_files():
-            imported.update(top_level_imports(source_of(path), "acceptance"))
+        for _, path in smoketest_files():
+            imported.update(top_level_imports(source_of(path), "smoketest"))
         self.assertIn("launcher", imported)
 
     def test_neither_the_game_nor_the_launcher_imports_the_pack(self):
@@ -734,11 +758,11 @@ class AcceptancePackTest(unittest.TestCase):
         # on it.
         offenders = []
         for name, path in python_files():
-            if "acceptance" in top_level_imports(source_of(path), "terminalgame"):
-                offenders.append(("terminalgame/" + name, "acceptance"))
+            if "smoketest" in top_level_imports(source_of(path), "terminalgame"):
+                offenders.append(("terminalgame/" + name, "smoketest"))
         for name, path in launcher_files():
-            if "acceptance" in top_level_imports(source_of(path), "launcher"):
-                offenders.append(("launcher/" + name, "acceptance"))
+            if "smoketest" in top_level_imports(source_of(path), "launcher"):
+                offenders.append(("launcher/" + name, "smoketest"))
         self.assertEqual([], offenders,
                          "nothing that ships may depend on the test harness")
 

@@ -1,11 +1,9 @@
-# -*- coding: utf-8 -*-
-"""``python3 -m acceptance`` — run the pack, or list what a person must do.
+"""``python3 -m smoketest`` — run the exercises against the real desktop.
 
-    python3 -m acceptance --list      # the human checks; opens nothing
-    python3 -m acceptance --run       # the exercises, on the real desktop
-
-``--list`` is the default, because the half of this pack that needs no desktop
-should be the one you get by accident.
+One window is opened and taken back again. Unlike the register in
+``needs_a_person``, this one really does something to the machine it is run
+on, which is why it is a separate command rather than a flag: nobody should
+reach the desktop by leaving an argument off.
 """
 
 from __future__ import annotations
@@ -13,8 +11,9 @@ from __future__ import annotations
 import argparse
 import sys
 
-from acceptance import checks, pack
 from launcher.game import game_command
+from needs_a_person import checks
+from smoketest import pack
 
 EXIT_OK = 0
 EXIT_FAILED = 1
@@ -23,29 +22,17 @@ EXIT_LEFT_A_WINDOW = 2
 
 def main(argv=None):
     parser = argparse.ArgumentParser(
-        prog="python3 -m acceptance",
-        description="The acceptance pack: what a machine can check, and what "
-                    "it cannot.")
-    # One or the other, never both: they were two `store_true` flags and
-    # `--list` was accepted and then never read, so `--run --list` ran. Saying
-    # which you meant is better than being given one of them silently.
-    what = parser.add_mutually_exclusive_group()
-    what.add_argument("--list", action="store_true",
-                      help="print the human checks and open nothing (default)")
-    what.add_argument("--run", action="store_true",
-                      help="run the exercises against the real desktop")
+        prog="python3 -m smoketest",
+        description="Open one window, run the real game in it, and take the "
+                    "window back. Reports what it observed.")
     parser.add_argument("--show-picture", action="store_true",
-                        help="print what the tab was showing, with --run")
+                        help="print what the tab was showing")
     arguments = parser.parse_args(argv)
-
-    if arguments.list or not arguments.run:
-        print(checks.render())
-        return EXIT_OK
 
     print("THE EXERCISES")
     print("=" * 70)
-    print("Opening one window. It will end itself with `q` — this pack never")
-    print("uses a hold and never starts a game it cannot stop.")
+    print("Opening one window. It will end itself with `q` — this never uses")
+    print("a hold and never starts a game it cannot stop.")
     print("")
     observations, shown, window = pack.run(game_command())
     for observation in observations:
@@ -73,11 +60,11 @@ def main(argv=None):
         print("*** WINDOW %d WAS LEFT OPEN ***" % window.abandoned)
         print("Something was still running in it. Closing a window with a live")
         print("process raises a modal sheet that only you can dismiss, and")
-        print("while it is up every automation call hangs behind it — so the")
-        print("pack left it rather than making things worse. Close it when you")
+        print("while it is up every automation call hangs behind it — so this")
+        print("left it rather than making things worse. Close it when you")
         print("are ready.")
     print("")
-    print("Now run `python3 -m acceptance --list`: %d of the requirements this "
+    print("Now run `python3 -m needs_a_person`: %d of the requirements this "
           "project makes" % len(checks.CODES_NEEDING_A_PERSON))
     print("cannot be settled by any of the above, and none of them is recorded")
     print("as verified anywhere.")

@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 """Everything a person has to look at, and nothing a machine can settle.
 
-WI-14b puts this in front of somebody. It is code rather than a markdown file
+This is what is left when everything a machine can do has been done — its
+other half is `smoketest`, which does that part. It is code rather than a
+markdown file
 for one reason: **a checklist that is code can be held to account.** There are
 tests that every requirement needing a person is registered, that each carries
 steps somebody could actually follow, and — the one that matters — that
@@ -32,7 +34,7 @@ COLOURS = HumanCheck(
     question="Are the five colours right, and can the player and the ghost be "
              "told apart by colour as well as by shape?",
     steps=(
-        "Run `python3 -m acceptance --run` and let the window open.",
+        "Run `python3 -m smoketest` and let the window open.",
         "Look at the picture while the game is running, before it closes.",
     ),
     look_for=(
@@ -103,7 +105,7 @@ WINDOW_PLACEMENT = HumanCheck(
              "the window you were last looking at?",
     steps=(
         "Click on some other window so it is the one you were last looking at.",
-        "Run the pack and watch where the game window appears.",
+        "Run `python3 -m smoketest` and watch where the game window appears.",
         "If you have more than one display, repeat with the other window on "
         "each display in turn.",
         "Then do it once more with that window dragged hard into the "
@@ -164,7 +166,10 @@ GHOST_CONFINEMENT = HumanCheck(
     question="In about one game in sixty the ghost circles a small loop for "
              "the whole game. Is that acceptable?",
     steps=(
-        "Run `python3 -m acceptance --run --seed 21`, and again with 26.",
+        "Run `python3 -m launcher.game --seed 21`, and again with 26. (NOT "
+        "`python3 -m smoketest`, which takes no seed and so opens a "
+        "different maze every time — this check needs those two games "
+        "specifically.)",
         "Watch whether the ghost ever leaves its circuit.",
     ),
     look_for=(
@@ -255,7 +260,8 @@ PERMISSION = HumanCheck(
              "been granted?",
     steps=(
         "On a machine that has never granted it — or after revoking it in "
-        "System Settings > Privacy & Security > Automation — run the pack.",
+        "System Settings > Privacy & Security > Automation — run "
+        "`python3 -m smoketest`.",
         "Answer the permission prompt with 'Don't Allow'.",
     ),
     look_for=(
@@ -276,7 +282,8 @@ SAVED_PREFERENCES = HumanCheck(
     codes=("Q3",),
     question="Were the player's saved Terminal preferences left alone?",
     steps=(
-        "After running the pack, open a NEW ordinary Terminal window.",
+        "After running `python3 -m smoketest`, open a NEW ordinary Terminal "
+        "window.",
         "Check its font, size, colours and title.",
     ),
     look_for=(
@@ -312,7 +319,7 @@ ENDINGS = HumanCheck(
 )
 
 
-#: Every check, in the order WI-14b should work through them: the ones that
+#: Every check, in the order to work through them: the ones that
 #: need the window open first, then the ones that need a game played, then the
 #: ones that need a different machine or a changed setting.
 ALL = (

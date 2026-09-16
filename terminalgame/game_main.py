@@ -24,7 +24,7 @@ A single `random.Random` is built from `--seed` and handed **both** to
 `new_game_with`, which uses it for the maze and for the opening positions, and
 to the loop, which uses it for the ghost. That matters more than it looks: with
 two sources a seed would reproduce the maze but not the game played on it, and
-reproducing a whole game is precisely what the acceptance pack needs.
+reproducing a whole game is precisely what the smoke test needs.
 
 With no seed the game is different every time, which is MAZE-4.
 

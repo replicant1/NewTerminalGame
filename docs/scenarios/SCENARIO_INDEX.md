@@ -204,7 +204,7 @@ not exist would be a broken link. The cast is already worked out for each.
 - **One seed reproduces a whole game, not just its maze** — `LOW`. A single
   random source is threaded through the maze, both starting positions and every
   choice the ghost makes. With two sources a seed would reproduce the maze but not
-  the game played on it, and reproducing a whole game is what the acceptance
+  the game played on it, and reproducing a whole game is what the smoke
   checks need.
   Cast: `game_main`, `game_state`, `maze_generator`, `ghost_policy`.
 

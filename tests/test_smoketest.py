@@ -1,22 +1,24 @@
 # -*- coding: utf-8 -*-
-"""The acceptance pack — WI-14a.
+"""The smoke test — the real launcher, the real game, a real window.
 
-The pack is the machinery WI-14b runs against the real desktop, so these tests
-run it against the same subprocess seam the launcher's own tests use: what they
-see is the AppleScript that would have reached the desktop, in the order it
-would have reached it.
+These run it against the same subprocess seam the launcher's own tests use:
+what they see is the AppleScript that would have reached the desktop, in the
+order it would have reached it. Nothing here opens a window.
 
 Two things here are worth more than the rest.
 
-**That the pack arranges its own way out.** M0's ``--hold`` was scaffolding and
-the real game exits on ``q`` and never on a timer, so anything that starts a
-game with nobody at the keyboard has to end it. There are tests that the pack
-sends ``q``, that it does so into the captured tab rather than by injecting a
-keystroke into whatever has focus, and that it does not reach for a hold.
+**That it arranges its own way out.** M0's ``--hold`` was scaffolding and the
+real game exits on ``q`` and never on a timer, so anything that starts a game
+with nobody at the keyboard has to end it. There are tests that ``q`` is sent,
+that it goes into the captured tab rather than into whatever has focus, and
+that no hold is reached for.
 
-**That no human check can be recorded as verified.** The register has nowhere
-to write an answer — not a field set to False, no field at all — and there is a
-test that says so, because a checklist an agent can tick is not a checklist.
+**That the window is reaped whatever happens**, including on the way in: a
+failure between creating the window and handing back the context manager never
+reaches ``__exit__``, so ``__enter__`` reaps for itself.
+
+The register that used to share this file is now `needs_a_person`, and its
+tests are in ``tests/test_needs_a_person.py``.
 """
 
 from __future__ import annotations
@@ -26,10 +28,11 @@ import inspect
 import io
 import unittest
 
-from acceptance import checks, pack
-from acceptance.__main__ import EXIT_OK
-from acceptance.__main__ import main as acceptance_main
-from acceptance.pack import (
+from launcher.geometry import Size
+from launcher.runner import AutomationError
+from needs_a_person import checks
+from smoketest import pack
+from smoketest.pack import (
     Observation,
     WindowUnderTest,
     census,
@@ -41,8 +44,6 @@ from acceptance.pack import (
     visible_window_count,
     window_title,
 )
-from launcher.geometry import Size
-from launcher.runner import AutomationError
 from tests.launcher_fakes import FailingQueryRunner, FakeClock, RecordingRunner
 
 WINDOW_ID = 7653
@@ -369,107 +370,6 @@ class EveryCallNamesTheCapturedIdentity(unittest.TestCase):
             source = builder().source
             self.assertNotIn("quit", source, name)
             self.assertNotIn("close every", source, name)
-
-
-class AskingForTheChecksOpensNothing(unittest.TestCase):
-    """`--list` is the default, so the half that needs no desktop is the half
-    you get by accident. It also has to be the half you get when you ask.
-    """
-
-    def _run(self, argv):
-        out = io.StringIO()
-        with contextlib.redirect_stdout(out):
-            code = acceptance_main(argv)
-        return code, out.getvalue()
-
-    def test_with_no_arguments_it_prints_the_register(self):
-        code, said = self._run([])
-        self.assertEqual(EXIT_OK, code)
-        self.assertIn("THE HUMAN CHECKS", said)
-
-    def test_and_asking_for_it_explicitly_does_the_same(self):
-        # `--list` was declared and then never read -- the branch tested
-        # `not arguments.run` -- so this passed for the wrong reason and
-        # `--run --list` ran the desktop exercises.
-        self.assertEqual(self._run([]), self._run(["--list"]))
-
-    def test_asking_for_both_is_refused_rather_than_silently_resolved(self):
-        with contextlib.redirect_stderr(io.StringIO()) as complaint:
-            with self.assertRaises(SystemExit) as refused:
-                acceptance_main(["--run", "--list"])
-        self.assertEqual(2, refused.exception.code)
-        self.assertIn("not allowed with argument", complaint.getvalue())
-
-
-class TheHumanChecksCannotBeTicked(unittest.TestCase):
-    """A checklist an agent can mark done is not a checklist."""
-
-    def test_a_check_has_nowhere_to_record_an_answer(self):
-        # Not a field set to False. No field at all.
-        for field in ("passed", "verified", "ok", "result", "answer", "status"):
-            self.assertNotIn(field, checks.HumanCheck._fields, field)
-
-    def test_the_rendered_register_carries_no_pass_or_tick_column(self):
-        # A scan for the word "verified" would be the wrong test: GHOST-1's
-        # entry has to SAY the mechanism is verified, because §11.11 requires
-        # both lines. What must not exist is somewhere to record an answer.
-        rendered = checks.render()
-        for marker in ("[x]", "[ ]", "PASS", "FAIL", "✓"):
-            self.assertNotIn(marker, rendered, marker)
-
-    def test_the_register_says_in_its_own_words_that_none_is_verified(self):
-        self.assertIn("None of these is recorded as verified", checks.render())
-
-    def test_every_check_says_why_no_machine_can_answer_it(self):
-        # The load-bearing field. Without it somebody will automate one of
-        # these badly and delete it from the list.
-        for check in checks.ALL:
-            self.assertTrue(check.why_machine_cannot.strip(), check.name)
-            self.assertGreater(len(check.why_machine_cannot), 80, check.name)
-
-    def test_every_check_has_steps_and_something_to_look_for(self):
-        for check in checks.ALL:
-            self.assertTrue(check.steps, check.name)
-            self.assertTrue(check.look_for, check.name)
-            for step in check.steps:
-                self.assertGreater(len(step), 10, (check.name, step))
-
-    def test_every_check_names_the_requirements_it_settles(self):
-        for check in checks.ALL:
-            self.assertTrue(check.codes, check.name)
-            for code in check.codes:
-                self.assertRegex(code, r"^(Q\d|[A-Z]+-\d+[a-z]?)$")
-
-    def test_the_checks_the_specification_most_needs_are_all_there(self):
-        # The five colours, the font, flicker, placement, the title, a real
-        # keyboard and the permission. If one of these is ever dropped, it
-        # should take a failing test to do it.
-        covered = set(checks.CODES_NEEDING_A_PERSON)
-        for code in ("SCRN-3", "SCRN-4", "SCRN-5", "SCRN-6", "SCRN-7",
-                     "WIN-2", "WIN-3", "WIN-4", "CTRL-1", "END-6", "Q2", "Q3"):
-            self.assertIn(code, covered, code)
-
-    def test_win_three_is_recorded_as_not_met_rather_than_as_a_question(self):
-        # It is the one requirement this project knows it does not meet, and
-        # the register must not soften that into "have a look".
-        self.assertIn("NOT MET", checks.TITLE_BAR.why_machine_cannot)
-
-    def test_the_ghost_confinement_is_two_lines_and_not_one(self):
-        # Plan §11.11: the mechanism is verified, and the purpose clause is a
-        # human check with the measurement beside it. Both halves, or a reader
-        # takes it for a defect.
-        why = checks.GHOST_CONFINEMENT.why_machine_cannot
-        self.assertIn("mechanism is verified", why)
-        self.assertIn("1.6%", why)
-        self.assertIn("GHOST-2", why)
-
-    def test_the_register_renders_without_losing_anything(self):
-        rendered = checks.render()
-        for check in checks.ALL:
-            self.assertIn(check.name.upper(), rendered)
-            self.assertIn(check.question, rendered)
-            for code in check.codes:
-                self.assertIn(code, rendered)
 
 
 class WhatTheExercisesReport(unittest.TestCase):
