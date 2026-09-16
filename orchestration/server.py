@@ -36,11 +36,20 @@ ARCHIVE = HERE / "archive"               # artifacts copied out of worktrees
 REQUESTS = HERE / "requests"             # button presses, for the Claude session
 
 #: Every line type the agent definitions can emit, and how loudly to show it.
-#: Anything unrecognised still renders, as "note" -- a log that silently drops
-#: lines it does not understand is worse than a noisy one.
+#:
+#: **A line type missing from here is not shown as a note, it is SWALLOWED** --
+#: `KIND_RE` matches it, this lookup misses, and it falls through to the
+#: continuation branch and is appended to the line above it. So a new line type
+#: added to an agent definition and not added here disappears into its
+#: predecessor, which is worse than not rendering it at all. If you teach an
+#: agent a new line, teach it to this dict in the same change.
 LINE_KINDS = {
     "ASK": "ask", "BLOCKED": "ask", "ASSUME": "assume",
     "DISPATCH": "trace", "REPORT": "verify", "MERGE": "good",
+    #: The conductor's confirmation that a dispatched item actually began.
+    #: `DISPATCH` records that it sent one; this records that somebody started
+    #: it, and a run where the two do not pair up has an idle lane in it.
+    "STARTED": "good",
     "RISK": "warn", "CONTRADICT": "warn", "MUTATE": "warn",
     "DONE": "good", "COMMIT": "good", "TEST": "good",
     "START": "start", "PLAN": "plan", "READ": "plan", "DRAFT": "plan",

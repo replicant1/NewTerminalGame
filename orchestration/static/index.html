@@ -872,8 +872,11 @@ function renderProgress(pr) {
 //: The lines that tell the story of a run. Everything else is available with
 //: the "every line" box, but 9,000 rows in one column is not a timeline.
 const TL_SIGNIFICANT = new Set(
-  ["START", "PLAN", "DISPATCH", "REPORT", "MERGE", "ASK", "BLOCKED",
-   "DECIDE", "RISK", "DONE"]);
+  ["START", "PLAN", "DISPATCH", "STARTED", "REPORT", "MERGE", "ASK",
+   "BLOCKED", "DECIDE", "RISK", "DONE"]);
+//: `STARTED` earns its place beside `DISPATCH` rather than being filtered as
+//: noise: a DISPATCH with no STARTED after it is a lane that was told to work
+//: and never did, which is invisible in any other view.
 
 let tlAll = false, tlEveryLine = false;
 
