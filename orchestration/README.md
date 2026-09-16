@@ -26,6 +26,40 @@ The right-hand panel has three tabs:
   read it in the browser.
 * **Git** — HEAD, branches with merged/ahead status, the working tree, the
   worktree list, and recent commits across all branches.
+* **Timeline** — every agent's lines in one column, in time order, instead of
+  one pane each. See below.
+
+## The timeline, and how far to trust it
+
+The panes answer "what is this agent doing"; the timeline answers "what
+happened, in what order" — the question you actually have when a run has gone
+wrong. It is the same lines, drawn from the same panes, merged and sorted by
+their stamps.
+
+By default it shows **significant lines from live agents**: `START`, `PLAN`,
+`DISPATCH`, `REPORT`, `MERGE`, `ASK`, `BLOCKED`, `DECIDE`, `RISK`, `DONE`.
+That is a couple of hundred rows rather than the nine thousand a whole
+history holds. Two checkboxes widen it — *every line*, and *finished agents
+too* — and the count beside them says how much of the whole you are seeing.
+
+**Two things make the order less trustworthy than a single column implies,
+and both are shown rather than hidden:**
+
+* **A stamp an agent recalled rather than read.** Agents are told to take the
+  time from `date -u` as they append each line. One that stops doing so
+  leaves a signature: its stamps land on exact minutes. Where more than half
+  of an agent's stamps do, the timeline says so and names it — on the run in
+  this repository, the conductor wrote 84% of its stamps on a round minute
+  while the architect and every developer wrote none.
+* **A stamp carries a time but no date.** `HH:MM:SSZ` is all an agent writes,
+  so every line is placed on today. That is right within one run and wrong
+  across several, which is why finished agents are off by default: they are
+  from earlier runs and would interleave as though they ran alongside this
+  one.
+
+Neither is worth fixing in the monitor. The first is an agent that stopped
+following its instructions, and the second is a log format — both belong
+upstream of here.
 
 ## Monitor, not driver
 

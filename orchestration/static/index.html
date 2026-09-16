@@ -183,6 +183,20 @@ body.noside aside,body.noside #grip{display:none}
    padding:3px 5px;border-radius:4px;font:inherit;font-size:12px;cursor:pointer}
 .f:hover{background:#ffffff10}
 .f .meta{color:var(--dim);font-size:11px}
+/* The timeline reuses .row and its per-kind colours: it is the same lines the
+   panes show, in one column and in time order, so it should look the same. */
+#tab-timeline .row{padding-left:8px}
+.tlbar{position:sticky;top:0;background:var(--panel);padding:8px 10px 9px;
+       border-bottom:1px solid var(--line);z-index:2}
+.tlbar label{margin-right:12px}
+.tlwho{font-size:10.5px;color:var(--faint);flex:0 0 auto;
+       max-width:11em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tlwho.conductor{color:var(--accent)} .tlwho.architect{color:var(--decide)}
+.tlwho.technical-lead{color:var(--weigh)}
+.tlwho.developer{color:var(--trace)}
+.tlwarn{margin:8px 10px;padding:7px 9px;border-left:2px solid var(--warn);
+        background:#ffffff06;font-size:11.5px;color:var(--dim)}
+.tlwarn b{color:var(--warn)}
 .gitline{font-size:11.5px;color:var(--dim);padding:1px 0;white-space:pre-wrap;word-break:break-all}
 .pill{display:inline-block;font-size:10px;padding:1px 6px;border-radius:99px;
       border:1px solid var(--line);color:var(--dim);margin-left:6px}
@@ -285,11 +299,13 @@ dialog pre#vbody{margin:0;padding:14px 18px;max-height:72vh;overflow:auto;white-
       <button class="on" data-tab="asks">Asks</button>
       <button data-tab="files">Files</button>
       <button data-tab="git">Git</button>
+      <button data-tab="timeline">Timeline</button>
       <button id="sidehide" title="Hide this panel" onclick="toggleSide()">›</button>
     </div>
     <div class="side on" id="tab-asks"></div>
     <div class="side" id="tab-files"></div>
     <div class="side" id="tab-git"></div>
+    <div class="side" id="tab-timeline"></div>
   </aside>
 </main>
 
@@ -520,6 +536,7 @@ function gantt(src) {
   return `<div class="gantt">${title ? '<div class="g-title">' + esc(title) + '</div>' : ''}${svg}</svg></div>`;
 }
 
+let lastPanes = null;
 let rawMode = false, currentName = '';
 function toggleRaw() {
   rawMode = !rawMode;
@@ -852,6 +869,78 @@ function renderProgress(pr) {
     `<div style="position:absolute;left:0;right:0;top:14px;bottom:0;pointer-events:none">${secs}</div>`;
 }
 
+//: The lines that tell the story of a run. Everything else is available with
+//: the "every line" box, but 9,000 rows in one column is not a timeline.
+const TL_SIGNIFICANT = new Set(
+  ["START", "PLAN", "DISPATCH", "REPORT", "MERGE", "ASK", "BLOCKED",
+   "DECIDE", "RISK", "DONE"]);
+
+let tlAll = false, tlEveryLine = false;
+
+function tlToggle(which, on) {
+  if (which === 'all') tlAll = on; else tlEveryLine = on;
+  if (lastPanes) renderTimeline(lastPanes);
+}
+
+function renderTimeline(panes) {
+  const use = panes.filter(p => tlAll || p.live);
+  const rows = [];
+  for (const p of use) {
+    for (const ln of p.lines) {
+      if (!tlEveryLine && !TL_SIGNIFICANT.has(ln.label)) continue;
+      rows.push({p, ln});
+    }
+  }
+  rows.sort((a, b) => (a.ln.ts - b.ln.ts) || a.p.title.localeCompare(b.p.title));
+
+  let h = `<div class="tlbar">
+      <label><input type="checkbox" ${tlEveryLine ? 'checked' : ''}
+        onchange="tlToggle('lines', this.checked)"> every line</label>
+      <label><input type="checkbox" ${tlAll ? 'checked' : ''}
+        onchange="tlToggle('all', this.checked)"> finished agents too</label>
+      <span class="role">${rows.length} of ${panes.reduce((n, p) => n + p.lines.length, 0)}</span>
+    </div>`;
+
+  // Two things make an interleaved order less trustworthy than it looks, and
+  // both are visible in the data, so say them rather than let the column imply
+  // a precision it does not have.
+  const suspect = use.filter(p => {
+    const t = p.lines.filter(l => l.tsSource === 'log');
+    return t.length > 20 && t.filter(l => l.ts % 60 === 0).length / t.length > 0.5;
+  });
+  if (suspect.length) {
+    h += `<div class="tlwarn"><b>Ordering is only as good as the stamps.</b>
+      ${suspect.map(p => esc(p.title)).join(', ')} wrote most of
+      ${suspect.length > 1 ? 'their' : 'its'} timestamps on an exact minute,
+      which is what a stamp recalled rather than read from the clock looks
+      like. Lines from ${suspect.length > 1 ? 'those agents' : 'that agent'}
+      may sit in the wrong place here.</div>`;
+  }
+  if (tlAll) {
+    h += `<div class="tlwarn">A log stamp carries a time but no date, so every
+      agent is placed on today. Finished agents are from earlier runs and will
+      interleave with this one as though they ran alongside it.</div>`;
+  }
+
+  if (!rows.length) {
+    h += '<div class="empty">Nothing yet.</div>';
+  }
+  for (const {p, ln} of rows) {
+    h += `<div class="row ${esc(ln.kind)}">
+        <div class="rhead">
+          <span class="ts ${esc(ln.tsSource)}" title="${ln.tsSource === 'log'
+            ? 'timestamp written by the agent' : 'first seen by the monitor (±3s)'
+            }">${clock(ln.ts)}</span>
+          <span class="tlwho ${esc(p.role)}" title="${esc(p.source || p.title)}">${esc(p.title)}</span>
+          <span class="k">${esc(ln.label)}</span>
+          ${ln.item ? '<span class="item">' + esc(ln.item) + '</span>' : ''}
+        </div>
+        ${ln.text ? '<div class="t">' + esc(ln.text) + '</div>' : ''}
+      </div>`;
+  }
+  $('#tab-timeline').innerHTML = h;
+}
+
 function renderGit(g) {
   let h = `<h3>HEAD</h3><div class="gitline">${esc(g.head)}</div>`;
   h += '<h3>Branches</h3>';
@@ -925,6 +1014,8 @@ async function refresh() {
     renderPanes(s.panes);
     renderAsks(s.asks, s.requests);
     renderGit(s.git);
+    lastPanes = s.panes;
+    renderTimeline(s.panes);
     renderProgress(s.progress);
     if (s.run && s.run.start) {
       runStart = s.run.start;
