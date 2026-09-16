@@ -37,8 +37,13 @@ split this tool keeps, and which the findings repeat question by question:
 
 Window hygiene — section 4 of the plan, in full
 ------------------------------------------------
-* The deadline is scheduled on the toolkit's own scheduler **before** the
-  event loop is entered, so nothing here waits on a person.
+* **Two** deadlines are scheduled on the toolkit's own scheduler **before**
+  the event loop is entered, so nothing here waits on a person: the
+  session's own ``quit``, which is what ``--seconds`` does on the production
+  entry point and which leaves the session properly Ended, and
+  ``end_session`` on the window owner underneath it, which asks nobody's
+  permission.  A faithful route and an unconditional route are not the same
+  route.
 * **A run with no deadline cannot be asked for.**  ``--seconds`` must be
   positive and no more than :data:`MAXIMUM_SECONDS`, and the whole run — every
   window added up — no more than :data:`MAXIMUM_RUN_SECONDS`.  Both are
@@ -80,6 +85,7 @@ __all__ = [
     "MAXIMUM_RUN_SECONDS",
     "SIZE_LADDER",
     "SITTING_SEED",
+    "BACKSTOP_MARGIN_MS",
     "THE_REAL_GAME",
     "THE_HARNESS",
     "THE_JOINERY_VIEW",
@@ -123,6 +129,16 @@ SIZE_LADDER = (14, 16, 18, 20)
 
 #: Fixed, so that two people looking at "the game" look at the same maze.
 SITTING_SEED = 20260916
+
+#: How long after the deadline the unconditional backstop fires.
+#:
+#: The deadline itself is the session's own ``quit`` — the same thing
+#: ``--seconds`` does on the production entry point — so the ordinary end of
+#: a sitting runs the session's real shutdown and leaves the phase Ended.
+#: The backstop underneath it is ``end_session`` on the window owner, which
+#: depends on nothing agreeing to anything.  Two of them, because the
+#: faithful route and the unconditional route are not the same route.
+BACKSTOP_MARGIN_MS = 1500
 
 
 # ---------------------------------------------------------------------------
@@ -759,12 +775,19 @@ def a_sitting(stage: Stage, seconds: int, seed: int = SITTING_SEED) -> dict:
             stage.toolkit.schedule_once(
                 600, lambda: stage.measure(record["measured"], target)
             )
-        # The deadline, on the toolkit's own scheduler, BEFORE the event loop
-        # is entered. This run cannot outlive it even if nothing else
-        # happens at all, and it does not depend on anybody pressing
-        # anything.
+        # Both deadlines, on the toolkit's own scheduler, BEFORE the event
+        # loop is entered. Neither depends on anybody pressing anything.
+        #
+        # The first is the session's own quit -- what --seconds does on the
+        # production entry point -- so an ordinary sitting ends down the
+        # session's real shutdown path and leaves the phase Ended. The
+        # second is the window owner's end_session, which asks nobody's
+        # permission: if the session were ever wedged, the first would not
+        # fire and the window would stay. A faithful route and an
+        # unconditional route are not the same route, so there are two.
+        stage.toolkit.schedule_once(int(seconds * 1000), game.session.quit)
         stage.toolkit.schedule_once(
-            int(seconds * 1000), game.owner.end_session
+            int(seconds * 1000) + BACKSTOP_MARGIN_MS, game.owner.end_session
         )
         game.run()
     except BaseException as exc:  # reported, not swallowed: see the finally

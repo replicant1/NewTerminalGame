@@ -27,3 +27,15 @@ Branch `r6/wi-21-human-questions`, based on `main` at `238f4dd`. Non-local mode.
 05:39:57Z  WI-21 NOTE    WI-22 landed while I worked; merged origin/main into the branch, no conflict. frame_for(state) now owns the join; the harness needs no frame of its own, so nothing changed here
 05:39:57Z  WI-21 TEST    794 passed, 0 failed, 0 skipped  (/usr/bin/python3 -m unittest discover -t . -s . -p "test_*.py")  [747 on main + 47 mine]
 05:39:57Z  WI-21 NOTE    screen gate GRANTED by the conductor; going short-first - one 2s window to prove the mechanics and the reap before anything longer
+05:41:41Z  WI-21 DECIDE  the sitting's deadline -> game.session.quit at N s PLUS game.owner.end_session at N s + 1500 ms, because the first is the production --seconds shape and leaves the phase Ended, and the second asks nobody's permission
+05:41:41Z  WI-21 VERIFY  window 1/9  the_questions --seconds 2 -> reaped, exit 0, landed (120,120), 400x570, 706 items all "text", 13 frames, phase playing (before the deadline change)
+05:41:41Z  WI-21 VERIFY  window 2/9  the_questions --seconds 3 -> reaped, exit 0, held 3.084s, phase ENDED with nothing pressed, 21 frames
+05:41:41Z  WI-21 VERIFY  windows 3-6/9  the_questions --sizes 14,16,18,20 --seconds 3 -> 4 opened, 4 reaped, ladder 320x480 / 400x570 / 440x630 / 480x720 EXACTLY as WI-16 measured, all at (120,120), 706 items each
+05:41:41Z  WI-21 VERIFY  window 7/9  the_look --view joinery --seconds 3 -> reaped, 714 items all "text" - matches WI-16 exactly
+05:41:41Z  WI-21 VERIFY  window 8/9  the_look --view game --seconds 3 -> reaped, 698 items all "text" - matches WI-16 exactly, so WI-22's frame_for is confirmed identical ON SCREEN
+05:41:41Z  WI-21 VERIFY  window 9/9  window_manners --exercise keys -> reaped, player moved, z ignored, q ended the session, stdout and stderr empty; WI-22's other on-screen call site confirmed
+05:41:41Z  WI-21 VERIFY  after the turn: pgrep found no tool process, System Events counted 0 processes named Python. 9 opened, 9 reaped, no modal sheet
+05:41:41Z  WI-21 NOTE    releasing the screen gate to the conductor
+05:42:45Z  WI-21 DRAFT   docs/findings/WI-21-the-five-questions.md - all five OPEN, each with its command, what to look for and the one file a reversal lands in
+05:42:45Z  WI-21 TEST    795 passed, 0 failed, 0 skipped  (/usr/bin/python3 -m unittest discover -t . -s . -p "test_*.py")
+05:42:45Z  WI-21 NOTE    answered WI-20b on PR #66: the findings file is docs/findings/WI-21-the-five-questions.md, one document, and I will post there first if the name ever changes

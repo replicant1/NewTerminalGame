@@ -50,6 +50,7 @@ from terminal_game.shell.window_owner import WINDOW_TITLE
 
 from tools import the_questions
 from tools.the_questions import (
+    BACKSTOP_MARGIN_MS,
     DEFAULT_SECONDS,
     MAXIMUM_RUN_SECONDS,
     MAXIMUM_SECONDS,
@@ -263,19 +264,18 @@ class TheHarnessCannotRunUnbounded(unittest.TestCase):
         with self.assertRaises(ValueError):
             parse_options(["--sizes", "0"])
 
-    def test_the_deadline_is_scheduled_before_the_event_loop_is_entered(self):
+    def test_both_deadlines_are_scheduled_before_the_event_loop_is_entered(self):
         # The one property that makes the run independent of a person: by
-        # the time control is handed to the loop, the thing that will end it
-        # is already on the toolkit's own scheduler.
+        # the time control is handed to the loop, the two things that will
+        # end it are already on the toolkit's own scheduler.
         toolkit = RecordingToolkit()
 
         a_sitting(a_stage(toolkit), seconds=20)
 
-        self.assertIn(20000, toolkit.scheduled_delays)
-        self.assertLess(
-            toolkit.scheduled_delays.index(20000),
-            toolkit.names.index("run_event_loop"),
-        )
+        entered = toolkit.names.index("run_event_loop")
+        for delay in (20000, 20000 + BACKSTOP_MARGIN_MS):
+            self.assertIn(delay, toolkit.scheduled_delays)
+            self.assertLess(toolkit.scheduled_delays.index(delay), entered)
 
     def test_the_window_goes_away_with_nothing_pressed_at_all(self):
         # The whole of "it exits by itself within its stated time even if
@@ -290,15 +290,27 @@ class TheHarnessCannotRunUnbounded(unittest.TestCase):
         self.assertTrue(record["measured"]["window_reaped"])
         self.assertIsNone(record["error"])
 
+    def test_the_session_itself_ends_with_nothing_pressed_at_all(self):
+        # The deadline is the session's own quit, not a window snatched
+        # from underneath it -- so a sitting that nobody touches goes down
+        # the same shutdown path q would have taken.
+        toolkit = RecordingToolkit()
+        toolkit.event_loop_body = lambda: run_everything_that_is_due(toolkit)
+
+        record = a_sitting(a_stage(toolkit), seconds=20)
+
+        self.assertEqual("ended", record["measured"]["phase_at_the_end"])
+
     def test_it_is_gone_by_its_stated_time_and_not_merely_eventually(self):
         toolkit = RecordingToolkit()
         toolkit.event_loop_body = lambda: run_everything_that_is_due(toolkit)
 
         a_sitting(a_stage(toolkit), seconds=20)
 
-        # Virtual time at the moment the last callback fired. A run that
-        # ended "eventually" would sail past its own deadline.
-        self.assertLessEqual(toolkit.now_ms, 20000)
+        # Virtual time at the moment the last callback fired, with the
+        # unconditional backstop included. A run that ended "eventually"
+        # would sail past both of its own deadlines.
+        self.assertLessEqual(toolkit.now_ms, 20000 + BACKSTOP_MARGIN_MS)
         self.assertEqual(0, toolkit.pending_count)
 
 
