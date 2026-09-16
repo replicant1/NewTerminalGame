@@ -579,6 +579,13 @@ to your branch as above and run the whole suite: a PR that merges cleanly can st
 
 Start every commit subject with the work item code: `WI-3: ...`.
 
+**Append progress-log lines one at a time, with a plain `printf … >> file`** *(added in
+amendment 11)*. A brace-group or compound shell append can silently write **nothing** — no
+error, no output, no clue — and three lines were lost that way on this run. One line, one
+command, and check the tail if you care about it. If lines *are* lost: say so in a `NOTE`,
+and **never backfill them with invented timestamps** — a stamp made up after the fact is
+worse than a gap, because it looks authoritative.
+
 ### Where documents go
 
 Four paths, exactly these shapes, no fifth:
@@ -744,6 +751,20 @@ you doubt a test, **say so** in your progress log and your report, naming it and
 When you wire two units together, the wiring test owns the join and nothing else. If the
 lower unit already has a unit test for a behaviour, the integration test must not repeat
 it. One defect should turn one test red, not fifteen across four files.
+
+**A duplicate assertion is not a redundant test** *(added in amendment 11, and this is the
+distinction that decides what to do about one)*. When a wiring test re-derives the lower
+unit's answer in order to build its expected value, two things are true at once: the
+**assertion** duplicates what the lower unit's own test already owns, and the **test** is
+still the only thing in the suite pinning that particular join. Deleting it removes the
+second to fix the first.
+
+**So rewrite the assertion; do not delete the test.** Compare against what the lower unit
+actually returns — `wiring(state) == lower(state)` — which fails if and only if the wiring
+breaks, and owns nothing else. A test that re-derives has quietly *reimplemented the thing
+under test inside the test*, which is the "asserts a value the test itself supplied a
+moment earlier" trap; the remedy for that has always been to rewrite the assertion, never
+to remove the coverage or to go breaking production code to see what happens.
 
 ### There are no images — this is now a rule, not a fact (caution C5)
 
@@ -1714,7 +1735,7 @@ path. That is the part of this item a machine can check; the rest is a person lo
 ---
 
 **WI-22 — The snagging list** · DEV-B · **2 days** · depends on **WI-19**, **WI-20a** ·
-`r6/wi-22-snagging-list`
+`r6/wi-22-the-join` *(corrected in amendment 11 — the plan said `r6/wi-22-snagging-list`; amendment 10 turned this item from reserve into a specific piece of work and the branch was named for what it became. The repository is right and the plan was stale.)*
 
 *Amendment 10 — this item now has a definite principal task, and it is a design fix
 rather than tidying.* **Build the `state -> frame` function in Presentation** and point
@@ -1737,6 +1758,28 @@ The brief, because this is the case my own rules name as the exception:
 - **Do not touch WI-18 until it has landed.** It is in flight and green with the Shell-side
   binding. Update it afterwards, as one of the four.
 - **The suite must be green before and after**, and the whole suite, not your own tests.
+
+*Amendment 11 — WI-22a, a small follow-up, branch `r6/wi-22a-join-assertions`.* Three
+things, all bounded, none of them new design. **No gantt bar**: like WI-5a, WI-3a and the
+other suffixed follow-ups, it is a landing against an existing item, and the schedule in
+section 9 is unchanged at 22 work items and 23 bars.
+
+1. **Rewrite the two tests that re-derive the join** — the Shell's row-29 test and the
+   tool's real-composer test — to compare against what the picture function returns rather
+   than rebuilding its answer. **Do not delete them**: each is the only thing pinning its
+   own join, and per the rule in section 4 the fault is the assertion, not the test.
+2. **Fix the stale package docstring** that still says "Still to come: the status line
+   (WI-13)". WI-13 landed long ago, and that file is the one place a reader would look for
+   the picture function and not find it. A tree that lies to the next reader is worth one
+   line to fix.
+3. **Leave `tools/the_look.py`'s two direct status-row calls alone.** They place row 29
+   onto hand-built frames with no game state behind them, so the seam does not apply. That
+   analysis is right and is recorded here so nobody "fixes" it later.
+
+Same sanctioned exception as WI-22 and the same width: these files belong to lanes with no
+agents, this covers the three items named above **and nothing else**, and the whole suite
+must be green before and after. If WI-22's developer is still available it is theirs, since
+it has the context; otherwise a fresh developer with this brief.
 
 *Outcome.* **Deliberate reserve capacity.** Defects found by the scripted game, the sweep
 and the human checks get fixed here, in one branch, rather than being wedged into items

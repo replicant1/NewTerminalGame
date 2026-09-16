@@ -31,8 +31,8 @@ import unittest
 
 from terminal_game.application.session import Phase, Session
 from terminal_game.domain.maze import Direction, Maze
-from terminal_game.presentation.frame import FRAME_COLUMNS, Frame
-from terminal_game.presentation.status_line import status_row
+from terminal_game.presentation.frame import Frame
+from terminal_game.presentation.picture import frame_for
 from terminal_game.shell.game import (
     Game,
     GameCollaborator,
@@ -413,20 +413,23 @@ class ACrashedGameDoesNotExitCleanTest(unittest.TestCase):
 
 
 class ThePictureTheSessionIsComposedWithTest(unittest.TestCase):
-    """The join between WI-12's rows 0–28 and WI-13's row 29, and only that."""
+    """The join between the Shell and the picture, and only that."""
 
-    def test_row_29_is_exactly_what_the_status_line_says_it_is(self):
-        # What row 29 *reads* is WI-13's, with 28 tests of its own and the
-        # only status-line literals in the project.  This is that the
-        # wiring hands the composer WI-13's row rather than one of its own.
+    def test_the_session_is_composed_with_presentations_picture_function(self):
+        # WI-22a.  This used to rebuild the picture out of the composer and
+        # the status line and compare against that — which was the wiring's
+        # own job done a second time inside the test, so it would have gone
+        # on passing if both copies drifted together.
+        #
+        # What the Shell owes is narrower and is all that is asserted here:
+        # that the ``compose`` it hands the session is **Presentation's**
+        # ``frame_for`` and not a picture of its own.  What that picture
+        # contains is owned by ``tests/test_picture.py``, WI-12's tests and
+        # WI-13's; this fails if and only if the Shell stops going through
+        # the seam.
         state = _game(RecordingToolkit()).session.state
 
-        picture = compose_picture(state)
-
-        self.assertEqual(
-            list(status_row(state.score.points, state.outcome)),
-            [picture.cell_at(29, column) for column in range(FRAME_COLUMNS)],
-        )
+        self.assertEqual(frame_for(state), compose_picture(state))
 
 
 class TheSingleCommandTest(unittest.TestCase):
