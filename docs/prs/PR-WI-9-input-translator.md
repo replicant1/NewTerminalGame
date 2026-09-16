@@ -93,10 +93,10 @@ accident.
 
 ```
 /usr/bin/python3 -m unittest discover -t . -s . -p "test_*.py"
-Ran 349 tests — 349 passed, 0 failed, 0 skipped
+Ran 374 tests — 374 passed, 0 failed, 0 skipped
 ```
 
-25 of those are new here. Nothing in this branch opens a window or imports a
+That is with DEV-A's WI-11 merged in. 25 of the 374 are new here. Nothing in this branch opens a window or imports a
 toolkit.
 
 ## What the tests own
@@ -134,6 +134,20 @@ Found while reviewing, and fixed rather than left:
 2. A test looped over the ignored keys and only asserted *inside* an `if`, so
    it would have passed trivially had the list changed shape. Replaced with
    direct assertions about what the spread must contain.
+
+## DEV-A's WI-11 has landed, and it fits
+
+`origin/main` has been merged in, bringing the turn resolver. Two things
+worth recording:
+
+- **The `ghost_heading` gap I raised on PR #32 is closed.** `GameState` now
+  carries `ghost_heading: Optional[Direction]` with a wither, and
+  `resolve_tick` calls WI-7's `next_step`. Nothing of mine changed.
+- **`resolve_move(state, direction)` takes a bare `Direction`**, which is
+  exactly what an `Intent` carries. WI-15 will unwrap `intent.direction` and
+  hand it straight over; no adapter, and no second intent type needed in the
+  application layer. Announced on
+  [PR #39](https://github.com/replicant1/NewTerminalGame/pull/39#issuecomment-5692246571).
 
 ## Deviations needing a ruling
 
