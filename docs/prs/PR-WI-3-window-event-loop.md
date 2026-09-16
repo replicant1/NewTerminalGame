@@ -38,7 +38,7 @@ Concretely, one thing crosses in each direction and no more:
 | `terminal_game/shell/cadence.py` | GHOST-1 as two constants: 7 ticks a second, 143 ms. |
 | `terminal_game/shell/tick_timer.py` | The repeating tick, built from the toolkit's one-shot scheduler. |
 | `terminal_game/shell/window_owner.py` | The window owner: creates the window, delivers ticks and keys to a collaborator it is given, ends the session once. |
-| `tests/shell/recording_toolkit.py` | A `Toolkit` that records calls in order and opens nothing. This is what keeps the suite window-free. |
+| `tests/recording_toolkit.py` | A `Toolkit` that records calls in order and opens nothing. This is what keeps the suite window-free. |
 | `tools/probe_tk_window.py` | **Not part of the suite.** A bounded, self-quitting probe that opens one real window for about a second, measures what Tk actually did, reaps it, and prints JSON. Run deliberately. |
 | `docs/findings/WI-3-tk-window-probe.md` | What the probe measured. The title, the geometry, the cadence, and the thing in the next section. |
 

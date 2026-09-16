@@ -35,7 +35,7 @@ nothing that belongs inside it.
   scheduler.
 - `terminal_game/shell/window_owner.py` — creates the window, delivers ticks and keys
   to a collaborator it is given, ends the session once.
-- `tests/shell/recording_toolkit.py` — the recording double that keeps the suite
+- `tests/recording_toolkit.py` — the recording double that keeps the suite
   window-free.
 - `tools/probe_tk_window.py` — a bounded, self-quitting probe. **Not part of the
   suite.**
