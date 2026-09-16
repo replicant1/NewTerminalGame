@@ -53,6 +53,11 @@ LIFETIME_MS = 1200
 #: the quit.
 MEASURE_AT_MS = 700
 
+#: Under ``--fail``, when the deliberate failure is raised: after the
+#: measurements, and well before the backstop quit, so that the reaping being
+#: measured is the failure's and not the backstop's.
+FAIL_AT_MS = 900
+
 #: A plausible stand-in for what WI-2's metrics will hand over. Nothing about
 #: WI-3 depends on the number; the point is that the window owner is told it.
 PROBE_SIZE = PixelSize(width=512, height=600)
@@ -79,7 +84,32 @@ class CountingCollaborator:
         self.keys.append(key.keysym)
 
 
-def main() -> int:
+def _window_still_there(root) -> bool:
+    """Is the window the probe created still in existence?
+
+    Asked of the handle captured at creation and no other. A destroyed Tk
+    widget does not answer politely — it raises — which is itself the answer.
+    """
+    if root is None:
+        return False
+    try:
+        return bool(root.winfo_exists())
+    except Exception:
+        return False
+
+
+class DeliberateProbeFailure(Exception):
+    """Raised by ``--fail`` so that the failure path can be measured.
+
+    This is not a mutation of working code. It is an error path being
+    exercised with an input that legitimately produces an error, which is the
+    only way to find out whether a real window is really reaped when a real
+    session really falls over.
+    """
+
+
+def main(argv) -> int:
+    fail_on_purpose = "--fail" in argv
     toolkit = TkToolkit()
     collaborator = CountingCollaborator()
     owner = WindowOwner(
@@ -103,6 +133,7 @@ def main() -> int:
         "error": None,
     }
 
+    root = None
     started = time.monotonic()
     try:
         canvas = owner.open()
@@ -111,7 +142,11 @@ def main() -> int:
         root = canvas.winfo_toplevel()
 
         def measure():
-            resizable_width, resizable_height = root.resizable()
+            # Measured: tkinter's resizable() with no arguments hands back the
+            # Tcl string "0 0", not a pair of booleans. Unpacking it raises.
+            resizable_width, resizable_height = root.tk.splitlist(
+                root.wm_resizable()
+            )
             findings["measured"] = {
                 "title_read_back": root.title(),
                 "window_width_px": root.winfo_width(),
@@ -121,14 +156,21 @@ def main() -> int:
                 "x": root.winfo_x(),
                 "y": root.winfo_y(),
                 "background": root.cget("background"),
-                "resizable_width": bool(resizable_width),
-                "resizable_height": bool(resizable_height),
+                "resizable_width": bool(int(resizable_width)),
+                "resizable_height": bool(int(resizable_height)),
                 "tk_version": root.tk.call("info", "patchlevel"),
             }
 
-        # Both of these go on Tk's own scheduler, before the loop is entered,
-        # so neither depends on anything happening.
+        # All of these go on Tk's own scheduler, before the loop is entered,
+        # so none of them depends on anything happening.
         toolkit.schedule_once(MEASURE_AT_MS, measure)
+        if fail_on_purpose:
+
+            def fall_over():
+                raise DeliberateProbeFailure("the collaborator fell over")
+
+            toolkit.schedule_once(FAIL_AT_MS, fall_over)
+        # The backstop quit, whether or not anything else happened.
         toolkit.schedule_once(LIFETIME_MS, owner.end_session)
 
         owner.run()
@@ -136,6 +178,7 @@ def main() -> int:
         findings["error"] = "{0}: {1}".format(type(exc).__name__, exc)
     finally:
         owner.end_session()
+        findings["measured"]["window_reaped"] = not _window_still_there(root)
 
     elapsed = time.monotonic() - started
     findings["measured"]["ticks_delivered"] = collaborator.ticks
@@ -147,10 +190,15 @@ def main() -> int:
             1000.0 * span / (collaborator.ticks - 1), 1
         )
     findings["measured"]["nominal_tick_interval_ms"] = TICK_INTERVAL_MS
+    findings["failed_on_purpose"] = fail_on_purpose
 
     print(json.dumps(findings, indent=2, sort_keys=True))
+    if fail_on_purpose:
+        # Under --fail the failure is the point: a clean exit would mean the
+        # exception never came back out of the event loop.
+        return 0 if findings["error"] else 1
     return 1 if findings["error"] else 0
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(main(sys.argv[1:]))

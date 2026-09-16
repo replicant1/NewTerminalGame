@@ -36,6 +36,7 @@ class TkToolkit(Toolkit):
         self._canvas: Optional[tkinter.Canvas] = None
         self._key_handler: Optional[Callable[[KeyPress], None]] = None
         self._close_handler: Optional[Callable[[], None]] = None
+        self._pending_exception: Optional[BaseException] = None
 
     # -- the window ----------------------------------------------------
 
@@ -76,6 +77,14 @@ class TkToolkit(Toolkit):
         root.bind("<Key>", self._on_key)
         canvas.focus_set()
 
+        # Measured on this machine (docs/findings/WI-3-tk-window-probe.md):
+        # Tk catches anything raised inside a callback, prints a traceback and
+        # carries on.  Left alone, a session that fell over would look like a
+        # session that ended.  This hook makes a failed callback stop the loop
+        # and come back out of run_event_loop, which is what the Shell's seam
+        # promises and what the recording double does.
+        root.report_callback_exception = self.note_callback_exception
+
         self._root = root
         self._canvas = canvas
         return canvas
@@ -105,6 +114,28 @@ class TkToolkit(Toolkit):
         if self._close_handler is not None:
             self._close_handler()
 
+    # -- a callback that fell over --------------------------------------
+
+    @property
+    def pending_callback_exception(self) -> Optional[BaseException]:
+        """The first exception a callback raised, if one has and it is unread."""
+        return self._pending_exception
+
+    def note_callback_exception(self, exc_type, exc_value, exc_traceback) -> None:
+        """Tk's hook: a callback raised.  Remember it and leave the loop.
+
+        The *first* exception is the one kept.  Reaping the window may well
+        provoke further noise, and the failure that started it is the one
+        worth reporting.
+        """
+        if self._pending_exception is None:
+            self._pending_exception = (
+                exc_value
+                if isinstance(exc_value, BaseException)
+                else exc_type(exc_value)
+            )
+        self.stop_event_loop()
+
     # -- the clock -----------------------------------------------------
 
     def schedule_once(self, delay_ms: int, callback: Callable[[], None]) -> TimerHandle:
@@ -122,7 +153,11 @@ class TkToolkit(Toolkit):
     def run_event_loop(self) -> None:
         if self._root is None:
             raise RuntimeError("there is no window to run an event loop for")
+        self._pending_exception = None
         self._root.mainloop()
+        if self._pending_exception is not None:
+            failure, self._pending_exception = self._pending_exception, None
+            raise failure
 
     def stop_event_loop(self) -> None:
         if self._root is None:

@@ -72,5 +72,45 @@ class AFreshAdapterHasNoWindowTest(unittest.TestCase):
         self.toolkit.cancel_scheduled("no-such-timer")
 
 
+class ACallbackThatFellOverTest(unittest.TestCase):
+    """Measured on this machine: Tk catches, prints and carries on.
+
+    ``docs/findings/WI-3-tk-window-probe.md`` records the measurement. Left
+    alone it would mean a session that fell over looked exactly like a session
+    that ended, which is the opposite of what the Shell's seam promises. These
+    pin the bookkeeping that puts it right; the half that needs a real window
+    is measured by ``tools/probe_tk_window.py --fail``.
+    """
+
+    def setUp(self):
+        self.toolkit = TkToolkit()
+
+    def test_nothing_is_pending_to_begin_with(self):
+        self.assertIsNone(self.toolkit.pending_callback_exception)
+
+    def test_a_failed_callback_is_remembered(self):
+        failure = ValueError("the collaborator fell over")
+
+        self.toolkit.note_callback_exception(ValueError, failure, None)
+
+        self.assertIs(failure, self.toolkit.pending_callback_exception)
+
+    def test_the_first_failure_is_the_one_kept(self):
+        # Reaping the window may provoke more noise; the failure that started
+        # it is the one worth reporting.
+        first = ValueError("the collaborator fell over")
+        second = OSError("and then the window went")
+
+        self.toolkit.note_callback_exception(ValueError, first, None)
+        self.toolkit.note_callback_exception(OSError, second, None)
+
+        self.assertIs(first, self.toolkit.pending_callback_exception)
+
+    def test_noting_a_failure_without_a_window_does_not_itself_raise(self):
+        self.toolkit.note_callback_exception(ValueError, ValueError("x"), None)
+
+        self.assertIsNotNone(self.toolkit.pending_callback_exception)
+
+
 if __name__ == "__main__":
     unittest.main()
