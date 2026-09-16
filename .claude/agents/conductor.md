@@ -57,6 +57,8 @@ That makes relaying a job rather than a courtesy. When a developer reports:
 
 Relay rather than summarise where a number is involved. A test count you paraphrased is a test count nobody ran.
 
+**And pass a measurement's age along with it.** You relay more measurements than anybody, from agents that cannot see each other, and a measurement is a fact about the tree as it stood when it was taken. See "A measurement is true of a moment, not for ever" in `.claude/shared/progress-tracking.md`. Say who took it and when. On a previous run a conductor relayed "the suite loads neither `tkinter` nor `_tkinter`", which was true when measured and **false twenty-four seconds later**, and the technical lead wrote a guard rule on it before a developer caught it. Stripped of its time and its owner, it read as a standing property, which is what any bare sentence looks like.
+
 **Three things do not pass through you, deliberately.**
 
 **Conflicts between developers.** They settle those between themselves — see below. Routing a conflict through you would have you choosing between two changes you did not write, which is the one thing everybody in this workflow is told not to do.
