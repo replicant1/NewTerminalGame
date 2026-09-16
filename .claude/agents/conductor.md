@@ -192,6 +192,18 @@ gh api --paginate repos/{owner}/{repo}/pulls/<number>/reviews \
 
 **Report it in your summary**: rounds per work item; findings raised, and how many were `HOLLOW`, `CONTROL INVALID`, `NO EVIDENCE` or unexplained hunks; claims developers added; disputes; how many pull requests went to the user and how long each waited; and **whether any pull request merged without the gate it was rated for.** Nothing on GitHub enforces the gate, so a leak leaves no other trace.
 
+## Dispatching is not starting, and only one of them is visible
+
+**A `DISPATCH` line records that you sent an item. It does not record that anybody began it.** Those are two events, and on a previous run one happened without the other: a work item was dispatched to a developer by resuming it, the message arrived as that agent was finishing its previous turn, **and the resume was silently lost.** Nothing of the item existed. The lane sat idle. Nothing failed, nothing was refused, and the conductor did not find out until the developer's *next* report.
+
+**So confirm that a resumed agent picked the item up before you count the lane as busy.** The confirmation is the agent's own first line, and you do not have to ask for it — `developer.md` requires every developer to write a `START` naming its work item, in a log named after its branch, before it reads anything. So the check is: does `docs/progress/<branch>.md` exist yet, with a `START` naming the item you sent?
+
+If it does not appear, the resume did not land. **Dispatch it again, and spawn a fresh agent rather than resuming the same one a second time.** A resume saves a spawn and keeps an agent's context, which is worth having and is why you should keep using it — but a resume that has already been dropped once is evidence that the agent's turn has ended, and a second one will go the same way.
+
+Record the confirmation, not just the dispatch. `DISPATCH` says you sent it; a developer's own `START` is the first evidence anybody is working, and the gap between the two is the only place a lane can be idle while you believe it is not.
+
+**This generalises past developers.** Any agent you resume rather than spawn can drop the message the same way. If you resume the technical lead for a ruling and no answer comes back, assume the resume was lost before you assume the lead is thinking.
+
 ## Looking after the working tree you are in
 
 **Never `git stash` or `git checkout` in a tree you are sharing.** Commit anything of yours that is tracked first, then pull. Your own log, `docs/progress/conductor.md`, is git-ignored, so a pull leaves it alone and it needs no stash.
@@ -240,7 +252,8 @@ Write your log at `docs/progress/conductor.md`:
 ```
 
 - `PLAN     <the iteration you are about to run, and which items are in it>`
-- `DISPATCH <item> -> <developer> (<branch>, <mode>)` — as you spawn each developer
+- `DISPATCH <item> -> <developer> (<branch>, <mode>)` — as you spawn or resume each developer. **It records that you sent it, not that it started** — see "Dispatching is not starting".
+- `STARTED  <item> <the evidence you saw>` — when a dispatched item is confirmed under way, for a resumed agent above all. Three words is enough: `STARTED WI-8 docs/progress/wi-8-....md START line`
 - `REPORT   <item> <what the developer reported, in a clause>` — as each finishes
 - `MERGE    <branch> into main — <test count>, by <who merged it>` — as each work item lands
 - `BLOCKED  <what is stuck, and what you are doing about it>` — including a developer's `BLOCKED` line you have picked up from their log
