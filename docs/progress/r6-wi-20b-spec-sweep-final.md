@@ -29,3 +29,6 @@
 05:46:42Z  VERIFY  /usr/bin/python3 -m unittest discover -t . -s . -p "test_*.py" -> Ran 815 tests, OK
 05:46:42Z  TEST    815 passed, 0 failed, 0 skipped
 05:47:28Z  TEST    815 passed, 0 failed, 0 skipped (final, on the merged branch)
+05:48:34Z  DRAFT   three additions relayed from the technical lead: (1) "say it in both directions" -- GAME-2/END-1/END-2 pinned by TEST and NOT observed, the exact inverse of section 3a which is observed and NOT tested; (2) finding 11, the recurring defect class "a faithful route and an unconditional route are not the same route", three occurrences with the transferable rule ASSERT THE PHASE THE SESSION REACHED, NOT THAT THE WINDOW CLOSED; (3) ledger 39/39 already carried
+05:48:34Z  VERIFY  /usr/bin/python3 -m unittest discover -t . -s . -p "test_*.py" -> Ran 815 tests, OK
+05:48:34Z  TEST    815 passed, 0 failed, 0 skipped

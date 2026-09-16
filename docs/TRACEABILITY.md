@@ -101,7 +101,7 @@ row below rests on a negative, it says which of the two it rests on.
 | Req | Item | What pins it | Status |
 | --- | --- | --- | --- |
 | GAME-1 | WI-6, WI-18, WI-19 | The furniture: `tests/test_game_state.py::GameStateTests::test_a_state_carries_the_maze_the_dots_the_actors_and_the_score` — one maze, one dot field, one player square, one ghost square, and no way to have two of anything. Dots on the corridors: `tests/test_opening_position.py::OpeningPositionTests::test_there_is_a_dot_on_every_corridor_square_but_the_players`. A whole game really played: `tests/test_scripted_game.py::AWholeSeededGame::test_the_game_is_won`. **Assembled and run from one command:** `tests/test_game.py::TheEntryPointAssemblesTheRealThingTest::test_it_joins_a_real_session_over_a_real_maze` and `tests/test_game.py::TheSingleCommandTest::test_the_package_is_runnable_and_runs_the_wiring`. **Observed** on a real screen — `docs/findings/WI-18-the-game-on-screen.md` | **Pinned and observed.** The half WI-20a left open is closed: the game is assembled behind a window and started by `/usr/bin/python3 -m terminal_game` |
-| GAME-2 | WI-11 | `tests/test_turn_resolver.py::WinningTests::test_eating_the_last_dot_wins_the_game` and `tests/test_turn_resolver.py::CollisionTests::test_walking_into_the_ghost_loses_the_game`; both endings again in a whole game — `tests/test_scripted_game.py::TheWinPath::test_playing_the_script_clears_the_maze` and `tests/test_scripted_game.py::TheLossPath::test_the_player_walking_into_the_ghost_loses_the_game` | **Pinned.** Headless only — see the finding below the table |
+| GAME-2 | WI-11 | `tests/test_turn_resolver.py::WinningTests::test_eating_the_last_dot_wins_the_game` and `tests/test_turn_resolver.py::CollisionTests::test_walking_into_the_ghost_loses_the_game`; both endings again in a whole game — `tests/test_scripted_game.py::TheWinPath::test_playing_the_script_clears_the_maze` and `tests/test_scripted_game.py::TheLossPath::test_the_player_walking_into_the_ghost_loses_the_game` | **Pinned by test, and not observed.** Both endings exist **only headless**: 39 real windows and not one reached `CLEARED` or `CAUGHT`. Read it alongside section 3a, which is the exact inverse — see *"say it in both directions"* below |
 | GAME-3 | WI-15 | `tests/test_session.py::ThreeStatesAndNoMore::test_there_are_exactly_three_phases` and `tests/test_session.py::ThreeStatesAndNoMore::test_there_is_no_restart_edge` | **Pinned** |
 
 **GAME-1 is one of the two codes no test names anywhere in the suite** (the
@@ -136,6 +136,21 @@ scheduled `quit`, **not a game reaching an outcome.** The game's outcome was
 §8: *"A whole game played to an ending. Nobody has ever played one."* **A phase
 of `ended` and an outcome of `CLEARED` or `CAUGHT` are different things, and
 only the second is what is missing.**
+
+### Say it in both directions, or either half looks like full coverage
+
+This document holds two opposite kinds of incomplete evidence, and naming only
+one of them would be misleading. **They are exact inverses and should be read
+together:**
+
+| | Established by | **Not** established by |
+| --- | --- | --- |
+| **GAME-2, END-1, END-2** — both endings | **test**, twice over: at the resolver and in a whole game played headless | **observation.** Thirty-nine real windows and not one reached `CLEARED` or `CAUGHT` |
+| **`tk_grid.measure_metrics`, `tk_grid.create_surface`** — section 3a | **observation**, on 39 real windows across five findings | **test.** No test can reach them; the suite may not construct a toolkit interpreter |
+
+**Neither is full coverage and neither is nothing.** A test that never met a
+screen and a screen that no test could reach are two different weaknesses, and
+**the symmetry is the honest summary of what this run proved and how.**
 
 ---
 
@@ -365,8 +380,8 @@ consequence is documented here instead.
 
 | Req | Item | What pins it | Status |
 | --- | --- | --- | --- |
-| END-1 | WI-11 | `tests/test_turn_resolver.py::CollisionTests::test_walking_into_the_ghost_loses_the_game` **and** `tests/test_turn_resolver.py::CollisionTests::test_the_ghost_walking_into_the_player_loses_the_game` — the requirement says *whether the player walked into the ghost or the ghost walked into the player*, and there is a test for each; both again in a whole game in `tests/test_scripted_game.py::TheLossPath` | **Pinned** |
-| END-2 | WI-11 | `tests/test_turn_resolver.py::WinningTests::test_eating_the_last_dot_wins_the_game`, with `tests/test_turn_resolver.py::WinningTests::test_eating_a_dot_that_is_not_the_last_wins_nothing` showing the case is not vacuous | **Pinned** |
+| END-1 | WI-11 | `tests/test_turn_resolver.py::CollisionTests::test_walking_into_the_ghost_loses_the_game` **and** `tests/test_turn_resolver.py::CollisionTests::test_the_ghost_walking_into_the_player_loses_the_game` — the requirement says *whether the player walked into the ghost or the ghost walked into the player*, and there is a test for each; both again in a whole game in `tests/test_scripted_game.py::TheLossPath` | **Pinned by test, and not observed** — no screen has shown a loss |
+| END-2 | WI-11 | `tests/test_turn_resolver.py::WinningTests::test_eating_the_last_dot_wins_the_game`, with `tests/test_turn_resolver.py::WinningTests::test_eating_a_dot_that_is_not_the_last_wins_nothing` showing the case is not vacuous | **Pinned by test, and not observed** — no screen has shown a win |
 | END-3 | WI-11, WI-19 | `tests/test_turn_resolver.py::EndThreePrecedenceTests::test_eating_the_last_dot_on_the_ghosts_square_is_a_loss`, with `tests/test_turn_resolver.py::EndThreePrecedenceTests::test_the_winning_condition_really_did_hold_in_that_same_turn` showing the case is not vacuous. And again in a whole game: `tests/test_scripted_game.py::EndThreeInAWholeGame::test_the_last_dot_on_the_ghosts_square_is_caught_and_not_cleared`, with `tests/test_scripted_game.py::EndThreeInAWholeGame::test_the_dot_field_really_did_empty_on_that_same_turn` | **Pinned directly and twice, caveated — A8.** The precedence is pinned at the resolver and in a whole game, which is the strongest ordinary coverage the plan said was available; the non-vacuity tests are the ones that matter, because without them the precedence test could pass while the win condition never held. **A8 governs whether the dot still scores**, the specification never says, and both readings satisfy END-3. `tests/test_turn_resolver.py::EndThreePrecedenceTests::test_the_dot_is_still_eaten_and_still_scores_on_the_losing_turn` and `tests/test_scripted_game.py::EndThreeInAWholeGame::test_the_dot_is_still_taken_and_still_scored_on_the_losing_turn` pin the reading we took, and it changes the last number the player ever sees |
 | END-4 | WI-12, WI-19 | `tests/test_frame_composer.py::TheDrawOrder::test_the_final_picture_of_a_loss_shows_the_ghost_over_the_player` and `tests/test_scripted_game.py::TheLossPath::test_the_final_picture_shows_the_ghost_and_not_the_player` | **Pinned** |
 | END-5 | WI-15 | `tests/test_session.py::OnceDecidedNothingMoves::test_the_picture_the_player_is_looking_at_does_not_change`, with the ghost and the arrows pinned separately in the same class; in a whole game, `tests/test_scripted_game.py::TheWinPath::test_the_last_picture_stays_on_screen` and `tests/test_scripted_game.py::TheWinPath::test_the_ghost_stops_once_the_game_is_won` | **Pinned, caveated — A3** (C-2) |
@@ -522,6 +537,28 @@ of the run and got **698** canvas items from `the_look.py --view game` and
 change — with the key exercise matching WI-17's record. **A lane's own judgement
 that a refactor is character-for-character equivalent is worth more when
 somebody else measures it**, and that is what happened here.
+
+**11. One defect class recurred after being fixed, and it is the only one the
+test seam cannot see.** *A faithful route and an unconditional route are not
+the same route.* It appeared three times on this run, each time in a different
+lane, each time found on a real screen:
+
+| Where | The unconditional route | What it cost |
+| --- | --- | --- |
+| **The close button** (WI-17 §5) | `WindowOwner.open` bound the close request to its own `end_session`, taking the window out from under the session | the session's phase was still `playing` afterwards, so its shutdown — and the failure check below — never ran |
+| **The swallowed crash** (WI-17 §1, WI-18 §2) | Tk swallows an exception raised inside `after()`, so the session routed the failure to the shutdown path and recorded it | window reaped, phase `ended`, **stderr empty, `run()` returned normally, exit code 0** — a crashed game exiting looking clean |
+| **A scheduled deadline** (WI-21 §9) | the harness's single deadline was `owner.end_session` rather than `session.quit` | the same shape again, in a lane that had read both the findings above: window 1 ended with the phase still `playing` |
+
+**All three were found on a real screen, and all three were catchable
+headless.** That is the actionable half and it is worth more than the defect.
+A recording double records *"the window was told to close"* under **both**
+routes, so a test asserting the window closed passes either way — **but the
+session's phase is not blind to it.** So the rule, transferable beyond this
+project:
+
+> **Assert the phase the session reached, not that the window closed.**
+> More generally: **a correct observable effect does not mean the route that
+> produced it was correct.**
 
 ---
 
