@@ -7,3 +7,8 @@
 04:52:54Z  VERIFY  END-3 case run by hand: one dot left, on the ghost s square, player adjacent, score 6. resolve_move EAST gives outcome CAUGHT, score 7, dots 0 -- so the winning condition really did hold in the same turn and the collision took precedence.
 04:52:54Z  DECIDE  what happens to the dot on the losing turn -> it is still eaten and still scores, because the plan s step order puts eat after collision rather than instead of it. Pinned in a test and flagged in the PR as a judgement call.
 04:52:54Z  TEST    330 passed, 0 failed, 0 skipped  (/usr/bin/python3 -m unittest discover -t . -s . -p "test_*.py", 3.74s). 25 of them are WI-11 s.
+04:53:32Z  COMMIT  e70d57e WI-11: the turn resolver, with the step order in one readable place
+04:53:32Z  COMMIT  87e58d1 WI-11: PR summary
+04:53:32Z  VERIFY  draft PR #39 opened with --base r6/wi-7-ghost-policy, stacked on DEV-B s branch. Told DEV-B on PR #33 that I will retarget to main as soon as they merge.
+04:54:18Z  NOTE    WI-7 merged while PR #39 was in draft. Retargeted #39 to main and merged origin/main onto the branch: clean, no conflict. No merge-order constraint remains.
+04:54:18Z  TEST    349 passed, 0 failed, 0 skipped with origin/main merged in  (/usr/bin/python3 -m unittest discover -t . -s . -p "test_*.py", 3.72s)

@@ -1,13 +1,13 @@
 # WI-11 — The turn resolver
 
 **Developer:** DEV-A · **Branch:** `r6/wi-11-turn-resolver`
-**Base:** **`r6/wi-7-ghost-policy`** — this is a **stacked** PR, see below
-**Depends on:** WI-6 (merged), WI-7 (DEV-B, PR #33, open) · **Iteration:** M2
+**Base:** `main` — opened stacked on `r6/wi-7-ghost-policy`, retargeted once WI-7 merged
+**Depends on:** WI-6 (merged), WI-7 (DEV-B, PR #33, **merged**) · **Iteration:** M2
 **Requirements:** GAME-2, CTRL-1, CTRL-2, CTRL-3, SCORE-1, SCORE-2, SCORE-3, SCORE-4, END-1, END-2, END-3, END-5
 
 ---
 
-## Stacked, and why
+## It was stacked, and then it was not
 
 WI-11 depends on WI-7, which was **out of draft but not yet merged** when
 this branch had to be cut. DEV-A holds the critical path
@@ -15,10 +15,12 @@ this branch had to be cut. DEV-A holds the critical path
 instruction was to stack rather than idle.
 
 - Cut from `r6/wi-7-ghost-policy` at `c47f1c4`, whose own merge base is
-  `edcb5a3` — my WI-6 merge — so the stack already has everything WI-11
-  needs.
-- **Merge order: PR #33 (WI-7) first, then this one.** I will retarget with
-  `gh pr edit <n> --base main` the moment WI-7 lands, and merge `main` in.
+  `edcb5a3` — my WI-6 merge — so the stack already had everything WI-11
+  needed, and the PR was opened `--base r6/wi-7-ghost-policy`.
+- **WI-7 then merged (PR #33).** This PR was retargeted with
+  `gh pr edit 39 --base main` and `origin/main` merged onto the branch,
+  cleanly and with no conflict. **There is no merge-order constraint left**;
+  it stands on `main` like any other.
 - **Nothing here touches DEV-B's files.** `terminal_game/domain/ghost.py`
   and `tests/test_ghost.py` are untouched; the only shared file is
   `terminal_game/domain/game_state.py`, which is mine.
@@ -180,13 +182,14 @@ taken twice (WI-6's), and what a score refuses to do (WI-6's).
 ```
 
 ```
-Ran 330 tests in 3.7s
+Ran 349 tests in 3.7s
 
 OK
 ```
 
-**330 passed, 0 failed, 0 skipped**, on the stack — which is WI-1, WI-2,
-WI-3, WI-5, WI-6 and WI-7 with WI-11 on top. 25 are WI-11's.
+**349 passed, 0 failed, 0 skipped**, with `origin/main` merged in after
+WI-7 landed — so WI-1, WI-2, WI-3, WI-4, WI-5, WI-6 and WI-7 are all
+present, with WI-11 on top. **25 are WI-11's.**
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
