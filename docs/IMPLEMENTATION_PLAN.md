@@ -28,6 +28,39 @@ at all.
 
 ---
 
+## 0a. Amendment 1 — recorded after M0, read it before your next work item
+
+M0 landed. `origin/main` carried **282 tests, 0 failures, 0 skips** on the pinned command.
+The counts reconcile exactly across the landings — 45 + 68 + 54 = 167, then +61 for WI-2,
+then +54 for WI-6 — which is itself worth saying, because it means nobody retyped a number.
+
+Five items were created that are not in this plan: **WI-5a** (collapse two root packages to
+one), **WI-3a** (flatten WI-3's tests to the convention everyone else used), **WI-2a** and
+**WI-3b** (completion records), and a WI-5a log closeout. **All five are approved,
+retrospectively.** Each conformed its own author's files to something already landed,
+touched nobody else's files, and merged green. No arbitration was needed and none was
+asked for, which is the right outcome.
+
+The cause is worth naming plainly. WI-1 landed a root package spelled one way and WI-5
+landed one spelled another, so `main` briefly carried two. Neither imported the other, so
+the suite stayed green — which is exactly why nobody noticed. **That is the honest cost of
+leaving names to you rather than to me, and I am not taking that decision back**; it is
+still the right call, and DEV-A's fix (conform *your own* files to what landed first) was
+the right instinct. What follows makes that instinct a convention instead of a piece of
+luck, and adds one line to a guard that has not been written yet so the machine catches it
+next time.
+
+**The five approved items deliberately do not get bars** in the chart in section 9. They
+are landed and retrospective; the chart is a forward schedule, and back-filling completed
+conforming branches into it would make every effort total disagree with the table for no
+reader's benefit. The schedule below is unchanged: 22 work items, 23 bars, 50 developer-days.
+
+Three of the risks in section 12 are **retired by measurement**, not by assertion, and the
+table there now says so. Two Tk 8.5 behaviours discovered during WI-3 are carried into
+WI-15 and WI-17, where they change what those items have to build.
+
+---
+
 ## 1. The architecture we are building, and why
 
 ### The ruling
@@ -184,6 +217,48 @@ Four paths, exactly these shapes, no fifth:
 
 The progress log is named after the branch with the slash flattened to a hyphen, so that
 two worktrees never write the same file.
+
+### Shared vocabulary: the first-lander rule *(added in amendment 1)*
+
+Three lanes working from the same tree will sometimes both need a name that neither of them
+owns — a package root, a direction, an outcome, a test helper for building a maze by hand.
+When that happens:
+
+1. **The first spelling to land on `main` wins.** Not the better one, not the one argued
+   for best — the one that landed first. This is arbitrary on purpose, because any rule that
+   requires judgement requires a conversation, and the conversation costs more than the
+   name is worth.
+2. **The later lane conforms its own files**, in a small branch named after its parent item
+   with a letter suffix (`r6/wi-5a-package-name` is the model), says in the PR body what it
+   is conforming to and why no arbitration was needed, and **never edits the earlier lane's
+   files**.
+3. **If conforming would change behaviour rather than spelling, it is not a conforming
+   change.** Stop and take it to the other developer. That is a design disagreement, and
+   section 2's conflict rules apply.
+4. **Announce anything another lane will obviously need.** If you land a vocabulary, a seam,
+   or a test helper that somebody else is going to want, say so in the first line of your PR
+   body and put a `NOTE` line in your progress log naming it. The next lane should be able
+   to find it by grepping, not by inventing it a second time.
+
+A conforming change or a document `developer.md` already requires does not need a *new*
+work item in this plan — but giving it a suffixed code, as M0 did, makes it traceable and
+is welcome. Report it as an additive deviation either way.
+
+**Who owns what, where two items in this plan will meet.** These are ownership calls, not
+design calls; the owner decides the spelling and the other lane conforms.
+
+| Shared thing | Owner | Who conforms |
+| --- | --- | --- |
+| The root package and the tree's shape | settled by WI-5a | everybody |
+| The maze and every query asked of it | DEV-A (WI-5) | WI-7, WI-8, WI-12 |
+| The random-source seam | DEV-A (WI-5, landed) | **WI-7** takes the same shape; do not invent a second one |
+| Directions and headings | DEV-B, in whichever of **WI-7** or **WI-9** lands first | WI-11, WI-15 |
+| A test helper that builds a maze from an ASCII picture | whichever of WI-7 / WI-8 needs it first, announced per rule 4 | the other |
+| Wall glyphs and the connector rule | DEV-C (**WI-8**) | WI-12 declares none of them |
+| The dot glyph and the two actor motifs | DEV-B (**WI-12**) | WI-8 declares none of them |
+| The outcome vocabulary — playing, caught, cleared | DEV-A, wherever it landed (WI-6, else WI-11) | **WI-13** selects by it and does not define it |
+| The clock seam and the headless session | DEV-A (**WI-15**) | **WI-19** consumes it and builds no second one |
+| The frame value and the colour vocabulary | settled by WI-1 | everybody |
 
 ### When your branch conflicts with main
 
@@ -545,6 +620,11 @@ among the other ways on**; **turn back the way it came only when there is no oth
 choice**. It is handed a random source. **The player is not a parameter** — it cannot hunt
 even by mistake — and it never touches the dot field.
 
+*Amendment 1.* The random-source seam already landed with WI-5; **take its shape rather
+than inventing a second one**. WI-7 or WI-9, whichever lands first, also settles the
+direction and heading vocabulary for the whole project — announce it per the first-lander
+rule, because WI-11 and WI-15 will both conform to it.
+
 *Tests must establish.* On hand-built mazes: that in a straight corridor it continues,
 every time, for many draws; that at a T-junction it never chooses the square it came from
 while another exit exists; that in a dead end — which the real generator will not produce,
@@ -561,6 +641,11 @@ walk. Its signature carries no player.
 drawn as: the double-line corners, tees, crossings and straights that join up neatly, and
 the **lone blue block** `■` when the square has no wall next to it. Plus the rule for the
 connector column between two horizontally joined wall squares. All of it blue.
+
+*Amendment 1.* **WI-8 owns every wall glyph and the connector rule; WI-12 declares none of
+them, and WI-8 declares neither the dot nor the actor motifs.** If either item needs a test
+helper that builds a maze from an ASCII picture, whichever of WI-7 and WI-8 needs it first
+lands it and announces it; the other uses it.
 
 *Tests must establish.* All sixteen neighbour combinations, each mapped to its glyph, named
 in the test so a reader can check them against the specimen picture; that a wall square
@@ -590,17 +675,21 @@ produce output of any kind.
 *Outcome.* An automated guard, part of the ordinary suite, that fails when the
 architecture is violated: **nothing below the Shell names the windowing toolkit**; **the
 Domain names nothing above it, reads no clock and reaches for no global random source**;
-and **nothing anywhere draws an image** — no image or bitmap objects, no geometric
+**nothing anywhere draws an image** — no image or bitmap objects, no geometric
 primitives standing in for glyphs (caution C5, which is the price candidate 2 pays for
-SCRN-2).
+SCRN-2); and, *added in amendment 1*, **there is exactly one root package**.
+
+That fourth rule is there because in M0 two root packages landed within hours of each
+other and the suite stayed green, since neither imported the other. A guard would have
+caught it the moment it landed. It is one line and it pays for itself once.
 
 This is an architecture guard. It is not a duplicate of any other test and it does not fall
 under the "assert the seam" rule.
 
 *Tests must establish.* That the guard actually inspects the whole tree and not an empty
 set — it must fail if it finds nothing to inspect, so it can never pass vacuously; that
-each of the three rules is reported separately and names the offending place; that the
-current tree satisfies all three.
+each of the four rules is reported separately and names the offending place; that the
+current tree satisfies all four.
 
 ---
 
@@ -675,6 +764,10 @@ literal templates with the score substituted (assumption A7, contradictions C-3 
 > never composes its text. If the user rules differently, the change is these three
 > templates and this item's tests. One place, not a hunt across three developers.
 
+*Amendment 1.* **WI-13 selects by the outcome vocabulary; it does not define it.** DEV-A
+owns that vocabulary wherever it landed — in WI-6's game state if it is there, otherwise in
+WI-11. Ask rather than invent a third spelling of "caught".
+
 *Tests must establish.* That the playing line with score 0 is **character for character**
 the STAT-2 literal; that the loss line with score 37 and the win line with score 274 are
 character for character the two STAT-3 literals; that the score shown is the live score and
@@ -729,7 +822,17 @@ to begin.
 **A whole session must be runnable with no window.** The controller is handed a clock, a
 random source and a place to send frames; a test supplies fakes for all three. This is not
 a convenience — WI-19 depends on it, and it is what keeps WI-18 and WI-19 out of each
-other's way.
+other's way. **DEV-A owns this seam and WI-19 consumes it**; if it is not there, WI-19 will
+build a second one and the two items will collide.
+
+*Amendment 1 — a Tk 8.5 behaviour measured during WI-3 that changes what this item must
+build.* **Tk swallows an exception raised inside an `after()` callback.** It goes to
+`report_callback_exception`, a traceback is printed, and the main loop carries on. So an
+error inside a tick will **not** propagate out of the run loop, and a session that relies on
+letting it propagate will hang with a broken game on screen instead of shutting down. The
+controller must route a failure to the same shutdown path `q` uses, deliberately, rather
+than raising and hoping. Add a test for it: a tick that fails ends the session cleanly
+rather than being silently absorbed.
 
 > **This is where the WIN-5 / END-5 / END-6 contradiction lands.** Assumption **A3** is
 > implemented here and nowhere else: the outcome is decided, the final picture stands, the
@@ -779,6 +882,15 @@ the picture, not to a console (CTRL-5 at the shell level). The window closes **e
 once** and leaves no orphan process behind, whether the session ended normally, was quit
 with `q`, or fell over. Anything that opens a window reaps it on the failure path.
 
+*Amendment 1 — two Tk 8.5 behaviours measured during WI-3, both of which land here.*
+**`root.resizable()` with no arguments returns the string `'0 0'`, not a pair**, so
+unpacking it raises — assert against the string, or pass arguments. And **Tk swallows an
+exception raised inside an `after()` callback**: it reaches `report_callback_exception` and
+the main loop carries on. This item's promise that "an exception during the session still
+results in the window being closed" therefore cannot be built by letting an exception
+propagate out of the loop; the failure path has to be wired explicitly, and the test has to
+drive a callback that fails rather than asserting that something raised.
+
 *Tests must establish.* That the window is configured non-resizable and that a resize
 request does not change the grid; that no caret is ever enabled; that unmapped keys produce
 no output of any kind; that closing twice is harmless and closes once; that an exception
@@ -819,6 +931,13 @@ and it never opens a window.
 
 It uses the headless session WI-15 provides. **It does not assemble the shell** — that is
 WI-18's, and keeping the two apart is what lets them run side by side.
+
+*Amendment 1 — a property this item rests on, measured during WI-5.* Maze generation is
+**independent of `PYTHONHASHSEED`**: an identical sha256 over 50 seeded mazes at hash seeds
+0, 1, 12345 and twice at random. This item's asserted pictures only hold while that stays
+true, and it is the kind of thing a later change quietly undoes by iterating a set. Pin it:
+assert that a seeded game replays identically, and say in the PR body that the scripted
+game depends on it.
 
 *Tests must establish.* The two paths above, end to end, as sequences of asserted pictures;
 that the score at the end equals the number of dots eaten; that END-3's precedence holds in
@@ -1011,6 +1130,16 @@ are meant to run at once; this section says where that is safe and where it is n
 | **M4** | **All three run in parallel with no expected collision.** WI-18 assembles the shell; WI-19 uses the headless session WI-15 provides and never touches the shell; WI-20a is documents and one completeness test. | None, *provided* WI-15 really did expose a session runnable with no window. If it did not, WI-18 and WI-19 will both try to build one and will collide. | The requirement is written into WI-15. If DEV-A reports it was not done, sequence WI-19 after WI-18. |
 | **M5** | WI-21 (a script and findings) and WI-20b (documents) are disjoint. | **WI-22 can collide with anything**, by its nature — it is the reserve that fixes whatever turned up. | DEV-B says what WI-22 is touching before starting it, and agrees it with whoever owns that area. If it needs to touch WI-18's or WI-20b's work, sequence it after them. |
 
+*Amendment 1 — the collisions this table missed.* The table above named the pairs that
+would collide over *files*. M0's real collision was over a *name*, between two lanes that
+never touched the same file at all, and no dependency arrow would have predicted it. The
+first-lander rule and the ownership table in section 2 are the answer to that class; the
+three specific ones still ahead are **directions and headings** (WI-7 or WI-9 settles it,
+WI-11 and WI-15 conform), **the outcome vocabulary** (DEV-A settles it, WI-13 conforms),
+and **the clock seam** (WI-15 settles it, WI-19 conforms). All three are in the ownership
+table. Also note **WI-10 must still land last in M1** — it now guards four rules over a
+tree the other lanes are actively writing.
+
 One more, across iterations rather than within one: **DEV-A holds the whole critical path.**
 If DEV-A is blocked, the project is blocked, and no amount of parallelism elsewhere helps.
 WI-5 is the item to watch — caution C4 says it is the algorithm most likely to ship subtly
@@ -1085,10 +1214,12 @@ not because the design falls short.
 
 | Risk | What it would cost |
 | --- | --- |
-| **The built medium flickers.** SCRN-7 and WIN-2 are now our code, not a toolkit property. If the toolkit's repaint model flickers at seven frames a second with 1,200 cells, WI-2 has to change how it repaints. | Up to 2 extra days in WI-2, in M0, where there is slack — which is part of why M0 is shaped this way. |
-| **The box-drawing glyphs do not align** at the chosen font size, so the walls do not join up. | Found in WI-2's findings or WI-16; the mitigation (draw each cell at its own computed position) is required from the start, so the residual cost is a font change. |
+| ~~**The built medium flickers.**~~ **RETIRED by measurement, amendment 1.** DEV-B measured the real canvas: 5.6ms for a full first paint, 0.68ms median and 0.71ms worst over 20 repaints of a player move, against a 143ms tick budget — half a percent of it. | The two days I costed will not be spent. |
+| ~~**The box-drawing glyphs do not align.**~~ **RETIRED by measurement, amendment 1.** All 113 glyphs the picture uses share one advance in Menlo at 14, 16, 18 and 20pt — and the control matters: glyphs Menlo lacks fall back to visibly *different* advances (CJK 16px, emoji 21px, private-use 18px against 10px), so the uniform figure is Menlo's own coverage and not an artefact of fallback. | Nothing. This was candidate 2's signature risk and it is gone. |
 | **WI-5 ships subtly wrong.** MAZE-4, MAZE-5 and MAZE-6 fight each other (caution C4), and WI-5 is first on the critical path. | Every later iteration moves. This is the single biggest schedule risk and it is why WI-5 starts on day 1 with many-seed property tests. |
-| **A developer uses the wrong `python3`.** A 3.14.7 interpreter exists on this machine with no windowing toolkit at all. Measured: it does *not* shadow `/usr/bin/python3` in the default shell, so this bites only someone who invokes it deliberately. | An afternoon lost to a mystifying import error. Mitigated by pinning the absolute path everywhere. |
+| **A developer uses the wrong `python3`.** A 3.14.7 interpreter exists on this machine with no windowing toolkit at all. Measured: it does *not* shadow `/usr/bin/python3` in the default shell, so this bites only someone who invokes it deliberately. | An afternoon lost to a mystifying import error. Mitigated by pinning the absolute path everywhere. **Amendment 1:** DEV-B confirmed neither `tkinter` nor `_tkinter` is in `sys.modules` after the whole suite, so the no-window rule holds by construction rather than by discipline. |
+| **Maze generation stops being independent of `PYTHONHASHSEED`** — measured true today over 50 seeded mazes at four hash seeds, and quietly undone by anything that iterates a set. *Added in amendment 1.* | WI-19's asserted pictures go non-deterministic and the failure looks random. Pinned by a replay assertion in WI-19. |
+| **Two more lanes independently invent the same name**, as happened with the root package in M0. *Added in amendment 1.* | One conforming branch, as WI-5a was — cheap, provided the first-lander rule in section 2 is followed and WI-10's fourth guard rule lands. |
 | **A1, A2, A3 or A4 is answered against us late.** | A3 is the expensive one and it is confined to WI-15. A1, A2 and A4 are each confined to one item. That confinement is the mitigation. |
 | **DEV-A holds the entire critical path.** | Any DEV-A block stops the project. Consider re-cutting the lanes if DEV-A slips more than a day. |
 
@@ -1108,12 +1239,19 @@ more than that, it is their call to make; I am not building it in.
 Three questions, none of which any of us can answer:
 
 1. **Look at the titlebar of the running game window and say whether it reads exactly
-   *Terminal Game*.** First asked at WI-4 on day 5, confirmed at WI-21. (Assumption A1.)
+   *Terminal Game*.** First asked at WI-4, confirmed at WI-21. (Assumption A1.)
+   *Amendment 1:* DEV-C read the title back from Tk as exactly `Terminal Game`, with nothing
+   composed around it — which is the candidate-1 shortfall the architect measured at V4 now
+   apparently closed. DEV-C was right to record that **reading a string back from the
+   toolkit that set it is not a person seeing a titlebar**, and to leave A1 open. It stays
+   open. The question for the user is unchanged and it is now cheap to answer.
 2. **Rule on WIN-5 versus END-5 and END-6.** Does the window close the instant the outcome
    is decided, or when the player presses `q` after seeing the final picture? We proceed on
    A3 — the second reading — and it lands in **WI-15** alone. (Contradiction C-2.)
 3. **Confirm the window lands somewhere visible relative to what you were last looking at,
    and that the type is comfortable to read.** (Assumptions A2 and A4, at WI-21.)
+   *Amendment 1:* A4 now has a concrete form, which makes it far easier to answer — **is
+   Menlo at 16pt, in a window of about 400 × 570 pixels, large enough to read comfortably?**
 
 And one smaller one, which we have decided ourselves under A7 and will flag rather than
 re-open: the status line literals disagree with the specimen picture by one leading space,

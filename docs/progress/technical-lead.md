@@ -118,3 +118,19 @@
 04:30:20Z  TRACE   STAT-3 -> WI-13 (the two ending literals — A7)
 04:30:20Z  VERIFY  consistency check over the finished plan -> 49/49 requirement codes present in the trace table; 23 gantt bars for 22 work items (WI-20 has two landings); every bar has an item and every item a bar; per-section bar durations 11/9/9/7/8/6 = 50, matching the iteration table; each milestone falls on the day after its iteration's last bar
 04:30:20Z  DONE    docs/IMPLEMENTATION_PLAN.md
+04:49:19Z  READ    conductor interim relay — origin/main at edcb5a3, 282 tests OK on the pinned command; WI-1, WI-5, WI-3, WI-2, WI-6 landed by their own authors; WI-4 and WI-7 in flight
+04:49:19Z  VERIFY  the relayed counts reconcile: 45 (WI-1) + 68 (WI-5) + 54 (WI-3) = 167 on main after WI-5a; 167 + 61 = 228 after WI-2; 228 + 54 = 282 after WI-6 — every step accounted for, no retyping error
+04:49:19Z  DECIDE  the five unplanned items WI-5a, WI-3a, WI-2a, WI-3b and the WI-5a log closeout -> all approved retrospectively, because each conformed its own author's files to something already landed, touched nobody else's files, and merged green
+04:49:19Z  DECIDE  WI-5a's method is now the general rule -> the first spelling to land on main wins and the later lane conforms its own files, because that is what DEV-A did unprompted and it needs no arbitration by anybody
+04:49:19Z  NOTE    the two-package collision is the honest cost of leaving names to developers with three lanes starting from an empty tree; the fix is a convention plus one more line in WI-10's guard, not taking the naming decision back
+04:49:19Z  DECIDE  WI-10's guard gains a fourth rule, exactly one root package -> because that rule alone would have caught the WI-5a collision the moment it landed, and WI-10 has not started
+04:49:19Z  VERIFY  relayed measurement: WI-2 repaint 5.6ms first paint, 0.68ms median and 0.71ms worst for a move, against the 143ms tick budget -> the built-medium flicker risk I costed at two days is retired
+04:49:19Z  VERIFY  relayed measurement: all 113 glyphs the picture uses share one advance in Menlo at 14/16/18/20pt, with a control showing missing glyphs fall back to visibly different advances -> the glyph-alignment risk is retired
+04:49:19Z  VERIFY  relayed measurement: neither tkinter nor _tkinter appears in sys.modules after the whole suite -> the no-window-in-the-suite rule holds by construction, not by discipline
+04:49:19Z  VERIFY  relayed measurement: GHOST-1 observed at 144.2ms over 8 ticks against the nominal 143ms -> within 'about seven times a second'
+04:49:19Z  CONTRADICT Tk 8.5 swallows an exception raised inside an after() callback — it reaches report_callback_exception and the mainloop carries on -> a naive re-raise never escapes the run loop, so WI-17's 'an exception still reaps the window' cannot be built by letting it propagate. Evidence: DEV-C's WI-3 findings
+04:49:19Z  CONTRADICT Tk 8.5's root.resizable() with no arguments returns the string '0 0', not a pair -> unpacking it raises. Evidence: DEV-C's WI-3 findings; WI-17 asserts non-resizability and would have hit this
+04:49:19Z  RISK    WI-19's scripted game rests on maze generation being independent of PYTHONHASHSEED (measured identical over 50 seeded mazes at four seeds); a later item iterating a set could quietly undo it
+04:49:19Z  DECIDE  A1 stays open -> DEV-C read the title back from the toolkit that set it, which is evidence and not a person seeing a titlebar; the human look at WI-4 and WI-21 still stands
+04:49:19Z  DRAFT   amendments to docs/IMPLEMENTATION_PLAN.md — amendment 1
+04:50:12Z  DONE    docs/IMPLEMENTATION_PLAN.md amendment 1 — five items ruled approved, first-lander rule and an ownership table added to section 2, WI-10 gains a fourth guard rule, WI-7/8/12/13/15/17/19 amended, three risks retired and two added, chart and tables re-checked unchanged at 23 bars / 50 days
