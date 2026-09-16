@@ -14,3 +14,9 @@
 05:05:30Z  WI-15 NOTE    new subpackage terminal_game/application/ — still exactly one root package, so WI-10 rule 4 is unaffected. The turn resolver landed in domain/ in WI-11 although the architecture calls it Application; not moved, because moving it is churn that would break WI-18 and WI-19 imports for no behavioural gain
 05:05:30Z  WI-15 ASK     C-2 (WIN-5 against END-5 and END-6) is still unruled by the user
 05:05:30Z  WI-15 ASSUME  proceeding on A3. Rests on: Session._advance entering DECIDED rather than ENDED when the outcome is set — one line — and the WIN-5/END-5/END-6 rows of WI-20's sweep
+05:06:37Z  WI-15 COMMIT  7d4cdf3 WI-15: the session controller, written against a one-call seam
+05:06:37Z  WI-15 NOTE    pushed r6/wi-15-session-controller; draft PR #47 --base main (https://github.com/replicant1/NewTerminalGame/pull/47)
+05:06:37Z  WI-15 NOTE    WI-12 landed while this branch was open (PR #45, main at a08b11b). merged origin/main cleanly, no conflicts
+05:06:37Z  WI-15 VERIFY  DEV-B's compose_frame(state, status_row) takes two arguments where my seam takes one. Differently spelled, not wrong: the plan requires WI-12 to take row 29 as a value, so binding WI-13's status_row in is the caller's job and is two lines in WI-18. No escalation needed
+05:06:37Z  WI-15 VERIFY  ran the real thing end to end outside the suite: new_session over a generated maze with compose = lambda s: compose_frame(s, status_row(s.score.points, s.outcome)), 40 ticks -> 41 frames, 30x40, row 29 reads 'score 0    arrows, q quits' then 13 blanks, q -> Phase.ENDED, failure None
+05:06:37Z  WI-15 TEST    533 passed, 0 failed, 0 skipped after merging origin/main (a08b11b) — /usr/bin/python3 -m unittest discover -t . -s . -p "test_*.py"

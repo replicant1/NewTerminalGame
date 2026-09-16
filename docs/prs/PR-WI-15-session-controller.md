@@ -140,6 +140,35 @@ that all have their own tests:
 **No mutation test was written and no working code was broken to watch a test
 go red.** That is prohibited and none was invented.
 
+## WI-12 landed while this branch was open, and the seam holds
+
+`origin/main` moved to `a08b11b` (PR #45) part-way through; it was merged
+onto this branch cleanly, with no conflicts.
+
+**DEV-B's `compose_frame(state, status_row, walls=...)` takes two arguments
+where this seam takes one. That is differently spelled, not wrong**, so
+section 2's "conforming would change behaviour" case does not arise and
+nothing needs settling between us. The plan requires WI-12 to take row 29
+**as a value** and never compose its text, so binding WI-13's row in is the
+*caller's* job — which is this item and, concretely, two lines in WI-18:
+
+```python
+def compose(state):
+    return compose_frame(state, status_row(state.score.points, state.outcome))
+```
+
+**WI-19 should use exactly that** rather than a third arrangement.
+
+**Verified end to end, outside the suite**, against the real composer, the
+real wall glyphs, the real status line and a real generated maze:
+
+```
+new_session(generate_maze(Random(1)), compose=<the two lines above>, ...)
+start() + 40 ticks -> 41 frames, each 30 x 40
+row 29 -> 'score 0    arrows, q quits              '
+quit()  -> Phase.ENDED, failure None
+```
+
 ## Nothing here opens a window
 
 Pure Application. Measured after this branch: `tkinter._default_root` is
@@ -157,13 +186,14 @@ Run from the repository root:
 ```
 
 ```
-Ran 446 tests in 3.813s
+Ran 533 tests in 4.161s
 
 OK
 ```
 
-**446 passed, 0 failed, 0 skipped.** 402 were on `main` at `671f0e5`; **44
-are WI-15's.**
+**533 passed, 0 failed, 0 skipped**, on this branch with `origin/main` at
+`a08b11b` merged onto it. **44 are WI-15's** (446 before WI-8 and WI-12
+landed, of which 402 were `main` at `671f0e5`).
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
