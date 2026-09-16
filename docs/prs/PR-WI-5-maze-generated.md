@@ -98,26 +98,64 @@ verify step; `maze_invariants` gets its own tests against hand-built mazes with
 known faults. For the single algorithm most likely to ship subtly wrong, two
 independent statements of the same property is the point, not duplication.
 
+## The specimen picture, measured
+
+`docs/findings/WI-5-specimen-grid-structure.md` records what the maze in
+`FUNCTIONAL_REQUIREMENTS.md` is actually made of, because WI-6, WI-8 and
+WI-12 all need the numbers:
+
+- all 29 maze rows are **exactly 37 characters** — which **corroborates the
+  plan's contradiction C-1 independently**, against the architecture's prose
+  claim of 38 and a 2-column margin;
+- **all 126 odd/odd squares are corridor and all 190 even/even squares are
+  wall**, in all 551 squares with no exceptions, so the coordinate scheme
+  above is not merely compatible with the picture, it is the picture;
+- **264 corridor squares**, no dead ends, nothing unreachable, no two-wide
+  block;
+- generated mazes hold **260 to 272 corridor squares, mean 265.5**, so
+  **WI-6 should expect roughly 265 dots**;
+- seeded generation is **byte-identical across `PYTHONHASHSEED` values**
+  (checked at 0, 1, 12345 and twice at random), which is what lets WI-19's
+  scripted game assert frames from a seed.
+
 ## Suite
 
 ```
 /usr/bin/python3 -m unittest discover -t . -s . -p "test_*.py"
 ```
 
-Counts are in the final comment on this PR and in
-`docs/completions/COMPLETION-M0-DEV-A.md`.
+```
+Ran 68 tests in 3.0s
+
+OK
+```
+
+**68 passed, 0 failed, 0 skipped.** The tree had no suite before this branch,
+so all 68 are WI-5's. None opens a window, reads a clock, or reaches for a
+global random source.
 
 ## Deviations from the work item as written
 
 None in substance. Names, module layout and the test tree are mine, as section
-1 of the plan allows. Two additions worth a ruling only if the lead disagrees:
+1 of the plan allows. Four things are additive and want a ruling only if the
+lead disagrees:
 
-- **`terminalgame/` as the root package with a `domain/` subpackage.** Nothing
-  existed to follow. A four-package layer layout is the most useful thing to
-  leave for WI-10's architecture guard.
+- **`terminalgame/` as the root package with a `domain/` subpackage**, and
+  tests in a parallel `tests/domain/`. Nothing existed to follow. A layer per
+  package is the most useful thing to leave for WI-10's architecture guard.
 - **`maze_invariants.py` as a module of its own**, rather than private helpers
   inside the generator. It makes the verify step testable on inputs with known
   faults, and WI-6 and WI-11 may want the same predicates.
+- **`generate_maze` takes optional `width` and `height`**, defaulting to the
+  19 × 29 of MAZE-1. Only the tests pass anything else; it is there so the
+  algorithm can be shown not to be tuned to one size.
+- **Deliberate overlap between `test_maze_generator.py` and
+  `test_maze_invariants.py`.** The generator's verify step and the property
+  sweep state the same requirements twice, independently. Normally that would
+  fall foul of "assert the seam, not both sides of it"; here it is the direct
+  answer to caution C4, which asks for the properties to be verified before
+  the maze is handed out *and* tested over many seeds. Flagged rather than
+  hidden, so the lead can rule.
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 

@@ -16,3 +16,4 @@
 04:36:57Z  VERIFY  timing: generate+verify x200 = 0.94s, of which carve+braid+grid 0.18s and structural verification 0.78s. Verification is ~4ms per maze, paid once per game in production.
 04:37:37Z  TEST    68 passed, 0 failed, 0 skipped  (/usr/bin/python3 -m unittest discover -t . -s . -p "test_*.py", 3.02s)
 04:37:37Z  DRAFT   docs/findings/WI-5-specimen-grid-structure.md
+04:38:07Z  VERIFY  PYTHONHASHSEED 0, 1, 12345 and twice at random all produce the identical sha256 over 50 seeded mazes (aed6cb3cea2af6ab). MAZE-4 reproducibility does not depend on hash ordering, which WI-19 s scripted game will rely on.

@@ -75,6 +75,19 @@ characters.** 19 squares × 2 columns, less the final connector column. In a
 ruling — 37 and a 3-column margin — is what the picture says, and the
 architecture's prose arithmetic is the only thing that disagrees.
 
+## Reproducibility does not depend on hash ordering
+
+**Why this was checked:** WI-19's scripted game plays a whole seeded game and
+asserts the frames as text. If a seeded maze varied between runs, that test
+would be flaky in a way that is very hard to read.
+
+`/usr/bin/python3` was run five times over the same 50 seeds — with
+`PYTHONHASHSEED` set to `0`, `1`, `12345`, and twice to `random` — taking a
+SHA-256 over the 50 mazes each time. **All five runs gave the identical digest
+`aed6cb3cea2af6ab…`.** The generator's draws all come from ordered lists, so
+set iteration order never reaches a decision. A seed is enough to reproduce a
+maze exactly.
+
 ## Timing, for whoever watches the suite
 
 Also measured, on `/usr/bin/python3` 3.9.6:
