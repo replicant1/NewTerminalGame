@@ -14,23 +14,25 @@ own *every other key means nothing*.  Re-asserting any of them here would turn
 one defect into several red files across several items, which is the thing
 section 4 of the plan tells us not to do.
 
-So this module owns four joins and one rule that nothing owned before:
+So this module owns three joins and one rule that nothing owned before:
 
 * the exercise script is **bounded** and cannot be asked for something that
   would never happen;
 * its report tells the truth about reaping and about failure;
 * :func:`exit_code_for` **notices a failure the event loop did not raise** —
-  the hazard WI-18 inherits;
-* a key becomes a move, a quit, or nothing, *at the session*;
+  the hazard WI-18 inherited, and now checks for itself;
 * **no production module constructs a text-entry widget**, which is SCRN-7's
   half that lives in the window rather than on the surface.
+
+*What used to be here and no longer is:* the key-to-intent dispatch.  It
+belonged to nobody when this was written; WI-18 has since landed the real
+one and ``tests/test_game.py`` owns it.
 """
 
 import ast
 import os
 import unittest
 
-from terminal_game.domain.maze import Direction
 from terminal_game.shell.toolkit import KeyPress, PixelSize
 from tools.window_manners import (
     DEFAULT_LIFETIME_MS,
@@ -236,12 +238,19 @@ class NoticingAFailureTheLoopDidNotRaiseTest(unittest.TestCase):
             self.assertFalse(expected_to_fail(clean))
 
 
-class AKeyReachingTheSessionTest(unittest.TestCase):
-    """The join, and only the join.
+class TheExercisesNotebookTest(unittest.TestCase):
+    """What the ``keys`` exercise records, and only that.
 
-    What each keysym *means* is WI-9's and has 40-odd tests of its own; what
-    the session does with a move is WI-15's.  This owns the three lines in
-    between: that the intent is acted on rather than merely computed.
+    **The dispatch itself is no longer here.**  When this module was written
+    WI-18 had not landed and :class:`KeyDispatcher` did its own translating;
+    it now delegates to WI-18's
+    :class:`~terminal_game.shell.game.GameCollaborator`, whose tests in
+    ``tests/test_game.py`` own *an arrow becomes a move, ``q`` becomes a
+    quit, an unmapped key becomes nothing*.  Re-asserting that here would
+    turn one defect in three lines into two red files.
+
+    What is left is the notebook, which is genuinely this script's: without
+    it the exercise's report could not show an arrow key becoming a move.
     """
 
     def setUp(self):
@@ -251,53 +260,28 @@ class AKeyReachingTheSessionTest(unittest.TestCase):
     def press(self, keysym, char=""):
         self.dispatcher.on_key(KeyPress(keysym=keysym, char=char))
 
-    def test_an_arrow_reaches_the_session_as_a_move_in_that_direction(self):
-        self.press("Up")
-
-        self.assertEqual([("move", Direction.NORTH)], self.session.asked)
-
-    def test_each_of_the_four_arrows_arrives_as_its_own_direction(self):
-        for keysym in ("Up", "Down", "Left", "Right"):
-            self.press(keysym)
-
-        self.assertEqual(
-            [
-                ("move", Direction.NORTH),
-                ("move", Direction.SOUTH),
-                ("move", Direction.WEST),
-                ("move", Direction.EAST),
-            ],
-            self.session.asked,
-        )
-
-    def test_q_reaches_the_session_as_a_quit(self):
-        self.press("q", "q")
-
-        self.assertEqual([("quit", None)], self.session.asked)
-
-    def test_an_unmapped_key_asks_the_session_for_nothing_at_all(self):
-        # CTRL-5 at the join: not "translates to None", which is WI-9's, but
-        # "the session is never told about it", which is this.
-        for keysym, char in (("z", "z"), ("Escape", ""), ("F5", ""), ("space", " ")):
-            self.press(keysym, char)
-
-        self.assertEqual([], self.session.asked)
-
-    def test_a_tick_reaches_the_session_as_a_tick(self):
-        self.dispatcher.on_tick()
-
-        self.assertEqual([("tick", None)], self.session.asked)
-        self.assertEqual(1, self.dispatcher.ticks)
-
-    def test_the_dispatcher_records_what_each_key_became(self):
-        # So that the report can show an arrow becoming a move rather than
-        # asserting it did.
+    def test_it_records_every_key_and_what_each_one_became(self):
         self.press("Left")
         self.press("z", "z")
         self.press("Q", "Q")
 
         self.assertEqual(["Left", "z", "Q"], self.dispatcher.keys_delivered)
         self.assertEqual(["move", None, "quit"], self.dispatcher.intents)
+
+    def test_it_counts_the_ticks_it_passed_on(self):
+        self.dispatcher.on_tick()
+        self.dispatcher.on_tick()
+
+        self.assertEqual(2, self.dispatcher.ticks)
+        self.assertEqual([("tick", None), ("tick", None)], self.session.asked)
+
+    def test_it_notes_where_the_player_was_after_each_key(self):
+        # Recorded from the session rather than worked out, which is what
+        # lets the report show a move having happened.
+        self.press("Up")
+        self.press("z", "z")
+
+        self.assertEqual(2, len(self.dispatcher.player_after_each_key))
 
 
 class TheDeliberateFailureIsAnInputNotAMutationTest(unittest.TestCase):
