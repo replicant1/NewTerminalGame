@@ -75,6 +75,21 @@ class TkToolkit(Toolkit):
         # the window away and leave the process running.
         root.protocol("WM_DELETE_WINDOW", self._on_close_request)
         root.bind("<Key>", self._on_key)
+
+        # Claim the keyboard, once, as the window opens.
+        #
+        # Measured in WI-4 (docs/findings/WI-4-first-window.md): with
+        # ``canvas.focus_set()`` alone, Tk's own focus is on the canvas and
+        # the binding is on the right tag, and yet **no key event is
+        # delivered at all**.  The toplevel needs the operating system's
+        # keyboard focus first.  Without this the player gets a window that
+        # ignores the arrow keys and ignores ``q`` — and CTRL-4 and END-6
+        # make ``q`` the only way out of a finished game.
+        #
+        # Taking focus is the right manners here rather than the wrong ones:
+        # the player has just launched a game and expects to type into it.
+        root.lift()
+        root.focus_force()
         canvas.focus_set()
 
         # Measured on this machine (docs/findings/WI-3-tk-window-probe.md):

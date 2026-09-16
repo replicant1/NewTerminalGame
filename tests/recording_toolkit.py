@@ -33,8 +33,15 @@ class RecordingToolkit(Toolkit):
         #: can make something happen inside the loop.
         self.event_loop_body: Optional[Callable[[], None]] = None
 
-        self._pending: "dict[int, Tuple[int, Callable[[], None]]]" = {}
+        # handle -> (due_ms, delay_ms, callback). Virtual time, because a
+        # real scheduler fires by when a callback is *due* and not by the
+        # order things were asked for: the skeleton schedules its ten-second
+        # deadline before the event loop starts the 143 ms tick, and firing
+        # those in the order they were asked for would be nothing like what
+        # happens.
+        self._pending = {}
         self._next_handle = 1
+        self.now_ms = 0
 
     # -- what the Toolkit seam requires --------------------------------
 
@@ -57,7 +64,7 @@ class RecordingToolkit(Toolkit):
     def schedule_once(self, delay_ms: int, callback):
         handle = self._next_handle
         self._next_handle += 1
-        self._pending[handle] = (delay_ms, callback)
+        self._pending[handle] = (self.now_ms + delay_ms, delay_ms, callback)
         self.operations.append(("schedule_once", delay_ms))
         return handle
 
@@ -97,13 +104,18 @@ class RecordingToolkit(Toolkit):
         return self.names.index(name)
 
     def fire_due_timer(self) -> int:
-        """Fire the earliest-scheduled outstanding callback; return its delay."""
+        """Fire whichever callback is due soonest; return the delay it asked for.
+
+        Ties are broken by the order they were scheduled, as a real
+        scheduler does. Virtual time moves forward to the moment it fired.
+        """
         if not self._pending:
             raise AssertionError("nothing is scheduled")
-        handle = min(self._pending)
-        delay, callback = self._pending.pop(handle)
+        handle = min(self._pending, key=lambda h: (self._pending[h][0], h))
+        due_ms, delay_ms, callback = self._pending.pop(handle)
+        self.now_ms = due_ms
         callback()
-        return delay
+        return delay_ms
 
     def press(self, keysym: str, char: str = "") -> KeyPress:
         """Deliver a key press through whatever handler was bound."""
