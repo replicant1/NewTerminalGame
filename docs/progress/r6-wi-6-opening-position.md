@@ -7,3 +7,6 @@
 04:46:25Z  TEST    221 passed, 0 failed, 0 skipped  (/usr/bin/python3 -m unittest discover -t . -s . -p "test_*.py", 3.46s). 54 of them are WI-6 s.
 04:46:25Z  NOTE    WI-6 s first run took the suite from 3.3s to 8.5s because six sweeps each regenerated 200 mazes. Added tests/domain/generated_mazes.py, a shared cache deliberately not named test_*, and the suite is back to 3.46s with 54 more tests in it.
 04:46:25Z  VERIFY  the finished opening_position reproduces the measurement taken before it was written: player (9,14) x115 and (9,13) x85; ghost (1,1) x115 and (1,27) x85; dots 259 to 271, mean 264.5, always one fewer than the corridor count.
+04:47:50Z  MERGE   origin/main brought onto the branch: WI-2 and WI-2a from DEV-B landed since. Clean, no conflict.
+04:47:50Z  NOTE    WI-2 flattened DEV-C s tests/shell into tests/, leaving tests/domain as the only nested directory. Flattened WI-5 and WI-6 s tests to match, so the convention now has no exceptions. Second move for these files; the churn itself is worth reporting.
+04:47:50Z  TEST    282 passed, 0 failed, 0 skipped  (/usr/bin/python3 -m unittest discover -t . -s . -p "test_*.py", 3.7s)

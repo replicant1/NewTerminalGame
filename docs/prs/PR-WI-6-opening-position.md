@@ -53,7 +53,7 @@ deliberate act with a failing test in front of it.
 
 The requirement says the ghost begins on the corridor square furthest from
 the player *"measured across the grid rather than along the corridors"*. That
-is not a redundant clarification. `tests/domain/test_opening_position.py`
+is not a redundant clarification. `tests/test_opening_position.py`
 builds a corridor that doubles back:
 
 ```
@@ -121,8 +121,8 @@ three-digit number, which is the case WI-13's status line has to fit.
 
 ## Tests
 
-`tests/domain/test_dot_field.py`, `tests/domain/test_game_state.py`,
-`tests/domain/test_opening_position.py`, and one new shared fixture module.
+`tests/test_dot_field.py`, `tests/test_game_state.py`,
+`tests/test_opening_position.py`, and one new shared fixture module.
 
 The start-square rules are checked twice over: on hand-built mazes where the
 answer can be worked out by hand and written into the test, and over the 200
@@ -136,20 +136,38 @@ square** rather than against a number somebody typed.
 ```
 
 ```
-Ran 221 tests in 3.5s
+Ran 282 tests in 3.7s
 
 OK
 ```
 
-**221 passed, 0 failed, 0 skipped** — 54 of them WI-6's, on top of 167 from
-WI-1, WI-3 and WI-5.
+**282 passed, 0 failed, 0 skipped**, with `origin/main` merged in so WI-1,
+WI-2, WI-3, WI-5 and WI-6 are all present. 54 of them are WI-6's.
 
 **A note on that time.** WI-6's six 200-seed sweeps first took the suite from
 3.3 s to **8.5 s**, because each sweep laid out its own 200 mazes. They now
-share one set through `tests/domain/generated_mazes.py`, deliberately not
-named `test_*` so discovery ignores it, and the suite is **3.46 s with 54
-more tests in it than before**. Worth knowing for whoever adds the next
-sweep.
+share one set through `tests/generated_mazes.py`, deliberately not named
+`test_*` so discovery ignores it, and the suite is **3.7 s with 115 more
+tests in it than when it was 3.3 s**. Worth knowing for whoever adds the next
+sweep: the sweep is worth its second, but not six of them.
+
+## Test layout: flattened, to end the churn
+
+WI-5's tests were nested in `tests/domain/`, mirroring `terminal_game/`.
+This branch **flattens them into `tests/`**, because DEV-B's WI-2 flattened
+`tests/shell/` in the meantime and mine was the last nested directory left.
+
+That is the second time these files have moved, and the reason is worth
+recording rather than hiding: **the plan left the test layout to the
+developers, three lanes independently chose, and two rounds of reshuffling
+followed.** It cost nothing but commits — the pinned discovery command finds
+both shapes, and no test ever failed over it — but it is the kind of thing
+one sentence in the plan would have prevented. See the report.
+
+The convention now has no exceptions: `tests/test_*.py` flat, with shared
+fixtures alongside under names discovery ignores (`generated_mazes.py`,
+`specimen.py`, `doubles.py`, `recording_toolkit.py`). **Nobody should move
+them again.**
 
 ## Deviations needing a ruling
 

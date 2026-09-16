@@ -74,7 +74,7 @@ If it is wanted, the change is confined to `ghost_start_square` in
 `random_source.choice(...)` over the tied squares. Its callers are
 `opening_position` and, later, WI-18's entry point, both of which have a
 random source in hand already. The tests that would change are the two
-hand-built cases in `tests/domain/test_opening_position.py`; the 200-seed
+hand-built cases in `tests/test_opening_position.py`; the 200-seed
 property tests assert *"no corridor square is further"* and would pass either
 way, which is as it should be.
 
