@@ -24,6 +24,7 @@ from terminal_game.shell.anchor import (
     ScreenBounds,
     WindowAnchor,
     brought_onto_screen,
+    is_on_screen,
     no_anchor,
 )
 from terminal_game.shell.toolkit import PixelSize, ScreenPosition
@@ -275,6 +276,43 @@ class TheFallbackIsNotClamped(unittest.TestCase):
         self.assertLess(
             FALLBACK_POSITION.y + GAME_WINDOW.height, 768
         )
+
+
+class APointOnASecondDisplayIsNotAPointWeCanUse(unittest.TestCase):
+    """The case the real machine turned up, and the reason it matters.
+
+    Measured on this machine, Tk 8.5.9 on aqua: the pointer read
+    ``(-175, -448)`` while ``winfo_screenwidth``/``height`` and
+    ``winfo_vrootwidth``/``height`` all reported ``1512 x 982``. The pointer
+    was on a display up and to the left of the primary, and nothing Tk
+    offers gives that display's rectangle — ``maxsize()`` said
+    ``(5120, 2422)``, so it knows the desktop is bigger, but not where it
+    starts. See ``docs/findings/WI-14-anchor-query.md``.
+
+    An anchor we cannot bound is an anchor we cannot keep a window inside
+    of, and WIN-4's purpose is that the window lands somewhere visible.
+    """
+
+    SCREEN = ScreenBounds(width=1512, height=982)
+
+    def test_the_position_measured_on_this_machine_is_not_on_the_screen(self):
+        self.assertFalse(
+            is_on_screen(ScreenPosition(-175, -448), self.SCREEN)
+        )
+
+    def test_a_point_on_the_primary_display_is(self):
+        self.assertTrue(is_on_screen(ScreenPosition(700, 400), self.SCREEN))
+
+    def test_the_top_left_corner_counts_and_the_far_edge_does_not(self):
+        self.assertTrue(is_on_screen(ScreenPosition(0, 0), self.SCREEN))
+        self.assertFalse(is_on_screen(ScreenPosition(1512, 0), self.SCREEN))
+        self.assertFalse(is_on_screen(ScreenPosition(0, 982), self.SCREEN))
+
+    def test_a_point_past_the_far_edge_is_not_on_the_screen_either(self):
+        """Not only negatives. A display to the *right* of the primary puts
+        the pointer past 1512, and that is just as unbounded.
+        """
+        self.assertFalse(is_on_screen(ScreenPosition(2400, 400), self.SCREEN))
 
 
 class TheValuesAreWhatTheyClaimToBe(unittest.TestCase):

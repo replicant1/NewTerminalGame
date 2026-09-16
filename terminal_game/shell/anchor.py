@@ -53,6 +53,7 @@ __all__ = [
     "ANCHOR_OFFSET",
     "FALLBACK_POSITION",
     "no_anchor",
+    "is_on_screen",
     "brought_onto_screen",
     "WindowAnchor",
 ]
@@ -103,6 +104,21 @@ def no_anchor() -> Optional[Anchor]:
     something a reader can see rather than infer.
     """
     return None
+
+
+def is_on_screen(position: ScreenPosition, screen: ScreenBounds) -> bool:
+    """Is *position* a point on the screen *screen* describes?
+
+    Sounds trivial and is not.  Tk reports the pointer in the whole
+    desktop's coordinates, which on a machine with more than one display can
+    be **negative or past the far edge** of the display it can tell you the
+    size of — measured on this machine at ``(-175, -448)`` against a primary
+    of 1512 x 982.  A point outside the only bounds we have is a point we
+    cannot keep a window inside of, which is what makes it worth a name.
+    """
+    return (
+        0 <= position.x < screen.width and 0 <= position.y < screen.height
+    )
 
 
 def brought_onto_screen(

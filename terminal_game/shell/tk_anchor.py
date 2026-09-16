@@ -44,18 +44,49 @@ from __future__ import annotations
 
 from typing import Optional
 
-from .anchor import Anchor, ScreenBounds
+from .anchor import Anchor, ScreenBounds, is_on_screen
 from .toolkit import ScreenPosition
 
 __all__ = ["pointer_anchor"]
 
 
 def pointer_anchor() -> Optional[Anchor]:
-    """Where the mouse pointer is, and how big its screen is.
+    """Where the mouse pointer is, and how big the screen it is on is.
 
-    Returns ``None`` rather than raising if the toolkit is not there or
-    cannot answer — a machine with no display is a machine where the
-    fallback is the right answer, not a reason to fail to start.
+    ``None`` when there is no usable answer, and there are three ways to get
+    one — no toolkit, a toolkit that will not answer, and the interesting
+    one below.  All three mean the same thing to the caller: use the
+    fallback.  A machine that cannot say where its pointer is is not a
+    reason to fail to start.
+
+    **A pointer on a second display is treated as nothing seen, and that is
+    measured rather than assumed.**  Tk reports the pointer in the whole
+    desktop's coordinates, but ``winfo_screenwidth``/``winfo_screenheight``
+    and ``winfo_vrootwidth``/``winfo_vrootheight`` all report the **primary
+    display alone**.  On this machine, with Tk 8.5.9 on aqua:
+
+    ==============================  ===================
+    ``winfo_pointerxy()``           ``(-175, -448)``
+    ``winfo_screenwidth/height``    ``1512 x 982``
+    ``winfo_vrootwidth/height``     ``1512 x 982``
+    ``maxsize()``                   ``(5120, 2422)``
+    ==============================  ===================
+
+    The pointer was on a display up and to the left of the primary, and
+    nothing Tk offers gives that display's rectangle: ``maxsize`` knows the
+    desktop is bigger but not where it starts, so it cannot bound anything.
+
+    An anchor we cannot bound is an anchor we cannot keep a window inside
+    of, and **WIN-4's purpose is that the window lands somewhere visible**.
+    Placing it at an unbounded pointer risks a window half off the edge of a
+    display; falling back puts it at a fixed position on the primary, where
+    it is certainly visible. Visibility is the requirement, so the fallback
+    wins.
+
+    This replaces a guard first written on a guess — that Tk answers
+    ``-1, -1`` when it cannot say. It does not; it answers with real
+    coordinates that happen to be negative, and the guess would have been
+    right by accident on this machine and wrong on the next one.
     """
     try:
         import tkinter
@@ -67,7 +98,9 @@ def pointer_anchor() -> Optional[Anchor]:
         root = tkinter.Tk()
         # Before anything can be mapped: no window, no focus, no flash.
         root.withdraw()
-        pointer_x, pointer_y = root.winfo_pointerxy()
+        pointer = ScreenPosition(
+            x=int(root.winfo_pointerx()), y=int(root.winfo_pointery())
+        )
         screen = ScreenBounds(
             width=int(root.winfo_screenwidth()),
             height=int(root.winfo_screenheight()),
@@ -81,10 +114,6 @@ def pointer_anchor() -> Optional[Anchor]:
             except Exception:
                 pass
 
-    if pointer_x < 0 or pointer_y < 0:
-        # Tk answers -1, -1 when it cannot say where the pointer is.
+    if not is_on_screen(pointer, screen):
         return None
-    return Anchor(
-        position=ScreenPosition(x=int(pointer_x), y=int(pointer_y)),
-        screen=screen,
-    )
+    return Anchor(position=pointer, screen=screen)

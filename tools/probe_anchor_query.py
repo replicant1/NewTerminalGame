@@ -72,6 +72,70 @@ def _die(signum, frame):  # pragma: no cover - only fires on a hang
     os._exit(2)
 
 
+def _report_what_tk_will_say() -> None:
+    """The raw readings behind the query's answer.
+
+    Printed because *why* the query said what it said is the interesting
+    part: a pointer outside the only bounds Tk will report is the case that
+    makes the fallback fire on a multi-display machine, and a reader of the
+    findings document needs the numbers to tell that from a failure.
+
+    Withdrawn root, no event loop, destroyed in a ``finally``, exactly as
+    the real query does it.
+    """
+    try:
+        import tkinter
+    except Exception as failure:
+        print("what Tk will say: tkinter unavailable ({0!r})".format(failure))
+        return
+
+    root = None
+    try:
+        root = tkinter.Tk()
+        root.withdraw()
+        readings = (
+            ("windowing system", root.tk.call("tk", "windowingsystem")),
+            ("Tk patchlevel", root.tk.call("info", "patchlevel")),
+            ("pointer", root.winfo_pointerxy()),
+            (
+                "screen (primary)",
+                (root.winfo_screenwidth(), root.winfo_screenheight()),
+            ),
+            (
+                "virtual root",
+                (
+                    root.winfo_vrootx(),
+                    root.winfo_vrooty(),
+                    root.winfo_vrootwidth(),
+                    root.winfo_vrootheight(),
+                ),
+            ),
+            ("maxsize", root.maxsize()),
+            ("root mapped", bool(root.winfo_ismapped())),
+            ("root state", root.state()),
+        )
+    except Exception as failure:
+        print("what Tk will say: query failed ({0!r})".format(failure))
+        return
+    finally:
+        if root is not None:
+            try:
+                root.destroy()
+            except Exception:
+                pass
+
+    print("what Tk will say about the displays")
+    for name, value in readings:
+        print("  {0:<18}: {1}".format(name, value))
+    print(
+        "  note              : screen and virtual root describe the PRIMARY\n"
+        "                      display only. A pointer outside them is on\n"
+        "                      another display whose rectangle Tk will not\n"
+        "                      give, so it cannot be used as an anchor."
+    )
+    print("")
+
+
 def main() -> int:
     signal.signal(signal.SIGALRM, _die)
     signal.alarm(DEADLINE_SECONDS)
@@ -92,6 +156,8 @@ def main() -> int:
         "this is\n  evidence about whether one appeared."
     )
     print("")
+
+    _report_what_tk_will_say()
 
     placed = WindowAnchor(lambda: anchor).position_for(GAME_WINDOW)
     print("where a {0}x{1} window would go".format(*GAME_WINDOW))
