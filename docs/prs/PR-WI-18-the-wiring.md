@@ -92,6 +92,25 @@ duplicated dispatch tests in `tests/test_window_manners.py` are replaced by thre
 assert the notebook. Both are my own landed files in both directions, which is the only
 reason this was mine to do.
 
+## One conflict with WI-20a, resolved — **and it touched DEV-C's file**
+
+Merging `origin/main` brought DEV-C's specification sweep in, and its completeness test
+went red. Not a textual conflict: `docs/TRACEABILITY.md` cites
+`tests/test_window_manners.py::AKeyReachingTheSessionTest::test_an_unmapped_key_asks_the_session_for_nothing_at_all`
+as one of three pins for **CTRL-5**, and this branch **moved that test** — same class name,
+same method name — into `tests/test_game.py`, because the throwaway dispatch it covered was
+replaced by the production `GameCollaborator`.
+
+**Resolved by updating the path in that one citation, and adding WI-18 to the row's
+work-item column.** That is the smallest change that leaves the document true. Nothing the
+sweep *claims* has changed, CTRL-5 is still pinned by three tests, and the pin is arguably
+stronger: it now names the production collaborator rather than a script's wrapper.
+
+**DEV-C, this is the one line of yours I touched, and I would rather you knew than
+found it.** The alternative was keeping a duplicate test alive purely to satisfy a
+citation, which would have been the wrong reason to keep a test. It is relayed through the
+conductor as well as being here.
+
 ## Deviations, stated as deviations
 
 * **`tools/play_the_game.py`** — four bounded, self-closing exercises against the assembled
@@ -112,9 +131,46 @@ reason this was mine to do.
 * **The branch was cut from `a9af24a`, not the `e44d9cc` I was given** — WI-19 landed in
   between and `a9af24a` is its merge, so cutting from the tip avoided an immediate merge.
 
+## What four real windows said
+
+Full numbers in `docs/findings/WI-18-the-game-on-screen.md`. **Four windows, four reaped,
+no orphan.** This is *"covered by observation, not by test"*: the suite cannot reach any of
+it, because it is forbidden from constructing a toolkit interpreter.
+
+**The game ran, and it played.** `first-frame`: title `Terminal Game`, 400 × 570 from Menlo
+16pt at 10 × 19 a cell, **706 canvas items and every one of kind `text`** — SCRN-2 on the
+real generated maze — and **8 frames painted in 1.188 s with nothing pressed**, which is
+START-5 and GHOST-1 observed rather than inferred. `played`: six real keys, **the player
+moved and the score reached 2**; `Left` into a wall cost nothing (CTRL-3), `Down` onto an
+eaten square scored nothing (SCORE-3), `z` did nothing (CTRL-5), `q` ended it.
+
+**Trap 1, closed.** `crash` reproduced every one of WI-17's measurements — window reaped,
+phase Ended, **stderr empty**, the exception **not** coming out of `run()`, `error`
+**null** — and the process exited **1**. Nothing about the failure became visible; the exit
+code changed anyway. That run matters more than the test that pins it, because a test
+asserting that a check performs the check is close to agreeing with itself.
+
+**Trap 2, closed.** `close` left the session's phase **`ended`**, where WI-17 measured
+**`playing`** on the same route. One word, and it is the difference between a clean exit
+and a silent crash — with the phase left at `playing` the session's shutdown never ran and
+trap 1's check was skipped on every close-button exit.
+
+**Nothing was echoed** on any of the four runs: `stdout` and `stderr` empty strings
+throughout, the crash included.
+
 ## Contradictions found
 
-*(To be completed after the on-screen exercises.)*
+**None in the plan or the architecture.** Everything WI-17 measured reproduced exactly.
+
+**C-7 confirmed, and in the better of the two ways.** The window opened at the fixed
+fallback (120, 120) on all four runs, and the report shows `anchor_query_saw_something:
+false` with `anchor_query_failure: null` — so the query **ran and saw nothing**. It did not
+fail and it did not prompt, which is the distinction C-7 rests on, recorded rather than
+inferred.
+
+**A11 deliberately untouched.** No modifier state crosses the key seam, so control-Up moves
+the player. Amendment 9 ruled it a known gap; `GameCollaborator` passes the `KeyPress`
+through unchanged, so widening the seam later costs nothing here.
 
 ## What still needs a human
 
