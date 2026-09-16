@@ -23,8 +23,11 @@ What is here so far:
   (WI-6).
 * :mod:`terminal_game.domain.opening_position` — where everything stands the
   moment the window opens, as a pure function of the maze (WI-6).
+* :mod:`terminal_game.domain.ghost` — ``next_step``: straight on while the
+  corridor allows it, otherwise one of the *other* ways on at random, and
+  back the way it came only as a last resort.  The player is not a
+  parameter, so it cannot hunt even by mistake (WI-7).
 
-Still to come: the ghost's movement policy (WI-7) and the turn resolver, in
-which the fixed order of the rules of a turn lives in one readable place
-(WI-11).
+Still to come: the turn resolver, in which the fixed order of the rules of a
+turn lives in one readable place (WI-11).
 """
