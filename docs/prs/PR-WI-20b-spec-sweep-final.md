@@ -1,8 +1,10 @@
 # WI-20b — the specification sweep, second landing
 
-**Branch** `r6/wi-20b-spec-sweep-final`, based on `main` at `06da112`.
+**Branch** `r6/wi-20b-spec-sweep-final`, based on `main` at `06da112`, with
+`origin/main` merged in at `03d0913` once **WI-21 (#66)** and **WI-22a (#67)**
+had landed.
 **Suite** `/usr/bin/python3 -m unittest discover -t . -s . -p "test_*.py"` →
-**766 passed, 0 failed, 0 skipped** (747 on `main`, +19 here).
+**815 passed, 0 failed, 0 skipped** (796 on `main` after those two, +19 here).
 
 ---
 
@@ -47,8 +49,8 @@ a test that stops anyone ticking it later.
 `tk_grid.measure_metrics` and `tk_grid.create_surface` both construct a toolkit
 interpreter, which house rule 5 forbids the suite. They are *covered by
 observation, not by test* in exactly the sense amendment 9 names: the
-observations are recorded in four findings and in the project window ledger
-(**30 windows opened, 30 reaped, no modal sheet ever raised**) and cited from
+observations are recorded in five findings and in the project window ledger
+(**39 windows opened, 39 reaped, no modal sheet ever raised**) and cited from
 the section. **No row anywhere claims test coverage for them**, and there is a
 test that keeps it that way.
 
@@ -67,6 +69,24 @@ view and not against a game screen.
 
 **A9 is honoured.** A whole game is worth **259–271** points, so no row claims
 274 as an achieved score. It is a formatting exemplar and nothing else.
+
+## One correction I was asked to check rather than take on trust, and it did not hold
+
+The conductor relayed that WI-21's second window *"reached phase `ended` with
+nothing pressed at all"*, offered as a correction to *"nobody has played a whole
+game"*, and told me to check WI-21's findings rather than treat that sentence as
+final. **I checked, and the original row stands.**
+
+`ended` is the **session's phase** — the harness's own scheduled `quit` shutting
+the session down — and **not a game outcome.** WI-21's §9 records zero dots
+eaten on each of its six windows, and its §8 says in as many words: *"A whole
+game played to an ending. **Nobody has ever played one.**"*
+
+So the sweep keeps the row and now states the distinction explicitly, because
+it is exactly the kind of thing that gets rounded up on a second reading:
+**a phase of `ended` and an outcome of `CLEARED` or `CAUGHT` are different
+things, and only the second is missing.** Thirty-nine real windows, and not one
+of them reached an ending.
 
 ## Two corrections upward in honesty, not in coverage
 
@@ -101,23 +121,30 @@ a finished one that rounds an open question up to a tick is worse than none.
 | `CtrlFiveIsNotTicked` | CTRL-5 stops naming A11, stops saying modified arrows are not covered, or acquires a tick |
 | `NoRowClaimsTestCoverageForWhatOnlyAPersonHasSeen` | either untestable function is presented as pinned or offered a test citation, or the category phrase disappears |
 | `EveryOpenQuestionIsStillRecordedAsOpen` | any of A1, A2 revised, A3, A4, A7, A8, A9, A10, A11, C-7, the tie-break or the unplayed whole game stops being named in section 13 |
-| `EveryMeasurementThisRunTookIsCited` | any of the twelve findings stops being cited — the sweep is the only place left pointing at them once the spikes are gone |
+| `EveryMeasurementThisRunTookIsCited` | any of the thirteen findings stops being cited — the sweep is the only place left pointing at them once the spikes are gone |
 
 Each asserts a floor before it asserts anything else, so none can pass over an
-empty set. Listing the twelve findings explicitly rather than reading the
+empty set. Listing the thirteen findings explicitly rather than reading the
 directory means a finding added by a later item does not turn this red for the
 wrong reason.
 
-**The guard caught its own author.** I backticked
-`docs/findings/WI-21-the-five-questions.md`, which is not on disk yet, and
-`EveryDocumentTheSweepCitesExists` went red. That is the mechanism working: a
-backtick is a claim that a file exists, and the citation is now in plain text.
+**The guard caught its own author, twice, and both were real.** First I
+backticked `docs/findings/WI-21-the-five-questions.md` before WI-21 had landed
+and `EveryDocumentTheSweepCitesExists` went red — a backtick is a claim that a
+file exists. Then, on merging `origin/main`, `EveryTestTheSweepNamesExists`
+caught that **WI-22a had renamed**
+`tests/test_game.py::ThePictureTheSessionIsComposedWithTest::test_row_29_is_exactly_what_the_status_line_says_it_is`
+to `::test_the_session_is_composed_with_presentations_picture_function`. One
+citation line, and the new test is a *better* one for the claim SCRN-1 was
+making. **Neither would have been noticed by eye.**
 
 ## Proved against the real toolkit
 
-**Nothing.** This item opened no window, needed none, and asked for none.
-Everything it asserts about a real screen is **cited** from the twelve findings
-rather than re-derived, which is what the plan asks of it. `/usr/bin/python3 -m
+**Nothing.** This item opened no window, needed none, and asked for none, and
+never held the screen gate. Everything it asserts about a real screen is
+**cited** from the thirteen findings rather than re-derived, which is what the
+plan asks of it. The project ledger is unchanged by this lane and closes the
+run at **39 windows opened, 39 reaped, no modal sheet ever raised**. `/usr/bin/python3 -m
 terminal_game` was **not** run: section 4 rule 5 makes the finished game the one
 artefact no agent may start.
 
@@ -131,9 +158,10 @@ artefact no agent may start.
    to 9. No code, no test, no claim about behaviour.
 3. **The WI-21 findings document is cited as
    `WI-21-the-five-questions.md`, not the plan's `WI-21-human-answers.md`.**
-   WI-21 renamed it and flagged the rename for a ruling; I agree with the
-   reasoning and asked WI-21 directly on PR #66 rather than guessing. One line
-   to flip in each place if the lead prefers the planned name.
+   WI-21 renamed it and flagged the rename for a ruling; I asked WI-21 directly
+   on PR #66 rather than guessing and it confirmed that is the one and only
+   file it would add. One line to flip in each place if the lead prefers the
+   planned name.
 4. **Section 13 gained two columns** — *what a person does* and *what the answer
    costs* — where WI-20a had one. An open question a reader cannot act on is a
    complaint rather than a finding, and there is a test for the column.

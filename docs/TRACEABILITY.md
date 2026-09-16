@@ -5,10 +5,13 @@ names the evidence behind it, and no row is waiting on a work item. The
 "deliberately incomplete" notice that stood here between the two landings has
 been removed, which is the signal that the sweep is finished.
 
-**Complete does not mean everything is settled.** Eight questions are open and
-every one of them is recorded as open, with what a person has to do to close
-it, in section 13. **A gap written down is a different thing from a gap nobody
-noticed**, and telling the two apart is the whole purpose of this document.
+**Complete does not mean everything is settled.** **Thirteen things still want
+a person** — eight named assumptions, one contradiction, two observations only
+an eye can make, and two the user may simply want to know. Every one is
+recorded as open in section 13, with **what a person must do to close it** and
+what the answer would cost. **A gap written down is a different thing from a
+gap nobody noticed**, and telling the two apart is the whole purpose of this
+document.
 
 **Swept by:** DEV-C, run 6, in two landings into this one file —
 WI-20a created it, **WI-20b completed it in place**.
@@ -115,7 +118,8 @@ on-screen run this project has made ended `UNDECIDED`:
 | Where a whole game exists | Where it does not |
 | --- | --- |
 | `tests/test_scripted_game.py::AWholeSeededGame::test_the_game_is_won` — a seeded game played to a win, headless | `docs/findings/WI-18-the-game-on-screen.md` — **two dots eaten of 259–271**, ended by `q` |
-| `tests/test_scripted_game.py::TheLossPath::test_the_player_walking_into_the_ghost_loses_the_game` | `docs/findings/WI-17-real-window-manners.md` — four squares walked, ended by `q` |
+| `tests/test_scripted_game.py::TheLossPath::test_the_player_walking_into_the_ghost_loses_the_game` — a loss, headless | `docs/findings/WI-17-real-window-manners.md` — four squares walked, ended by `q` |
+| `tests/test_scripted_game.py::EndThreeInAWholeGame` — the precedence case, headless | `docs/findings/WI-21-the-five-questions.md` — **six windows, zero dots eaten**, each ended by its own scheduler |
 
 GAME-2 and END-1 to END-6 are pinned by those headless games and are not
 diminished by this. What is missing is one person playing one game to an
@@ -124,16 +128,25 @@ the only artefact no agent may run: the finished game is unbounded by design,
 `q` is the only way out of it, and launched by an agent nobody is there to
 press it.
 
+**One distinction worth pinning down, because it is easy to misread.** The
+second of WI-21's windows reached session phase **`ended` with nothing
+pressed** — but that is the session shutting itself down on the harness's own
+scheduled `quit`, **not a game reaching an outcome.** The game's outcome was
+`UNDECIDED` on that window as on all the others. WI-21 states it plainly in its
+§8: *"A whole game played to an ending. Nobody has ever played one."* **A phase
+of `ended` and an outcome of `CLEARED` or `CAUGHT` are different things, and
+only the second is what is missing.**
+
 ---
 
 ## 2. The window
 
 | Req | Item | What pins it | Status |
 | --- | --- | --- | --- |
-| WIN-1 | WI-3, WI-18 | `tests/test_window_owner.py::TheWindowItAsksForTest::test_opening_twice_creates_one_window`; the assembly asks for the game's own window and not another — `tests/test_game.py::TheEntryPointAssemblesTheRealThingTest::test_the_window_it_will_ask_for_is_the_games_own`. **Observed** 30 times over the run, every one reaped | **Pinned and observed** |
-| WIN-2 | WI-2, WI-3 | 40 × 30 from the metrics: `tests/test_grid_surface.py::HowManyPixelsFortyByThirtyNeeds::test_the_measured_metrics_give_a_four_hundred_by_five_seventy_window`. Black: `tests/test_window_owner.py::TheWindowItAsksForTest::test_it_is_black_and_cannot_be_resized`. **Observed**: 400 × 570 measured back off real windows in `docs/findings/WI-4-first-window.md`, `docs/findings/WI-17-real-window-manners.md` and `docs/findings/WI-18-the-game-on-screen.md` | **Pinned, caveated — A4.** *"Large enough to read comfortably"* is one font-size constant and no test can judge it. `docs/findings/WI-2-cell-metrics.md` gives the ladder — 14, 16, 18, 20pt and what each costs in pixels. **The function that takes the measurement has no test at all** — section 3a |
-| WIN-3 | WI-3 | `tests/test_window_owner.py::TheWindowItAsksForTest::test_it_is_titled_terminal_game`. **Observed** on 8 windows in `docs/findings/WI-16-the-look.md`, 5 in `docs/findings/WI-17-real-window-manners.md`, 4 in `docs/findings/WI-18-the-game-on-screen.md` and 3 in `docs/findings/WI-3-tk-window-probe.md` — title read back `Terminal Game` every time | **Pinned, caveated — A1.** The test pins what we *ask* for, and the observation is the toolkit reading back its own string. Neither is a person seeing a titlebar. **Needs a human — and five developers in a row have declined to call the read-back an answer** |
-| WIN-4 | WI-14 | `tests/test_anchor.py::GivenAnAnchorTheWindowGoesBelowAndToTheRight`, `tests/test_anchor.py::AWindowPastTheEdgeIsBroughtBack` and `tests/test_anchor.py::APointOnASecondDisplayIsNotAPointWeCanUse`. **Observed**: the window opened at the fallback `(120, 120)` on all four real runs, with the query reporting it saw nothing and did not fail — `docs/findings/WI-18-the-game-on-screen.md` | **Satisfied by its fallback, with a known cause — A2 revised and C-7.** Not a gap: the fixed position is certainly visible, which is what WIN-4 asks for. The anchor is the pointer, not a window (amendment 6, approved by the lead, **still the user's to overturn**), and the fallback is taken for a reason **no Accessibility grant would change** — see below |
+| WIN-1 | WI-3, WI-18 | `tests/test_window_owner.py::TheWindowItAsksForTest::test_opening_twice_creates_one_window`; the assembly asks for the game's own window and not another — `tests/test_game.py::TheEntryPointAssemblesTheRealThingTest::test_the_window_it_will_ask_for_is_the_games_own`. **Observed** 39 times over the run, every one reaped | **Pinned and observed** |
+| WIN-2 | WI-2, WI-3 | 40 × 30 from the metrics: `tests/test_grid_surface.py::HowManyPixelsFortyByThirtyNeeds::test_the_measured_metrics_give_a_four_hundred_by_five_seventy_window`. Black: `tests/test_window_owner.py::TheWindowItAsksForTest::test_it_is_black_and_cannot_be_resized`. **Observed**: 400 × 570 measured back off real windows in `docs/findings/WI-4-first-window.md`, `docs/findings/WI-17-real-window-manners.md` and `docs/findings/WI-18-the-game-on-screen.md`, and **the whole four-size ladder reproduced on the assembled game** — 320 × 480, 400 × 570, 440 × 630, 480 × 720, 706 canvas items at every one — in `docs/findings/WI-21-the-five-questions.md` | **Pinned, caveated — A4.** *"Large enough to read comfortably"* is one font-size constant and no test can judge it. `docs/findings/WI-2-cell-metrics.md` gives the ladder and what each size costs; WI-21 reproduced it on the real game rather than a static view. **The function that takes the measurement has no test at all** — section 3a |
+| WIN-3 | WI-3 | `tests/test_window_owner.py::TheWindowItAsksForTest::test_it_is_titled_terminal_game`. **Observed** on 3 windows in `docs/findings/WI-3-tk-window-probe.md`, 5 in `docs/findings/WI-4-first-window.md`, 8 in `docs/findings/WI-16-the-look.md`, 5 in `docs/findings/WI-17-real-window-manners.md`, 4 in `docs/findings/WI-18-the-game-on-screen.md` and 9 in `docs/findings/WI-21-the-five-questions.md` — title read back `Terminal Game` **every time** | **Pinned, caveated — A1.** The test pins what we *ask* for, and the observation is the toolkit reading back its own string. Neither is a person seeing a titlebar. **Needs a human — and five developers in a row have declined to call the read-back an answer.** WI-21 reports it under the field name `title_read_back_which_is_not_an_answer_to_A1`, so nobody can quote it as one by accident |
+| WIN-4 | WI-14 | `tests/test_anchor.py::GivenAnAnchorTheWindowGoesBelowAndToTheRight`, `tests/test_anchor.py::AWindowPastTheEdgeIsBroughtBack` and `tests/test_anchor.py::APointOnASecondDisplayIsNotAPointWeCanUse`. **Observed**: the window opened at the fallback `(120, 120)` on all four runs of `docs/findings/WI-18-the-game-on-screen.md` and all six of `docs/findings/WI-21-the-five-questions.md`, with `anchor_saw_something: false` and `anchor_failure: null` every time — the query ran, saw nothing, did not fail, and did not prompt | **Satisfied by its fallback, with a known cause — A2 revised and C-7.** Not a gap: the fixed position is certainly visible, which is what WIN-4 asks for. The anchor is the pointer, not a window (amendment 6, approved by the lead, **still the user's to overturn**), and the fallback is taken for a reason **no Accessibility grant would change** — see below |
 | WIN-5 | WI-15, WI-3, WI-18 | `tests/test_window_owner.py::EndingTheSessionTest::test_the_windows_own_close_button_ends_the_session`, `tests/test_session.py::QuittingIsTheOnlyWayOut::test_reaching_ended_asks_to_be_shut_down_exactly_once`, and in the assembly `tests/test_game.py::EndingTheGameClosesTheWindowTest::test_q_ends_the_session_and_closes_the_window`. **Observed**: a real `q` ended a real assembled game at 1.488 s and the window was reaped — `docs/findings/WI-18-the-game-on-screen.md` | **Pinned, caveated — A3.** WIN-5 contradicts END-5 and END-6 (C-2); what is pinned is A3's reading |
 
 ### WIN-4 rests on two things, and one of them is not the one A2 named
@@ -153,7 +166,8 @@ window would land in exactly the same place. WI-21's checklist prints that
 warning **before** the placement question, which matters: without it the
 behaviour reads as a bug and the obvious reaction is to grant a permission that
 would change nothing. **If the user dislikes where it lands, the fix is a
-better fallback position, not a permission.**
+better fallback position** — `FALLBACK_POSITION` in
+`terminal_game/shell/anchor.py`, one constant — **not a permission.**
 
 **Did the query ask the user for anything? No, on two separate grounds.**
 The privileged route is **structurally absent** from the code — not guarded,
@@ -169,7 +183,7 @@ absence carries the general claim; the timing corroborates those two runs.
 
 | Req | Item | What pins it | Status |
 | --- | --- | --- | --- |
-| SCRN-1 | WI-12, WI-13, WI-22 | `tests/test_frame.py::RenderingTheSpecimenPicture::test_the_whole_picture_renders_character_for_character`; row 29 is the status line's and only the status line's — `tests/test_frame_composer.py::RowTwentyNineIsNotThisItems::test_nothing_the_composer_draws_reaches_row_twenty_nine` and `tests/test_status_line.py::TheRowAsAValue::test_the_status_row_is_the_bottom_row`. **The two halves are now one statement** in `terminal_game/presentation/picture.py`, pinned by `tests/test_picture.py::TheSeamIsOneFunction::test_a_state_in_and_a_whole_frame_out`, and the production wiring goes through it — `tests/test_game.py::ThePictureTheSessionIsComposedWithTest::test_row_29_is_exactly_what_the_status_line_says_it_is` | **Pinned.** WI-22 closed the thing WI-20a could only describe: until then SCRN-1 was true of the running game as two statements that happened to agree |
+| SCRN-1 | WI-12, WI-13, WI-22 | `tests/test_frame.py::RenderingTheSpecimenPicture::test_the_whole_picture_renders_character_for_character`; row 29 is the status line's and only the status line's — `tests/test_frame_composer.py::RowTwentyNineIsNotThisItems::test_nothing_the_composer_draws_reaches_row_twenty_nine` and `tests/test_status_line.py::TheRowAsAValue::test_the_status_row_is_the_bottom_row`. **The two halves are now one statement** in `terminal_game/presentation/picture.py`, pinned by `tests/test_picture.py::TheSeamIsOneFunction::test_a_state_in_and_a_whole_frame_out`, and the production wiring goes through it — `tests/test_game.py::ThePictureTheSessionIsComposedWithTest::test_the_session_is_composed_with_presentations_picture_function` | **Pinned.** WI-22 closed the thing WI-20a could only describe: until then SCRN-1 was true of the running game as two statements that happened to agree |
 | SCRN-2 | WI-10 | `tests/test_house_rules.py::ThisRepositoryObeysTheRules::test_rule_3_nothing_draws_an_image`, backed by `tests/test_grid_surface.py::TheRuleThatThereAreNoImages` which shows the recording canvas would notice one, and `tests/test_the_look.py::TheColoursReachTheSurfaceUnchanged::test_nothing_but_characters_is_ever_shown_to_the_person`. **Observed twice over, and the second time is the better one**: canvas item kinds were `["text"]` on all 8 windows of `docs/findings/WI-16-the-look.md`, and **706 items, every one of kind `text`, on a real generated maze in the assembled game** — `docs/findings/WI-18-the-game-on-screen.md` | **Pinned and observed, caveated — caution C5.** Under candidate 2 this is a *rule* we enforce, not a property of the medium, which is exactly why the observation is worth having |
 | SCRN-3 | WI-8 | `tests/test_wall_glyphs.py::TheSixteenCombinations` — all sixteen, each named; `tests/test_wall_glyphs.py::TheSpecimenPicture::test_the_resolver_reproduces_the_specimen_s_walls_exactly`. The instrument for the human half exists: `tests/test_the_look.py::TheJoineryViewShowsEveryJunction::test_the_lattice_produces_every_glyph_wi_eight_can_draw` | **Pinned in part, and a human is needed for the rest — A10.** Pinned for *which characters*. Open for *whether the strokes meet*. **This sweep explicitly does not close it**; see below |
 | SCRN-4 | WI-12 | `tests/test_frame_composer.py::TheDots::test_a_corridor_square_with_a_dot_shows_the_dot` and `tests/test_frame_composer.py::TheDots::test_the_dot_is_dim_gold` | **Pinned** |
@@ -208,12 +222,15 @@ ruled that declaring it was right.
   maze whose walls did not line up.
 - `docs/findings/WI-4-first-window.md`, `docs/findings/WI-16-the-look.md`,
   `docs/findings/WI-17-real-window-manners.md`,
-  `docs/findings/WI-18-the-game-on-screen.md` — the surface painting real
+  `docs/findings/WI-18-the-game-on-screen.md`,
+  `docs/findings/WI-21-the-five-questions.md` — the surface painting real
   pictures into real windows, 400 × 570 to the pixel with no window-manager
-  rounding, across 30 windows.
-- **The project window ledger: 30 windows opened, 30 reaped, no modal sheet ever
-  raised**, across WI-3, WI-4, WI-16, WI-17, WI-18 and the anchor probe, each
-  under the conductor's exclusive screen gate.
+  rounding, across 39 windows and four font sizes.
+- **The project window ledger for the whole run: 39 windows opened, 39 reaped,
+  no modal sheet ever raised**, across WI-3, WI-4, WI-16, WI-17, WI-18, WI-21
+  and the anchor probe, each under the conductor's exclusive screen gate, each
+  reaped in a `finally`, and each acted on only through the handle captured at
+  the moment of creation.
 
 **An observation nobody wrote down is not coverage; a recorded one is a weaker
 but honest kind.** That is exactly what this section is.
@@ -478,13 +495,33 @@ built for a reproducibility test was so much straighter than a real maze that
 it gave one branch point in sixty ticks and made a correct test fail; the test
 now guards its own fixture.
 
-**8. No person has played a whole game.** See the note under section 1. The
-suite has, twice over, to both endings. A screen has not.
+**8. No person has played a whole game, and no screen has shown one.** See the
+note under section 1. The suite has, twice over, to both endings. **Thirty-nine
+real windows have been opened on this project and not one of them reached
+`CLEARED` or `CAUGHT`** — WI-18 ate two dots of 259–271 and WI-21's six ate
+none. It is the last row of section 13 and it is the user's to run, because the
+finished game is the one artefact no agent may start.
+
+**Be careful how the nearest miss is read.** WI-21's second window reached
+session phase `ended` with nothing pressed, which is the harness's own
+scheduled `quit` doing its job — **not** a game reaching an outcome. Phase and
+outcome are different things, and WI-21 says so in its own §8. A sweep that
+recorded that as "a game finished on screen" would be the exact failure this
+document exists to prevent.
 
 **9. Two functions in the Shell have no automated test**, and that is a kept
 rule rather than an oversight — section 3a. The alternative was a test that
 constructs a toolkit interpreter, which would put a window on the user's
 desktop during `unittest discover`.
+
+**10. WI-22's change was confirmed on a real screen by a different lane.** WI-22
+consolidated the `state -> frame` binding out of four call sites but had no
+desktop slot; WI-21 ran both of its on-screen call sites on the last screen turn
+of the run and got **698** canvas items from `the_look.py --view game` and
+**714** from `--view joinery` — exactly the figures WI-16 recorded before the
+change — with the key exercise matching WI-17's record. **A lane's own judgement
+that a refactor is character-for-character equivalent is worth more when
+somebody else measures it**, and that is what happened here.
 
 ---
 
@@ -497,11 +534,11 @@ of these is a ruling or a glance.
 
 | # | Open | What a person does | What the answer costs |
 | --- | --- | --- | --- |
-| 1 | **A1 / WIN-3** — does the titlebar read exactly *Terminal Game* to a person? | Run WI-21's harness, `tools/the_questions.py`, and **look at the titlebar**. Nothing before it, nothing after it, no path, no username, no filename | Nothing if yes. Tk has read the string back on all 30 windows this project has opened and **five developers in a row declined to call that an answer**, because the reported name and the rendered titlebar are different things and under candidate 1 they were measured to differ |
-| 2 | **A4 / WIN-2** — is Menlo 16pt in a 400 × 570 window large enough to read comfortably? | `/usr/bin/python3 tools/the_look.py --view game --sizes 14,16,18,20 --seconds 5` — four windows, same picture, four sizes, each closing itself | **One constant**: `FONT_POINT_SIZE` in `terminal_game/shell/grid_surface.py`. The window follows automatically — 320 × 480, 400 × 570, 440 × 630, 480 × 720 |
-| 3 | **A10 / SCRN-3** — do the strokes of the double lines actually meet? | `/usr/bin/python3 tools/the_look.py --view joinery --seconds 8` and **look for a hairline gap** where two cells meet, or a stroke that steps sideways. **It must be the joinery view, not a game screen** — the specimen picture contains no crossing glyph and a game may never show you one | If no: a different font, or accepting the gap. **Explicitly not closeable by this sweep.** Advance widths are measured uniform with a control, which settles the spacing and nothing else |
-| 4 | **A2 revised / WIN-4** — the anchor is the pointer, not a window | Rule on it. **Read C-7 first:** the window opens at the fixed fallback `(120, 120)` on this machine for a reason no Accessibility grant would change. Then ask the modest question — *did it land somewhere you could see it?* | Approved by the lead, **still the user's to overturn**. One constant: hand `WindowAnchor` the `no_anchor` query for A2's literal reading. If you dislike where it lands, **the fix is a better fallback position, not a permission** |
-| 5 | **A3 / WIN-5 against END-5 and END-6** — a contradiction in the specification, not an ambiguity | Rule: does the window close the instant the outcome is decided, or when the player presses `q` after seeing the final picture? We proceed on the second | **One line** of `terminal_game/application/session.py`. C-2, and confined to that one work item |
+| 1 | **A1 / WIN-3** — does the titlebar read exactly *Terminal Game* to a person? | `/usr/bin/python3 tools/the_questions.py` and **look at the titlebar**. Nothing before it, nothing after it, no path, no username, no filename | **One constant if no**: `WINDOW_TITLE` in `terminal_game/shell/window_owner.py`, and nothing composes anything around it. Tk has read the string back on all 39 windows this project has opened and **five developers in a row declined to call that an answer**, because the reported name and the rendered titlebar are different things and under candidate 1 they were measured to differ |
+| 2 | **A4 / WIN-2** — is Menlo 16pt in a 400 × 570 window large enough to read comfortably? | `/usr/bin/python3 tools/the_questions.py --sizes 14,16,18,20 --seconds 15` — four windows, the **same game** at four sizes, so the answer is a comparison rather than a guess. Can you read the bottom row without leaning in, and tell the player's shape from the ghost's at a glance? | **One constant**: `FONT_POINT_SIZE` in `terminal_game/shell/grid_surface.py`. The window follows automatically — 320 × 480, 400 × 570, 440 × 630, 480 × 720, and 706 canvas items at every one |
+| 3 | **A10 / SCRN-3** — do the strokes of the double lines actually meet? | `/usr/bin/python3 tools/the_look.py --view joinery --seconds 20` and **look for a hairline of black** where two cells meet, or a stroke that steps sideways instead of running straight. If it reads as solid continuous rules, it is a yes. **It must be the joinery view, not a game screen** — the specimen picture contains no crossing glyph and a game may never show you one | If no: the glyph table in `terminal_game/presentation/wall_glyphs.py`, or `FONT_FAMILY` in `terminal_game/shell/grid_surface.py`. **Explicitly not closeable by this sweep.** Advance widths are measured uniform with a control, which settles the spacing and nothing else |
+| 4 | **A2 revised / WIN-4** — the anchor is the pointer, not a window | `/usr/bin/python3 tools/the_questions.py`, and **read C-7 first**: the window opens at the fixed fallback `(120, 120)` on this machine for a reason no Accessibility grant would change, so **please do not grant one for this**. Then ask the modest question — *could you see it?* | Approved by the lead, **still the user's to overturn**. Hand `WindowAnchor` the `no_anchor` query for A2's literal reading. If you dislike where it lands, the fix is `FALLBACK_POSITION` in `terminal_game/shell/anchor.py` — **a better fallback position, not a permission** |
+| 5 | **A3 / WIN-5 against END-5 and END-6** — a contradiction in the specification, not an ambiguity | Rule: does the window close the instant the outcome is decided, or when the player presses `q` after seeing the final picture? We proceed on the second. `/usr/bin/python3 tools/the_questions.py --checklist` opens nothing and prints this and the other four rulings | **One line** of `terminal_game/application/session.py`. C-2, and confined to that one work item |
 | 6 | **A7 / STAT-2 and STAT-3** — the status-line literals | Rule on two things: whether STAT-2's literal or the specimen picture's leading space wins, and whether both STAT-3 examples are to be reproduced as written | **STAT-2 disagrees with the picture by one leading space**, and **no padding rule of any kind reproduces both STAT-3 examples** (C-3, C-4, measured in `docs/findings/WI-13-status-line-literals.md`). Two files: `terminal_game/presentation/status_line.py` and `tests/test_status_line.py` |
 | 7 | **A8 / END-3** — is the dot under the player still eaten on the losing turn? | Rule. As built it is: the player caught on the last dot reads `CAUGHT  score 7`, not 6 | **WI-11 alone**, already landed; a reversal is a small follow-up branch, **never** a WI-15 change. The specification never says and both readings satisfy END-3; we took the reading END-3's own wording presupposes |
 | 8 | **A11 / CTRL-5** — modified arrows move the player | Rule: is control-Up moving the player acceptable, or must it be rejected? | Adding modifier state to `KeyPress` in `terminal_game/shell/toolkit.py` and reading it in `terminal_game/presentation/input_translator.py`. **Ruled deliberate, not accidental.** `KeyPress` carries no modifier state, so control-Up cannot be told from Up; modified *letters* are rejected correctly |
@@ -509,27 +546,35 @@ of these is a ruling or a glance.
 | 10 | **SCRN-7** — does the picture flicker at seven frames a second? | Look at the game while the ghost moves | The repaint is a median 0.68 ms against a 143 ms budget and nothing is ever cleared, so there is no moment holding a blank or half-built picture. That says the work is 0.5 % of a tick; it does not say the window looks right |
 | 11 | **The ghost's start-corner tie-break** — the ghost always starts in the left-hand column, so 200 distinct mazes gave only **two** distinct opening positions | Rule: should the corner be drawn at random? | **Breaks no requirement.** One parameter and one `random_source.choice(...)` in `ghost_start_square`, `terminal_game/domain/opening_position.py`. It was not done because WI-6's work item was handed no random source and inventing one would be inventing a requirement |
 | 12 | **A9 / C-6** — `CLEARED  score 274` names a score the game cannot reach | Nothing waits on this. The user may simply want to know their example is impossible | A whole game is worth **259–271**, mean 264.5. Kept as a format exemplar; **no test and no row of this sweep asserts 274 as an achieved score** |
-| 13 | **Nobody has played a whole game** | **`/usr/bin/python3 -m terminal_game`** — the user runs it, and nobody else may | **This is the one artefact no agent may run** (section 4 rule 5): it is unbounded by design because `q` is the only way out of a finished game, so launched by an agent nobody is there to press it. It answers what no harness can — a game to an ending, a real `q` out of a *finished* game, a close button under a hand, and the process exiting |
+| 13 | **Nobody has played a whole game** — 39 real windows and not one reached `CLEARED` or `CAUGHT` | **`/usr/bin/python3 -m terminal_game`** — the user runs it, and nobody else may. Add `--seed N` to replay one maze. **If you play one through you will be the first person to see it**, and expect `CAUGHT` long before `CLEARED`: clearing means eating 259 to 271 dots | **This is the one artefact no agent may run** (section 4 rule 5): it is unbounded by design because `q` is the only way out of a finished game, so launched by an agent nobody is there to press it. It answers what no harness can — a game to an ending, a real `q` out of a *finished* game (END-6, the requirement the whole rule turns on), a close button under a hand, and the process exiting with nothing printed |
 
 ### The checklist, and where the answers will be written
 
-Questions 1, 2, 3, 9, 10 and 13 are the ones that need a person in front of a
-screen, and **WI-21 is where they are asked properly.** It holds the five
-questions as data, every one with `answer = None`, and a structural check that
-nothing in the module can fill one in — the sixth refusal in a row to convert a
-measurement into an answer, made permanent. Its checklist prints the C-7
-warning above the placement question, so the fallback position is not read as a
-bug.
+Questions 1, 2, 3, 4, 9, 10 and 13 are the ones that need a person in front of
+a screen, and **`docs/findings/WI-21-the-five-questions.md` is where they are
+asked properly** — each with its exact command, exactly what to look at, and
+what a "no" would cost. Its checklist prints the C-7 warning **above** the
+placement question, so the fallback position is not read as a bug and nobody
+grants a permission for nothing.
 
-**The answers land in docs/findings/WI-21-the-five-questions.md.** That file
-is cited here without backticks, deliberately: the backtick convention above is
-a claim that a file is on disk and `tests/test_spec_sweep.py` enforces it, and
-this sweep's branch was cut before WI-21's landed. The plan's WI-21 entry names
-the file `WI-21-human-answers.md`; WI-21 renamed it and flagged the rename for a
-ruling, on the ground that a document called *"human answers"* holding five
+**All five of WI-21's questions are recorded as unanswered, and that is
+enforced rather than promised.** Every `Question` carries `answer = None`, the
+tool's report prints all five as `null`, and a test walks the module's syntax
+tree and fails if anything anywhere could set one. Six developers in a row have
+now declined to convert a measurement into an answer.
+
+**And nothing in WI-21's own screen turn is evidence for any of the five.** It
+opened nine windows and every one of them tells you about the **instrument**,
+not about the question: a scheduler looked at all nine, not an eye. WI-21 says
+so itself, and this sweep repeats it because the temptation to quote a
+read-back titlebar as an answer to A1 has been live for the whole run.
+
+*On the filename, for the record:* the plan's WI-21 entry names this document
+`WI-21-human-answers.md`. WI-21 renamed it and flagged the rename for a ruling,
+on the ground that a document called *"human answers"* containing five
 unanswered questions is the name most likely to be misread by whoever greps for
-it later. **This sweep agrees and cites WI-21's name.** If the technical lead
-prefers the planned name, it is one line here and one there.
+it later. **This sweep agrees, asked WI-21 directly rather than guessing, and
+cites the name that landed.**
 
 **Two assumptions carried with nothing waiting on them.** **A5** — the game may
 not create or modify anything in the user's preferences — has an empty blast

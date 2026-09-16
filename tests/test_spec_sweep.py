@@ -577,7 +577,7 @@ class EveryOpenQuestionIsStillRecordedAsOpen(unittest.TestCase):
 class EveryMeasurementThisRunTookIsCited(unittest.TestCase):
     """The sweep is the index of what this project actually measured.
 
-    Twelve findings were written while the run was going on, by three
+    Thirteen findings were written while the run was going on, by three
     developers, and each records something that was run rather than reasoned
     about.  The spikes that produced them are gone and the PR summaries will
     not be read again, so **the sweep is the only place left that points at
@@ -601,9 +601,10 @@ class EveryMeasurementThisRunTookIsCited(unittest.TestCase):
         "WI-16-the-look",
         "WI-17-real-window-manners",
         "WI-18-the-game-on-screen",
+        "WI-21-the-five-questions",
     )
 
-    def test_all_twelve_are_on_disk(self):
+    def test_all_thirteen_are_on_disk(self):
         """The floor: the list below describes the tree it is checked against."""
         directory = os.path.join(REPOSITORY_ROOT, "docs", "findings")
         present = set(os.listdir(directory))

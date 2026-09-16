@@ -23,3 +23,9 @@
 05:44:13Z  COMMIT  e919268 WI-20b: the specification sweep, completed in place
 05:44:13Z  COMMIT  458dc12 WI-20b: the PR summary
 05:44:13Z  NOTE    PR #68 opened as a draft against main
+05:45:22Z  NOTE    conductor relayed "WI-21 second window reached phase ended with nothing pressed" as a CORRECTION to "nobody has played a whole game", and told me to check rather than take it as final. CHECKED: WI-21 section 8 says "A whole game played to an ending. NOBODY HAS EVER PLAYED ONE" and section 9 shows all six of its windows ate ZERO dots. Phase `ended` is the SESSION shutting down on the harness own scheduled quit; the game OUTCOME was UNDECIDED. The row stands, and the sweep now states the distinction explicitly.
+05:45:22Z  VERIFY  merged origin/main (WI-21 #66 and WI-22a #67 landed). WI-22a RENAMED tests/test_game.py::ThePictureTheSessionIsComposedWithTest::test_row_29_is_exactly_what_the_status_line_says_it_is -> ::test_the_session_is_composed_with_presentations_picture_function. My citation checker caught it: 815 tests, 1 failure, on the citation. Updated -- and the new test is a BETTER citation for the claim I was making.
+05:46:42Z  DRAFT   WI-21 woven in: docs/findings/WI-21-the-five-questions.md now BACKTICKED and cited; the four-size ladder on the assembled game, C-7 on six more windows, WI-22 confirmed by another lane (698/714 items), the 39/39 ledger, "all five unanswered and enforced by an AST test", WINDOW_TITLE / FALLBACK_POSITION / FONT_POINT_SIZE / wall_glyphs named as the constants a ruling lands on
+05:46:42Z  VERIFY  /usr/bin/python3 -m unittest discover -t . -s . -p "test_*.py" -> Ran 815 tests, OK
+05:46:42Z  TEST    815 passed, 0 failed, 0 skipped
+05:47:28Z  TEST    815 passed, 0 failed, 0 skipped (final, on the merged branch)
