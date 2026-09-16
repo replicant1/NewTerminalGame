@@ -1,9 +1,11 @@
 # WI-16 — The look, seen
 
-**Real-medium exercise (amendment 2, rule 1): NOT YET RUN. I am waiting on
-the conductor's screen gate and have opened no window.** Everything in this
-branch that does not need one is finished and green; the human check and its
-findings document follow once the screen is mine.
+**Real-medium exercise (amendment 2, rule 1): RUN, under the conductor's
+screen gate. Eight windows opened, eight reaped, no modal sheet, no errors.**
+What was observed: the titlebar read back `Terminal Game` all eight times,
+and `canvas_item_kinds` was `["text"]` all eight times — SCRN-2 observed on a
+real screen rather than argued. The gate has been released back to the
+conductor.
 
 **Developer:** DEV-B · **Branch:** `r6/wi-16-the-look-seen` · **Base:** `main`
 **Iteration:** M3 · **Depends on:** WI-2, WI-4, WI-12 — all landed
@@ -133,12 +135,46 @@ Every view rebuilt a generated maze, and satisfying MAZE-4, MAZE-5 and MAZE-6
 is the expensive thing in the tree. The three frame builders are now cached —
 a frame is immutable, so sharing one is safe — and the suite is back to 4.3s.
 
-## Still to come on this branch
+## What the screen runs measured
 
-The human check itself, and `docs/findings/WI-16-the-look.md`: the font size
-chosen, whether the double-line glyphs join up cleanly at it, and whether the
-five colours are distinguishable. **Blocked on the screen gate**, not on
-anything technical.
+Escalated deliberately, so the user's screen was borrowed as little as
+possible: one window for two seconds first to confirm the mechanics and the
+reap, then the three views, then the size comparison.
+
+| | Result |
+| --- | --- |
+| Windows opened / reaped | **8 / 8**, no modal sheet, no errors |
+| Titlebar read back | `Terminal Game`, all 8 |
+| Kinds on the canvas | `["text"]`, all 8 |
+| Items: game / joinery / colours | 698 / 714 / 96 |
+
+| Point size | Cell | Window |
+| --- | --- | --- |
+| 14 | 8 × 16 | 320 × 480 |
+| **16 (current)** | **10 × 19** | **400 × 570** |
+| 18 | 11 × 21 | 440 × 630 |
+| 20 | 12 × 24 | 480 × 720 |
+
+## What needs a human — all three still unanswered
+
+`docs/findings/WI-16-the-look.md` records them as unanswered, with the exact
+command for each. **I have not answered SCRN-3 and have not converted my own
+WI-2 advance measurement into a claim about it** — that measurement settles
+the spacing and nothing else, and I said so when I took it.
+
+```
+/usr/bin/python3 tools/the_look.py --seconds 8
+```
+
+Three windows, ~25 seconds, self-closing, and it prints the three questions
+before opening anything.
+
+1. **SCRN-3** — the `joinery` window. A hairline gap where two cells meet, or
+   solid continuous rules?
+2. **A4** — is 16pt comfortable? `--sizes 14,16,18,20` compares them. If not
+   16, the change is one constant and the window size follows.
+3. **A1** — does the titlebar read exactly *Terminal Game*? Tk reported that
+   string back eight times, which is **not** a person seeing a titlebar.
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 

@@ -7,3 +7,8 @@
 05:11:25Z  NOTE    first run of the suite with these tests took 16.3s because every view rebuilt a generated maze. Cached the three frame builders; back to 4.3s. A frame is immutable so sharing one is safe
 05:11:25Z  TEST    564 passed, 0 failed, 0 skipped  [/usr/bin/python3 -m unittest discover -t . -s . -p "test_*.py"]; 31 of them are WI-16s and none opens a window
 05:11:25Z  BLOCKED SCREEN GATE - amendment 4 says two lanes must never run on-screen exercises at once and the conductor holds the gate. Everything in WI-16 that does not need a window is DONE and pushed. I have opened NO window. Waiting on the conductor to grant the screen before running tools/the_look.py; DEV-A is on WI-17 which also opens windows
+05:12:03Z  NOTE    SCREEN GATE GRANTED by the conductor. Starting with the shortest possible run - one view, 2 seconds - to confirm the mechanics and the reap before asking the users screen for anything longer
+05:13:16Z  VERIFY  SCREEN RUNS COMPLETE. 8 windows opened, 8 reaped, window_reaped true on every one, no modal sheet, no error. ps shows no tool process left and System Events counts 0 GUI Python processes. Project ledger now 16 opened, 16 reaped
+05:13:16Z  VERIFY  on the real screen at every size: title read back "Terminal Game" all 8 times; canvas_item_kinds ["text"] every time, so nothing but characters reached the screen; game view 698 items, joinery 714, colour card 96
+05:13:16Z  VERIFY  A4 comparison run: 14pt cell 8x16 window 320x480; 16pt 10x19 400x570; 18pt 11x21 440x630; 20pt 12x24 480x720. All four painted 698 items and all four reaped
+05:13:16Z  NOTE    SCREEN GATE RELEASED - telling the conductor now so DEV-A can have it
