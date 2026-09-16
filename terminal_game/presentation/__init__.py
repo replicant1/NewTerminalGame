@@ -14,15 +14,29 @@ What is here so far:
   the four arrows become Move, ``q`` and ``Q`` become Quit, everything else
   becomes nothing (WI-9).
 
-Still to come: the wall glyph resolver (WI-8), the frame composer (WI-12) and
-the status line (WI-13).
+* :mod:`terminal_game.presentation.wall_glyphs` — the double-line glyphs a
+  wall square is drawn as, the connector rule, and ``wall_layer``: the whole
+  wall skeleton as cells (WI-8).
+* :mod:`terminal_game.presentation.frame_composer` — ``compose_frame``: a
+  game state becomes rows 0–28, with the dots and the two actor motifs laid
+  over WI-8's wall layer and row 29 placed exactly as it is handed over
+  (WI-12).
 
-Two vocabularies other lanes should use rather than redeclare
--------------------------------------------------------------
+Still to come: the status line (WI-13).
+
+Vocabularies other lanes should use rather than redeclare
+----------------------------------------------------------
 * **Intents** are :class:`~terminal_game.presentation.input_translator.Intent`
   (WI-9).  WI-15's session controller consumes them.
+* **Wall glyphs and the connector rule** are WI-8's, in
+  :mod:`~terminal_game.presentation.wall_glyphs`; the composer declares none
+  of them and takes ``wall_layer`` whole.
+* **The dot glyph and the two actor motifs** are WI-12's, in
+  :mod:`~terminal_game.presentation.frame_composer`; WI-8 declares none of
+  them.
+* **Row 29** is WI-13's and arrives as a value.  No module here and no test
+  here may contain a status-line literal.
 * **Directions** are *not* declared here.  They are
   :class:`terminal_game.domain.maze.Direction`, landed by WI-5; WI-7's ghost
-  policy and WI-9's translator both conform to it, and WI-11 and WI-15 should
-  too.
+  policy and WI-9's translator both conform to it, and WI-11 does too.
 """
