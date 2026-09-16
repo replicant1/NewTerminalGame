@@ -84,15 +84,37 @@ actually has to be true — and its `setUp` asserts the fixture contains at
 least one branch point, so it cannot quietly become vacuous the way it
 nearly did.
 
+## A gap this opens for WI-11, raised with DEV-A rather than patched
+
+`origin/main` has been merged in, bringing DEV-A's WI-6 (PR #32). It merged
+clean and everything is green — but it surfaced something WI-11 will hit:
+
+**`GameState` holds `ghost: Square` and no heading.** GHOST-2 is "keeps going
+in a straight line for as long as the corridor lets it", which is only
+meaningful if something remembers which line — and `next_step` returns the
+new heading precisely so it can be carried to the next tick. There is
+currently nowhere to carry it.
+
+Nothing collides and nothing is broken. But WI-11 is DEV-A's and is the thing
+that will call `next_step`, so **it is their call**, and I have not touched
+their file. Raised on
+[PR #32](https://github.com/replicant1/NewTerminalGame/pull/32#issuecomment-5692200058)
+with the two options and my recommendation — `GameState` gains
+`ghost_heading: Optional[Direction]`, since it is a frozen dataclass and the
+alternative scatters the ghost's state across two places.
+
+`heading=None` already covers the opening position, so WI-6 does not need to
+invent an initial direction.
+
 ## Suite
 
 ```
 /usr/bin/python3 -m unittest discover -t . -s . -p "test_*.py"
-Ran 251 tests — 251 passed, 0 failed, 0 skipped
+Ran 305 tests — 305 passed, 0 failed, 0 skipped
 ```
 
-23 of those are new here. Nothing in this branch opens a window or imports a
-toolkit.
+That is with WI-6 merged in. 23 of the 305 are new here. Nothing in this
+branch opens a window or imports a toolkit.
 
 ## What the tests own
 

@@ -9,3 +9,7 @@
 04:47:52Z  DECIDE  the reproducibility test -> assert that over 8 seeds MORE THAN ONE distinct walk arises, not that two named seeds differ, because with branch points this sparse two seeds can honestly agree; and guard the fixture by asserting it contains at least one branch point so the test cannot go vacuous
 04:47:52Z  DECIDE  heading=None accepted as "has not moved yet" -> every way on is a candidate, because WI-6/WI-15 must start the ghost somehow and the alternative is each of them inventing an initial heading. Additive to the plan; flagged for a ruling
 04:47:52Z  TEST    251 passed, 0 failed, 0 skipped  [/usr/bin/python3 -m unittest discover -t . -s . -p "test_*.py"]
+04:49:19Z  COMMIT  bbb WI-7 committed and pushed; PR #33 opened as a draft against main
+04:49:19Z  NOTE    merged origin/main, bringing DEV-As WI-6 (PR #32). Clean, no conflicts. Whole suite 305 green
+04:49:19Z  NOTE    GAP found by merging WI-6: GameState holds ghost as a bare Square with no heading, but GHOST-2 needs the heading carried between ticks and next_step returns one for exactly that reason. Nothing collides and nothing is broken, but WI-11 is DEV-As and is what will call next_step. Raised on their PR #32 with two options and my recommendation (add ghost_heading to the frozen GameState); did NOT touch their file. Not escalated
+04:49:19Z  TEST    305 passed, 0 failed, 0 skipped  [/usr/bin/python3 -m unittest discover -t . -s . -p "test_*.py"] with WI-6 merged in
