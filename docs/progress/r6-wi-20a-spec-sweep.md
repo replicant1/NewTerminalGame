@@ -6,3 +6,7 @@
 05:25:36Z  WI-20a VERIFY  the citation checker found a real defect in my own document on its first run: I had backticked docs/findings/WI-21-human-answers.md, which does not exist. Fixed by naming it in plain text, and the backtick-means-it-exists convention is now stated in the document.
 05:25:40Z  WI-20a TEST    714 passed, 0 failed, 0 skipped -- /usr/bin/python3 -m unittest discover -t . -s . -p test_*.py ; 21 of them WI-20a's, over the 693 that main carried after WI-19. All six house rules clean.
 05:26:07Z  WI-20a COMMIT  WI-20a: every requirement traced, and the sweep kept honest by the suite -- pushed; draft PR #60 opened
+05:27:46Z  WI-20a MERGE   PR #60 merged to main as d384c22; fetched and merged origin/main back and re-ran the whole suite
+05:27:50Z  WI-20a TEST    714 passed, 0 failed, 0 skipped on main at d384c22 -- /usr/bin/python3 -m unittest discover -t . -s . -p test_*.py ; what landed is green
+05:27:54Z  WI-20a NOTE    zero windows opened in WI-20a; the item reads files and writes a document. DEV-C's count across WI-8, WI-10, WI-14 and WI-20a is zero for the whole run.
+05:27:58Z  WI-20a DONE    WI-20a r6/wi-20a-spec-sweep d384c22 -- merged as PR #60; docs/TRACEABILITY.md and docs/completions/COMPLETION-M3-DEV-C.md landed with it
