@@ -4,3 +4,5 @@
 05:33:39Z  DECIDE  where the join lives -> new module presentation/picture.py, because the sanctioned exception covers the four call sites only and a new file edits nobody elses landed work
 05:34:13Z  NOTE    conductor says main moved to 238f4dd while I read; fast-forwarded my base, diff is docs only so the 740 baseline still stands
 05:34:54Z  TEST    747 passed, 0 failed, 0 skipped  after the join landed and the four call sites were pointed at it
+05:35:18Z  COMMIT  9db697c WI-22: the join - one Presentation function owns the whole picture
+05:35:34Z  NOTE    draft PR 64 open, url ends pull/64
