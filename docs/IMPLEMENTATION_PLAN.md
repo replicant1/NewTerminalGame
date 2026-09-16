@@ -483,6 +483,19 @@ DEV-B's call, as its own file, under the first-lander rule.
 
 ### The one seam I am fixing, because the whole test strategy hangs off it
 
+**Amendment 10 — and one function owns the whole picture.** Turning a game state into a
+*complete* frame — rows 0-28 from the composer, row 29 from the status line — **belongs in
+Presentation**, as a single `state -> frame` function. That is precisely the seam amendment
+3 specified when it said the session controller asks for "a game state in, a frame out",
+and it is the only place SCRN-1's "top 29 rows maze, bottom row status" is true as one
+statement rather than as two halves that happen to agree.
+
+It was never built, and the reason is instructive: WI-12 was told to own rows 0-28 and
+place the row it is given, WI-13 to own row 29 as a value — a split that let two lanes work
+in parallel, and left **nobody owning the join**. So every caller bound the two together
+itself, and there are now four callers doing it. That is not four people being careless; it
+is a seam I specified and nobody was asked to build. **WI-22 builds it** — see that item.
+
 **The frame is a value.** The Presentation layer does not draw. It *returns a picture*: a
 pure 30-row by 40-cell structure where each cell carries a glyph and a named colour. The
 Shell's surface is the only thing that turns that value into pixels.
@@ -765,6 +778,19 @@ So, for every item that touches the Shell:
    the whole point of WI-3's focus defect is that focus is exactly what the real exercises
    turn on. Before you run one, make sure nobody else is. The conductor holds this gate,
    because it is the only agent that can see every lane at once.
+5. **The finished game is the one artefact no agent may run** *(added in amendment 10)*.
+   Every on-screen script this project has written is bounded and self-closing. The game is
+   not, and correctly so — `q` is the only way out of a finished game (CTRL-4, END-6), so it
+   waits for a person by design. **That makes it exactly the thing an agent must not
+   start**: launched by an agent, nobody is there to press `q`, and it holds a window open
+   on somebody's desktop indefinitely. **It is the user's to run.** An agent that wants to
+   show the real window builds a **bounded harness over the same window code** and labels it
+   plainly as not the shipped exit path.
+
+   DEV-A said this unprompted while asking for the screen, having just built the thing:
+   *"it is unbounded by design and that is exactly the thing an agent must not start."*
+   The developer who builds the one process with no backstop noticing that it has no
+   backstop is how this rule came to be written, and it is the last one this plan needed.
 
 **What this plan still owes a real-medium exercise.** These are the places where the same
 hole could be hiding, named now rather than found later:
@@ -1661,6 +1687,14 @@ drift out of step with the specification.
 **WI-21 — The three questions for a human** · DEV-A · **2 days** · depends on **WI-18** ·
 `r6/wi-21-human-questions`
 
+*Amendment 10 — what this item may and may not run.* Per section 4 rule 5, **you may not
+launch the finished game.** It is unbounded by design and waits for a person. Show the real
+window through a **bounded harness over the same window code**, and **hand the user the
+command for the real game** separately, with the checklist, so they run the unbounded one
+themselves. Say clearly in the findings which of the two each answer came from: the harness
+creates the window identically, so it answers the titlebar, placement and font-size
+questions faithfully, but it is not the shipped exit path and must not be presented as one.
+
 *Outcome.* One script, bounded and self-closing and obeying section 4 in full, that shows
 the finished game so that a person can answer the three questions nobody else can:
 
@@ -1682,6 +1716,28 @@ path. That is the part of this item a machine can check; the rest is a person lo
 **WI-22 — The snagging list** · DEV-B · **2 days** · depends on **WI-19**, **WI-20a** ·
 `r6/wi-22-snagging-list`
 
+*Amendment 10 — this item now has a definite principal task, and it is a design fix
+rather than tidying.* **Build the `state -> frame` function in Presentation** and point
+every caller at it. The binding that joins WI-13's row 29 to WI-12's rows 0-28 currently
+exists in **four places** — three tools and tests, and one in the Shell's composition root,
+which is the only one in production. DEV-A put the production copy there deliberately and
+said why: the natural Presentation home is another lane's landed file. That was the right
+call for DEV-A to make and the wrong place for the code to stay.
+
+The brief, because this is the case my own rules name as the exception:
+
+- **You will be working in two other developers' landed files, and that is sanctioned
+  here** only because **neither lane has an agent left**. Section 2 says never to edit
+  another developer's landed files and to tell them instead; there is nobody to tell. This
+  is the "no developer is still available" case, handed to you as its own small piece of
+  work, and it does not license editing anyone's files beyond the call sites named here.
+- **Additive first, then substitutive.** Add the function; point the four call sites at it;
+  change nothing else. No other tidying, no renaming, no opportunistic refactoring — at
+  this point in the run a green suite is worth more than a tidy one.
+- **Do not touch WI-18 until it has landed.** It is in flight and green with the Shell-side
+  binding. Update it afterwards, as one of the four.
+- **The suite must be green before and after**, and the whole suite, not your own tests.
+
 *Outcome.* **Deliberate reserve capacity.** Defects found by the scripted game, the sweep
 and the human checks get fixed here, in one branch, rather than being wedged into items
 that were finished. If nothing is found, DEV-B is idle for these two days and that is a
@@ -1691,6 +1747,11 @@ something will be found.
 *Tests must establish.* A test for each defect fixed, asserting the consequence that was
 wrong, placed at the level that owns the behaviour. **Not a mutation of working code to see
 a test go red** — that is prohibited.
+
+*Amendment 10.* The coordination note below was written when there were three live lanes.
+There are not: DEV-B's and DEV-A's lanes have no agents by the time this item runs, which
+is exactly why the consolidation above is yours rather than theirs. Announce what you
+touched in the PR body so the record is complete.
 
 *Coordination.* Because this item may touch anything, DEV-B agrees with DEV-A and DEV-C
 what it is touching before it starts. See section 10.
