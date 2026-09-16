@@ -13,3 +13,4 @@
 05:37:11Z  NOTE    three early lines never reached this file - two READs and the baseline TEST - because the brace-group append form I used silently wrote nothing. Not backfilled. Restating the lost measurement below with the time I am writing it, not the time I took it.
 05:37:14Z  VERIFY  baseline before any edit, measured at about 05:33Z on main at 238f4dd -> 740 passed, 0 failed, 0 skipped
 05:37:17Z  READ    restating what was read: IMPLEMENTATION_PLAN sections 1, 2, 3, 4 and WI-22 under amendment 10; the four call sites at the_look.py, scripted.py, window_manners.py, shell/game.py
+05:38:01Z  TEST    747 passed, 0 failed, 0 skipped  on r6/wi-22a-close-the-log, a documents-only follow-up
