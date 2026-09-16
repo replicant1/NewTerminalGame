@@ -16,8 +16,8 @@ import random
 import unittest
 from typing import Set, Tuple
 
-from terminalgame.domain.maze import Maze, Square, SquareKind
-from terminalgame.domain.maze_generator import (
+from terminal_game.domain.maze import Maze, Square, SquareKind
+from terminal_game.domain.maze_generator import (
     CELL_COLUMNS,
     CELL_ROWS,
     MAZE_HEIGHT,

@@ -13,9 +13,9 @@ source and everything it decides comes from there.
 
 | Module | What it holds |
 | --- | --- |
-| `terminalgame/domain/maze.py` | `Square`, `Direction`, `SquareKind`, and `Maze` — the immutable grid and the query surface |
-| `terminalgame/domain/maze_invariants.py` | MAZE-2, MAZE-3, MAZE-5 and MAZE-6 written as predicates over a finished grid |
-| `terminalgame/domain/maze_generator.py` | `generate_maze(random_source)` — carve, then repair, then verify |
+| `terminal_game/domain/maze.py` | `Square`, `Direction`, `SquareKind`, and `Maze` — the immutable grid and the query surface |
+| `terminal_game/domain/maze_invariants.py` | MAZE-2, MAZE-3, MAZE-5 and MAZE-6 written as predicates over a finished grid |
+| `terminal_game/domain/maze_generator.py` | `generate_maze(random_source)` — carve, then repair, then verify |
 
 ## The shape of the grid, and why three requirements come free
 
@@ -140,9 +140,11 @@ None in substance. Names, module layout and the test tree are mine, as section
 1 of the plan allows. Four things are additive and want a ruling only if the
 lead disagrees:
 
-- **`terminalgame/` as the root package with a `domain/` subpackage**, and
-  tests in a parallel `tests/domain/`. Nothing existed to follow. A layer per
-  package is the most useful thing to leave for WI-10's architecture guard.
+- **A root package with a `domain/` subpackage**, and tests in a mirrored
+  `tests/domain/`. Nothing existed to follow when this branch was cut, so it
+  landed as `terminalgame/`; WI-1 and WI-3 both landed `terminal_game/`, so
+  **`r6/wi-5a-package-name` moves WI-5 onto the majority spelling** — see
+  `docs/prs/PR-WI-5a-package-name.md`. No other lane's files change.
 - **`maze_invariants.py` as a module of its own**, rather than private helpers
   inside the generator. It makes the verify step testable on inputs with known
   faults, and WI-6 and WI-11 may want the same predicates.

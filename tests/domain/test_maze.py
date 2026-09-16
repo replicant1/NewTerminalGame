@@ -2,7 +2,7 @@
 
 import unittest
 
-from terminalgame.domain.maze import (
+from terminal_game.domain.maze import (
     CORRIDOR_CHARACTER,
     DIRECTIONS,
     Direction,
