@@ -15,3 +15,5 @@
 05:00:33Z  WI-13 NOTE    announce, per section 2 rule 4: status_text(score, outcome) and status_row(score, outcome) in terminal_game/presentation/status_line.py. WI-12 and WI-19 must build an expected row 29 by CALLING these, never by typing the literal — A7 confines every status-line literal to WI-13
 05:00:33Z  WI-13 RISK    WI-19 is told to assert whole frames as text; a 30-line expected picture would embed row 29's literal and breach A7's confinement without anyone intending it. Resolvable by composing the expected row from status_text; flagged in the PR body
 05:00:33Z  WI-13 DECIDE  no automated scanner forbidding the literal elsewhere -> not written, because WI-19's picture assertions are honest work it would fail; amendment 2's lesson is that a rule stated wrongly is worse than no rule
+05:01:27Z  WI-13 COMMIT  f539a63 WI-13: row 29, the status line, as a value
+05:01:27Z  WI-13 NOTE    pushed r6/wi-13-status-line; draft PR #44 opened --base main (https://github.com/replicant1/NewTerminalGame/pull/44)
