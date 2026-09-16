@@ -7,3 +7,8 @@
 04:33:54Z  DECIDE  out-of-range positions -> IndexError including negatives, because Python negative indexing would otherwise wrap and draw silently in the wrong place
 04:33:54Z  DECIDE  package layout -> terminal_game/{domain,application,presentation,shell}/ with tests/ flat at the root, because it makes WI-10 layer guard trivial and keeps the pinned discover command finding everything
 04:33:54Z  TEST    45 passed, 0 failed, 0 skipped  [/usr/bin/python3 -m unittest discover -t . -s . -p "test_*.py"]
+04:35:50Z  COMMIT  8295396 WI-1: the picture as a value
+04:35:50Z  MERGE   PR #23 merged to main as a00ae56; fetched and fast-forwarded; whole suite re-run on the landed tree
+04:35:50Z  TEST    45 passed, 0 failed, 0 skipped  [/usr/bin/python3 -m unittest discover -t . -s . -p "test_*.py"] on the merged tree
+04:35:50Z  NOTE    these last three lines are committed on branch r6/wi-2-grid-surface, because WI-1 had already merged when they were written; the log itself is still WI-1s
+04:35:50Z  DONE    WI-1 r6/wi-1-picture-value 8295396 (merged as a00ae56)
