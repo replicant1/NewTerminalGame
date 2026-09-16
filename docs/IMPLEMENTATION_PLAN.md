@@ -139,6 +139,109 @@ than a coin flip — see section 7. It lands in **WI-11**, which has already mer
 
 ---
 
+## 0d. Amendment 4 — rebalancing the tail, and a score the game cannot reach
+
+`main` at `4ce7d16`, **533 passed, 0 failed, 0 skipped**. **Twenty of twenty-two work items
+have landed.**
+
+**Amendment 3's seam decision is vindicated, and the evidence is worth recording.** WI-15
+landed with no dependency on WI-12 at all; WI-12 landed separately; the two met on `main`
+green with no conflict, and DEV-B added exactly **one** test for the join, leaving what the
+status line says to WI-13. Had the original dependency stood, DEV-A would have waited on
+WI-12, which waited on WI-8, in a lane that had just restarted with a fresh agent. *A chain
+that stays inside one lane beats a shorter chain that crosses three* — that is now measured,
+not asserted.
+
+**WI-17 moves from DEV-C to DEV-A.** The remaining work was nine days in one lane, seven in
+another and five in the lane holding the end of the critical path. After the move it is
+**seven, seven and seven**, and DEV-A unblocks its own next item rather than waiting on
+somebody else's queue.
+
+**WI-20a and WI-20b stay with DEV-C, deliberately.** DEV-A wrote WI-5, WI-6, WI-11, WI-13
+and WI-15 — the entire Domain and Application layer. A specification sweep is worth least
+when it is the author checking their own coverage, and most when it is a fresh pair of eyes
+asking whether a requirement really has a test that pins it or has merely been ticked. That
+is a reason to keep it away from DEV-A, not a scheduling accident. **WI-20a also moves
+forward into M3**, since it only ever depended on WI-15.
+
+**The objection I was offered about WI-17's findings does not survive contact**, and the
+conductor half-spotted this itself. Yes, the `after()` swallow and the `resizable()` string
+came out of DEV-C's lane — but the current DEV-C is a fresh agent that inherited them from
+`docs/findings/` like anybody else would. That is exactly what that directory is for. A
+finding that only lives in the lane that made it is a finding we have already lost.
+
+**The real cost of the move is not a merge conflict.** Section 10 predicted WI-16 and WI-17
+as M3's pair to watch, and moving WI-17 does make them concurrent for the first time this
+run. But their file boundary is clean and amendment 2 shrank WI-17 besides. The hazard that
+actually matters is that **both items put real windows on the user's live desktop**, and two
+lanes doing that at once is a mess only a person can clear up. That is now a rule in section
+4, and the conductor holds the gate, because it is the only agent that can see both lanes.
+
+**A score the game cannot produce.** A full game is worth **259 to 271 points, mean 264.5**
+— the score is the corridor count less one, and the generator never reaches 275 corridors.
+So STAT-3's `CLEARED  score 274` is **illustrative, not reachable**. Recorded as A9 and
+contradiction C-6. The operative rule: **no test and no sweep row may assert 274 as an
+achieved score.** It remains perfectly good as a *formatting* exemplar, which is all WI-13
+ever needed it for.
+
+**The nominal day schedule has been overtaken by events**, and section 9 now says so plainly
+and carries a remaining-work view alongside the baseline.
+
+---
+
+## 0e. Amendment 5 — two of my own rules were wrong, and WI-19 is where they met
+
+`main` at `c4198e4`, **533 passed, 0 failed, 0 skipped**. Twenty-one landings, green after
+every one. **Read this before writing WI-19**; two of its instructions pointed at things
+that do not exist or cannot both be obeyed.
+
+**There is no clock, and there should not be one.** My ownership table gave DEV-A "the clock
+seam" and told WI-19 to consume it. That was wrong, and wrong in an instructive way: under
+candidate 2 **control is inverted** — the toolkit owns the loop and the Shell's tick timer
+already drives the ticking. A session-owned clock would be a *second* one that only tests
+ever use. Section 1 of this plan says control is inverted; my ownership table was written
+out of candidate 1's habits anyway. The architecture had it right in its candidate-2
+diagram. **The session exposes `tick()`, `move()` and `quit()`, and that is what WI-19
+drives.** The "headless session" half of that ownership row stands; the "clock seam" half is
+withdrawn.
+
+**A7 and WI-19 contradicted each other, and A7 is the one that needed restating.** WI-19 is
+told to assert whole frames as text; A7 says no item but WI-13 may contain a status-line
+literal. Measured, row 29 of a live frame is `score 0    arrows, q quits` padded to 40 — so
+**every hand-typed expected picture contains the literal.** The fix is the one DEV-A already
+gave DEV-B: compose the expected row 29 from WI-13's own function and join it onto 29 maze
+rows. So A7 now reads precisely: **the prohibition is on *authoring* a status-line string,
+not on a frame that happens to contain one.** That keeps the property A7 exists for — a
+reversal changes one place — because a derived row follows WI-13 automatically and a typed
+one does not.
+
+**DEV-A declining to write the scanner is the best judgement call of the run.** It was asked
+for a guard forbidding status-line literals outside WI-13, saw that as stated it would fail
+WI-19's honest work, and **declined to build a guard that would be wrong** rather than
+building it and letting somebody else discover why. That is amendment 2's lesson applied
+without being told it. No such scanner is required; if anyone ever wants one, the only
+correct form is *no string constant containing `arrows, q quits`, `CAUGHT` or `CLEARED`
+outside WI-13's own module*, and it stays optional.
+
+**C-4 is worse than I wrote it, and now has numbers.** Not merely that no *alignment* rule
+fits — **no padding rule of any kind fits.** See section 7. A7's per-ending templates go
+from being the simplest reading to being the only one.
+
+**Two inherited things, both accepted, neither to be re-litigated.** The Turn Resolver sits
+in the domain package rather than an application one; **it stays.** And a key reaches the
+session as `move(Direction)`/`quit()` rather than as an `Intent`, forced by my own layer
+rule. Both are explained where they belong, in section 1 and in WI-18.
+
+**And one thing WI-18 must not miss:** the session records a failure rather than raising it,
+because Tk swallows exceptions in callbacks. **WI-18 must check it after the loop returns**
+or a crashed game exits looking clean. That is the `after()` finding arriving in the item
+that consumes it.
+
+**WI-1a** — the specimen fixture leaving `tests/` — is **approved**, same class as WI-5a.
+DEV-B answered DEV-C's question by landing it, which is the first-lander rule working.
+
+---
+
 ## 1. The architecture we are building, and why
 
 ### The ruling
@@ -198,6 +301,22 @@ Shell  ->  Presentation  ->  Application  ->  Domain
   the only place the windowing toolkit may be named at all. **This is a rule about
   production code, not about tests** *(clarified in amendment 2)*: a test that checks the
   real adapter against the seam must import the toolkit, and is right to.
+
+*Amendment 5 — two consequences of this rule that have already been hit, both settled.*
+
+**The Turn Resolver sits in the domain package, not an application one. It stays there.**
+The architecture's diagram puts it in the Application layer, and the tree does not. That is
+fine, and moving it would be churn that breaks imports for no behavioural gain. **The rule
+I fixed is about what may import what, and it is not violated** — the resolver imports
+nothing impure and nothing above it. Which module a piece of logic lives in was never mine
+to decide, and I am not going to start deciding it in the tail of the run. The one thing
+that must stay true is its **purity**: if the Turn Resolver ever needs a clock, a window or
+a random source it was not handed, *that* is the moment it moves.
+
+**A key reaches the session as `move(Direction)` or `quit()`, not as an `Intent`.** That is
+this rule biting correctly: `Intent` is Presentation vocabulary, and the Application layer
+may not name Presentation. The three-line translation lands in **WI-18**'s collaborator.
+Correct, not a workaround.
 
 *Amendment 2 — one more direction, and it is the same kind of rule.* **Nothing that is not
 a test may depend on test code.** Tests may reach anywhere; nothing may reach into them.
@@ -361,7 +480,7 @@ design calls; the owner decides the spelling and the other lane conforms.
 | Wall glyphs and the connector rule | DEV-C (**WI-8**) | WI-12 declares none of them |
 | The dot glyph and the two actor motifs | DEV-B (**WI-12**) | WI-8 declares none of them |
 | The outcome vocabulary — playing, caught, cleared | DEV-A, wherever it landed (WI-6, else WI-11) | **WI-13** selects by it and does not define it |
-| The clock seam and the headless session | DEV-A (**WI-15**) | **WI-19** consumes it and builds no second one |
+| ~~The clock seam and~~ the headless session — **no clock object exists; the Shell's tick timer drives the ticking and the session exposes `tick()`, `move()` and `quit()`** *(corrected in amendment 5)* | DEV-A (**WI-15**) | **WI-19** drives those three and builds no clock of its own |
 | The frame value and the colour vocabulary | settled by WI-1 | everybody |
 
 ### When your branch conflicts with main
@@ -471,6 +590,12 @@ So, for every item that touches the Shell:
    window and never presses a key does not prove keys arrive. A test that asserts something
    raised does not prove the window got reaped, if the toolkit swallows the exception.
 3. It is a bounded, self-closing script obeying the rules below — never part of the suite.
+4. **Two lanes must never run on-screen exercises at the same time** *(added in amendment
+   4)*. There is one desktop and one person in front of it. Two scripts racing for keyboard
+   focus produce a result neither can trust and a mess only that person can clear up — and
+   the whole point of WI-3's focus defect is that focus is exactly what the real exercises
+   turn on. Before you run one, make sure nobody else is. The conductor holds this gate,
+   because it is the only agent that can see every lane at once.
 
 **What this plan still owes a real-medium exercise.** These are the places where the same
 hole could be hiding, named now rather than found later:
@@ -551,7 +676,9 @@ arrives later, the "rests on it" column is the complete list of places to change
 | **A4** | *"Large enough to read comfortably"* is one named font-size constant, checked by eye. No objective test exists. | **WI-2**'s metrics constant; looked at in **WI-16** and **WI-21** |
 | **A5** | The game may **not** create or modify a profile or anything else in the user's preferences. | Nothing: candidate 2 needs no profile, so the blast radius is empty. Recorded so an answer has somewhere to land. |
 | **A6** | The specimen picture is normative for the grid-to-screen mapping. | Section 5, and through it **WI-1**, **WI-8**, **WI-12** |
+| **A9** | *(Added in amendment 4.)* STAT-3's `CLEARED  score 274` is a **format exemplar, not a reachability claim**. A full game is worth 259–271, mean 264.5, so 274 cannot occur. The two STAT-3 strings stay normative as formats; no test and no sweep row may assert 274 as an achieved score. | **WI-13**'s formatting tests, **WI-19**'s win path, **WI-20a**/**WI-20b**'s sweep rows |
 | **A8** | *(Added in amendment 3.)* On the losing turn the dot under the player **is** still taken and still scored — the player is caught *and* the dot counts. Not a coin flip: **END-3's own wording presupposes it** — "*eating* the last dot on the square the ghost is standing on is a loss, not a win" says the eating happens and only the outcome changes. | **WI-11** alone, already landed. A reversal is a WI-11 follow-up branch, **never** a WI-15 change — scattering the step order is the exact failure caution C6 exists to prevent. |
+| **A7 — restated in amendment 5** | The prohibition is on **authoring** a status-line string outside WI-13, **not** on a frame that happens to contain one. Any other item that needs row 29 obtains it from WI-13's own function, so a derived row follows a reversal automatically and a typed one would not. *(Without this, WI-19's whole-frame assertions and A7 contradict each other outright: a live row 29 is `score 0    arrows, q quits` padded to 40.)* | **WI-19**'s expected frames, and any later item composing a whole picture |
 | **A7** | The literal strings in STAT-2 and STAT-3 are normative; the specimen picture's leading space on row 29 is illustrative; the two STAT-3 examples are reproduced as **per-ending templates** rather than by a column-alignment rule. (Mine, not the architect's — see section 7.) | **WI-13** and its tests |
 
 ---
@@ -581,6 +708,15 @@ STAT-2 gives `score 0    arrows, q quits` — 26 characters, no leading space. R
 picture is ` score 0    arrows, q quits` — 27 characters, with one. We take **A7**: the
 STAT-2 literal is normative.
 
+**C-6 — STAT-3 gives a winning score the game cannot produce.** *(Added in amendment 4,
+measured by DEV-A's predecessor.)* A full game is worth **259 to 271 points, mean 264.5** —
+the score is the corridor count less one, and the maze generator never produces 275
+corridors. STAT-3's `CLEARED  score 274` is therefore impossible as a game state. It is
+harmless as an illustration of the *format*, which is all it was ever needed for, and we
+keep it in that role under **A9**. The operative consequence is narrow and worth repeating:
+**no test and no sweep row may assert 274 as an achieved score**, or it would be pinning
+something the application cannot do.
+
 **C-5 — The specification never says whether the dot is eaten on the losing turn.**
 *(Added in amendment 3, found by DEV-A while building WI-11.)* END-3 fixes that meeting the
 ghost is *decided* first, and the step order move → collision → eat → win implements that.
@@ -591,10 +727,16 @@ line the player ever sees. We proceed on **A8** — the dot is eaten — because
 phrasing, "*eating* the last dot … is a loss, not a win", only makes sense if the eating
 happens. It lands in **WI-11**.
 
-**C-4 — STAT-3's two examples cannot both come from one alignment rule.**
-`CAUGHT  score 37   q quits` puts `q quits` at column 19; `CLEARED  score 274  q quits`
-puts it at column 20. No single padding rule produces both. We take **A7**: two per-ending
-templates, each reproducing its own example exactly, with the score substituted.
+**C-4 — STAT-3's two examples cannot come from any padding rule at all.** *(Strengthened in
+amendment 5, measured by extracting the literals programmatically rather than retyping
+them; the numbers are in `docs/findings/WI-13-status-line-literals.md`.)* STAT-2 is 26
+characters, `CAUGHT  score 37   q quits` is 26, `CLEARED  score 274  q quits` is 27, and
+`q quits` sits at columns 19, 19 and 20. The plan originally said no single *alignment* rule
+fits. It is worse than that: **the two STAT-3 examples differ in three places at once** —
+word length 6 against 7, two spaces after the word in both, but **three** spaces after the
+score on the loss line and **two** on the win line. A rule that aligns `score` needs one
+space after `CLEARED` where the literal has two. So **no padding rule of any kind fits**,
+and **A7's per-ending templates stop being the simplest reading and become the only one.**
 
 ---
 
@@ -930,6 +1072,12 @@ literal templates with the score substituted (assumption A7, contradictions C-3 
 - on a loss — `CAUGHT  score 37   q quits`
 - on a win — `CLEARED  score 274  q quits`
 
+*Amendment 4 — 274 is a format exemplar, not a reachable score.* A full game is worth
+**259 to 271 points, mean 264.5**: the score is the corridor count less one, and the
+generator never produces 275 corridors. So assert that **the formatter given 274 emits that
+exact string** — that is a formatting test and it is right. Do **not** assert 274 as a score
+a game achieved, here or anywhere: see A9 and contradiction C-6.
+
 > **This is where the status-line contradictions land.** Contradictions **C-3** (the
 > specification's STAT-2 literal disagrees with its own specimen picture by one leading
 > space) and **C-4** (STAT-3's two examples cannot both come from one alignment rule) are
@@ -1000,8 +1148,11 @@ window — the window closes without the player closing it.
 ticking has begun before control is handed to the event loop, and nothing has to be pressed
 to begin.
 
-**A whole session must be runnable with no window.** The controller is handed a clock, a
-random source and a place to send frames; a test supplies fakes for all three. This is not
+**A whole session must be runnable with no window.** *(Corrected in amendment 5: the
+controller is **not** handed a clock. Control is inverted — the Shell's tick timer drives
+the ticking and the session simply exposes `tick()`, `move()` and `quit()`. A session-owned
+clock would be a second one only tests ever use.)* It is handed a random source and a place
+to send frames; a test supplies fakes for those and calls `tick()` itself. This is not
 a convenience — WI-19 depends on it, and it is what keeps WI-18 and WI-19 out of each
 other's way. **DEV-A owns this seam and WI-19 consumes it**; if it is not there, WI-19 will
 build a second one and the two items will collide.
@@ -1063,8 +1214,8 @@ is the risk candidate 2 carries.
 
 ---
 
-**WI-17 — The window's manners** · DEV-C · **2 days** · depends on **WI-3**, **WI-4**,
-**WI-9** · `r6/wi-17-window-manners`
+**WI-17 — The window's manners** · **DEV-A** *(moved from DEV-C in amendment 4)* ·
+**2 days** · depends on **WI-3**, **WI-4**, **WI-9** · `r6/wi-17-window-manners`
 
 *Outcome.* The window behaves itself. It cannot be resized and the grid is never anything
 but 40 × 30. **No text caret is ever visible.** Nothing typed is echoed anywhere — not into
@@ -1116,10 +1267,23 @@ it, paint the first frame, start ticking, hand over to the event loop — and, w
 session ends, close the window and exit. Played end to end, by a person, from a single
 command.
 
+*Amendment 5 — two things this item inherits and must not miss.*
+
+**Check the session's recorded failure after the loop returns.** The session *records* an
+exception rather than raising it, because Tk swallows exceptions thrown inside an `after()`
+callback — so propagation does not work and there is nothing to catch. If this item does
+not look at that record, **a crashed game exits looking clean.** Assert it: a session that
+failed mid-loop produces a non-clean exit.
+
+**The intent dispatch lands here**, not in WI-15. A key reaches the session as
+`move(Direction)` or `quit()` rather than as an `Intent`, because the layer rule forbids the
+Application layer naming Presentation, where `Intent` lives. That is three lines of
+translation in this item's collaborator, and it is correct rather than a workaround.
+
 *Tests must establish.* **The join only** — that the entry point assembles the real
-components and that starting it produces a first frame before the loop is entered, and that
-ending the session closes the window. Everything below has its own tests; do not re-assert
-any of it here. One defect should turn one test red.
+components, that starting it produces a first frame before the loop is entered, that ending
+the session closes the window, and that a recorded failure is noticed. Everything below has
+its own tests; do not re-assert any of it here. One defect should turn one test red.
 
 ---
 
@@ -1143,6 +1307,21 @@ true, and it is the kind of thing a later change quietly undoes by iterating a s
 assert that a seeded game replays identically, and say in the PR body that the scripted
 game depends on it.
 
+*Amendment 5 — two corrections to this item's brief, both before it starts.*
+**There is no clock to consume.** Drive the session directly: call `tick()` for the ghost's
+turn, `move()` for a key, `quit()` to end it. Nothing in this item constructs a clock.
+**And do not hand-type row 29.** A7 forbids authoring a status-line string outside WI-13,
+and a live frame's row 29 is `score 0    arrows, q quits` padded to 40, so every typed
+expected picture would contain one. Compose the expected row 29 from **WI-13's own
+function** and join it onto the 29 maze rows you do type. The derived row then follows
+WI-13 if the user ever rules differently, which is the whole point of confining the
+literals.
+
+*Amendment 4.* The win path's final score is **whatever the seeded maze yields** — between
+259 and 271, mean 264.5. **Do not assert 274**; STAT-3's example is a format exemplar and
+not a state this game can reach (A9, contradiction C-6). Assert the score the seed produces
+and that it equals the dots eaten.
+
 *Tests must establish.* The two paths above, end to end, as sequences of asserted pictures;
 that the score at the end equals the number of dots eaten; that END-3's precedence holds in
 a full game and not only in the resolver's unit test — the last dot on the ghost's square
@@ -1151,7 +1330,12 @@ ends the game as `CAUGHT`; that nothing moves after the outcome is decided.
 ---
 
 **WI-20a — The specification sweep, first landing** · DEV-C · **2 days** · depends on
-**WI-15** · `r6/wi-20a-spec-sweep`
+**WI-15** · **moved into M3 by amendment 4** · `r6/wi-20a-spec-sweep`
+
+*Amendment 4 — why this stays with DEV-C.* DEV-A wrote the entire Domain and Application
+layer. A sweep is worth least when the author checks their own coverage and most when a
+fresh reader asks whether a requirement really has a test that pins it, or has merely been
+ticked. Keeping it out of DEV-A's lane is the point of it, not an accident of scheduling.
 
 *Outcome.* A traceability document covering every requirement code landed by the end of M3:
 the code, the work item, and **the named test that pins it** or the named human check that
@@ -1230,27 +1414,49 @@ codes, plus that every finding and human-check document the sweep cites actually
 | **M0** | The two hard things proved | WI-1, WI-2, WI-3, WI-4, WI-5 | 1–5 | **5** | **11** |
 | **M1** | The pieces of the game | WI-6, WI-7, WI-8, WI-9, WI-10 | 6–8 | **8** | **9** |
 | **M2** | The rules and the picture | WI-11, WI-12, WI-13, WI-14 | 9–12 | **12** | **9** |
-| **M3** | A whole game, with no window | WI-15, WI-16, WI-17 | 13–15 | **15** | **7** |
-| **M4** | The game itself | WI-18, WI-19, WI-20a | 16–18 | **18** | **8** |
-| **M5** | Signed off | WI-21, WI-22, WI-20b | 19–20 | **20** | **6** |
+| **M3** | A whole game, and the window that holds it | WI-15, WI-16, WI-17, WI-20a | 13–17 | **17** | **9** |
+| **M4** | The game itself | WI-18, WI-19 | 18–20 | **20** | **6** |
+| **M5** | Signed off | WI-21, WI-22, WI-20b | 21–22 | **22** | **6** |
 | | | **22 work items, 23 bars** | | | **50** |
 
-*Amendment 3 rescheduled M2 onward.* Moving WI-13 into DEV-A's lane puts four days of work
-in a lane during a three-day iteration, so **M2 is now four days and everything after it
-shifts by one**: the schedule is **20 days**, not 19. I would rather the plan be a day
-longer and true than the day shorter and wrong.
+*Amendment 3 rescheduled M2 onward; amendment 4 rescheduled M3 onward.* Moving WI-13 into
+DEV-A's lane made M2 four days; moving WI-17 there too makes M3 five, and WI-20a comes
+forward into M3 because it only ever depended on WI-15. The schedule is now **22 nominal
+days**. It has grown twice while the project got faster, which tells you something true
+about it and is the reason for the subsection below.
 
-Three developers over 20 days is 60 developer-days of capacity; 50 are committed and 10 are
-slack — M0 (4), M2 (3), M3 (2), M4 (1). The slack is real and deliberate — it is where the
-dependency chain holds a lane back — and it is not to be filled by inventing work.
+Three developers over 22 days is 66 developer-days of capacity; 50 are committed and **16
+are slack**. That is a quarter of the plan idle, and it is not padding — **the tail is
+dependency-bound, not capacity-bound.** Towards the end there is more parallel capacity
+than the dependency graph can use, and no amount of rebalancing changes that; it is why
+amendment 4 moved an item to shorten a chain rather than to fill a lane.
 
-**The critical path** is now WI-5 → WI-6 → WI-11 → **WI-13** → WI-15 → WI-18 → WI-21:
-**18 developer-days of chained work in a 20-day schedule**. It grew by one day on paper and
-got materially shorter in practice, which is the point of the change: WI-15 used to wait on
-WI-12, which waits on WI-8, which is in another lane and had to be restarted. It now waits
-only on items DEV-A holds itself. **A chain that stays inside one lane beats a shorter chain
-that crosses three.** Every item on the path is DEV-A's, which remains the project's single
-biggest exposure.
+**The critical path** is WI-5 → WI-6 → WI-11 → WI-13 → WI-15 → **WI-17** → WI-18 → WI-21:
+**20 developer-days of chained work in a 22-day schedule**, every item of it DEV-A's, which
+remains the project's single biggest exposure. It has grown twice on paper and got shorter
+in practice both times, because both changes pulled a link *out* of another lane and into
+DEV-A's own. **A chain that stays inside one lane beats a shorter chain that crosses three**
+— measured now, not asserted: WI-15 landed without ever depending on WI-12, and the two met
+green on `main` with no conflict.
+
+### Where the run actually is *(added in amendment 4)*
+
+**The nominal day schedule above is a shape, and reality has run far ahead of it.** Twenty
+of twenty-two work items have landed and `main` is green at 533 tests, while the baseline
+chart still has the run in its middle third. Both statements are fine and neither is
+wrong — the days were never a calendar — but the baseline is no longer the useful view for
+deciding what to dispatch. This is.
+
+| Lane | Remaining, in order | Days |
+| --- | --- | --- |
+| **DEV-A** | **WI-17** → WI-18 → WI-21 | 2 + 3 + 2 = **7** |
+| **DEV-B** | WI-16 → WI-19 → WI-22 | 2 + 3 + 2 = **7** |
+| **DEV-C** | WI-10 → WI-14 → WI-20a → WI-20b | 1 + 2 + 2 + 2 = **7** |
+
+Seven days a lane, which is what amendment 4's move bought: before it, the three lanes held
+nine, seven and five, with the five belonging to the developer holding the end of the chain.
+The only cross-lane waits left are **WI-18**, which needs WI-14 and WI-16 from the other two
+lanes as well as its own WI-17, and **WI-20b**, which needs WI-18 and WI-19.
 
 ### Per-developer lanes
 
@@ -1259,9 +1465,9 @@ biggest exposure.
 | **M0** (d1–5) | WI-5 (d1–3) | WI-1 (d1), WI-2 (d2–4) | WI-3 (d1–3), WI-4 (d5) |
 | **M1** (d6–8) | WI-6 (d6–8) | WI-7 (d6–7), WI-9 (d8) | WI-8 (d6–7), WI-10 (d8) |
 | **M2** (d9–12) | WI-11 (d9–11), **WI-13 (d12)** | WI-12 (d9–11) | WI-14 (d9–10) |
-| **M3** (d13–15) | WI-15 (d13–15) | WI-16 (d13–14) | WI-17 (d13–14) |
-| **M4** (d16–18) | WI-18 (d16–18) | WI-19 (d16–18) | WI-20a (d16–17) |
-| **M5** (d19–20) | WI-21 (d19–20) | WI-22 (d19–20) | WI-20b (d19–20) |
+| **M3** (d13–17) | WI-15 (d13–15), **WI-17 (d16–17)** | WI-16 (d13–14) | **WI-20a (d16–17)** |
+| **M4** (d18–20) | WI-18 (d18–20) | WI-19 (d18–20) | — |
+| **M5** (d21–22) | WI-21 (d21–22) | WI-22 (d21–22) | WI-20b (d21–22) |
 
 ### Gantt chart
 
@@ -1274,7 +1480,7 @@ iteration's effort total in the table.
 
 ```mermaid
 gantt
-  title Terminal Game — run 6, three developers, 20 nominal days
+  title Terminal Game — run 6, three developers, 22 nominal days (baseline)
   dateFormat YYYY-MM-DD
   axisFormat %d %b
 
@@ -1301,32 +1507,37 @@ gantt
   WI-14 the anchor (DEV-C)                  :c14, 2026-09-25, 2d
   M2 complete                               :milestone, m2, 2026-09-29, 0d
 
-  section M3 A whole game, with no window
+  section M3 A whole game, and the window that holds it
   WI-15 the session controller (DEV-A)      :d15, 2026-09-29, 3d
+  WI-17 the window's manners (DEV-A)        :d17, 2026-10-02, 2d
   WI-16 the look, seen (DEV-B)              :d16, 2026-09-29, 2d
-  WI-17 the window's manners (DEV-C)        :d17, 2026-09-29, 2d
-  M3 complete                               :milestone, m3, 2026-10-02, 0d
+  WI-20a the specification sweep (DEV-C)    :d20a, 2026-10-02, 2d
+  M3 complete                               :milestone, m3, 2026-10-04, 0d
 
   section M4 The game itself
-  WI-18 the wiring (DEV-A)                  :e18, 2026-10-02, 3d
-  WI-19 the scripted game (DEV-B)           :e19, 2026-10-02, 3d
-  WI-20a the specification sweep (DEV-C)    :e20a, 2026-10-02, 2d
-  M4 complete                               :milestone, m4, 2026-10-05, 0d
+  WI-18 the wiring (DEV-A)                  :e18, 2026-10-04, 3d
+  WI-19 the scripted game (DEV-B)           :e19, 2026-10-04, 3d
+  M4 complete                               :milestone, m4, 2026-10-07, 0d
 
   section M5 Signed off
-  WI-21 the three questions for a human (DEV-A) :f21, 2026-10-05, 2d
-  WI-22 the snagging list (DEV-B)               :f22, 2026-10-05, 2d
-  WI-20b the specification sweep, final (DEV-C) :f20b, 2026-10-05, 2d
-  M5 complete                                   :milestone, m5, 2026-10-07, 0d
+  WI-21 the three questions for a human (DEV-A) :f21, 2026-10-07, 2d
+  WI-22 the snagging list (DEV-B)               :f22, 2026-10-07, 2d
+  WI-20b the specification sweep, final (DEV-C) :f20b, 2026-10-07, 2d
+  M5 complete                                   :milestone, m5, 2026-10-09, 0d
 ```
 
 Reconciling the chart against the table: M0's bars are 3 + 1 + 3 + 3 + 1 = **11**; M1's are
 3 + 2 + 1 + 2 + 1 = **9**; M2's are 3 + 3 + 1 + 2 = **9**; M3's are 3 + 2 + 2 = **7**; M4's
-are 3 + 3 + 2 = **8**; M5's are 2 + 2 + 2 = **6**. Total **50**, matching the table. The
+are 3 + 3 = **6**; M5's are 2 + 2 + 2 = **6**. Total **50**, matching the table. The
 milestone dates are the day after each iteration's last day, which is the same boundary the
-table's "ends day" column gives: M0 day 5, M1 day 8, **M2 day 12, M3 day 15, M4 day 18, M5
-day 20** *(shifted by amendment 3)*. WI-20 appears as two bars, WI-20a and WI-20b, because
-it has two landings.
+table's "ends day" column gives: M0 day 5, M1 day 8, M2 day 12, **M3 day 17, M4 day 20, M5
+day 22** *(shifted by amendments 3 and 4)*. WI-20 appears as two bars, WI-20a and WI-20b,
+because it has two landings.
+
+This chart is the **baseline** — the schedule as planned and twice revised. It is not where
+the run is; for that, read "Where the run actually is" above, which is the view to dispatch
+from. Both are kept because the baseline is what the effort totals and the critical path are
+measured against, and throwing it away would leave nothing to measure the slippage of.
 
 ---
 
@@ -1340,7 +1551,7 @@ are meant to run at once; this section says where that is safe and where it is n
 | **M0** | WI-5 (pure Domain) is disjoint from everything else in the run and can start immediately. WI-1 and WI-3 can start together. | **WI-2 and WI-3** — both are Shell work and both touch the windowing toolkit. Also **WI-1 must land, or at least be branchable, before WI-2 starts.** | The boundary in WI-3's entry: WI-3 owns the window, the timer and key delivery; WI-2 owns everything inside the pixels. WI-2 is **stacked on WI-1's branch** rather than waiting for it to merge. WI-4 follows both and is DEV-C's. |
 | **M1** | WI-6 (DEV-A), WI-7 (DEV-B) and WI-8 (DEV-C) run at once; WI-9 and WI-10 are small and disjoint. | **WI-7 and WI-8** — both are *consumers of the maze* and both may want to add a query to it. | **DEV-A owns the maze's query surface.** DEV-B and DEV-C ask DEV-A for a query they need rather than adding one. WI-10 must land **last in the iteration**, since it guards code the others are still writing. |
 | **M2** | WI-11 (Application) and WI-14 (Shell) are disjoint from everything. | **WI-12 and WI-13** — both write into the frame. *Amendment 3: the pair is now DEV-B and **DEV-A**, not DEV-B and DEV-C. Different lanes either way, so the hazard is unchanged and the boundary below stands verbatim.* | WI-13 owns row 29 and produces it as a value; WI-12 owns rows 0–28 and places what it is given. Neither writes the other's rows. |
-| **M3** | WI-15 (Application) is disjoint from both others. | **WI-16 and WI-17** — both Shell again, same hazard as WI-2/WI-3 in M0. | Same boundary: WI-16 is inside the pixels, WI-17 is the window. |
+| **M3** | WI-15 (Application) and WI-20a (documents) are disjoint from both others. | **WI-16 and WI-17** — both Shell again, same hazard as WI-2/WI-3 in M0. *Amendment 4: moving WI-17 to DEV-A makes these two genuinely concurrent for the first time this run, so the prediction finally gets tested.* | Same file boundary: WI-16 is inside the pixels, WI-17 is the window — and amendment 2 shrank WI-17 besides. **The hazard that actually bites is neither of those: both items open real windows on the user's live desktop, and their on-screen exercises must not run at the same time.** See section 4, rule 4. |
 | **M4** | **All three run in parallel with no expected collision.** WI-18 assembles the shell; WI-19 uses the headless session WI-15 provides and never touches the shell; WI-20a is documents and one completeness test. | None, *provided* WI-15 really did expose a session runnable with no window. If it did not, WI-18 and WI-19 will both try to build one and will collide. | The requirement is written into WI-15. If DEV-A reports it was not done, sequence WI-19 after WI-18. |
 | **M5** | WI-21 (a script and findings) and WI-20b (documents) are disjoint. | **WI-22 can collide with anything**, by its nature — it is the reserve that fixes whatever turned up. | DEV-B says what WI-22 is touching before starting it, and agrees it with whoever owns that area. If it needs to touch WI-18's or WI-20b's work, sequence it after them. |
 
@@ -1435,6 +1646,7 @@ not because the design falls short.
 | **Maze generation stops being independent of `PYTHONHASHSEED`** — measured true today over 50 seeded mazes at four hash seeds, and quietly undone by anything that iterates a set. *Added in amendment 1.* | WI-19's asserted pictures go non-deterministic and the failure looks random. Pinned by a replay assertion in WI-19. |
 | **Two more lanes independently invent the same name**, as happened with the root package in M0. *Added in amendment 1.* | One conforming branch, as WI-5a was — cheap, provided the first-lander rule in section 2 is followed and WI-10's rule 4 lands. |
 | **An item is green on a path that never exercises the real thing**, as WI-3 was over keyboard focus. *Added in amendment 2.* | A defect that ships. The mitigation is section 4's rule and the table of owed exercises; the residual risk is whatever is not on that table, which is why I would rather it be over-long than short. |
+| **Two lanes open real windows on the user's desktop at the same time.** WI-16 and WI-17 are now concurrent and both need real-medium exercises. *Added in amendment 4.* | Two scripts racing for keyboard focus, a result neither can trust, and a mess only the person at the machine can clear. Mitigated by section 4 rule 4, gated by the conductor. |
 | **A measurement is relayed, then restated as a standing property, then written into a rule** — which is how amendment 1 acquired a wrong guard. *Added in amendment 2.* | A rule that fails honest work. Any relayed number that becomes a rule is re-measured at the moment the rule lands. |
 | **A1, A2, A3 or A4 is answered against us late.** | A3 is the expensive one and it is confined to WI-15. A1, A2 and A4 are each confined to one item. That confinement is the mitigation. |
 | **DEV-A holds the entire critical path.** | Any DEV-A block stops the project. Consider re-cutting the lanes if DEV-A slips more than a day. |
@@ -1478,7 +1690,14 @@ Four questions, none of which any of us can answer:
    **WI-11**, which has already merged, so a reversal is a small follow-up branch rather
    than a redesign. (Contradiction C-5.)
 
-And one smaller one, which we have decided ourselves under A7 and will flag rather than
-re-open: the status line literals disagree with the specimen picture by one leading space,
+And two smaller ones, both decided here and flagged rather than re-opened.
+
+**STAT-3 names a score the game cannot reach.** *(Amendment 4.)* A full game is worth
+259–271, mean 264.5, so `CLEARED  score 274` cannot happen. We keep it as a format exemplar
+under A9 and forbid any test or sweep row from asserting 274 as an achieved score. The user
+may want to know their example is impossible; nothing waits on the answer. (Contradiction
+C-6.)
+
+**The status-line literals.** We have decided this ourselves under A7: the status line literals disagree with the specimen picture by one leading space,
 and STAT-3's two examples cannot both come from one alignment rule. We reproduce the STAT-2
 and STAT-3 literals exactly. (Contradictions C-3 and C-4.)
