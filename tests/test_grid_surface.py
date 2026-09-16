@@ -42,7 +42,7 @@ from tests.doubles import (
     assert_surface_shows,
     reconstruct_frame,
 )
-from tests.specimen import SPECIMEN_MAZE_ROWS, SPECIMEN_STATUS_ROW
+from terminal_game.presentation.specimen import SPECIMEN_MAZE_ROWS, SPECIMEN_STATUS_ROW
 
 #: Menlo at 16pt, as measured on this machine — see
 #: docs/findings/WI-2-cell-metrics.md.

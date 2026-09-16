@@ -196,7 +196,7 @@ class WalkingSkeleton:
 def specimen_frame():
     """The specimen picture from the requirements, as a frame value.
 
-    Transcribed once, in ``tests/specimen.py``, and read from there rather
+    Transcribed once, in ``terminal_game/presentation/specimen.py``, and read from there rather
     than copied: two transcriptions of a 30-row picture are two things to
     drift apart. That module is shared data, not a test case — it is
     deliberately not named ``test_*`` — but it does live under ``tests/``,
@@ -205,7 +205,7 @@ def specimen_frame():
     from a real game state.
     """
     from terminal_game.presentation.frame import Colour, Frame
-    from tests.specimen import SPECIMEN_ROWS
+    from terminal_game.presentation.specimen import SPECIMEN_ROWS
 
     return Frame.from_text("\n".join(SPECIMEN_ROWS), Colour.WALL_BLUE)
 
