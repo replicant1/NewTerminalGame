@@ -8,3 +8,7 @@
 05:02:41Z  VERIFY  the plan section 5 safety claim - that an actor motif overwriting both adjacent connectors is safe because a connector next to a corridor square is always blank - CHECKED over 12 real generated mazes rather than argued about: no wall cell of the layer is ever covered by an actor. Now a test
 05:02:41Z  VERIFY  a dot count test failed at 262 vs 261 and the missing one was the dot UNDER THE GHOST. That is correct - SCORE-4 keeps it in the field, END-4 paints the ghost over it - so the test now states that rule instead of counting blindly, and asserts the seed really does start the ghost on a dot so it cannot pass vacuously
 05:02:41Z  TEST    460 passed, 0 failed, 0 skipped  [/usr/bin/python3 -m unittest discover -t . -s . -p "test_*.py"] with WI-8 merged in; 43 of them are WI-12s
+05:04:26Z  COMMIT  WI-12 committed and pushed; PR #45 opened as a draft with --base r6/wi-8-wall-glyphs
+05:04:26Z  NOTE    WI-8 merged (PR #43) while I was opening mine, so I RETARGETED PR #45 to main with gh pr edit --base main. The stack lasted about a minute
+05:04:26Z  NOTE    merging main also brought DEV-As WI-13 (status line). Added the one test I owe that seam: whatever status_row(score, outcome) produces is what ends up on row 29, unchanged, for all three endings. WHAT it says stays WI-13s - this file still contains no status-line literal and there is a test enforcing that too
+05:04:26Z  TEST    489 passed, 0 failed, 0 skipped  [/usr/bin/python3 -m unittest discover -t . -s . -p "test_*.py"] with WI-8 and WI-13 merged in

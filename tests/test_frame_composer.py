@@ -394,6 +394,27 @@ class RowTwentyNineIsNotThisItems(unittest.TestCase):
             list(STATUS_STAND_IN), list(frame.rows[STATUS_ROW])
         )
 
+    def test_the_real_status_row_is_placed_exactly_as_it_arrives(self):
+        """The seam to WI-13, and nothing either side of it.
+
+        What row 29 *says* is WI-13's — its literals are asserted there and
+        nowhere else, and the plan forbids this file from containing one.
+        What this test owns is that whatever WI-13 produces is what ends up
+        on row 29, unchanged and un-rewritten.
+        """
+        from terminal_game.presentation.status_line import status_row
+
+        for score, outcome in (
+            (0, Outcome.UNDECIDED),
+            (37, Outcome.CAUGHT),
+            (274, Outcome.CLEARED),
+        ):
+            given = status_row(score, outcome)
+
+            frame = compose_frame(a_state(), given)
+
+            self.assertEqual(list(given), list(frame.rows[STATUS_ROW]))
+
     def test_the_composer_contains_no_status_line_literal(self):
         import inspect
 

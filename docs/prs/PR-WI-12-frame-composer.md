@@ -7,8 +7,8 @@ into a picture. WI-8 declares none of those three; this module declares no
 wall glyph.**
 
 **Developer:** DEV-B · **Branch:** `r6/wi-12-frame-composer`
-**Base:** `r6/wi-8-wall-glyphs` — **stacked**, see below · **Iteration:** M2
-**Depends on:** WI-1, WI-6 (landed), **WI-8 (not yet merged)**
+**Base:** `main` — opened stacked on `r6/wi-8-wall-glyphs`, **retargeted**
+**Iteration:** M2 · **Depends on:** WI-1, WI-6, WI-8 — all landed
 
 A game state becomes rows 0–28 of a frame value. 37 columns of maze, square
 *c* at column 2c; a blank 3-column right margin; dots as the dim gold `▪`;
@@ -16,12 +16,12 @@ the player as the three-column bright yellow `▐█▌` and the ghost as the
 three-column pink `▗█▖`, player painted first so the ghost covers it on a
 loss (END-4). Row 29 is placed exactly as handed over and never written.
 
-## Stacked on WI-8, and why the PR targets it
+## Stacked on WI-8, then retargeted
 
-WI-12 depends on WI-8 and WI-8 has not merged, so this PR is opened
-`--base r6/wi-8-wall-glyphs` and will be retargeted with
-`gh pr edit <n> --base main` once WI-8 lands. Its diff against `main` would
-otherwise show WI-8's commits as its own.
+WI-12 depends on WI-8, which had not merged when I opened this, so the PR
+went up `--base r6/wi-8-wall-glyphs`. WI-8 merged (PR #43) about a minute
+later and **the PR is now retargeted to `main`** with
+`gh pr edit 45 --base main`. The stack was real but short.
 
 **I was blocked for a few minutes and said so.** When I started, no
 `r6/wi-8-*` branch existed on the remote, so I could not stack. I recorded
@@ -50,7 +50,7 @@ and there is one shape rather than two.
 | File | |
 | --- | --- |
 | `terminal_game/presentation/frame_composer.py` | `compose_frame`, `column_of_square`, `DOT_GLYPH`, `PLAYER_MOTIF`, `GHOST_MOTIF` |
-| `tests/test_frame_composer.py` | 43 tests |
+| `tests/test_frame_composer.py` | 44 tests |
 | `terminal_game/presentation/__init__.py` | The layer's module list and the five vocabularies, updated |
 
 ## How the tests are split, and why
@@ -107,11 +107,11 @@ It looks like the specimen. No window was involved: this is all value.
 
 ```
 /usr/bin/python3 -m unittest discover -t . -s . -p "test_*.py"
-Ran 460 tests — 460 passed, 0 failed, 0 skipped
+Ran 489 tests — 489 passed, 0 failed, 0 skipped
 ```
 
-That is with WI-8's branch merged in. 43 of the 460 are new here. Nothing in
-this branch opens a window or imports a toolkit.
+That is with WI-8 and DEV-A's WI-13 both merged in. 44 of the 489 are new
+here. Nothing in this branch opens a window or imports a toolkit.
 
 ## What the tests own
 
@@ -145,6 +145,15 @@ because the plan forbids it outside WI-13.
 **The walls:** a test that no double-line glyph or lone block appears
 anywhere in the composer's executable source, so WI-12 cannot quietly
 acquire an opinion about WI-8's job.
+
+## WI-13 landed too, and there is now one test for that seam
+
+Merging `main` also brought the status line. The composer takes row 29 as a
+value and I have added the one test I owe that join: **whatever
+`status_row(score, outcome)` produces is what ends up on row 29**, unchanged,
+for all three endings. *What it says* stays WI-13's — its literals are
+asserted there and nowhere else, and the test that no status-line literal
+appears anywhere in this file still passes.
 
 ## Deviations needing a ruling
 
