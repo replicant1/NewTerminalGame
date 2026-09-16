@@ -248,19 +248,21 @@ class TheColourViewNamesWhatItShows(unittest.TestCase):
 
 class TheGameViewIsTheRealThing(unittest.TestCase):
     def test_it_is_the_real_composer_over_a_real_generated_maze(self):
+        # WI-22a.  This used to rebuild the picture out of the composer and
+        # the status line and compare against that, which reimplemented the
+        # tool's own job inside the test.  What the tool owes is that the
+        # game view is **Presentation's** picture of the seed's opening
+        # position — not a picture the tool assembled for itself — and that
+        # is the whole of what is asserted.
         import random
 
         from terminal_game.domain.maze_generator import generate_maze
         from terminal_game.domain.opening_position import opening_position
-        from terminal_game.presentation.frame_composer import compose_frame
-        from terminal_game.presentation.status_line import status_row
+        from terminal_game.presentation.picture import frame_for
 
         state = opening_position(generate_maze(random.Random(GAME_SEED)))
-        expected = compose_frame(
-            state, status_row(state.score.points, state.outcome)
-        )
 
-        self.assertEqual(expected, game_frame())
+        self.assertEqual(frame_for(state), game_frame())
 
     def test_the_same_seed_shows_the_same_picture_to_everybody(self):
         self.assertEqual(game_frame().to_text(), game_frame().to_text())
