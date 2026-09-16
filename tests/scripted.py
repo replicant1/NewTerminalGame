@@ -29,18 +29,21 @@ from terminal_game.domain.dot_field import DotField
 from terminal_game.domain.game_state import GameState, Outcome, Score
 from terminal_game.domain.maze import DIRECTIONS, Maze, Square
 from terminal_game.presentation.frame import FRAME_COLUMNS, MAZE_ROWS
-from terminal_game.presentation.frame_composer import compose_frame
-from terminal_game.presentation.status_line import status_row, status_text
+from terminal_game.presentation.picture import frame_for
+from terminal_game.presentation.status_line import status_text
 
 
 def compose(state):
-    """The two lines that bind WI-13's row 29 into WI-12's picture.
+    """A game state in, the whole picture out.
 
-    DEV-A specified this shape on PR #45 and WI-15 is written against it;
-    it is repeated here rather than invented, so that the headless game and
-    the real shell compose the same way.
+    This used to be the two lines that bind WI-13's row 29 into WI-12's
+    picture, repeated here so that the headless game and the real shell
+    composed the same way.  **WI-22 made that identity structural**: the
+    join is one function in Presentation
+    (:func:`terminal_game.presentation.picture.frame_for`) and the headless
+    game and the real shell now call it, so they cannot drift apart.
     """
-    return compose_frame(state, status_row(state.score.points, state.outcome))
+    return frame_for(state)
 
 
 def expected_picture(maze_rows, score, outcome):
