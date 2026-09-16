@@ -353,6 +353,35 @@ class RenderingTheSpecimenPicture(unittest.TestCase):
             for column in range(MAZE_COLUMNS, FRAME_COLUMNS):
                 self.assertEqual(BLANK, frame.cell_at(row, column))
 
+    def test_the_actors_are_three_column_motifs_centred_on_their_square(self):
+        """Measured from the specimen picture — plan section 5, assumption A6.
+
+        This is a statement about the *requirements document*, not about the
+        composer: it says what the picture we are copying actually does.  WI-12
+        owns the separate question of whether the composer reproduces it.
+        """
+        player_row = 13
+        ghost_row = 27
+
+        player = SPECIMEN_MAZE_ROWS[player_row]
+        ghost = SPECIMEN_MAZE_ROWS[ghost_row]
+
+        self.assertEqual("▐█▌", player[19:22])
+        self.assertEqual("▗█▖", ghost[1:4])
+        # Centre column is 2c, so the motif covers 2c-1 .. 2c+1 and eats the
+        # connector on each side.
+        for centre in (20, 2):
+            self.assertEqual(0, centre % 2)
+        # The motifs appear exactly once each in the whole picture.
+        self.assertEqual(
+            1,
+            sum(row.count("▐█▌") for row in SPECIMEN_MAZE_ROWS),
+        )
+        self.assertEqual(
+            1,
+            sum(row.count("▗█▖") for row in SPECIMEN_MAZE_ROWS),
+        )
+
     def test_the_status_row_carries_the_colour_it_was_written_in(self):
         frame = self.specimen_frame()
 
