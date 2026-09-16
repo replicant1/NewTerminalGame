@@ -321,6 +321,82 @@ WI-16's joinery view is the only thing on this project that has ever put one on 
 
 ---
 
+---
+
+## 0g. Amendment 7 — WIN-4 has two obstacles, not one
+
+### A2 has been describing the wrong obstacle
+
+The plan has treated Accessibility permission as the thing standing between us and a real
+anchor. **There is a second, unrelated obstacle underneath it, and no permission grant
+would clear it.** Measured on this machine, Tk 8.5.9 on aqua, over two runs:
+
+| Reading | Value |
+| --- | --- |
+| pointer | `(-175, -448)`, stable over five reads |
+| screen (primary) | `1512 x 982` |
+| virtual root | `(0, 0, 1512, 982)` |
+| `maxsize()` | `5120 x 2422` |
+
+The user's pointer is on a **second display, up and to the left of the primary**. Tk reports
+the pointer in **whole-desktop** coordinates, but `winfo_screenwidth/height` *and*
+`winfo_vrootwidth/height` describe the **primary display alone**. `maxsize()` knows the
+desktop is larger — so Tk knows — but **gives no origin**, so there is no rectangle anything
+can be clamped into.
+
+**So on this machine as configured, the game opens at the fallback `(120, 120)`, and A2's
+permission was never the reason.** If the user granted Accessibility tomorrow, WIN-4 would
+land in exactly the same place. That is worth saying plainly, because A2 as written implies
+a permission would fix WIN-4 and it would not. Recorded as contradiction **C-7**.
+
+**The policy, approved: an anchor that cannot be bounded is treated as nothing seen.**
+WIN-4's stated purpose is that the window lands somewhere *visible*; a fixed position on the
+primary demonstrably is, and a position we cannot bound cannot be shown to be. Falling back
+is the reading that serves the requirement rather than the one that salvages the feature.
+
+### What amendment 6 withdrew, said more precisely
+
+Amendment 6 has been read as having weakened section 4, and that needs correcting before
+anyone acts on it. **It withdrew only the *negative* half** of the anchor's owed exercise —
+"confirm no permission dialog appeared", which is not establishable by running the thing
+that might raise one. **The *positive* half — run the real query and see what it actually
+returns — was never withdrawn**, and it is exactly what earned its place here:
+
+DEV-C had guarded with `x < 0 or y < 0`, on a belief that **Tk answers `-1, -1` when it
+cannot locate the pointer. It does not** — it answers real coordinates that happen to be
+negative. The guess produced correct behaviour on this machine **by luck**, and would have
+been **wrong on a machine with a display to the right of the primary**, where an unbounded
+pointer reads past 1512 and is positive. A stub would have confirmed the wrong belief
+forever. It is now bounded against the actual screen rectangle, tested at both edges and
+both signs, with the numbers in the code.
+
+**Nobody should read amendment 6 as licence to stub the anchor.** You can exercise a
+positive; you cannot exercise a negative into existence. Both halves of that sentence are
+load-bearing.
+
+### Proof by timing — a technique, with its exact scope
+
+DEV-C has given the strongest evidence short of a person that the query does not prompt:
+**it returned in 115.0 ms and 118.6 ms.** A permission dialog blocks its calling process
+until a human answers, so **a sub-120 ms return is a return that waited for nobody**.
+
+That is a *positive* measurement from which the negative follows, which is why it is
+allowed where "run it and watch for a dialog" is not. Be exact about what it establishes:
+**this call, on this run, did not block on a person.** It does not establish that the code
+*can* never prompt — the structural absence of the privileged route still carries that
+general claim. Timing corroborates the run; absence covers every run. **WI-21 will meet
+this same shape and should use both.**
+
+### The screen gate has closed
+
+**21 windows opened, 21 reaped, no modal sheet ever raised.** Three lanes through the gate,
+two handovers, each released explicitly rather than guessed. DEV-C's own count was **zero** —
+its probe withdrew the root before anything could be mapped and never entered an event loop.
+The rule cost three round trips and bought a run in which nothing raced for focus and
+nothing was left on the user's desktop. **Keep the gate on for WI-18 and WI-21.**
+
+---
+
 ## 1. The architecture we are building, and why
 
 ### The ruling
@@ -705,6 +781,13 @@ query and confirm no prompt appeared, while the window rules below forbade runni
 that might prompt. Both only held because the query that got built cannot prompt. WI-21
 will meet the same shape; meet it this way.
 
+**But keep the positive half** *(amendment 7)*. Running the real query and **seeing what it
+actually returns** was never withdrawn, and it caught a real defect: a guard written on the
+belief that the toolkit answers `-1, -1` when it cannot locate the pointer, when in fact it
+answers real coordinates that happen to be negative — correct here by luck, and wrong on any
+machine with a display to the right of the primary. A stub would have confirmed that wrong
+belief forever. **Amendment 6 is not licence to stub the anchor.**
+
 ### If your work puts a window on the user's screen
 
 A real person is sitting in front of that screen with a live monitor open.
@@ -774,7 +857,7 @@ arrives later, the "rests on it" column is the complete list of places to change
 | **A5** | The game may **not** create or modify a profile or anything else in the user's preferences. | Nothing: candidate 2 needs no profile, so the blast radius is empty. Recorded so an answer has somewhere to land. |
 | **A6** | The specimen picture is normative for the grid-to-screen mapping. | Section 5, and through it **WI-1**, **WI-8**, **WI-12** |
 | **A10** | *(Added in amendment 6.)* SCRN-3's walls **do** "join up neatly" on screen. Four developers each declined to convert the advance-width measurement into this answer, and they were right: **equal advance proves the cells line up, not that the strokes touch.** No test can settle it. | The SCRN-3 row of the sweep, and **WI-16**'s joinery view — which is the only thing on this project that has ever rendered a crossing glyph, since the specimen picture contains none |
-| **A2 revised** | *(Amended in amendment 6.)* The anchor is the **pointer position**, not a window. A2's literal reading resolves to "no anchor window is visible without Accessibility, ever" and so degenerates to a fixed corner, which does not satisfy WIN-4 either. Both readings deviate; this one serves WIN-4's stated purpose — "so it always lands somewhere visible". Fixed offset remains the fallback. | **WI-14** alone, one constant, fallback path already tested |
+| **A2 revised** | *(Amended in amendments 6 and 7.)* The anchor is the **pointer position**, not a window, and **an anchor that cannot be bounded to a known screen rectangle counts as nothing seen** and falls back. A2's literal reading resolves to "no anchor window is visible without Accessibility, ever" and so degenerates to a fixed corner, which does not satisfy WIN-4 either; both readings deviate, and this one serves WIN-4's stated purpose. **And permission is not the only obstacle** — see C-7: on a multi-display desktop the toolkit gives the pointer in whole-desktop coordinates but describes only the primary, so the anchor is unbounded and the game falls back *whatever* the user grants. | **WI-14** alone, one constant, fallback path already tested |
 | **A9** | *(Added in amendment 4.)* STAT-3's `CLEARED  score 274` is a **format exemplar, not a reachability claim**. A full game is worth 259–271, mean 264.5, so 274 cannot occur. The two STAT-3 strings stay normative as formats; no test and no sweep row may assert 274 as an achieved score. | **WI-13**'s formatting tests, **WI-19**'s win path, **WI-20a**/**WI-20b**'s sweep rows |
 | **A8** | *(Added in amendment 3.)* On the losing turn the dot under the player **is** still taken and still scored — the player is caught *and* the dot counts. Not a coin flip: **END-3's own wording presupposes it** — "*eating* the last dot on the square the ghost is standing on is a loss, not a win" says the eating happens and only the outcome changes. | **WI-11** alone, already landed. A reversal is a WI-11 follow-up branch, **never** a WI-15 change — scattering the step order is the exact failure caution C6 exists to prevent. |
 | **A7 — restated in amendment 5** | The prohibition is on **authoring** a status-line string outside WI-13, **not** on a frame that happens to contain one. Any other item that needs row 29 obtains it from WI-13's own function, so a derived row follows a reversal automatically and a typed one would not. *(Without this, WI-19's whole-frame assertions and A7 contradict each other outright: a live row 29 is `score 0    arrows, q quits` padded to 40.)* | **WI-19**'s expected frames, and any later item composing a whole picture |
@@ -806,6 +889,17 @@ and nowhere else, so an answer costs one work item's worth of change.
 STAT-2 gives `score 0    arrows, q quits` — 26 characters, no leading space. Row 29 of the
 picture is ` score 0    arrows, q quits` — 27 characters, with one. We take **A7**: the
 STAT-2 literal is normative.
+
+**C-7 — WIN-4 has two independent obstacles, and the plan only ever described one.**
+*(Added in amendment 7, measured by DEV-C.)* A2 implies that Accessibility permission is
+what stands between the game and a real anchor. Underneath it sits a geometry problem no
+grant would clear: **the toolkit reports the pointer in whole-desktop coordinates but
+describes only the primary display.** With the pointer at `(-175, -448)`, a primary of
+`1512 x 982`, a virtual root of `(0, 0, 1512, 982)` and a `maxsize()` of `5120 x 2422` — it
+knows the desktop is bigger and **gives no origin** — there is no rectangle to clamp into.
+So the anchor is unbounded, the game falls back to a fixed position, **and it would do so
+even if the user granted the permission tomorrow.** The consequence for the sweep: a WIN-4
+row citing A2 must cite the geometry too, or it will imply a fix that does not exist.
 
 **C-6 — STAT-3 gives a winning score the game cannot produce.** *(Added in amendment 4,
 measured by DEV-A's predecessor.)* A full game is worth **259 to 271 points, mean 264.5** —
@@ -1234,6 +1328,14 @@ visible"* — better than a fixed corner does, since it follows the player acros
 The fixed offset stays as the fallback. One constant reverses it if the user rules
 otherwise.
 
+*Amendment 7 — and permission was never the only obstacle.* See contradiction C-7: on a
+multi-display desktop the toolkit reports the pointer in whole-desktop coordinates while
+describing only the primary display, so **the anchor cannot be bounded and the game falls
+back whatever the user grants.** The approved policy: **an anchor that cannot be bounded is
+treated as nothing seen.** WIN-4's purpose is that the window land somewhere *visible*, and
+a position we cannot bound cannot be shown to be. Measured: pointer `(-175, -448)`, primary
+`1512 x 982`, virtual root `(0, 0, 1512, 982)`, `maxsize()` `5120 x 2422` with no origin.
+
 ---
 
 ### M3 — *A whole game, with no window*
@@ -1532,7 +1634,9 @@ ever been argued:
   input → session → resolver chain agrees with itself through a real window.
 - **SCRN-3 cannot be closed by the sweep.** It needs A10 and a person; cite WI-16's joinery
   view and say so, and note that the specimen picture contains no crossing glyph.
-- **WIN-4 rests on A2 revised** — the pointer anchor. Say which reading the row depends on.
+- **WIN-4 rests on A2 revised** — the pointer anchor — **and on C-7**, the geometry that
+  makes it fall back regardless of any permission. A row citing only the permission would
+  imply a fix that does not exist.
 
 *Tests must establish.* The same automated completeness check as WI-20a, now over all 49
 codes, plus that every finding and human-check document the sweep cites actually exists.
@@ -1800,6 +1904,13 @@ more than that, it is their call to make; I am not building it in.
 
 Five questions, none of which any of us can answer:
 
+*Amendment 7 — the technique for WI-21, so it does not re-derive it.* Where a question is
+"did this ask the user for anything?", **do not run it and watch for a dialog.** Two things
+together settle it: the privileged route being **structurally absent** from the code, which
+covers every run on every machine, and **proof by timing** — a permission dialog blocks its
+calling process until a person answers, so a call returning in ~115 ms waited for nobody.
+The absence carries the general claim; the timing corroborates the particular run.
+
 1. **Look at the titlebar of the running game window and say whether it reads exactly
    *Terminal Game*.** First asked at WI-4, confirmed at WI-21. (Assumption A1.)
    *Amendment 1:* DEV-C read the title back from Tk as exactly `Terminal Game`, with nothing
@@ -1814,6 +1925,12 @@ Five questions, none of which any of us can answer:
    and that the type is comfortable to read.** (Assumptions A2 and A4, at WI-21.)
    *Amendment 1:* A4 now has a concrete form, which makes it far easier to answer — **is
    Menlo at 16pt, in a window of about 400 × 570 pixels, large enough to read comfortably?**
+   *Amendment 7 — set your expectations before you look.* On this machine as configured the
+   window will open at a **fixed position on the primary display**, not near your pointer,
+   because the pointer is on a second display and the toolkit cannot tell us that display's
+   bounds. **Granting Accessibility would not change this.** So the question to answer is
+   the modest one — *did it land somewhere you could see it?* — and if the answer is no, the
+   fix is a better fallback position, not a permission.
 
 4. **On the losing turn, is the dot the player walked onto still eaten and still scored?**
    *(Added in amendment 3.)* As built it is: `CAUGHT  score 7`, not 6. The specification
