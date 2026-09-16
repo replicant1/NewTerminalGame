@@ -12,3 +12,5 @@ WI-17  VERIFY  05:15:42Z  Screen ledger for this lane: 5 windows opened, 5 reape
 WI-17  TEST    05:17:50Z  601 passed, 0 failed, 0 skipped  (/usr/bin/python3 -m unittest discover -t . -s . -p "test_*.py"). Base at 67de3f1 measured separately at 574, so this branch adds 27.
 WI-17  COMMIT  05:18:21Z  bbf0b4a WI-17: the real-medium exercises, and what five real windows said
 WI-17  COMMIT  05:18:21Z  d95d90f WI-17: the tests that need no window, the finding, and the PR body
+WI-17  NOTE    05:18:58Z  Merged origin/main (d9870c9, WI-16 and WI-16a landed) into the branch. No conflict: WI-16 is inside the pixels and WI-17 is the window, exactly the boundary section 10 predicted, and the two items share no file.
+WI-17  TEST    05:18:58Z  632 passed, 0 failed, 0 skipped  (/usr/bin/python3 -m unittest discover -t . -s . -p "test_*.py") after merging origin/main. 574 base + 27 mine + 31 WI-16's.
