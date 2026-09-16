@@ -7,3 +7,7 @@
 04:42:03Z  DECIDE  test layout -> put WI-5 s tests back in tests/domain/ rather than flat, because WI-3 landed tests/shell/ and nested mirrors terminal_game/ directory for directory.
 04:42:03Z  VERIFY  origin/main (with WI-1, WI-3, WI-5) merged onto the branch; only terminal_game/ remains, terminalgame/ is gone.
 04:42:03Z  TEST    167 passed, 0 failed, 0 skipped  (/usr/bin/python3 -m unittest discover -t . -s . -p "test_*.py"): 68 WI-5, 54 WI-3, 45 WI-1.
+04:42:52Z  MERGE   PR #27 merged into main as fc238ae; origin/main brought back onto the branch.
+04:42:52Z  TEST    167 passed, 0 failed, 0 skipped on main at fc238ae  (/usr/bin/python3 -m unittest discover -t . -s . -p "test_*.py")
+04:42:52Z  NOTE    told DEV-B on their open PR #26 that terminal_game won, that none of their files moved, and what the maze query surface offers WI-7.
+04:42:52Z  DONE    WI-5a r6/wi-5a-package-name fc238ae
