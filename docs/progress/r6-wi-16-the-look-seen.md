@@ -12,3 +12,5 @@
 05:13:16Z  VERIFY  on the real screen at every size: title read back "Terminal Game" all 8 times; canvas_item_kinds ["text"] every time, so nothing but characters reached the screen; game view 698 items, joinery 714, colour card 96
 05:13:16Z  VERIFY  A4 comparison run: 14pt cell 8x16 window 320x480; 16pt 10x19 400x570; 18pt 11x21 440x630; 20pt 12x24 480x720. All four painted 698 items and all four reaped
 05:13:16Z  NOTE    SCREEN GATE RELEASED - telling the conductor now so DEV-A can have it
+05:14:45Z  NOTE    merged main, bringing DEV-Cs WI-10 house-rules guard. WI-16 passes all of it: the tool declares no wall glyph, draws no image, and the specimen move I landed as PR #50 is what lets rule 6 hold
+05:14:45Z  TEST    605 passed, 0 failed, 0 skipped  [/usr/bin/python3 -m unittest discover -t . -s . -p "test_*.py"] with the architecture guard merged in
