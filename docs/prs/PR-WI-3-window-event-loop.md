@@ -40,6 +40,30 @@ Concretely, one thing crosses in each direction and no more:
 | `terminal_game/shell/window_owner.py` | The window owner: creates the window, delivers ticks and keys to a collaborator it is given, ends the session once. |
 | `tests/shell/recording_toolkit.py` | A `Toolkit` that records calls in order and opens nothing. This is what keeps the suite window-free. |
 | `tools/probe_tk_window.py` | **Not part of the suite.** A bounded, self-quitting probe that opens one real window for about a second, measures what Tk actually did, reaps it, and prints JSON. Run deliberately. |
+| `docs/findings/WI-3-tk-window-probe.md` | What the probe measured. The title, the geometry, the cadence, and the thing in the next section. |
+
+## What the probe measured, and the one thing it changed
+
+Three windows were opened on this machine, each for about a second, each
+self-quitting, each confirmed gone. `docs/findings/WI-3-tk-window-probe.md` has
+it all; two results are worth repeating here.
+
+**The window is exactly what it was asked to be.** Title read back
+`Terminal Game`, unchanged — against the architect's candidate-1 measurement of
+`rodneybailey — Terminal Game — sleep 2`. Geometry exact: 512 × 600 at (140,
+140), canvas 512 × 600, non-resizable on both axes, black. Tick observed at
+144.2 ms against a nominal 143.
+
+**Tk swallows an exception raised inside a callback.** Found by accident, when
+the probe's own measurement code had a bug: Tk catches it, prints a traceback,
+and `mainloop()` carries on. Left alone, a session that fell over would have
+looked exactly like a session that ended, and the seam's contract would have
+been true of the recording double and false of the real toolkit. `TkToolkit`
+now points Tk's `report_callback_exception` at itself, keeps the first
+exception, stops the loop, and re-raises it out of `run_event_loop`. Measured
+again with a real window afterwards: the exception comes back out of `run()`,
+the window is reaped, and the session ends at the failure rather than at the
+backstop.
 
 ## Decisions worth knowing about
 
@@ -63,7 +87,7 @@ into a window that has already gone is the failure this item exists to prevent.
 
 ## Tests
 
-`/usr/bin/python3 -m unittest discover -t . -s . -p "test_*.py"` — **50 passed, 0
+`/usr/bin/python3 -m unittest discover -t . -s . -p "test_*.py"` — **54 passed, 0
 failed, 0 skipped.**
 
 **No test in this branch constructs a toolkit window.** The toolkit is stood in for by
@@ -82,8 +106,12 @@ What the tests own, by file:
   reaching the collaborator unchanged and un-echoed; the shutdown order, its
   idempotency, and reaping on three separate failure paths.
 - `test_tk_toolkit.py` — that the adapter answers every part of the seam, that its key
-  translation preserves name and character, and that a freshly constructed adapter has
-  no window behind it.
+  translation preserves name and character, that a freshly constructed adapter has no
+  window behind it, and the bookkeeping for a callback that fell over.
+
+The half of the failed-callback path that needs a real window is measured by
+`tools/probe_tk_window.py --fail` and written down in the finding, not asserted in
+the suite. Saying so plainly rather than leaving a gap unremarked.
 
 ## Requirements this item is responsible for
 
@@ -111,3 +139,11 @@ for the human look at WI-4 and again at WI-21. This branch does not close A1.
 - The window's own close button is wired to end the session. Without it the window
   would go and the process would stay, which is the orphan WIN-5 exists to prevent.
   This is slightly ahead of WI-17 and is flagged as an additive deviation.
+- `terminal_game/__init__.py` and `tests/__init__.py` were going to collide with
+  DEV-B's WI-1, which independently chose the same package layout. **DEV-B's text for
+  both is adopted here verbatim**, so the two branches now add identical content at
+  those paths and merge without a conflict. Theirs is the fuller of the two and
+  nothing functional crossed the boundary.
+- If anything later constructs a Tk root by some route that does not go through
+  `TkToolkit`, it inherits the exception-swallowing behaviour and will not be told.
+  WI-16, WI-17, WI-18 and WI-21 all open windows.
