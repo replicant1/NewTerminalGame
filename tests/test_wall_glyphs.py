@@ -40,7 +40,7 @@ from terminal_game.presentation.wall_glyphs import (
     wall_layer_text,
 )
 from tests.generated_mazes import maze_for
-from tests.specimen import SPECIMEN_MAZE_ROWS
+from terminal_game.presentation.specimen import SPECIMEN_MAZE_ROWS
 
 N = Direction.NORTH
 E = Direction.EAST

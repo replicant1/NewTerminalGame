@@ -247,7 +247,7 @@ class TheSpecimenPictureTest(unittest.TestCase):
     """That the skeleton paints the specimen, not something it made up."""
 
     def test_the_specimen_frame_is_the_picture_from_the_requirements(self):
-        from tests.specimen import SPECIMEN_ROWS
+        from terminal_game.presentation.specimen import SPECIMEN_ROWS
         from tools.walking_skeleton import specimen_frame
 
         frame = specimen_frame()

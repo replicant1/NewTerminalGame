@@ -20,7 +20,7 @@ from terminal_game.presentation.frame import (
     FrameBuilder,
 )
 
-from tests.specimen import (
+from terminal_game.presentation.specimen import (
     SPECIMEN_MAZE_ROWS,
     SPECIMEN_ROWS,
     SPECIMEN_STATUS_ROW,
@@ -223,9 +223,10 @@ class FramesCompareAsValues(unittest.TestCase):
         for builder in (first, second):
             builder.write(0, 0, "╔══╗", Colour.WALL_BLUE)
             builder.set_cell(5, 5, "▪", Colour.DOT_GOLD)
-            builder.write(
-                STATUS_ROW, 0, "score 0    arrows, q quits", Colour.STATUS_CYAN
-            )
+            # Deliberately not the real status line: A7 confines every
+            # status-line literal to WI-13, and this test only needs *some*
+            # cyan text on row 29.
+            builder.write(STATUS_ROW, 0, "ROW-29", Colour.STATUS_CYAN)
         return first, second
 
     def test_frames_built_the_same_way_are_equal(self):
