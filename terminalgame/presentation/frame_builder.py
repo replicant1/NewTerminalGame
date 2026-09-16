@@ -94,6 +94,8 @@ STATUS_ROW = 29
 
 #: Two columns to a square, sharing the column between neighbours: 2 x 19 - 1.
 PICTURE_WIDTH = 37
+#: How many squares across the picture has room for — MAZE-1's 19.
+SQUARES_ACROSS = (PICTURE_WIDTH + 1) // 2
 #: What is left of the 40, and MAZE-1's "narrow blank margin down the right".
 MARGIN_WIDTH = WIDTH - PICTURE_WIDTH          # 3
 
@@ -111,6 +113,28 @@ GHOST_GLYPH = "▗█▖"             # ▗█▖ quadrant, full, quadrant
 
 #: How wide an actor is drawn, and how far left of its square it starts.
 ACTOR_WIDTH = 3
+
+
+class MazeWillNotFit(ValueError):
+    """A maze with more squares than the window has room to draw.
+
+    SCRN-1 gives the picture 29 rows and MAZE-1 gives it 19 squares across, and
+    both are fixed by the window the launcher creates (WIN-2). A larger maze
+    has nowhere to go.
+
+    Refused by name rather than left to `Frame.put`, which would raise an
+    `IndexError` about a cell coordinate — true, but it names the symptom
+    rather than the requirement, and a caller reading it has to work out which
+    of the two is wrong. Plan §11.8, the same rule as `NotAWallSquare`,
+    `StatusLineWillNotFit` and `NoCorridorToStartOn`.
+    """
+
+    def __init__(self, maze, across=SQUARES_ACROSS, rows=MAZE_ROWS):
+        self.maze = maze
+        super().__init__(
+            "the picture has room for {0} squares across and {1} deep "
+            "(MAZE-1, SCRN-1) and this maze is {2} x {3}"
+            .format(across, rows, maze.width, maze.height))
 
 
 class StatusLineTooWide(ValueError):
@@ -147,6 +171,8 @@ def compose(state, status_line=None):
     WI-6's row 29; left blank when none is given, because that row is not this
     module's to write.
     """
+    if state.maze.width > SQUARES_ACROSS or state.maze.height > MAZE_ROWS:
+        raise MazeWillNotFit(state.maze)
     frame = Frame(WIDTH, HEIGHT, BLANK, Colour.DEFAULT)
     draw_maze(frame, state.maze)
     draw_dots(frame, state)

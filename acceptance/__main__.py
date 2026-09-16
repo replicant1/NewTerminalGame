@@ -26,15 +26,19 @@ def main(argv=None):
         prog="python3 -m acceptance",
         description="The acceptance pack: what a machine can check, and what "
                     "it cannot.")
-    parser.add_argument("--list", action="store_true",
-                        help="print the human checks and open nothing")
-    parser.add_argument("--run", action="store_true",
-                        help="run the exercises against the real desktop")
+    # One or the other, never both: they were two `store_true` flags and
+    # `--list` was accepted and then never read, so `--run --list` ran. Saying
+    # which you meant is better than being given one of them silently.
+    what = parser.add_mutually_exclusive_group()
+    what.add_argument("--list", action="store_true",
+                      help="print the human checks and open nothing (default)")
+    what.add_argument("--run", action="store_true",
+                      help="run the exercises against the real desktop")
     parser.add_argument("--show-picture", action="store_true",
                         help="print what the tab was showing, with --run")
     arguments = parser.parse_args(argv)
 
-    if not arguments.run:
+    if arguments.list or not arguments.run:
         print(checks.render())
         return EXIT_OK
 

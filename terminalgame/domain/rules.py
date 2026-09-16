@@ -109,13 +109,20 @@ def advance_ghost(state, square, heading):
     dots or the score changes here. Returns the state it was given if the game
     is already over: END-5's "the ghost stands still".
 
-    It also returns the same state when the ghost was told to stay where it is
-    — which happens when it has nowhere to go. `with_changes` builds a new
-    object whatever it is handed, so without this a ghost standing still would
-    look like a change to everything downstream, and the loop would redraw a
-    picture identical to the one already on the screen. Every other step in the
-    Domain returns the state it was given when nothing happened; this makes
-    that convention hold without exception.
+    It also avoids building a new state when the ghost was told to stay where
+    it is — which happens when it has nowhere to go. `with_changes` builds a
+    new object whatever it is handed, so without this a ghost standing still
+    would look like a change to everything downstream, and the loop, which
+    detects change by identity, would redraw a picture identical to the one
+    already on the screen.
+
+    Note the exact claim, because it is one step weaker than "returns the same
+    object". This returns `settle(state)`, and `settle` returns a NEW state
+    when the outcome has moved on — a stationary ghost that the player has
+    just walked into comes back as a fresh `CAUGHT` state, and must, or the
+    ending would never be recorded. So the Domain's convention is *nothing
+    changed means nothing new*, not *this call never allocates*. The loop's
+    redraw is correct either way: a changed outcome is a change worth drawing.
     """
     if state.is_over:
         return state

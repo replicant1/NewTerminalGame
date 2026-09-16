@@ -338,6 +338,75 @@ class AGameNothingBoundsButAPerson(unittest.TestCase):
         self.assertIn("close_window", runner.names)
 
 
+class TheAskingSlowsDown(unittest.TestCase):
+    """The launcher watches a game for as long as a person plays it.
+
+    Every ask is an `osascript` process and an Apple event to Terminal, and
+    `wait_until_idle` runs from the moment the window opens until the player
+    presses `q`. At a tenth of a second that is thousands of processes beside
+    the game, for the whole of it. So the loop asks quickly while the answer
+    is still likely to be changing, and then settles.
+    """
+
+    def test_it_asks_quickly_while_the_window_is_still_settling(self):
+        # The fast phase is the one that matters for correctness: a command
+        # that fails at once, or a login shell that has not started yet,
+        # resolves within a second or two of the window being created.
+        launcher, _, clock = build({"window_processes": [PLAYING] * 5 + [FINISHED]},
+                                   poll_interval=0.1, settle_after=2.0,
+                                   settled_poll_interval=1.0)
+        self.assertTrue(launcher.wait_until_idle(WINDOW_ID, timeout=60.0))
+        self.assertEqual([0.1, 0.1, 0.1, 0.1, 0.1], clock.slept)
+
+    def test_and_settles_once_the_window_is_plainly_just_running_a_game(self):
+        launcher, _, clock = build({"window_processes": PLAYING},
+                                   poll_interval=0.1, settle_after=2.0,
+                                   settled_poll_interval=1.0)
+        launcher.wait_until_idle(WINDOW_ID, timeout=10.0)
+        fast = [nap for nap in clock.slept if nap == 0.1]
+        settled = [nap for nap in clock.slept if nap == 1.0]
+        # Twenty at a tenth of a second covers the first two seconds, then it
+        # settles: eight more covers the remaining eight.
+        self.assertEqual(20, len(fast))
+        self.assertEqual(8, len(settled))
+        self.assertEqual(clock.slept, fast + settled,
+                         "the fast asks all come first")
+
+    def test_a_long_game_costs_far_fewer_asks_than_a_flat_poll_would(self):
+        # The point of the whole thing, stated as the number it saves. Ten
+        # minutes at a flat tenth of a second is 6,000 asks.
+        launcher, _, clock = build({"window_processes": PLAYING},
+                                   poll_interval=0.1, settle_after=2.0,
+                                   settled_poll_interval=1.0)
+        launcher.wait_until_idle(WINDOW_ID, timeout=600.0)
+        self.assertLess(len(clock.slept), 700)
+        self.assertGreater(6000 / float(len(clock.slept)), 8.0,
+                           "should be most of an order of magnitude cheaper")
+
+    def test_settling_does_not_loosen_the_bound_it_was_given(self):
+        # Caution C4. A slower poll must not mean overshooting the deadline by
+        # most of an interval -- the last sleep is cut to what is left.
+        launcher, _, clock = build({"window_processes": PLAYING},
+                                   poll_interval=0.1, settle_after=2.0,
+                                   settled_poll_interval=1.0)
+        self.assertFalse(launcher.wait_until_idle(WINDOW_ID, timeout=2.5))
+        self.assertEqual(2.5, clock.now)
+
+    def test_a_caller_that_asks_for_a_slow_poll_is_not_given_a_fast_one(self):
+        # `poll_interval` is a floor as well as the opening speed, so settling
+        # can only ever slow the loop down. Here the settled interval is the
+        # SHORTER of the two and is correctly ignored: every ask stays 2.0s
+        # apart. The trailing 1.0 is not the settled interval reasserting
+        # itself, it is the last sleep being cut to the 1.0s left before the
+        # deadline.
+        launcher, _, clock = build({"window_processes": PLAYING},
+                                   poll_interval=2.0, settle_after=2.0,
+                                   settled_poll_interval=1.0)
+        launcher.wait_until_idle(WINDOW_ID, timeout=9.0)
+        self.assertEqual([2.0, 2.0, 2.0, 2.0, 1.0], clock.slept)
+        self.assertEqual(9.0, clock.now)
+
+
 class GoingIsCheckedWithVisible(unittest.TestCase):
     """Measured in WI-3: Terminal keeps a window addressable after a close."""
 

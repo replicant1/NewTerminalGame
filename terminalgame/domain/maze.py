@@ -20,8 +20,6 @@ outside (MAZE-3).
 
 from __future__ import annotations
 
-from typing import Iterable, Iterator, List, Sequence, Tuple
-
 #: The grid the specification asks for: 19 squares across, 29 deep (MAZE-1).
 #: These are squares of the maze, not columns and rows of a terminal.
 WIDTH = 19
