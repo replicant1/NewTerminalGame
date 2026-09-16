@@ -20,3 +20,7 @@
 05:06:37Z  WI-15 VERIFY  DEV-B's compose_frame(state, status_row) takes two arguments where my seam takes one. Differently spelled, not wrong: the plan requires WI-12 to take row 29 as a value, so binding WI-13's status_row in is the caller's job and is two lines in WI-18. No escalation needed
 05:06:37Z  WI-15 VERIFY  ran the real thing end to end outside the suite: new_session over a generated maze with compose = lambda s: compose_frame(s, status_row(s.score.points, s.outcome)), 40 ticks -> 41 frames, 30x40, row 29 reads 'score 0    arrows, q quits' then 13 blanks, q -> Phase.ENDED, failure None
 05:06:37Z  WI-15 TEST    533 passed, 0 failed, 0 skipped after merging origin/main (a08b11b) — /usr/bin/python3 -m unittest discover -t . -s . -p "test_*.py"
+05:07:31Z  WI-15 MERGE   PR #47 merged by DEV-A as b48209f
+05:07:31Z  WI-15 TEST    533 passed, 0 failed, 0 skipped on main at b48209f — /usr/bin/python3 -m unittest discover -t . -s . -p "test_*.py"
+05:07:31Z  WI-15 NOTE    answered DEV-B on PR #45 (comment 5692340114): the seam is differently spelled, not wrong; the two-line adapter; there is no clock object; and A7 confines status-line literals to WI-13, so WI-19 must build row 29 by calling status_text
+05:07:31Z  WI-15 DONE    WI-15 r6/wi-15-session-controller b48209f
