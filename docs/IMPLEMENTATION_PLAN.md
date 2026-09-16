@@ -189,6 +189,59 @@ and carries a remaining-work view alongside the baseline.
 
 ---
 
+## 0e. Amendment 5 — two of my own rules were wrong, and WI-19 is where they met
+
+`main` at `c4198e4`, **533 passed, 0 failed, 0 skipped**. Twenty-one landings, green after
+every one. **Read this before writing WI-19**; two of its instructions pointed at things
+that do not exist or cannot both be obeyed.
+
+**There is no clock, and there should not be one.** My ownership table gave DEV-A "the clock
+seam" and told WI-19 to consume it. That was wrong, and wrong in an instructive way: under
+candidate 2 **control is inverted** — the toolkit owns the loop and the Shell's tick timer
+already drives the ticking. A session-owned clock would be a *second* one that only tests
+ever use. Section 1 of this plan says control is inverted; my ownership table was written
+out of candidate 1's habits anyway. The architecture had it right in its candidate-2
+diagram. **The session exposes `tick()`, `move()` and `quit()`, and that is what WI-19
+drives.** The "headless session" half of that ownership row stands; the "clock seam" half is
+withdrawn.
+
+**A7 and WI-19 contradicted each other, and A7 is the one that needed restating.** WI-19 is
+told to assert whole frames as text; A7 says no item but WI-13 may contain a status-line
+literal. Measured, row 29 of a live frame is `score 0    arrows, q quits` padded to 40 — so
+**every hand-typed expected picture contains the literal.** The fix is the one DEV-A already
+gave DEV-B: compose the expected row 29 from WI-13's own function and join it onto 29 maze
+rows. So A7 now reads precisely: **the prohibition is on *authoring* a status-line string,
+not on a frame that happens to contain one.** That keeps the property A7 exists for — a
+reversal changes one place — because a derived row follows WI-13 automatically and a typed
+one does not.
+
+**DEV-A declining to write the scanner is the best judgement call of the run.** It was asked
+for a guard forbidding status-line literals outside WI-13, saw that as stated it would fail
+WI-19's honest work, and **declined to build a guard that would be wrong** rather than
+building it and letting somebody else discover why. That is amendment 2's lesson applied
+without being told it. No such scanner is required; if anyone ever wants one, the only
+correct form is *no string constant containing `arrows, q quits`, `CAUGHT` or `CLEARED`
+outside WI-13's own module*, and it stays optional.
+
+**C-4 is worse than I wrote it, and now has numbers.** Not merely that no *alignment* rule
+fits — **no padding rule of any kind fits.** See section 7. A7's per-ending templates go
+from being the simplest reading to being the only one.
+
+**Two inherited things, both accepted, neither to be re-litigated.** The Turn Resolver sits
+in the domain package rather than an application one; **it stays.** And a key reaches the
+session as `move(Direction)`/`quit()` rather than as an `Intent`, forced by my own layer
+rule. Both are explained where they belong, in section 1 and in WI-18.
+
+**And one thing WI-18 must not miss:** the session records a failure rather than raising it,
+because Tk swallows exceptions in callbacks. **WI-18 must check it after the loop returns**
+or a crashed game exits looking clean. That is the `after()` finding arriving in the item
+that consumes it.
+
+**WI-1a** — the specimen fixture leaving `tests/` — is **approved**, same class as WI-5a.
+DEV-B answered DEV-C's question by landing it, which is the first-lander rule working.
+
+---
+
 ## 1. The architecture we are building, and why
 
 ### The ruling
@@ -248,6 +301,22 @@ Shell  ->  Presentation  ->  Application  ->  Domain
   the only place the windowing toolkit may be named at all. **This is a rule about
   production code, not about tests** *(clarified in amendment 2)*: a test that checks the
   real adapter against the seam must import the toolkit, and is right to.
+
+*Amendment 5 — two consequences of this rule that have already been hit, both settled.*
+
+**The Turn Resolver sits in the domain package, not an application one. It stays there.**
+The architecture's diagram puts it in the Application layer, and the tree does not. That is
+fine, and moving it would be churn that breaks imports for no behavioural gain. **The rule
+I fixed is about what may import what, and it is not violated** — the resolver imports
+nothing impure and nothing above it. Which module a piece of logic lives in was never mine
+to decide, and I am not going to start deciding it in the tail of the run. The one thing
+that must stay true is its **purity**: if the Turn Resolver ever needs a clock, a window or
+a random source it was not handed, *that* is the moment it moves.
+
+**A key reaches the session as `move(Direction)` or `quit()`, not as an `Intent`.** That is
+this rule biting correctly: `Intent` is Presentation vocabulary, and the Application layer
+may not name Presentation. The three-line translation lands in **WI-18**'s collaborator.
+Correct, not a workaround.
 
 *Amendment 2 — one more direction, and it is the same kind of rule.* **Nothing that is not
 a test may depend on test code.** Tests may reach anywhere; nothing may reach into them.
@@ -411,7 +480,7 @@ design calls; the owner decides the spelling and the other lane conforms.
 | Wall glyphs and the connector rule | DEV-C (**WI-8**) | WI-12 declares none of them |
 | The dot glyph and the two actor motifs | DEV-B (**WI-12**) | WI-8 declares none of them |
 | The outcome vocabulary — playing, caught, cleared | DEV-A, wherever it landed (WI-6, else WI-11) | **WI-13** selects by it and does not define it |
-| The clock seam and the headless session | DEV-A (**WI-15**) | **WI-19** consumes it and builds no second one |
+| ~~The clock seam and~~ the headless session — **no clock object exists; the Shell's tick timer drives the ticking and the session exposes `tick()`, `move()` and `quit()`** *(corrected in amendment 5)* | DEV-A (**WI-15**) | **WI-19** drives those three and builds no clock of its own |
 | The frame value and the colour vocabulary | settled by WI-1 | everybody |
 
 ### When your branch conflicts with main
@@ -609,6 +678,7 @@ arrives later, the "rests on it" column is the complete list of places to change
 | **A6** | The specimen picture is normative for the grid-to-screen mapping. | Section 5, and through it **WI-1**, **WI-8**, **WI-12** |
 | **A9** | *(Added in amendment 4.)* STAT-3's `CLEARED  score 274` is a **format exemplar, not a reachability claim**. A full game is worth 259–271, mean 264.5, so 274 cannot occur. The two STAT-3 strings stay normative as formats; no test and no sweep row may assert 274 as an achieved score. | **WI-13**'s formatting tests, **WI-19**'s win path, **WI-20a**/**WI-20b**'s sweep rows |
 | **A8** | *(Added in amendment 3.)* On the losing turn the dot under the player **is** still taken and still scored — the player is caught *and* the dot counts. Not a coin flip: **END-3's own wording presupposes it** — "*eating* the last dot on the square the ghost is standing on is a loss, not a win" says the eating happens and only the outcome changes. | **WI-11** alone, already landed. A reversal is a WI-11 follow-up branch, **never** a WI-15 change — scattering the step order is the exact failure caution C6 exists to prevent. |
+| **A7 — restated in amendment 5** | The prohibition is on **authoring** a status-line string outside WI-13, **not** on a frame that happens to contain one. Any other item that needs row 29 obtains it from WI-13's own function, so a derived row follows a reversal automatically and a typed one would not. *(Without this, WI-19's whole-frame assertions and A7 contradict each other outright: a live row 29 is `score 0    arrows, q quits` padded to 40.)* | **WI-19**'s expected frames, and any later item composing a whole picture |
 | **A7** | The literal strings in STAT-2 and STAT-3 are normative; the specimen picture's leading space on row 29 is illustrative; the two STAT-3 examples are reproduced as **per-ending templates** rather than by a column-alignment rule. (Mine, not the architect's — see section 7.) | **WI-13** and its tests |
 
 ---
@@ -657,10 +727,16 @@ line the player ever sees. We proceed on **A8** — the dot is eaten — because
 phrasing, "*eating* the last dot … is a loss, not a win", only makes sense if the eating
 happens. It lands in **WI-11**.
 
-**C-4 — STAT-3's two examples cannot both come from one alignment rule.**
-`CAUGHT  score 37   q quits` puts `q quits` at column 19; `CLEARED  score 274  q quits`
-puts it at column 20. No single padding rule produces both. We take **A7**: two per-ending
-templates, each reproducing its own example exactly, with the score substituted.
+**C-4 — STAT-3's two examples cannot come from any padding rule at all.** *(Strengthened in
+amendment 5, measured by extracting the literals programmatically rather than retyping
+them; the numbers are in `docs/findings/WI-13-status-line-literals.md`.)* STAT-2 is 26
+characters, `CAUGHT  score 37   q quits` is 26, `CLEARED  score 274  q quits` is 27, and
+`q quits` sits at columns 19, 19 and 20. The plan originally said no single *alignment* rule
+fits. It is worse than that: **the two STAT-3 examples differ in three places at once** —
+word length 6 against 7, two spaces after the word in both, but **three** spaces after the
+score on the loss line and **two** on the win line. A rule that aligns `score` needs one
+space after `CLEARED` where the literal has two. So **no padding rule of any kind fits**,
+and **A7's per-ending templates stop being the simplest reading and become the only one.**
 
 ---
 
@@ -1072,8 +1148,11 @@ window — the window closes without the player closing it.
 ticking has begun before control is handed to the event loop, and nothing has to be pressed
 to begin.
 
-**A whole session must be runnable with no window.** The controller is handed a clock, a
-random source and a place to send frames; a test supplies fakes for all three. This is not
+**A whole session must be runnable with no window.** *(Corrected in amendment 5: the
+controller is **not** handed a clock. Control is inverted — the Shell's tick timer drives
+the ticking and the session simply exposes `tick()`, `move()` and `quit()`. A session-owned
+clock would be a second one only tests ever use.)* It is handed a random source and a place
+to send frames; a test supplies fakes for those and calls `tick()` itself. This is not
 a convenience — WI-19 depends on it, and it is what keeps WI-18 and WI-19 out of each
 other's way. **DEV-A owns this seam and WI-19 consumes it**; if it is not there, WI-19 will
 build a second one and the two items will collide.
@@ -1188,10 +1267,23 @@ it, paint the first frame, start ticking, hand over to the event loop — and, w
 session ends, close the window and exit. Played end to end, by a person, from a single
 command.
 
+*Amendment 5 — two things this item inherits and must not miss.*
+
+**Check the session's recorded failure after the loop returns.** The session *records* an
+exception rather than raising it, because Tk swallows exceptions thrown inside an `after()`
+callback — so propagation does not work and there is nothing to catch. If this item does
+not look at that record, **a crashed game exits looking clean.** Assert it: a session that
+failed mid-loop produces a non-clean exit.
+
+**The intent dispatch lands here**, not in WI-15. A key reaches the session as
+`move(Direction)` or `quit()` rather than as an `Intent`, because the layer rule forbids the
+Application layer naming Presentation, where `Intent` lives. That is three lines of
+translation in this item's collaborator, and it is correct rather than a workaround.
+
 *Tests must establish.* **The join only** — that the entry point assembles the real
-components and that starting it produces a first frame before the loop is entered, and that
-ending the session closes the window. Everything below has its own tests; do not re-assert
-any of it here. One defect should turn one test red.
+components, that starting it produces a first frame before the loop is entered, that ending
+the session closes the window, and that a recorded failure is noticed. Everything below has
+its own tests; do not re-assert any of it here. One defect should turn one test red.
 
 ---
 
@@ -1214,6 +1306,16 @@ WI-18's, and keeping the two apart is what lets them run side by side.
 true, and it is the kind of thing a later change quietly undoes by iterating a set. Pin it:
 assert that a seeded game replays identically, and say in the PR body that the scripted
 game depends on it.
+
+*Amendment 5 — two corrections to this item's brief, both before it starts.*
+**There is no clock to consume.** Drive the session directly: call `tick()` for the ghost's
+turn, `move()` for a key, `quit()` to end it. Nothing in this item constructs a clock.
+**And do not hand-type row 29.** A7 forbids authoring a status-line string outside WI-13,
+and a live frame's row 29 is `score 0    arrows, q quits` padded to 40, so every typed
+expected picture would contain one. Compose the expected row 29 from **WI-13's own
+function** and join it onto the 29 maze rows you do type. The derived row then follows
+WI-13 if the user ever rules differently, which is the whole point of confining the
+literals.
 
 *Amendment 4.* The win path's final score is **whatever the seeded maze yields** — between
 259 and 271, mean 264.5. **Do not assert 274**; STAT-3's example is a format exemplar and
