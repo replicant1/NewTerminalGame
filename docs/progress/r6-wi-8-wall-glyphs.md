@@ -8,3 +8,9 @@
 04:56:59Z  WI-8 DRAFT   terminal_game/presentation/wall_glyphs.py -- 16-entry table, wall_glyph_at, connector_glyph_east_of, wall_layer(_text); no dot and no actor motif declared anywhere in it
 04:58:06Z  WI-8 VERIFY  census over 200 generated mazes -> all 12 distinct glyphs occur; the crossing U+256C appears 61 times in 55 of the 200, so the one entry the specimen lacks is reachable in play, not theoretical; lone block U+25A0 558 times in 189 of 200; first crossing at seed 1
 04:58:24Z  WI-8 TEST    394 passed, 0 failed, 0 skipped -- /usr/bin/python3 -m unittest discover -t . -s . -p test_*.py ; 45 new (349 baseline)
+04:59:12Z  WI-8 COMMIT  db615a0 WI-8: the wall glyphs and the connector rule -- pushed to origin, r6/wi-8-wall-glyphs
+04:59:15Z  WI-8 DRAFT   docs/prs/PR-WI-8-wall-glyphs.md and docs/findings/WI-8-glyph-census.md; both state the stroke-joining question is open and WI-16's, and neither claims it verified
+04:59:23Z  WI-8 NOTE    draft PR #43 opened -- https://github.com/replicant1/NewTerminalGame/pull/43 , base main
+05:00:03Z  WI-8 DECIDE  dropped two tests that re-asserted behaviour test_maze.py already owns (off-grid neighbours at the four corners, and a weaker only-two-colours check) -> 43 new instead of 45, because the border ring and the colour rule are each now asserted once, at the level that owns them
+05:00:06Z  WI-8 TEST    392 passed, 0 failed, 0 skipped -- /usr/bin/python3 -m unittest discover -t . -s . -p test_*.py ; 43 new over the 349 baseline
+05:00:09Z  WI-8 VERIFY  tkinter._default_root is None after the whole 392-test suite -> True; no Tk interpreter created, property preserved

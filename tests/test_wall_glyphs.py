@@ -212,20 +212,6 @@ class AskingAboutASquare(unittest.TestCase):
         with self.assertRaises(ValueError):
             wall_glyph_at(maze, Square(9, 9))
 
-    def test_a_neighbour_off_the_edge_of_the_grid_is_not_a_wall(self):
-        """Which is what makes the border ring read as a ring.
-
-        The top-left square of a bordered maze has walls to its east and
-        south and nothing above or to its left, so it is the top-left corner
-        and not a crossing.
-        """
-        ring = Maze.from_text("#####\n#...#\n#...#\n#...#\n#####")
-
-        self.assertEqual("╔", wall_glyph_at(ring, Square(0, 0)))
-        self.assertEqual("╗", wall_glyph_at(ring, Square(4, 0)))
-        self.assertEqual("╚", wall_glyph_at(ring, Square(0, 4)))
-        self.assertEqual("╝", wall_glyph_at(ring, Square(4, 4)))
-
 
 class TheConnectorColumn(unittest.TestCase):
     """The odd column between two square columns, and what it holds."""
@@ -291,9 +277,14 @@ class TheWallLayer(unittest.TestCase):
     """Every wall of a maze laid out, with blanks where the walls are not."""
 
     def test_a_bordered_ring_reads_as_a_ring(self):
-        """The corners, the edges and the connector rule, in one picture.
+        """The border-ring case the plan asks for: corners, edges, connectors.
 
-        Small enough to check by eye, which the specimen is not.
+        Small enough to check by eye, which the specimen is not.  It reads as
+        a ring rather than as a row of crossings because a neighbour off the
+        edge of the grid is not a wall — which is ``Maze.wall_neighbours``'s
+        behaviour and ``tests/test_maze.py``'s to assert.  What is asserted
+        here is the join: that a corner square really comes out as the corner
+        glyph and not as something that merely has the right neighbours.
         """
         ring = Maze.from_text("#####\n#...#\n#...#\n#...#\n#####")
 
@@ -448,21 +439,20 @@ class DeclaresNothingItDoesNotOwn(unittest.TestCase):
             "unexpected glyphs {0!r}".format(sorted(emitted - allowed)),
         )
 
-    def test_over_many_mazes_the_only_colours_are_wall_blue_and_the_ground(self):
-        colours = set()
+    def test_over_many_mazes_blue_marks_ink_and_black_marks_nothing(self):
+        """Every cell blue is a wall character; every blank is black ground.
+
+        Stronger than "only two colours appear", and it is the form that
+        matters: a blue blank would read the same on screen and differently
+        in every colour assertion downstream.
+        """
         for seed in range(40):
             for row in wall_layer(maze_for(seed)):
-                colours.update(cell.colour for cell in row)
-
-        self.assertEqual({WALL_COLOUR, Colour.GROUND_BLACK}, colours)
-
-    def test_a_blank_cell_is_never_coloured_as_though_something_were_drawn(self):
-        for row in wall_layer(maze_for(3)):
-            for cell in row:
-                if cell.glyph == BLANK_CONNECTOR_GLYPH:
-                    self.assertEqual(Colour.GROUND_BLACK, cell.colour)
-                else:
-                    self.assertEqual(WALL_COLOUR, cell.colour)
+                for cell in row:
+                    if cell.glyph == BLANK_CONNECTOR_GLYPH:
+                        self.assertEqual(Colour.GROUND_BLACK, cell.colour)
+                    else:
+                        self.assertEqual(WALL_COLOUR, cell.colour)
 
 
 class TheWallsOfARealMaze(unittest.TestCase):
