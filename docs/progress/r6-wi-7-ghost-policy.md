@@ -13,3 +13,10 @@
 04:49:19Z  NOTE    merged origin/main, bringing DEV-As WI-6 (PR #32). Clean, no conflicts. Whole suite 305 green
 04:49:19Z  NOTE    GAP found by merging WI-6: GameState holds ghost as a bare Square with no heading, but GHOST-2 needs the heading carried between ticks and next_step returns one for exactly that reason. Nothing collides and nothing is broken, but WI-11 is DEV-As and is what will call next_step. Raised on their PR #32 with two options and my recommendation (add ghost_heading to the frozen GameState); did NOT touch their file. Not escalated
 04:49:19Z  TEST    305 passed, 0 failed, 0 skipped  [/usr/bin/python3 -m unittest discover -t . -s . -p "test_*.py"] with WI-6 merged in
+04:50:27Z  NOTE    merge of PR #33 was refused once with "Base branch was modified" - a normal race, not a permission refusal. DEV-A landed WI-6a/WI-6b while I was readying. Fetched, merged (clean), re-ran the whole suite, and moved the ghost module from "still to come" to "what is here so far" in the domain package docstring, which DEV-A had just written
+04:50:27Z  TEST    305 passed, 0 failed, 0 skipped  [/usr/bin/python3 -m unittest discover -t . -s . -p "test_*.py"] after the second merge of main
+04:51:17Z  COMMIT  aa141f8 WI-7: merge main again, and list the ghost module in the domain docstring
+04:51:17Z  MERGE   PR #33 merged to main as aecc4be; fetched and fast-forwarded; whole suite re-run on the landed tree
+04:51:17Z  TEST    305 passed, 0 failed, 0 skipped  [/usr/bin/python3 -m unittest discover -t . -s . -p "test_*.py"] on the landed tree
+04:51:17Z  NOTE    these closing lines are committed on r6/wi-7a-close-the-log because WI-7 had already merged when they were written; the log itself is still WI-7s
+04:51:17Z  DONE    WI-7 r6/wi-7-ghost-policy aa141f8 (merged as aecc4be)

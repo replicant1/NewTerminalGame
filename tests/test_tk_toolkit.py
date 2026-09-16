@@ -58,6 +58,22 @@ class AFreshAdapterHasNoWindowTest(unittest.TestCase):
     def setUp(self):
         self.toolkit = TkToolkit()
 
+    def test_no_toolkit_interpreter_has_been_created(self):
+        """The property that actually keeps a window off the screen.
+
+        This module is the one place in the suite that imports the toolkit at
+        all — the Tk adapter cannot be checked against the seam without it.
+        Importing is harmless: ``tkinter.Tk()`` is what reaches the window
+        server, and nothing in the suite calls it. This asserts that
+        directly, at the one place it could stop being true.
+        """
+        import tkinter
+
+        self.assertIsNone(
+            tkinter._default_root,
+            "something in the suite has created a Tk interpreter",
+        )
+
     def test_it_has_nothing_to_run_an_event_loop_for(self):
         with self.assertRaises(RuntimeError):
             self.toolkit.run_event_loop()
