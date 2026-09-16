@@ -9,3 +9,10 @@
 04:32:33Z  PLAN    terminalgame/domain/{maze,maze_invariants,maze_generator}.py plus tests/domain/*; Maze owns the query surface DEV-B and DEV-C consume in M1.
 04:34:00Z  VERIFY  /usr/bin/python3 -m unittest discover -t . -s . -p "test_*.py" -> Ran 32 tests, OK (32 passed, 0 failed, 0 skipped). Discovery finds tests/domain via __init__.py packages.
 04:34:00Z  TEST    32 passed, 0 failed, 0 skipped
+04:34:42Z  COMMIT  efe73be WI-5: the maze value, its query surface, and a carve-repair-verify generator
+04:34:42Z  COMMIT  6bc0ed7 WI-5: PR summary for the maze generator
+04:34:42Z  VERIFY  branch pushed to origin; draft PR #24 opened against main.
+04:36:57Z  VERIFY  specimen picture in FUNCTIONAL_REQUIREMENTS.md parsed as a 19x29 grid: 29 rows, every row exactly 37 characters; all 126 odd/odd squares corridor; all 190 even/even squares wall; border solid; 264 corridor squares; 0 dead ends; 0 unreachable; 0 two-wide blocks. The coordinate scheme is confirmed against the normative picture, and contradiction C-1 (37 not 38) is corroborated independently.
+04:36:57Z  VERIFY  timing: generate+verify x200 = 0.94s, of which carve+braid+grid 0.18s and structural verification 0.78s. Verification is ~4ms per maze, paid once per game in production.
+04:37:37Z  TEST    68 passed, 0 failed, 0 skipped  (/usr/bin/python3 -m unittest discover -t . -s . -p "test_*.py", 3.02s)
+04:37:37Z  DRAFT   docs/findings/WI-5-specimen-grid-structure.md
