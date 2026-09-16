@@ -12,3 +12,8 @@
 05:04:26Z  NOTE    WI-8 merged (PR #43) while I was opening mine, so I RETARGETED PR #45 to main with gh pr edit --base main. The stack lasted about a minute
 05:04:26Z  NOTE    merging main also brought DEV-As WI-13 (status line). Added the one test I owe that seam: whatever status_row(score, outcome) produces is what ends up on row 29, unchanged, for all three endings. WHAT it says stays WI-13s - this file still contains no status-line literal and there is a test enforcing that too
 05:04:26Z  TEST    489 passed, 0 failed, 0 skipped  [/usr/bin/python3 -m unittest discover -t . -s . -p "test_*.py"] with WI-8 and WI-13 merged in
+05:06:02Z  COMMIT  3b75e99 WI-12: merge main, and assert the seam to WI-13s row 29
+05:06:02Z  MERGE   PR #45 merged to main; fetched and merged origin/main back; whole suite re-run on the landed tree
+05:06:02Z  TEST    489 passed, 0 failed, 0 skipped  [/usr/bin/python3 -m unittest discover -t . -s . -p "test_*.py"] on the landed tree
+05:06:02Z  NOTE    these closing lines and the M2 completion record are on r6/wi-12a-completion-record, because WI-12 had already merged when they were written
+05:06:02Z  DONE    WI-12 r6/wi-12-frame-composer 3b75e99 (merged)
