@@ -576,6 +576,20 @@ Four paths, exactly these shapes, no fifth:
 | `docs/completions/COMPLETION-<MILESTONE>-DEV-<X>.md` | lane, per iteration | `docs/completions/COMPLETION-M2-DEV-B.md` |
 | `docs/progress/<branch-name>.md` | branch | `docs/progress/r6-wi-3-window-event-loop.md` |
 | `docs/findings/<ITEM>-<slug>.md` | measurement worth keeping | `docs/findings/WI-2-cell-metrics.md` |
+| `docs/<NAME>.md`, capitals | **the whole project** | `docs/TRACEABILITY.md` |
+
+*Amendment 8 — that last row is a recognition, not a new invention.* DEV-C asked where
+WI-20a's specification sweep goes, having correctly noticed it is none of the four shapes,
+and `developer.md` tells you to ask rather than invent a fifth. The answer is that **the
+four paths are all per-something directories** — per work item, per lane, per branch, per
+measurement — each holding many small files. **A document about the whole project is a
+different kind of thing, and three of them already exist**: `FUNCTIONAL_REQUIREMENTS.md`,
+`ARCHITECTURE.md` and this plan, all at `docs/`, all in capitals. The sweep is their peer,
+so it goes beside them.
+
+**The sweep is `docs/TRACEABILITY.md`.** No work item code in the name: the document
+outlives WI-20a and WI-20b, and a reader from outside this run should not have to know what
+those were in order to understand what they are holding.
 
 The progress log is named after the branch with the slash flattened to a hyphen, so that
 two worktrees never write the same file.
@@ -1559,6 +1573,17 @@ layer. A sweep is worth least when the author checks their own coverage and most
 fresh reader asks whether a requirement really has a test that pins it, or has merely been
 ticked. Keeping it out of DEV-A's lane is the point of it, not an accident of scheduling.
 
+*Amendment 8 — where it goes.* **`docs/TRACEABILITY.md`**, a project document beside
+`FUNCTIONAL_REQUIREMENTS.md` and `ARCHITECTURE.md`, not under any of the four per-something
+directories. **One file, written twice** — this item creates it, WI-20b completes it — not
+two files, because a reader must never have to work out which of two traceability documents
+is the current one. Git already records that there were two landings.
+
+Because the first landing is deliberately incomplete, **say so at the top of the document
+itself**: which landing this is, and what is not yet covered. Otherwise somebody reading it
+between the two landings takes an incomplete sweep for a finished one, which is the one way
+a traceability document can actively mislead.
+
 *Outcome.* A traceability document covering every requirement code landed by the end of M3:
 the code, the work item, and **the named test that pins it** or the named human check that
 must look at it. Where a requirement is covered only by a caveated assumption (WIN-2, WIN-4,
@@ -1616,6 +1641,10 @@ what it is touching before it starts. See section 10.
 
 **WI-20b — The specification sweep, second landing** · DEV-C · **2 days** · depends on
 **WI-18**, **WI-19**, **WI-20a** · `r6/wi-20b-spec-sweep-final`
+
+*Amendment 8.* This completes **`docs/TRACEABILITY.md`** in place — the same file WI-20a
+created, not a second one — and removes the "which landing is this" notice, because by then
+there is only one answer.
 
 *Outcome.* The sweep completed against the wired game: the remaining codes traced, the four
 caveated rows (WIN-2, WIN-4, WIN-5, SCRN-2) recorded with their assumption and the finding

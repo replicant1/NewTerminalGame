@@ -199,3 +199,10 @@
 05:18:48Z  VERIFY  proof by timing: the anchor query returned in 115.0 ms and 118.6 ms -> a TCC dialog blocks its calling process until a person answers, so a sub-120ms return waited for nobody. Establishes that THIS call on THIS run did not prompt; the structural absence still carries the general claim
 05:18:48Z  BLOCKED amendment 7 was written into the plan twice in the worktree holding DEV-A's branch and discarded twice by that branch's git operations -> reissued from the scratchpad as an idempotent patch script, re-cut against main at f926bc7 after the first script correctly refused to half-apply
 05:18:48Z  DONE    docs/IMPLEMENTATION_PLAN.md amendment 7
+05:30:00Z  READ    conductor relay 8 — DEV-C asks where WI-20a's sweep lives; main green at 661 passed across twenty-six landings; WI-18, WI-19, WI-20a all in flight
+05:30:00Z  WEIGH   where the specification sweep goes : docs/findings/ as the nearest of the four shapes; a fifth per-something directory; or beside the existing project documents
+05:30:00Z  DECIDE  the sweep is docs/TRACEABILITY.md -> because the four paths in developer.md are all PER-SOMETHING directories holding many small files, and a document about the whole project is a different kind of thing that already has three examples at docs/ in capitals: FUNCTIONAL_REQUIREMENTS.md, ARCHITECTURE.md and the plan. The sweep is their peer, not a fifth category
+05:30:00Z  DECIDE  no work item code in the name -> the document outlives WI-20a and WI-20b and a reader from outside this run should not need to know what those were
+05:30:00Z  DECIDE  one file written twice, not two files -> a reader must never have to work out which of two traceability documents is current; git already records that there were two landings
+05:30:00Z  NOTE    because WI-20a's landing is deliberately incomplete, the document must say at its top which landing it is and what is not yet covered — otherwise an incomplete sweep reads as a finished one, which is the one way a traceability document can actively mislead
+05:30:00Z  DONE    docs/IMPLEMENTATION_PLAN.md amendment 8
