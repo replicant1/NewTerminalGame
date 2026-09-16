@@ -7,3 +7,6 @@
 05:09:42Z  WI-10 NOTE    DEV-B answered on PR #45 by landing it: PR #50 'WI-1a: the specimen fixture leaves tests/ (unblocks WI-10 rule 6)' moved tests/specimen.py to terminal_game/presentation/specimen.py. Rule 6's violation is gone; all six rules now clean on main. Block never became a BLOCKED line.
 05:09:46Z  WI-10 VERIFY  all six rules clean over the tree after merging origin/main c4198e4 -- rule 1 over 19 files, rule 2 over 9, rule 3 over 30, rule 4 over 57, rule 6 over 30, rule 5 over the live interpreter
 05:09:50Z  WI-10 TEST    574 passed, 0 failed, 0 skipped -- /usr/bin/python3 -m unittest discover -t . -s . -p test_*.py ; 41 of them WI-10's
+05:10:36Z  WI-10 NOTE    draft PR #52 opened -- https://github.com/replicant1/NewTerminalGame/pull/52 , base main
+05:11:18Z  WI-10 READ    amendment 4 landed while I worked: WI-17 moves DEV-C -> DEV-A; WI-20a/WI-20b stay with DEV-C; new section 4 rule that two lanes must not put real windows on the live desktop at once, conductor holds the gate. WI-10 unaffected.
+05:11:22Z  WI-10 TEST    574 passed, 0 failed, 0 skipped after merging origin/main 4c82efe -- all six rules still clean; /usr/bin/python3 -m unittest discover -t . -s . -p test_*.py
