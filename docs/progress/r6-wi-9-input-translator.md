@@ -13,3 +13,8 @@
 04:55:58Z  NOTE    announced the intent vocabulary to DEV-A on PR #39 (WI-15 is theirs and consumes it) and raised the modifier-state question with DEV-C on PR #25. My recommendation to DEV-C was NOT to add it - control-Up moving the player is harmless and a Tk bitmask would spoil a toolkit-neutral value - but it should be a decision rather than an accident
 04:55:58Z  NOTE    CONTRADICTION in amendment 1: the ownership table gives "directions and headings" to DEV-B in WI-7 or WI-9, but the first-lander rule in the same section gives them to whatever landed first, which is DEV-As WI-5 Direction from day one. WI-7, WI-9 and now WI-11 all use it, so the tree is consistent; the table row is what is wrong. Flagged, no code moved
 04:55:58Z  TEST    374 passed, 0 failed, 0 skipped  [/usr/bin/python3 -m unittest discover -t . -s . -p "test_*.py"] with WI-11 merged in
+04:57:05Z  COMMIT  488565c WI-9: merge main, and record that WI-11 fits the intent vocabulary
+04:57:05Z  MERGE   PR #40 merged to main as 0e15213; fetched and fast-forwarded; whole suite re-run on the landed tree
+04:57:05Z  TEST    374 passed, 0 failed, 0 skipped  [/usr/bin/python3 -m unittest discover -t . -s . -p "test_*.py"] on the landed tree
+04:57:05Z  NOTE    these closing lines and the M1 completion record are committed on r6/wi-9a-completion-record, because WI-9 had already merged when they were written
+04:57:05Z  DONE    WI-9 r6/wi-9-input-translator 488565c (merged as 0e15213)
