@@ -20,3 +20,6 @@
 05:42:13Z  VERIFY  tests/test_spec_sweep.py caught MY OWN citation -- I backticked docs/findings/WI-21-the-five-questions.md, which is not on disk, and EveryDocumentTheSweepCitesExists went red. The guard works on its author. Un-backticked; 21 tests pass. Every one of the ~90 test citations in the rewritten document resolves to a real file, class and method.
 05:43:19Z  VERIFY  /usr/bin/python3 -m unittest discover -t . -s . -p "test_*.py" -> Ran 766 tests, OK. 747 on main + 19 new in tests/test_spec_sweep.py (21 -> 40)
 05:43:19Z  TEST    766 passed, 0 failed, 0 skipped
+05:44:13Z  COMMIT  e919268 WI-20b: the specification sweep, completed in place
+05:44:13Z  COMMIT  458dc12 WI-20b: the PR summary
+05:44:13Z  NOTE    PR #68 opened as a draft against main
