@@ -17,3 +17,7 @@
 04:37:37Z  TEST    68 passed, 0 failed, 0 skipped  (/usr/bin/python3 -m unittest discover -t . -s . -p "test_*.py", 3.02s)
 04:37:37Z  DRAFT   docs/findings/WI-5-specimen-grid-structure.md
 04:38:07Z  VERIFY  PYTHONHASHSEED 0, 1, 12345 and twice at random all produce the identical sha256 over 50 seeded mazes (aed6cb3cea2af6ab). MAZE-4 reproducibility does not depend on hash ordering, which WI-19 s scripted game will rely on.
+04:38:45Z  TEST    68 passed, 0 failed, 0 skipped  (/usr/bin/python3 -m unittest discover -t . -s . -p "test_*.py")
+04:38:45Z  COMMIT  544f181 WI-5: property tests over 200 seeds, and the specimen grid measured
+04:38:45Z  COMMIT  c490126 WI-5: completion record, final PR body, and the hash-seed measurement
+04:38:45Z  NOTE    deliberate overlap between the generator verify step and the property sweep, flagged in the PR body under deviations: C4 asks for both, so one defect may turn red in two files.
