@@ -213,9 +213,18 @@ session's `shut_down`.
 Each quit on its own Tk scheduler, each was reaped in a `finally`, and each acted only on
 the handle captured at the moment of creation. Afterwards
 `pgrep -fl "window_manners|walking_skeleton|probe_tk_window"` was empty and System Events
-counted **0** processes whose name contains "Python". **None was left behind and no modal
-sheet was ever raised** — the window belongs to the process, so there is no second
-application holding one.
+counted **0** processes whose name contains "Python". **None was left behind.**
+
+**On the modal sheet, stated the honest way.** *"No modal sheet was raised"* is a negative
+about the user's environment, and running the thing that might raise one is not how such a
+claim is established — the two honest routes are to make the route structurally absent and
+show the absence, or to ask the person. This is the first route, and it is WI-3's
+measurement rather than a new one: **the window belongs to this process.** The sheet Tk and
+Terminal raise is raised by an application that still holds a window whose *other* process
+is alive; under candidate 2 there is no second application and no second process, so
+killing the process takes the window with it and there is nothing left to ask about. What
+was observed here is the weaker, sufficient fact: five processes exited on their own and
+`pgrep` found none of them afterwards.
 
 ## 7. What this does not tell you
 
@@ -223,8 +232,9 @@ application holding one.
   all five windows, which is stronger evidence than candidate 1 ever had, and it is still
   not a person looking at a titlebar. Four developers have now declined to convert one into
   the other. WI-21 asks it properly.
-- **Nothing about whether the double lines join up.** SCRN-3 is not measurable and is not
-  touched here. WI-16 asks it.
+- **Nothing about whether the double lines join up.** SCRN-3, now **assumption A10**. Equal
+  advance widths prove the cells line up; they do not prove the strokes touch. Not
+  measurable, not touched here, and not rounded up.
 - **Nothing about where the window should go.** WI-14's, under A2.
 - **Nothing about a human hand on a close button.** Section 5 invokes the same Tcl command
   the window manager would, which is the real path, but a person has not pressed it.

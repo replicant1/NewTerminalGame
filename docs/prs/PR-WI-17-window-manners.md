@@ -193,7 +193,19 @@ Unchanged, and this branch deliberately did not convert any of it:
 
 * **A1 — does the titlebar read exactly `Terminal Game`?** Tk read the string back unchanged
   on all five windows. That is not a person seeing a titlebar, and it is not an answer.
-* **SCRN-3 — do the blue double lines' strokes meet?** Not measurable. Not touched here.
+* **A10 / SCRN-3 — do the blue double lines' strokes meet?** Equal advance widths prove the
+  cells line up; they do not prove the strokes touch. Not measurable. Not touched here.
+
+**On the new standard in section 4** — *a negative about the user's environment cannot be
+established by an agent running the thing that might do it*. One claim in this branch fell
+under it and has been restated rather than dropped: **"no modal sheet was raised"** is now
+made by the structural route, not the observational one. The sheet is raised by an
+application still holding a window whose other process is alive; under candidate 2 there is
+no second application, so killing the process takes the window with it and there is nothing
+to raise. What was *observed* is the weaker, sufficient fact — five processes exited on
+their own and `pgrep` found none afterwards. Nothing else in this branch claims a negative
+about the environment: the stdout/stderr capture is of this process's own streams, and the
+absent caret is established structurally, by showing no caret-bearing widget is ever built.
 
 ---
 
