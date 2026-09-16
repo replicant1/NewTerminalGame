@@ -10,3 +10,8 @@
 04:47:50Z  MERGE   origin/main brought onto the branch: WI-2 and WI-2a from DEV-B landed since. Clean, no conflict.
 04:47:50Z  NOTE    WI-2 flattened DEV-C s tests/shell into tests/, leaving tests/domain as the only nested directory. Flattened WI-5 and WI-6 s tests to match, so the convention now has no exceptions. Second move for these files; the churn itself is worth reporting.
 04:47:50Z  TEST    282 passed, 0 failed, 0 skipped  (/usr/bin/python3 -m unittest discover -t . -s . -p "test_*.py", 3.7s)
+04:48:47Z  MERGE   PR #32 merged into main as edcb5a3; origin/main brought back onto the branch.
+04:48:47Z  TEST    282 passed, 0 failed, 0 skipped on main at edcb5a3  (/usr/bin/python3 -m unittest discover -t . -s . -p "test_*.py")
+04:48:47Z  ASK     should the ghost s start square be drawn at random from the tied furthest corners? As built it is deterministic and the ghost always starts in the left-hand column. Measured in docs/findings/WI-6-start-squares.md.
+04:48:47Z  ASSUME  proceeding with the deterministic row-major tie-break, on which nothing downstream depends except what a player sees; the change is confined to ghost_start_square.
+04:48:47Z  DONE    WI-6 r6/wi-6-opening-position edcb5a3
