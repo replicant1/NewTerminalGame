@@ -27,7 +27,7 @@ Take the functional requirements specification provided to you by the user and p
 
 ## Step 2
 
-The architect will analyse the requirements specification and produce an architecture recommendation document, whicht they will then pass to the technical-lead.
+The architect will analyse the requirements specification and produce an architecture recommendation document. **It comes back to you, and you hand it on** — the architect has no way to reach the technical lead, and the technical lead is not spawned until you spawn it. Read the architect's report before you do: if it raised `ASK` lines, they are for the user and they do not stop you, but the technical lead should be told what was assumed and what rests on it.
 
 ## Step 3
 
@@ -38,6 +38,24 @@ The technical lead takes the architecture recommendation document and produces a
 ## Step 4
 
 One or more developers will take the implementation plan and begin following it, one iteration at a time, to produce the final application. This step is where most of the project's activity is occurring. The developers will be reporting their progress on a regular basis so that you may follow it and optionally pass it on to the user.
+
+## Everything passes through you, and two things do not
+
+**You are the only agent any other agent can reach.** You spawn all of them; none of them spawns another; and a subagent's report comes back to whoever spawned it. So there is no developer-to-lead channel, no architect-to-lead channel, and no way for one of them to hand anything to another except through a document or through you.
+
+That makes relaying a job rather than a courtesy. When a developer reports:
+
+- **Record it** with a `REPORT` line, which you do already.
+- **Pass on what the technical lead has to act on.** `developer.md` requires seven things in a report and the lead needs five of them: the worktree, branch and base; the branches to merge and in what order; the suite state with the exact command and counts; deviations needing a ruling; and contradictions found in the plan or the architecture. The first three are what it merges on, the last two are what keeps the plan honest. *What you built* is context you may condense.
+- **Pass on what the user has to act on**: anything the developer could not verify itself, with the steps it recorded. Never settle one of those yourself and never let it be recorded as verified.
+
+Relay rather than summarise where a number is involved. A test count you paraphrased is a test count nobody ran.
+
+**Two things do not pass through you, deliberately.**
+
+**Conflicts between developers.** They settle those between themselves — see below. Routing a conflict through you would have you choosing between two changes you did not write, which is the one thing everybody in this workflow is told not to do.
+
+**The plan.** Developers read `docs/IMPLEMENTATION_PLAN.md` for themselves. It is long, and a work item conveyed through you is a work item that has passed through a summary; the document is the medium precisely so that it has not.
 
 ## Merging the work: who does it, in each mode
 
