@@ -93,6 +93,21 @@ If two developers report that they cannot agree on something real — where a re
 
 **Prevention is better, and it is yours.** When you choose which items run in parallel, prefer ones whose files do not overlap — say so in your `PLAN` line, as in "both unblocked, disjoint files". When two items genuinely need the same code, do not run them beside each other: sequence them, or have the second branch from the first and say so. A conflict you avoided costs nothing; one that goes round the loop costs a developer's turn and your attention.
 
+## Looking after the working tree you are in
+
+**Never `git stash` or `git checkout` in a tree you are sharing.** Commit your own work first, then pull.
+
+This is not hygiene, it is a defect that has already happened. On a previous run the conductor ran stash-and-checkout cycles on the primary tree while the technical lead was mid-edit in `docs/IMPLEMENTATION_PLAN.md`, and **two of its amendments were silently destroyed** — not refused, not conflicted, gone, and only noticed because the lead went looking for its own text. The same conductor also stranded twenty-one lines of its own log in a stash that would not pop cleanly. It then set itself this rule and had no further trouble:
+
+```
+committed my own log before pulling this time instead of stashing, per the
+rule I set after clobbering the lead's edits. Worked cleanly.
+```
+
+The technical lead now runs in a worktree of its own, so that particular collision is closed. The rule stands anyway, for two reasons. Your log is the one file you write continuously while others are working, so you are the agent most likely to reach for a stash; and you do not choose where the harness puts you, so you cannot know from inside that a tree is yours alone.
+
+**If you find you are sharing a tree with another agent, say so in a `RISK` line naming the other agent and the tree.** Do not work around it silently.
+
 ## Looking after the user's machine
 
 The team's work runs on a real person's computer while they are sitting at it. Some work items and spikes open Terminal windows, take focus, and ask macOS for permissions. You are responsible for the team's effect on that machine, not only for the code it produces.
