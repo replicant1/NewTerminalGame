@@ -39,3 +39,7 @@ Branch `r6/wi-21-human-questions`, based on `main` at `238f4dd`. Non-local mode.
 05:42:45Z  WI-21 DRAFT   docs/findings/WI-21-the-five-questions.md - all five OPEN, each with its command, what to look for and the one file a reversal lands in
 05:42:45Z  WI-21 TEST    795 passed, 0 failed, 0 skipped  (/usr/bin/python3 -m unittest discover -t . -s . -p "test_*.py")
 05:42:45Z  WI-21 NOTE    answered WI-20b on PR #66: the findings file is docs/findings/WI-21-the-five-questions.md, one document, and I will post there first if the name ever changes
+05:44:14Z  WI-21 NOTE    amendment 11 landed on main mid-item; applied its rule to one of my own tests - the window-spec title assertion duplicated WI-18's, so it is gone, replaced by one that owns something nobody else does
+05:44:14Z  WI-21 COMMIT  6701be0 WI-21: the findings, and the sitting ends down the session's own path
+05:44:14Z  WI-21 COMMIT  8328452 WI-21: the completion record, and amendment 11 applied to my own test
+05:44:14Z  WI-21 TEST    796 passed, 0 failed, 0 skipped  (/usr/bin/python3 -m unittest discover -t . -s . -p "test_*.py")  [747 on main at b11a8a6 + 49 mine]
