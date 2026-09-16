@@ -20,3 +20,10 @@ Branch `r6/wi-21-human-questions`, based on `main` at `238f4dd`. Non-local mode.
 05:38:50Z  WI-21 DRAFT   tests/test_the_questions.py - 47 tests: cannot run unbounded, reaps on the failure path, no answer can be recorded, the route to the unbounded game is structurally absent, no fifth copy of the frame binding
 05:38:50Z  WI-21 TEST    787 passed, 0 failed, 0 skipped  (/usr/bin/python3 -m unittest discover -t . -s . -p "test_*.py")  [740 on main + 47 new]
 05:38:50Z  WI-21 NOTE    two test failures on first run were mine, not the tool's: the checklist is word-wrapped for a person, so a phrase spans a line break; fixed by collapsing whitespace in the assertion, no production change
+05:39:27Z  WI-21 COMMIT  5f13fae WI-21: the five questions, and a bounded harness to ask them with
+05:39:27Z  WI-21 COMMIT  6c8b7c7 WI-21: the PR summary
+05:39:27Z  WI-21 VERIFY  draft PR #66 opened against main -> https://github.com/replicant1/NewTerminalGame/pull/66
+05:39:27Z  WI-21 BLOCKED need the screen gate from the conductor: all the non-window work is done, and the harness now has to be run short-first on the real desktop
+05:39:57Z  WI-21 NOTE    WI-22 landed while I worked; merged origin/main into the branch, no conflict. frame_for(state) now owns the join; the harness needs no frame of its own, so nothing changed here
+05:39:57Z  WI-21 TEST    794 passed, 0 failed, 0 skipped  (/usr/bin/python3 -m unittest discover -t . -s . -p "test_*.py")  [747 on main + 47 mine]
+05:39:57Z  WI-21 NOTE    screen gate GRANTED by the conductor; going short-first - one 2s window to prove the mechanics and the reap before anything longer
