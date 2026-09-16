@@ -87,8 +87,8 @@ Two notes for the M1 consumers:
 
 ## Tests
 
-`tests/test_maze.py`, `tests/test_maze_invariants.py` and
-`tests/test_maze_generator.py`.
+`tests/domain/test_maze.py`, `tests/domain/test_maze_invariants.py` and
+`tests/domain/test_maze_generator.py`.
 
 The generator's properties are asserted **over many seeds**, from mazes built
 once and shared across the tests. The property assertions in
@@ -140,12 +140,11 @@ None in substance. Names, module layout and the test tree are mine, as section
 1 of the plan allows. Four things are additive and want a ruling only if the
 lead disagrees:
 
-- **A root package with a `domain/` subpackage.** Nothing existed to follow
-  when this branch was cut, so it originally landed as `terminalgame/` with
-  tests in `tests/domain/`. WI-1 landed `terminal_game/` and a flat `tests/`
-  in the meantime, so **`r6/wi-5a-package-name` moves WI-5 onto DEV-B's
-  spelling** — see `docs/prs/PR-WI-5a-package-name.md`. Nothing of DEV-B's
-  changes.
+- **A root package with a `domain/` subpackage**, and tests in a mirrored
+  `tests/domain/`. Nothing existed to follow when this branch was cut, so it
+  landed as `terminalgame/`; WI-1 and WI-3 both landed `terminal_game/`, so
+  **`r6/wi-5a-package-name` moves WI-5 onto the majority spelling** — see
+  `docs/prs/PR-WI-5a-package-name.md`. No other lane's files change.
 - **`maze_invariants.py` as a module of its own**, rather than private helpers
   inside the generator. It makes the verify step testable on inputs with known
   faults, and WI-6 and WI-11 may want the same predicates.
