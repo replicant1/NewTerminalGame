@@ -14,12 +14,12 @@ commit and merged by DEV-A once green.
 
 | File | What it is |
 | --- | --- |
-| `terminalgame/domain/maze.py` | `Square`, `Direction`, `SquareKind` and the immutable `Maze` — the grid and the query surface WI-5 owns |
-| `terminalgame/domain/maze_invariants.py` | MAZE-2, MAZE-3, MAZE-5 and MAZE-6 as predicates over a finished grid, each returning the squares at fault |
-| `terminalgame/domain/maze_generator.py` | `generate_maze(random_source)` — carve a spanning tree, braid away every dead end, verify, and only then hand the maze out |
-| `tests/domain/test_maze.py` | the maze value and every query on it |
-| `tests/domain/test_maze_invariants.py` | each predicate against a sound maze and a hand-built maze that breaks it in one named way |
-| `tests/domain/test_maze_generator.py` | the structural properties over 200 seeds, asserted against the query surface |
+| `terminal_game/domain/maze.py` | `Square`, `Direction`, `SquareKind` and the immutable `Maze` — the grid and the query surface WI-5 owns |
+| `terminal_game/domain/maze_invariants.py` | MAZE-2, MAZE-3, MAZE-5 and MAZE-6 as predicates over a finished grid, each returning the squares at fault |
+| `terminal_game/domain/maze_generator.py` | `generate_maze(random_source)` — carve a spanning tree, braid away every dead end, verify, and only then hand the maze out |
+| `tests/test_maze.py` | the maze value and every query on it |
+| `tests/test_maze_invariants.py` | each predicate against a sound maze and a hand-built maze that breaks it in one named way |
+| `tests/test_maze_generator.py` | the structural properties over 200 seeds, asserted against the query surface |
 | `docs/findings/WI-5-specimen-grid-structure.md` | what the specimen picture's maze is actually made of, measured |
 | `docs/prs/PR-WI-5-maze-generated.md` | the pull request's body |
 | `docs/progress/r6-wi-5-maze-generated.md` | the progress log |

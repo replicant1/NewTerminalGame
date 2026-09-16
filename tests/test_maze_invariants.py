@@ -7,8 +7,8 @@ trustworthy before it is relied on.
 
 import unittest
 
-from terminalgame.domain.maze import Maze, Square
-from terminalgame.domain.maze_invariants import (
+from terminal_game.domain.maze import Maze, Square
+from terminal_game.domain.maze_invariants import (
     dead_end_squares,
     diagonal_only_corridor_pairs,
     holes_in_border,

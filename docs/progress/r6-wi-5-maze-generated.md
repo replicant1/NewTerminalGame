@@ -21,3 +21,8 @@
 04:38:45Z  COMMIT  544f181 WI-5: property tests over 200 seeds, and the specimen grid measured
 04:38:45Z  COMMIT  c490126 WI-5: completion record, final PR body, and the hash-seed measurement
 04:38:45Z  NOTE    deliberate overlap between the generator verify step and the property sweep, flagged in the PR body under deviations: C4 asks for both, so one defect may turn red in two files.
+04:39:47Z  MERGE   PR #24 merged into main as 34eba2c; origin/main brought onto the branch.
+04:39:47Z  TEST    113 passed, 0 failed, 0 skipped on the merged tree  (/usr/bin/python3 -m unittest discover -t . -s . -p "test_*.py")
+04:39:47Z  NOTE    collision found on the merged tree: DEV-B WI-1 landed root package terminal_game/ with tests flat in tests/; WI-5 landed terminalgame/ with tests in tests/domain/. Two root packages in one tree. No test fails, but DEV-C has two conventions to choose between.
+04:39:47Z  DECIDE  package name -> converge on DEV-B s terminal_game/ and flat tests/, because WI-1 landed first, its package docstring already carries the layer rule and names domain as a sub-package, and moving WI-5 changes nothing of DEV-B s.
+04:39:47Z  DONE    WI-5 r6/wi-5-maze-generated 34eba2c
