@@ -76,8 +76,8 @@ from terminal_game.presentation.frame_composer import (
     DOT_GLYPH,
     GHOST_MOTIF,
     PLAYER_MOTIF,
-    compose_frame,
 )
+from terminal_game.presentation.picture import frame_for
 from terminal_game.presentation.status_line import status_row
 from terminal_game.presentation.wall_glyphs import wall_layer
 
@@ -120,9 +120,7 @@ def game_frame(seed: int = GAME_SEED):
     seed never changes.  A frame is immutable, so sharing one is safe.
     """
     state = opening_position(generate_maze(random.Random(seed)))
-    return compose_frame(
-        state, status_row(state.score.points, state.outcome)
-    )
+    return frame_for(state)
 
 
 @functools.lru_cache(maxsize=1)
