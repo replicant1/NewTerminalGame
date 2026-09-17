@@ -34,3 +34,10 @@ __pycache__/
 # Orchestration monitor: run-local state, not project source
 orchestration/archive/
 orchestration/requests/
+
+# The conductor's own progress log, written live into the primary tree while
+# the run is going. Developers write theirs inside a worktree and commit them
+# on the branch; the conductor has no worktree, so its log sits here untracked
+# and collides with any pull that brings the same path down from a branch.
+# Untracked-and-in-the-way is the one state git will not resolve for you.
+docs/progress/conductor.md
