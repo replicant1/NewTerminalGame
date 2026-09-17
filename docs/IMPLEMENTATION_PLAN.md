@@ -10,9 +10,10 @@ Newest first. Re-read a section an amendment names before you work in it.
 
 | # | What changed | Sections |
 |---|---|---|
-| **1** | **Calling into Objective-C, AppKit, Quartz or CoreGraphics through `ctypes` is prohibited outright**, after it put three crash dialogs on the user's screen; S-2 and WI-15 lose that route and **WIN-4's general case becomes a decision for the user**, with P2 promoted to how WIN-4 is actually built. **S-1 reported and it is good news: P8 and P4 retire by measurement** — Tk 8.5 is headless-testable, the font is fixed at Menlo 16 (cell 10 × 19, window 400 × 570) — and human item 5 closes. **A measured Tk defect gets an owner:** `root.update()` never returns on a mapped window, which lands on WI-5 and WI-6. **AppleScript's `position` is wrong by a display height on a secondary display**, so WI-15 must use `bounds`. **Five WI-0 deviations ruled on**, of which `unplaced-module` is upheld into the layer rule and the `needs_window` marker is adopted as the one mechanism. **Section 8 settles the log-tail problem** every developer meets at their first merge, and the case of an item that precedes the suite. **A trace gap closed: SCRN-3 splits into WI-3 (glyph) and WI-4 (colour)**, because the original row pointed the whole requirement at an item whose test clause asked only about glyphs, leaving the blue unowned; two specimen facts about wall glyphs go into WI-4's bar with it. Two new human items (7, 8) and two new assumptions (P9, P10). | 1.3, 1.5, 1.6, 1.7, 2, 4, S-1, S-2, WI-3, WI-4, WI-5, WI-6, WI-7, WI-15, WI-17, 8, 9, 10 |
+| **1** | **Calling into Objective-C, AppKit, Quartz or CoreGraphics through `ctypes` is prohibited outright**, after it put three crash dialogs on the user's screen; S-2 and WI-15 lose that route and **WIN-4's general case becomes a decision for the user**, with P2 promoted to how WIN-4 is actually built. **S-1 reported and it is good news: P8 and P4 retire by measurement** — Tk 8.5 is headless-testable, the font is fixed at Menlo 16 (cell 10 × 19, window 400 × 570) — and human item 5 closes. **A measured Tk defect gets an owner:** `root.update()` never returns on a mapped window, which lands on WI-5 and WI-6. **AppleScript's `position` is wrong by a display height on a secondary display**, so WI-15 must use `bounds`. **Five WI-0 deviations ruled on**, of which `unplaced-module` is upheld into the layer rule and the `needs_window` marker is adopted as the one mechanism. **Section 8 settles the log-tail problem** every developer meets at their first merge, and the case of an item that precedes the suite. **A trace gap closed: SCRN-3 splits into WI-3 (glyph) and WI-4 (colour)**, because the original row pointed the whole requirement at an item whose test clause asked only about glyphs, leaving the blue unowned; two specimen facts about wall glyphs go into WI-4's bar with it. Two new human items (now 8 and 9) and two new assumptions (P9, P10). | 1.3, 1.5, 1.6, 1.7, 2, 4, S-1, S-2, WI-3, WI-4, WI-5, WI-6, WI-7, WI-15, WI-17, 8, 9, 10 |
+| **1c** | **END-3 landed structural, so the section 1.6 fragility note is struck** — the win branch is unreachable while the player and ghost share a square, so there is no ordering left to get wrong, and the question stops costing the user anything. In its place, the plan now records **how to know a test has power without breaking code**: make the fixture prove it discriminates, add the control, make a sweep check itself, and guard the fixture against being flattened — four moves three items invented independently before anyone wrote them down. **Ruled:** eating the last dot on the ghost's square **does** score it, on END-3's own wording, so the final line reads `CAUGHT  score N` including it — player-visible, so it is human item 7 for the user to overturn. **WI-13 returns to lane B**, restoring the original assignment now that the WI-8/WI-10 pair it was moved aside for has landed; same dates, no redraw. | 1.6, 5 (WI-10, WI-13), 6.2, 9, 10 |
 | **1b** | **END-3 becomes structural.** WI-10 derives the outcome as one total function of the state, testing caught before cleared, instead of setting it in two ordered steps — so there is no collision test left to migrate and caution C6's failure mode closes. The section 1.6 fragility note says it will be struck if that lands, but is not struck yet. WI-11's Decided state becomes load-bearing for END-3, and both bars say so. Also **C-6 added**: START-3 and SCORE-4 agree, sit four sections apart, and decide one line of code between them, where reading either alone gives the wrong answer. | 1.6, 3, 5 (WI-10, WI-11) |
-| **1a** | **Two reassignments and one new landing, with the schedule redrawn twice to match.** **WI-8 moves to lane B and to M2**, because lane B owns WI-10 and one developer doing both removes a seam the plan had asked two to manage; WI-13 moves to lane C behind it. **WI-4b is added** to rewrite frame composition onto the field type WI-5 owns, after WI-4 and WI-5 each built that seam independently — **a plan defect, not a developer error**, and section 7 gains the rule that came out of it. **WI-12 is blocked behind WI-4b.** WI-8's bar gains a measured trap in START-1; WI-16's gains the fact its determinism rests on. **Totals now 42 developer-days over 21 project days in 24 items**, up from 41 / 19 / 23. | 4, 5 (WI-2, WI-4b, WI-8, WI-9, WI-16), 6.1, 6.2, 7 |
+| **1a** | **Two reassignments and one new landing, with the schedule redrawn twice to match.** **WI-8 moves to lane B and to M2**, because lane B owns WI-10 and one developer doing both removes a seam the plan had asked two to manage; WI-13 moved to lane C behind it, and back to lane B once that pair had landed and the reason expired. **WI-4b is added** to rewrite frame composition onto the field type WI-5 owns, after WI-4 and WI-5 each built that seam independently — **a plan defect, not a developer error**, and section 7 gains the rule that came out of it. **WI-12 is blocked behind WI-4b.** WI-8's bar gains a measured trap in START-1; WI-16's gains the fact its determinism rests on. **Totals now 42 developer-days over 21 project days in 24 items**, up from 41 / 19 / 23. | 4, 5 (WI-2, WI-4b, WI-8, WI-9, WI-16), 6.1, 6.2, 7 |
 
 ---
 
@@ -240,19 +241,39 @@ yourself editing correct code so that something fails, stop. **If you doubt a te
 in your progress log and your report, naming the test and why** — that is the whole
 remedy, and it costs a line of text.
 
-**One fragility worth the user's attention, stated once:** END-3 ("eating the last dot on
-the ghost's square is a loss, not a win") lives entirely in the order of two steps inside
-the turn resolver, and both orderings end the game, so an ordinary test that merely
-observes "the game ended" would not catch a refactor that swapped them — WI-10's tests
-must assert *which* outcome, on a board built so the two orderings disagree. I am naming
-it rather than imposing extra machinery; the user can decide whether more is wanted.
+**~~One fragility worth the user's attention~~ — struck, because it was retired by
+design.** This section used to name END-3 as the one requirement where an ordinary test
+might not catch a plausible refactor, since correctness lived in the order of two steps
+and both orderings end the game, and it asked the user whether to spend more effort on
+it. **WI-10 removed the ordering instead.** The outcome is derived as one total function
+of the state, so the win branch is **unreachable** while the player and ghost share a
+square — not merely tested second. There is no longer an ordering to get wrong, so the
+question no longer has a cost attached to either answer. The record is kept here so that
+nobody reintroduces the shape. *The residual, and it is real: a derived outcome is only
+stable while the state is, so **END-5's Decided state now holds END-3 up.** That coupling
+is named in WI-10's and WI-11's bars.*
 
-**And it may be about to stop being true, by design rather than by effort.** WI-10 is
-deriving the outcome as one total function of the state instead of setting it in two
-ordered steps — which leaves no collision test that could migrate, and so retires the
-fragility rather than guarding it. **If that lands, this paragraph gets struck** and the
-question above stops needing the user's time. It is not struck yet, because the code does
-not exist yet and a question put to somebody is not withdrawn on an expectation.
+**How to know a test has power, without breaking anything: make the fixture prove it
+discriminates.** This is the plan's answer, and three items arrived at it independently
+before it was written down. The pattern:
+
+- **Assert that the fixture really is the hard case.** WI-10's END-3 board asserts that
+  after the move the state satisfies **both** end conditions — so the board genuinely
+  would read as a win under the other order — and it establishes that **without touching
+  the resolver**.
+- **Add the control.** WI-10 also pins that eating the last dot *away* from the ghost
+  **is** a win. Without it, "the outcome is caught" would be satisfied by a resolver that
+  never says anything else.
+- **Make a sweep check itself.** WI-8's START-1 sweep asserts the rule in both halves
+  **and separately asserts that both halves actually occurred** — otherwise it is, in its
+  author's words, "a single-seed test wearing a sweep".
+- **Guard the fixture against being flattened.** WI-8's START-2 maze asserts that
+  straight-line and corridor distance really do disagree on it, so a later edit cannot
+  quietly remove the discrimination while the tests keep passing.
+
+Every one of these asks a question *about the test* and answers it from the test's own
+data. None of them requires editing working code, which remains prohibited without
+exception.
 
 ### 1.7 Where documents go
 
@@ -648,7 +669,7 @@ join, not what WI-4 and WI-5 already own — and that `q` ends it.
 spans the full cell** — whether a run of the horizontal double-line reads as one unbroken
 line or a dashed one. S-1 could measure advance but not ink: Tk 8.5 has no
 canvas-to-image path and this interpreter has no PyObjC and no PIL. **Look at it, say what
-you saw, and put it in your PR body.** It is human item 8 and WI-17 carries it, but you
+you saw, and put it in your PR body.** It is human item 9 and WI-17 carries it, but you
 will have the first window.
 
 **WI-8 — the opening position.** *(2 days, depends on WI-1, lane B)*
@@ -720,6 +741,17 @@ lives here too: movement never wraps.
 > **The required test is unchanged either way**, and so is the prohibition: a board where
 > the two orderings disagree, asserting **which** outcome — and nobody proves it by
 > swapping the steps.
+>
+> **One consequence of deriving rather than sequencing, which is ruled and not open.**
+> A win cannot be seen until the last dot is gone, so the eat must happen before the
+> derivation — which means **a player who eats the last dot on the ghost's square does
+> eat it, does score it, and is still caught.** The final line reads `CAUGHT  score N`
+> with that dot counted. This is what END-3's own wording says: *"**Eating** the last dot
+> on the square the ghost is standing on is a loss"* describes the act as eating and then
+> rules on the outcome — had the dot been meant to survive, it would have said "moving
+> onto". SCORE-1 and SCORE-2 then apply unconditionally; neither is conditioned on
+> surviving. It is player-visible, so it is in section 9 for the user to overturn if they
+> disagree, at the cost of one constant and one test.
 
 **One consequence of how WI-1 built the maze.** Asking about a square outside the grid
 **raises** rather than answering "wall" — deliberately, because a silent "wall" makes an
@@ -794,7 +826,7 @@ in Decided a tick moves nothing and an arrow changes nothing; END-6 and CTRL-4, 
 accepted in Playing and in Decided and that nothing else is accepted in Decided; and WIN-5,
 that reaching Ended is what ends the session.
 
-**WI-13 — input translation.** *(1 day, depends on WI-10, lane C)*
+**WI-13 — input translation.** *(1 day, depends on WI-10, lane B)*
 Raw key events to intents: the four arrow keys to the four moves, `q` and `Q` to quit,
 everything else discarded silently.
 *Tests must establish:* CTRL-1, each arrow to its direction; CTRL-4, both cases of `q`; and
@@ -848,7 +880,7 @@ at, and what a good answer looks like. Reap every window, including on the failu
 Never record as verified anything you did not observe: "I could not determine this without
 the user" is the right answer.
 *Output:* a `docs/findings/` document, and the human items in section 9 turned into
-instructions somebody can follow in two minutes. **Human item 8 — whether Menlo's
+instructions somebody can follow in two minutes. **Human item 9 — whether Menlo's
 box-drawing ink spans the full cell, so that a wall run reads as an unbroken line rather
 than a dashed one — is yours to put in front of the user**, because no agent on this
 machine can capture the pixels to judge it. **Ask it precisely.** The surface's metrics
@@ -914,7 +946,7 @@ gantt
   WI-12 the status line (C)         :wi12, 2026-09-30, 1d
   WI-15 where the window lands (C)  :wi15, 2026-10-01, 2d
   WI-11 the session controller (A)  :wi11, 2026-10-03, 2d
-  WI-13 input translation (C)       :wi13, 2026-10-03, 1d
+  WI-13 input translation (B)       :wi13, 2026-10-03, 1d
   M2 complete                       :milestone, m2, 2026-10-05, 0d
 
   section M3 A game you can play
@@ -979,8 +1011,8 @@ engine; M3 ends with a game a person can play; M4 ends with the user's answers s
 | Lane | M0 | M1 | M2 | M3 | M4 |
 |---|---|---|---|---|---|
 | **A** | S-1, WI-3 | WI-4, WI-4b, WI-7 | WI-9, WI-11 | WI-14, WI-17 | WI-20 |
-| **B** | WI-0, WI-1 | WI-2 | WI-8, WI-10 | WI-18 | WI-19 |
-| **C** | S-2, WI-5 | WI-6 | WI-12, WI-15, WI-13 | WI-16 | — |
+| **B** | WI-0, WI-1 | WI-2 | WI-8, WI-10, WI-13 | WI-18 | WI-19 |
+| **C** | S-2, WI-5 | WI-6 | WI-12, WI-15 | WI-16 | — |
 
 **Lane occupancy is 42 developer-days against 63 available (3 lanes × 21 days), about 67%.
 The idle is real and I am not hiding it:** C waits 26–30 Sep and from 8 Oct to the end; B
@@ -1224,7 +1256,15 @@ them. Route them all to the conductor, which is the only path to the user.
 6. **Confirm the reading of the status-line literals**, if it matters to them — ruling C-4
    takes the specimen picture as normative, including its leading space. Low stakes; three
    assertions in WI-12. Mentioned for completeness rather than as a blocker.
-7. **Say whether a "Python" Dock tile appearing for the duration of a test run is
+7. **Overturn, if you disagree, that eating the last dot on the ghost's square still
+   scores it.** A player who does that eats the dot, scores it, and is caught — so the
+   final line reads `CAUGHT  score N` **including** that dot. **Ruled, not open**, on
+   END-3's own wording: it says "*Eating* the last dot ... is a loss", describing the act
+   as eating and then ruling on the outcome, and SCORE-1 and SCORE-2 are not conditioned
+   on surviving. It is listed here only because **it is a number a player sees**, and a
+   number on a screen is yours to have an opinion about. *Cost to overturn:* one constant
+   and one test.
+8. **Say whether a "Python" Dock tile appearing for the duration of a test run is
    acceptable.** A withdrawn Tk root still registers with Launch Services as a foreground
    process, so the tile appears whenever the suite touches the toolkit. It is not a
    window, so the bar in section 1.6 still holds — but it is a visible effect on the
@@ -1232,7 +1272,7 @@ them. Route them all to the conductor, which is the only path to the user.
    "acceptable".** *If the answer is no:* WI-5 and WI-16 each need a marker excluding
    their Tk tests from the default suite, which also costs the headlessness those tests
    were pinning.
-8. **Look at a wall in the running game and say whether the double lines join up into one
+9. **Look at a wall in the running game and say whether the double lines join up into one
    unbroken run, or read as dashes.** S-1 could measure Menlo's glyph *advance* but not
    its *ink*: Tk 8.5 has no canvas-to-image path and this interpreter has neither PyObjC
    nor PIL, so no agent on this machine can capture the pixels to judge it. SCRN-3 says
@@ -1257,8 +1297,8 @@ these is a ruling; each is a way of proceeding chosen deliberately.
 | **P6** | "About seven times a second" is 143 ms, as a named constant | WI-14, the GHOST-1 trace row |
 | **P7** | START-2's "furthest square" may tie; the tie is broken by a deterministic rule of WI-8's choosing, pinned by a test | one test in WI-8 |
 | ~~**P8**~~ | ~~Tcl/Tk 8.5 can render the box glyphs at a consistent cell width, and a Tk root can be built in a test without a window reaching the screen~~ **Closed favourably by S-1, 01:37:42Z.** `Tk()` then `withdraw()` gives `state=withdrawn`, `ismapped=False`, `viewable=False`, frontmost application unchanged; Menlo 16 has a consistent advance across every glyph the game draws. Human item 5 does not open | — |
-| **P9** | A "Python" Dock tile during a suite run is acceptable to the user, because it is a process indicator and not a window | WI-5 and WI-16, each of which would need a default-excluded marker if the answer is no. Human item 7 |
-| **P10** | Menlo's box-drawing ink spans the full cell, so a wall run reads as one unbroken line. **Nobody has seen it.** Advance was measurable; ink was not — no canvas-to-image path, no PyObjC, no PIL | SCRN-3, and the font choice itself if it is wrong. WI-7 gives the first sight of it; human item 8 |
+| **P9** | A "Python" Dock tile during a suite run is acceptable to the user, because it is a process indicator and not a window | WI-5 and WI-16, each of which would need a default-excluded marker if the answer is no. Human item 8 |
+| **P10** | Menlo's box-drawing ink spans the full cell, so a wall run reads as one unbroken line. **Nobody has seen it.** Advance was measurable; ink was not — no canvas-to-image path, no PyObjC, no PIL | SCRN-3, and the font choice itself if it is wrong. WI-7 gives the first sight of it; human item 9 |
 
 P8 was the one that would have hurt, and it is why S-1 ran before anything depended on it;
 it came back good. **P2 and P10 are now the two that would cost most**, and neither can be
