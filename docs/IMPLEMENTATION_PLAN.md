@@ -961,9 +961,18 @@ the call that was missing.
 nothing** — so nothing ever told the assembly that placement was its business, and WI-14's
 list of joins to pin omitted it. An enumeration that is missing an entry is worse than no
 enumeration, because it reads as complete.
+**Leave the anchor reader injectable on `build_game`. That is a requirement of this bar,
+not a preference.** Section 1.6 forbids the default suite from querying the desktop, so a
+placement journey that cannot be handed a stub reader **can only live behind
+`needs_window` — where nothing runs it by default, and it therefore cannot catch the very
+defect it exists for.** That would be this same failure one level up: a test complete,
+correct and never executed.
+
 *Tests must establish:* that **the assembled game places its window** — not that the
 arithmetic is right, which WI-15 already owns, and not that a window the test built can be
-moved, which it also owns, but that **the program asks**.
+moved, which it also owns, but that **the program asks**. And that **placing does not
+disturb the 400 × 570 size**: a geometry string carrying `WxH` would silently overrule
+WIN-2, which is a way this item could break a requirement it has nothing to do with.
 *Why its own landing, and not folded into WI-17 or deferred to WI-19:* folding a fix into
 the item that judges it defeats the separation in WI-17's bar, and WI-19 lands after
 WI-17 — so the user would be asked to judge window placement on a build that never
@@ -1010,6 +1019,17 @@ decision, and `q` from Playing and from Decided.
 > ever asked.** It never did. **No test can catch an absent call site by testing the
 > things on either side of it** — only something driving the assembled program can, and
 > that is you.
+>
+> **And it is seven capabilities, not one.** An item whose output is consumed by a *lower*
+> item gets wired as a side effect of that item being built — the ghost policy survived
+> because the session needed a ghost to tick, which was luck rather than design. **An item
+> whose only possible consumer is the assembly has exactly one chance to be connected.**
+> Seven are in that shape: **WI-2 (maze generation), WI-7 (the entry point), WI-9 (the
+> ghost policy), WI-11 (the session), WI-12 (the status line), WI-13 (input translation)
+> and WI-15 (placement)**. WI-15 is the one that failed; WI-9 was verified wired after the
+> fact; **the other five are unverified.** For each of the seven, **assert that the
+> assembled game actually uses it.** This is the concrete form of the paragraph above, and
+> it is checkable rather than exhortatory.
 *Tests must establish:* that a complete playthrough reaches the right outcome, the right
 final score and the right status line; that the picture after the loss shows the ghost over
 the player; that after the decision the game is frozen and stays frozen; and **that running
@@ -1403,7 +1423,19 @@ the dependency graph.* WI-15 had exactly one outgoing edge, to a verification it
 **a verification item consumes nothing, it only checks** — so nothing was ever told to use
 placement, and it shipped complete, tested and dead. WI-9 had **no** outgoing edge at all.
 An item whose only consumers are checkers is not finished work; it is an orphan waiting to
-be discovered by a person looking at the screen.
+be discovered by a person looking at the screen. In one lane's words, which is the sharper
+statement of the same check: *"any item whose outgoing edges all point at verification
+items is an item whose output nothing is required to use."*
+
+**And the check has a refinement that tells you which items are actually at risk.** An
+item whose output is consumed by a **lower** item gets wired as a side effect of that item
+being built, whether the graph says so or not — the ghost policy survived because the
+session needed a ghost to tick. **An item whose only possible consumer is the final
+assembly has exactly one chance**, and if the graph does not say so, nothing else will
+catch it. So the question to ask of any plan is not only "does every producer have a
+consumer" but **"which producers can only be consumed by the assembly"** — those are the
+ones a single omission kills, and they are the ones the end-to-end suite must confirm are
+actually used.
 
 **And when two modules must agree on a type, assert the identity, not the behaviour.**
 Throughout the WI-4/WI-5 divergence every behaviour test on both halves passed, and they
