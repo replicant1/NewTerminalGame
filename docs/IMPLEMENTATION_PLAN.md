@@ -11,6 +11,7 @@ Newest first. Re-read a section an amendment names before you work in it.
 | # | What changed | Sections |
 |---|---|---|
 | **1** | **Calling into Objective-C, AppKit, Quartz or CoreGraphics through `ctypes` is prohibited outright**, after it put three crash dialogs on the user's screen; S-2 and WI-15 lose that route and **WIN-4's general case becomes a decision for the user**, with P2 promoted to how WIN-4 is actually built. **S-1 reported and it is good news: P8 and P4 retire by measurement** — Tk 8.5 is headless-testable, the font is fixed at Menlo 16 (cell 10 × 19, window 400 × 570) — and human item 5 closes. **A measured Tk defect gets an owner:** `root.update()` never returns on a mapped window, which lands on WI-5 and WI-6. **AppleScript's `position` is wrong by a display height on a secondary display**, so WI-15 must use `bounds`. **Five WI-0 deviations ruled on**, of which `unplaced-module` is upheld into the layer rule and the `needs_window` marker is adopted as the one mechanism. **Section 8 settles the log-tail problem** every developer meets at their first merge, and the case of an item that precedes the suite. **A trace gap closed: SCRN-3 splits into WI-3 (glyph) and WI-4 (colour)**, because the original row pointed the whole requirement at an item whose test clause asked only about glyphs, leaving the blue unowned; two specimen facts about wall glyphs go into WI-4's bar with it. Two new human items (7, 8) and two new assumptions (P9, P10). | 1.3, 1.5, 1.6, 1.7, 2, 4, S-1, S-2, WI-3, WI-4, WI-5, WI-6, WI-7, WI-15, WI-17, 8, 9, 10 |
+| **1b** | **END-3 becomes structural.** WI-10 derives the outcome as one total function of the state, testing caught before cleared, instead of setting it in two ordered steps — so there is no collision test left to migrate and caution C6's failure mode closes. The section 1.6 fragility note says it will be struck if that lands, but is not struck yet. WI-11's Decided state becomes load-bearing for END-3, and both bars say so. Also **C-6 added**: START-3 and SCORE-4 agree, sit four sections apart, and decide one line of code between them, where reading either alone gives the wrong answer. | 1.6, 3, 5 (WI-10, WI-11) |
 | **1a** | **Two reassignments and one new landing, with the schedule redrawn twice to match.** **WI-8 moves to lane B and to M2**, because lane B owns WI-10 and one developer doing both removes a seam the plan had asked two to manage; WI-13 moves to lane C behind it. **WI-4b is added** to rewrite frame composition onto the field type WI-5 owns, after WI-4 and WI-5 each built that seam independently — **a plan defect, not a developer error**, and section 7 gains the rule that came out of it. **WI-12 is blocked behind WI-4b.** WI-8's bar gains a measured trap in START-1; WI-16's gains the fact its determinism rests on. **Totals now 42 developer-days over 21 project days in 24 items**, up from 41 / 19 / 23. | 4, 5 (WI-2, WI-4b, WI-8, WI-9, WI-16), 6.1, 6.2, 7 |
 
 ---
@@ -246,6 +247,13 @@ observes "the game ended" would not catch a refactor that swapped them — WI-10
 must assert *which* outcome, on a board built so the two orderings disagree. I am naming
 it rather than imposing extra machinery; the user can decide whether more is wanted.
 
+**And it may be about to stop being true, by design rather than by effort.** WI-10 is
+deriving the outcome as one total function of the state instead of setting it in two
+ordered steps — which leaves no collision test that could migrate, and so retires the
+fragility rather than guarding it. **If that lands, this paragraph gets struck** and the
+question above stops needing the user's time. It is not struck yet, because the code does
+not exist yet and a question put to somebody is not withdrawn on an expectation.
+
 ### 1.7 Where documents go
 
 **These four shapes govern the documents the *process* produces — not the source tree.** A
@@ -367,6 +375,18 @@ the architect's A6 already assumes for the grid mapping** — row 29 is one lead
 followed by the literal text of STAT-2 or STAT-3 with the score substituted and the
 spacing exactly as the requirement prints it, and the rest of the row blank. WI-12 pins
 all three forms as exact strings.
+
+**C-6 — two requirements that agree, sit four sections apart, and decide one line of code
+between them.** START-3 says "every corridor square holds one dot, except the square the
+player starts on". SCORE-4 says "a dot under the ghost is still there to be taken". They
+do not conflict — but **reading START-3 alone, a careless implementation excepts both
+actors' squares**, and the requirement that would have caught it is in a different
+section about a different subject. Found by the developer who implemented START-3, and
+there is a test named for it.
+
+This is a class of defect the trace table in section 4 cannot show, because both rows are
+correct and point at different items. **When you implement a requirement, read the
+requirements that mention the same objects, not only the ones in the same section.**
 
 **C-5 — `docs/ARCHITECTURE.md` section 5 describes code that does not exist.** Under the
 rejected "dirty-region rendering" option it names an implementation file and three tests
@@ -681,6 +701,26 @@ test the win. For a ghost move: move, then test collision. The ghost's next squa
 from a policy the resolver is handed, so this does not wait for WI-9. MAZE-3's "no tunnels"
 lives here too: movement never wraps.
 
+> **Make the outcome derived, and END-3 stops being fragile.** Rather than two ordered
+> steps that set an outcome, compute the outcome as **one total function of the state**
+> that tests caught before cleared. Caution C6's fear was that "the collision test
+> migrates into the movement code and the requirement breaks silently" — **a derived
+> outcome leaves no collision test to migrate.** The order becomes one expression whose
+> branches are mutually exclusive by construction, rather than two statements somebody
+> could reorder. This is the strongest available reading of force F3, "the order belongs
+> in one place", and it is better than the design this plan originally described.
+>
+> **One coupling it creates, which is now load-bearing: a derived outcome is only stable
+> while the state is.** END-5 is what makes it safe — Decided stops the tick, ignores
+> moves and leaves the last picture standing, so nothing can change underneath a decision
+> and re-derive a different answer. **Say so in your PR body**, and know that WI-11's
+> Decided state is what keeps this honest. If anything ever makes the state mutable after
+> a decision, END-3 breaks again in a new way.
+>
+> **The required test is unchanged either way**, and so is the prohibition: a board where
+> the two orderings disagree, asserting **which** outcome — and nobody proves it by
+> swapping the steps.
+
 **One consequence of how WI-1 built the maze.** Asking about a square outside the grid
 **raises** rather than answering "wall" — deliberately, because a silent "wall" makes an
 out-of-bounds bug look like an ordinary dead end. So MAZE-3's test, that a move at the
@@ -741,6 +781,13 @@ no restart edge — GAME-3 is met by their absence. Playing accepts moves and ti
 stops the tick, ignores moves and leaves the last picture standing; quit is honoured in
 every state and takes you to Ended, which ends the process and, with it, the window
 (assumption A3 — see C-1).
+
+**Decided now holds END-3 up, not only END-5.** WI-10 derives the outcome from the state
+rather than setting it in two ordered steps, which is what retires END-3's fragility — and
+a derived outcome is only stable while the state is. **Your Decided state is the
+guarantee.** Treat "nothing changes after a decision" as a correctness condition for
+somebody else's requirement, not merely as END-5's own behaviour.
+
 *Tests must establish:* START-5, that there is no state to pass through before play;
 GAME-3, that no transition adds a life, a level, a timer, a pause or a restart; END-5, that
 in Decided a tick moves nothing and an arrow changes nothing; END-6 and CTRL-4, that quit is
