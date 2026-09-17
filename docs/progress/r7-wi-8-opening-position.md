@@ -10,3 +10,5 @@ WI-8 NOTE    01:58:31Z  two of my own tests were weak on first run: one picked s
 WI-8 TEST    01:58:36Z  467 passed, 0 failed, 0 skipped  (.venv/bin/python -m pytest -q from the repository root; 418 inherited, 49 new)
 WI-8 NOTE    02:00:04Z  merged origin/main at b3437ca, bringing lane A's WI-9 ghost policy down. Clean merge despite both of us being in the Domain layer this iteration: WI-9 imports Direction, Maze and Position from maze.py and touches nothing of state.py. The one-Direction ruling paid off - no parallel enum was invented and there is nothing to reconcile
 WI-8 TEST    02:00:04Z  485 passed, 0 failed, 0 skipped after merging origin/main at b3437ca (WI-9 landed)
+WI-8 MERGE   02:00:37Z  PR #87 merged to main as 3a89d84; whole suite on the merged result: 485 passed, 0 failed, 0 skipped
+WI-8 DONE    02:00:37Z  WI-8  r7/wi-8-opening-position  2543545 (merged to main as 3a89d84 via PR #87); tail carries forward on my next branch
