@@ -10,3 +10,9 @@ WI-0 DECIDE  01:37:00Z  where the layer-rule scanner lives -> tools/layer_rule.p
 WI-0 DECIDE  01:37:03Z  the scanner reads source with ast rather than importing modules -> ast, because importing a presentation module to inspect it would run its module body and under candidate 2 that is exactly the code that could put a window on the user's screen
 WI-0 TEST    01:38:11Z  56 passed, 0 failed, 0 skipped  (.venv/bin/python -m pytest -q from the repository root)
 WI-0 COMMIT  01:38:37Z  77a6443 WI-0: project skeleton, the pinned runtime, and the layer rule
+WI-0 COMMIT  01:39:25Z  70455cc WI-0: PR summary, and the clean-clone setup other developers need; pushed, draft PR #73 opened at https://github.com/replicant1/NewTerminalGame/pull/73
+WI-0 VERIFY  01:39:52Z  clean-clone rehearsal in scratch: git clone of the branch, /usr/bin/python3 -m venv .venv, pip install -r requirements.txt, .venv/bin/python -m pytest -q -> 56 passed, 0 failed, 0 skipped; git status clean afterwards, so .venv and .pytest_cache are both ignored
+WI-0 NOTE    01:39:56Z  I did not build a venv from the Homebrew python to watch test_the_windowing_binding_is_present go red. Nothing would have been mutated, but the value was marginal and the restraint is cheaper to explain than the exception; the guard's message text is therefore reasoned about, not observed
+WI-0 MERGE   01:40:41Z  PR #73 merged to main as f220e62; git fetch origin && git merge origin/main brought S-1's documents down too; whole suite on the merged result: 56 passed, 0 failed, 0 skipped
+WI-0 NOTE    01:40:45Z  section 8 steps 4 and 6 cannot both be satisfied from one branch: the MERGE line and its test count only exist after the merge, by which point the branch that carried the log is already merged. Landing the tail of this log and the completion record on a short follow-up branch, r7/wi-0-completion-record
+WI-0 DONE    01:40:49Z  WI-0  r7/wi-0-project-skeleton  70455cc (merged to main as f220e62 via PR #73)
