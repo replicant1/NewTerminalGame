@@ -8,3 +8,7 @@ WI-20  02:34:24Z  VERIFY  THE WHOLE SUITE, NOTHING EXCLUDED: 977 passed, 0 faile
 WI-20  02:34:24Z  DECIDE  took lane B's GAME-1 suggestion. It was claimed by no test, no source and no docstring while being realised by everything; the terminal_game package docstring now states it. One line, and it converts an assumption into a claim.
 WI-20  02:35:10Z  DRAFT   docs/findings/WI-20-release-readiness.md and a "Playing the game" section in README.md. The release note reads the WIN-4 row twice as the audit asked — "placement fixed" and "WIN-4 met" are not the same sentence — and does not record WIN-5, END-5, END-6 or WIN-2's comfort as met on the strength of the suite.
 WI-20  02:35:38Z  TEST    967 passed, 0 failed, 0 skipped, 10 deselected — the default suite. And 977 passed, 0 failed, 0 skipped, 0 deselected with nothing excluded. Both counts are the deliverable.
+WI-20  02:36:30Z  MERGE   PR #107 merged into main as 1580b37. 967 passed, 0 failed, 0 skipped, 10 deselected at the moment of merge.
+WI-20  02:36:55Z  VERIFY  main confirmed green afterwards: 967 passed, 0 failed, 0 skipped, 10 deselected. Crash reports 14 — unchanged across the entire item, including the 977-test run with every window test in it.
+WI-20  02:36:55Z  TEST    967 passed, 0 failed, 0 skipped, 10 deselected (default) and 977 passed, 0 failed, 0 skipped, 0 deselected (nothing excluded)
+WI-20  02:36:55Z  DONE    WI-20 r7/wi-20-release-readiness 1580b37 (PR #107). Lane A's last item, and the last item in the run.
