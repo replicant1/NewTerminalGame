@@ -33,3 +33,4 @@
 01:42:46Z  S-2  NOTE    conductor answered the ASK: the ctypes prohibition holds for shipped code too until the user rules, WI-15 implements nothing, my ASSUME stands. Lifted the crash distinction (8 clean without Tk vs 3 crashed with Tk) to the top of the finding, stated that the AppleScript position defect kills option B on its own merits, and re-homed the root.update hang onto WI-5/WI-6 since S-1 has merged having measured only a withdrawn root
 01:43:18Z  S-2  NOTE    merged origin/main (c76bc37, which brought WI-0 and S-1) into r7/s-2-anchor-window as a76de7e-ish real merge, NO CONFLICTS — S-2 touches only docs/findings, docs/prs and docs/progress, which nobody else wrote to
 01:43:18Z  S-2  TEST    56 passed, 0 failed, 0 skipped  (.venv/bin/python -m pytest -q, from the repository root, venv built with /usr/bin/python3 3.9.6 and pytest 8.4.2)
+01:43:40Z  S-2  COMMIT  a237e53 S-2: lift the crash distinction, kill option B, re-home the Tk hang
