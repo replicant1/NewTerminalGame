@@ -10,7 +10,7 @@ Newest first. Re-read a section an amendment names before you work in it.
 
 | # | What changed | Sections |
 |---|---|---|
-| **1** | **Calling into Objective-C, AppKit, Quartz or CoreGraphics through `ctypes` is prohibited outright**, after it put three crash dialogs on the user's screen; S-2 and WI-15 lose that route and **WIN-4's general case becomes a decision for the user**, with P2 promoted to how WIN-4 is actually built. **S-1 reported and it is good news: P8 and P4 retire by measurement** — Tk 8.5 is headless-testable, the font is fixed at Menlo 16 (cell 10 × 19, window 400 × 570) — and human item 5 closes. **A measured Tk defect gets an owner:** `root.update()` never returns on a mapped window, which lands on WI-5 and WI-6. **AppleScript's `position` is wrong by a display height on a secondary display**, so WI-15 must use `bounds`. **Five WI-0 deviations ruled on**, of which `unplaced-module` is upheld into the layer rule and the `needs_window` marker is adopted as the one mechanism. **Section 8 settles the log-tail problem** every developer meets at their first merge, and the case of an item that precedes the suite. Two new human items (7, 8) and two new assumptions (P9, P10). No schedule change: 23 items, 5 iterations, 41 developer-days, every boundary as before. | 1.3, 1.5, 1.6, 1.7, 2, S-1, S-2, WI-5, WI-6, WI-7, WI-15, WI-17, 8, 9, 10 |
+| **1** | **Calling into Objective-C, AppKit, Quartz or CoreGraphics through `ctypes` is prohibited outright**, after it put three crash dialogs on the user's screen; S-2 and WI-15 lose that route and **WIN-4's general case becomes a decision for the user**, with P2 promoted to how WIN-4 is actually built. **S-1 reported and it is good news: P8 and P4 retire by measurement** — Tk 8.5 is headless-testable, the font is fixed at Menlo 16 (cell 10 × 19, window 400 × 570) — and human item 5 closes. **A measured Tk defect gets an owner:** `root.update()` never returns on a mapped window, which lands on WI-5 and WI-6. **AppleScript's `position` is wrong by a display height on a secondary display**, so WI-15 must use `bounds`. **Five WI-0 deviations ruled on**, of which `unplaced-module` is upheld into the layer rule and the `needs_window` marker is adopted as the one mechanism. **Section 8 settles the log-tail problem** every developer meets at their first merge, and the case of an item that precedes the suite. **A trace gap closed: SCRN-3 splits into WI-3 (glyph) and WI-4 (colour)**, because the original row pointed the whole requirement at an item whose test clause asked only about glyphs, leaving the blue unowned; two specimen facts about wall glyphs go into WI-4's bar with it. Two new human items (7, 8) and two new assumptions (P9, P10). No schedule change: 23 items, 5 iterations, 41 developer-days, every boundary as before. | 1.3, 1.5, 1.6, 1.7, 2, 4, S-1, S-2, WI-3, WI-4, WI-5, WI-6, WI-7, WI-15, WI-17, 6.1, 8, 9, 10 |
 
 ---
 
@@ -394,7 +394,7 @@ and none invented.
 | WIN-5 | WI-11 + WI-6 *(assumption A3)* | END-3 | WI-10 |
 | SCRN-1 | WI-4 (rows 0–28) + WI-12 (row 29) | END-4 | WI-4 |
 | SCRN-2 | ground rule 1.4 + WI-5 (the test) | END-5 | WI-11 |
-| SCRN-3 | WI-3 | END-6 | WI-11 |
+| SCRN-3 | WI-3 (glyph) + WI-4 (colour) | END-6 | WI-11 |
 | SCRN-4 | WI-4 | STAT-1 | WI-12 |
 | SCRN-5 | WI-4 | STAT-2 | WI-12 |
 | SCRN-6 | WI-12 | STAT-3 | WI-12 |
@@ -488,9 +488,13 @@ A pure function from a wall square's four neighbours — each wall or not — to
 double-line glyph, and to the lone blue block when it has no wall neighbour at all. Sixteen
 inputs; all sixteen are named. It needs nothing but four booleans, which is why it does not
 wait for WI-1.
-*Tests must establish:* SCRN-3, by naming the expected glyph for each of the sixteen
-neighbour combinations, including the lone-block case, and by checking those glyphs against
-the ones that actually appear in the specimen picture.
+*Tests must establish:* **SCRN-3's glyph half** — the expected glyph for each of the
+sixteen neighbour combinations, including the lone block, checked against the glyphs that
+actually appear in the specimen picture. **SCRN-3's colour half belongs to WI-4**, which
+already owns glyph-and-colour for rows 0–28; do not put a speculative colour constant
+here for WI-4 to work around. *(Ruled after WI-3 shipped: my original trace pointed the
+whole of SCRN-3 at WI-3 while this clause asked only about glyphs, so the blue was
+unowned. WI-3 is complete and is not reopened.)*
 
 **WI-5 — the character grid surface.** *(2 days, depends on WI-0 and S-1, lane C)*
 The thing that turns a 40 × 30 field of glyph-and-colour into pixels: cell metrics for the
@@ -559,11 +563,18 @@ from the specimen picture, which you may rely on:
   column either side (the player's block sits at columns 19, 20, 21 and the ghost's at 1,
   2, 3 in the specimen);
 - a connector column flanking a corridor square is always blank, because a horizontal wall
-  join needs walls on both sides, so the three-cell actor never overwrites a wall glyph.
+  join needs walls on both sides, so the three-cell actor never overwrites a wall glyph;
+- **a wall square with a *single* wall neighbour draws the full line, not a stub** — 37
+  such squares in the specimen and no half-glyph anywhere in it;
+- **outside the grid is not a wall**, proved by the border corners being corner glyphs
+  rather than crossings. (The crossing is the one case the specimen never shows; WI-3
+  labels it derived and pins which case is missing.)
 
 *Tests must establish:* SCRN-1, that rows 0–28 are the maze and row 29 is left to its
 supplier; MAZE-1's mapping, that the composed rows are 37 columns wide inside a 40-wide
-field; SCRN-4, a dim gold dot on each undisturbed corridor square and none where a dot has
+field; **SCRN-3's colour half, that walls render blue — lines and the lone block in the
+same blue** (the glyph half is WI-3's and already landed; do not re-prove it here);
+SCRN-4, a dim gold dot on each undisturbed corridor square and none where a dot has
 been eaten; SCRN-5, that player and ghost differ in **both** glyph and colour; SCORE-4,
 that an actor standing on a dot hides it without removing it; and END-4, that when both
 actors are on one square the ghost is what you see.
@@ -820,8 +831,8 @@ from the tables.
 
 | Iteration | Theme | Project days | Ends | Effort | Items | Requirements delivered |
 |---|---|---|---|---|---|---|
-| **M0** | Ground to stand on | 0 → 3 | 24 Sep | **9 dev-days** | S-1, S-2, WI-0, WI-1, WI-3, WI-5 | MAZE-1, SCRN-3, SCRN-7, SCRN-2 |
-| **M1** | A picture in a window of its own | 3 → 7 | 28 Sep | **10 dev-days** | WI-2, WI-4, WI-6, WI-7, WI-8 | GAME-1, WIN-1, WIN-2, WIN-3, SCRN-1 (maze rows), SCRN-4, SCRN-5, MAZE-2, MAZE-3, MAZE-4, MAZE-5, MAZE-6, START-1, START-2, START-3, START-4, END-4 |
+| **M0** | Ground to stand on | 0 → 3 | 24 Sep | **9 dev-days** | S-1, S-2, WI-0, WI-1, WI-3, WI-5 | MAZE-1, SCRN-3 (glyph), SCRN-7, SCRN-2 |
+| **M1** | A picture in a window of its own | 3 → 7 | 28 Sep | **10 dev-days** | WI-2, WI-4, WI-6, WI-7, WI-8 | GAME-1, WIN-1, WIN-2, WIN-3, SCRN-1 (maze rows), SCRN-3 (colour), SCRN-4, SCRN-5, MAZE-2, MAZE-3, MAZE-4, MAZE-5, MAZE-6, START-1, START-2, START-3, START-4, END-4 |
 | **M2** | The rules, and the window in its place | 7 → 12 | 3 Oct | **11 dev-days** | WI-9, WI-10, WI-11, WI-12, WI-13, WI-15 | GAME-2, GAME-3, WIN-4, WIN-5, SCRN-1 (status row), SCRN-6, CTRL-1…5, GHOST-2, GHOST-3, GHOST-4, SCORE-1…5, END-1, END-2, END-3, END-5, END-6, STAT-1, STAT-2, STAT-3 |
 | **M3** | A game you can play | 12 → 17 | 8 Oct | **8 dev-days** | WI-14, WI-16, WI-17, WI-18 | GHOST-1, START-5 |
 | **M4** | Seen by a human | 17 → 19 | 10 Oct | **3 dev-days** | WI-19, WI-20 | — (spends the user's answers) |
