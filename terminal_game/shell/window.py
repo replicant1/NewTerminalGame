@@ -69,6 +69,8 @@ from terminal_game.presentation import palette
 from terminal_game.presentation.field import Field
 from terminal_game.presentation.metrics import COLUMNS, ROWS, CellMetrics
 from terminal_game.presentation.surface import GridSurface
+from terminal_game.shell import placement
+from terminal_game.shell.placement import Point
 
 #: WIN-3's title, exactly.  Nothing is appended to it and nothing composes
 #: around it; the application sets it and the application is the only thing
@@ -358,6 +360,49 @@ class GameWindow(object):
         """
         self._require_open("bind a key on")
         self._root.bind(sequence, callback)
+
+    # -- placement, added by WI-15 -----------------------------------------
+
+    def move_to(self, point: "Point") -> None:
+        """Put the window's top-left corner at ``point`` (WIN-4).
+
+        The only thing WI-15 adds to the window owner, and it adds nothing
+        else. *Where* the window goes is
+        :mod:`terminal_game.shell.placement`'s decision; this carries it out.
+
+        Position only. The geometry string has no ``WxH`` in it, so the size
+        WI-6 asked for is not disturbed — a geometry string carrying a size
+        would silently overrule it.
+
+        Negative coordinates are ordinary: the displays on this desk are at
+        ``(-3509, -1440)`` and ``(-949, -1440)``, and
+        :func:`~terminal_game.shell.placement.geometry_string` is what makes
+        sure a negative value stays an absolute coordinate rather than
+        becoming an offset from the opposite edge.
+        """
+        self._require_open("move")
+        self._root.wm_geometry(placement.geometry_string(point))
+
+    def position(self) -> "Optional[Point]":
+        """Where Tk says the window's top-left corner is, or ``None``.
+
+        Parsed back out of the geometry string rather than read from
+        ``winfo_x``/``winfo_y``, because those answer 0 for a window that has
+        never been mapped and this has to be usable before :meth:`show`.
+
+        **A window always has a position**, whether or not anything has
+        placed it: Tk gives a fresh toplevel one of its own choosing — ``(5,
+        38)`` on this build, measured for WI-15. So this answering something
+        does not mean the window was deliberately placed.
+
+        ``None`` only when the window is closed, or when Tk has expressed the
+        position as an offset from the right or bottom edge, which is not an
+        absolute coordinate and is not guessed at — see
+        :func:`~terminal_game.shell.placement.position_in_geometry`.
+        """
+        if not self.is_open:
+            return None
+        return placement.position_in_geometry(self._root.wm_geometry())
 
     def bound_key_sequences(self) -> "List[str]":
         """Every key sequence bound on the window, for a test to check the wiring.
