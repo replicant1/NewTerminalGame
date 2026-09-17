@@ -9,3 +9,7 @@ WI-15 NOTE    02:14:02Z  my own test caught a false claim in my own docstring: I
 WI-15 TEST    02:14:02Z  763 passed, 0 failed, 0 skipped, 2 deselected  (.venv/bin/python -m pytest -q from the repository root; 705 inherited, 58 new)
 WI-15 VERIFY  02:14:02Z  crash reports after all WI-15 work: still 14, newest still 2026-09-17-120051. No new Python-*.ips. No permission dialog appeared at any point; nothing queried the desktop, no AppleScript was run and no ctypes was used
 WI-15 TEST    02:15:19Z  857 passed, 0 failed, 0 skipped, 4 deselected after merging origin/main at 45c86f1 (WI-7 and WI-12 landed). Clean merge, no conflict - including tests/conftest.py, the named contention point, which neither side touched this time. Crash reports still 14
+WI-15 MERGE   02:15:51Z  PR #95 merged to main as 7aebddc; whole suite on the merged result: 857 passed, 0 failed, 0 skipped, 4 deselected. Crash reports 14, unchanged from the 14 counted before I started
+WI-15 DONE    02:15:51Z  WI-15  r7/wi-15-window-placement  3056780 (merged to main as 7aebddc via PR #95); tail carries forward on my next branch
+WI-15 DONE    02:20:19Z  WI-15 tail closed here; the WI-17 checklist is on branch r7/wi-17-checklist-from-lane-b
+WI-15 VERIFY  02:20:19Z  confirmed against dc6fce3: no caller of placement_for or move_to anywhere in terminal_game/ outside placement.py itself. The window is currently placed by Tk's default, not by WI-15. WI-14 owns that wiring and no test would catch its absence

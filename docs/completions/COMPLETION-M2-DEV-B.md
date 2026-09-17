@@ -103,3 +103,52 @@ would not have to invent a word for quitting. It did not.
   single `<Key>` binding rather than six.
 * `outcome_of(state)` if anything needs to ask; the resolvers have already
   applied it.
+
+---
+
+## WI-15 — where the window lands
+
+| | |
+|---|---|
+| Branch | `r7/wi-15-window-placement`, cut from `main` at `2599b1a` |
+| Head of branch | `3056780` |
+| Pull request | [#95](https://github.com/replicant1/NewTerminalGame/pull/95) — merged by developer B |
+| Merged to `main` as | `7aebddc` |
+| PR summary | `docs/prs/PR-WI-15-window-placement.md` |
+| Progress log | `docs/progress/r7-wi-15-window-placement.md` |
+| Finding | `docs/findings/WI-15-tk-geometry-signs.md` |
+
+Moved to lane B from lane C mid-iteration. `terminal_game/shell/placement.py`
+holds the arithmetic, the fallback and the anchor seam; `GameWindow` gains
+`move_to` and `position` and nothing else.
+
+**Suite as left: 857 passed, 0 failed, 0 skipped, 4 deselected** (58 new).
+Crash reports 14 before and 14 after; no window reached the screen, no
+permission dialog appeared, no `ctypes` and no AppleScript.
+
+**WIN-4 is met under assumption P2 and not in general.** The route for
+reading the anchor is still with the user, so WI-15 chose none of the three
+and ships `NoAnchor`, which reads nothing and therefore cannot prompt or
+fail. With it the window centres on the main display, which is a sane default
+and is not WIN-4.
+
+**The measurement worth keeping** is that Tk's geometry string treats the
+sign as part of the grammar rather than part of the number:
+`"{:+d}{:+d}".format(-877, -1348)` gives `-877-1348`, which Tk reads as *877
+from the right edge, 1348 from the bottom*. It is correct on the main display
+and wrong by about a display width on the other two — the same class of
+defect S-2 found in Terminal's own AppleScript `position`.
+
+---
+
+## Lane B's input to WI-17
+
+Not a work item. Under the lead's rule that the checklist for a verification
+item comes from the lanes that built the things being verified,
+`docs/findings/WI-17-verification-checklist.md` is lane B's half: what a
+person must look at in WI-13's and WI-15's work, what WI-17 can convert from
+a human check into an agent check, and what must not be claimed.
+
+Its headline is a gap rather than a check: **nothing calls `placement_for` or
+`move_to`**, so until WI-14 wires them the window is placed by Tk's default
+and no test would notice.
