@@ -18,3 +18,5 @@
 01:53:35Z  WI-5  TEST    357 passed, 0 failed, 0 skipped — the WHOLE suite after merging origin/main ddc250e, so both sides of the conflict resolution run
 01:54:56Z  WI-5  NOTE    SECOND CONFLICT in tests/conftest.py, this time against developer A WI-4 specimen-picture fixtures, arriving with origin/main 589902d (WI-2). Additive again, no disagreement: three unrelated fixture sets now share the one conftest pytest allows. Kept all three under three headings, theirs verbatim, and corrected the file docstring from "two sets" to "three" and their "second half of this file" to "the middle", which my section had made untrue
 01:54:56Z  WI-5  TEST    418 passed, 0 failed, 0 skipped — whole suite after merging origin/main 589902d, so WI-1, WI-2, WI-3, WI-4 and WI-5 all run together
+01:55:50Z  WI-5  MERGE   PR #83 merged to main as 9863a95 at 01:55:15Z; fast-forwarded and re-ran the whole suite on 9863a95 -> 418 passed, 0 failed, 0 skipped. lsappinfo visibleApplicationCount 7, unchanged. main is green with WI-5 in it
+01:55:50Z  WI-5  DONE    WI-5  r7/wi-5-grid-surface  merged as 9863a95; lane C M0 complete (S-2 and WI-5)
