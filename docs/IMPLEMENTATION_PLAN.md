@@ -11,6 +11,7 @@ Newest first. Re-read a section an amendment names before you work in it.
 | # | What changed | Sections |
 |---|---|---|
 | **1** | **Calling into Objective-C, AppKit, Quartz or CoreGraphics through `ctypes` is prohibited outright**, after it put three crash dialogs on the user's screen; S-2 and WI-15 lose that route and **WIN-4's general case becomes a decision for the user**, with P2 promoted to how WIN-4 is actually built. **S-1 reported and it is good news: P8 and P4 retire by measurement** — Tk 8.5 is headless-testable, the font is fixed at Menlo 16 (cell 10 × 19, window 400 × 570) — and human item 5 closes. **A measured Tk defect gets an owner:** `root.update()` never returns on a mapped window, which lands on WI-5 and WI-6. **AppleScript's `position` is wrong by a display height on a secondary display**, so WI-15 must use `bounds`. **Five WI-0 deviations ruled on**, of which `unplaced-module` is upheld into the layer rule and the `needs_window` marker is adopted as the one mechanism. **Section 8 settles the log-tail problem** every developer meets at their first merge, and the case of an item that precedes the suite. **A trace gap closed: SCRN-3 splits into WI-3 (glyph) and WI-4 (colour)**, because the original row pointed the whole requirement at an item whose test clause asked only about glyphs, leaving the blue unowned; two specimen facts about wall glyphs go into WI-4's bar with it. Two new human items (now 8 and 9) and two new assumptions (P9, P10). | 1.3, 1.5, 1.6, 1.7, 2, 4, S-1, S-2, WI-3, WI-4, WI-5, WI-6, WI-7, WI-15, WI-17, 8, 9, 10 |
+| **1f** | **WIN-4 is marked NOT MET in the trace table itself, and WI-18 is told not to tick it.** A developer reported its own green, fully-satisfied item as not honouring the requirement traced to it — and the defect was in **my table**, which had no way to say "traced, implemented, tested, and still not satisfied". Section 4 now says a row is a pointer and not a claim; WI-18's bar says **report what each test establishes, never that an item landed**, and treat any requirement resting on an unanswered human item as NOT MET regardless of the suite. **Human item 4 is recast as a choice between two closable endings** — grant the permission and WIN-4 is met by a small substitution, or decline and it is formally descoped — because asking a fifth time in the same shape would not help. Section 1.5 gains the **coordinate class**: right at the origin, wrong away from it, now twice from two unrelated systems. Section 1.6 gains **"a getter answering is not evidence a setter ran"**. | 1.5, 1.6, 4, 5 (WI-18), 9 |
 | **1e** | **C-4 amended: I was wrong about the status line and lane C corrected me from the specification's own examples.** There *is* a column discipline — **the score is left-aligned in a field of 5**, which reproduces all three printed forms verbatim where widths 2, 3, 4, 6, 7 and 8 reproduce none; the column difference I read as inconsistency was only `CAUGHT` being a character shorter than `CLEARED`. Where the literals underdetermine the choice, **STAT-2 settles it**: the score is kept up to date all game, so a fixed separator would make `arrows, q quits` jump columns in front of the player. Section 7 gains **"close a generalisation with an affordance, not only a rule"**, from WI-12 answering a rule with a call that obeys it for you; section 1.6 gains **"pin both directions of a trap"**. Human item 6 is now cheap to flip. | 1.6, 3, 7, 9 |
 | **1d** | **One source of truth means one, not one per component.** The game state carries a stored outcome *and* a derived function computes it, and on a hand-built board they can disagree — found by a failing test in WI-11. The rules are authoritative and the stamp is a cache, so **everything** that asks whether the game is over asks the same function: the session, the status line (**the STAT-3 trace row said "the outcome held on Game State" and was pointing at the stale cache**), the draw order, the tick. **WI-16's bar** gains the warning that a stamp a test sets itself will not be believed, and that its determinism rests on three things — candidate order, seed, **and the ghost's initial heading**. Section 1.6 gains END-5's test as a worked example of asserting the consequence rather than the refusal; section 8 gains "quote the deselections"; human item 8 is upgraded from hypothetical to live now that 235 Presentation tests construct a Tk root on every run. | 1.6, 4, 5 (WI-12, WI-16), 8, 9 |
 | **1c** | **END-3 landed structural, so the section 1.6 fragility note is struck** — the win branch is unreachable while the player and ghost share a square, so there is no ordering left to get wrong, and the question stops costing the user anything. In its place, the plan now records **how to know a test has power without breaking code**: make the fixture prove it discriminates, add the control, make a sweep check itself, and guard the fixture against being flattened — four moves three items invented independently before anyone wrote them down. **Ruled:** eating the last dot on the ghost's square **does** score it, on END-3's own wording, so the final line reads `CAUGHT  score N` including it — player-visible, so it is human item 7 for the user to overturn. **WI-13 returns to lane B**, restoring the original assignment now that the WI-8/WI-10 pair it was moved aside for has landed; same dates, no redraw. | 1.6, 5 (WI-10, WI-13), 6.2, 9, 10 |
@@ -197,6 +198,34 @@ to prompt. Consent state measured at 01:36:41Z without prompting anybody: Access
 `com.microsoft.VSCode` **would prompt (-1744)**, `com.apple.systemevents` not running
 (-600). **Never address a target that would prompt.**
 
+#### Coordinates: right at the origin, wrong away from it
+
+**This is a named class of defect, because it has now bitten twice in two unrelated
+systems, and both times the wrong form was the one a reasonable person writes.**
+
+| Written | Produces | Actually means |
+|---|---|---|
+| `"+{}+{}".format(-877, -1348)` | `+-877+-1348` | x = −877, y = −1348 — what you meant |
+| `"{:+d}{:+d}".format(-877, -1348)` | `-877-1348` | **877 from the right, 1348 from the bottom** |
+
+Both are legal geometry strings and they name different places. The tidy form is
+**correct on the main display**, where the coordinates are positive, and wrong by about a
+display width anywhere else — *"so it fails exactly where it is least likely to be
+tested"*. The first instance of the same class was the terminal's AppleScript `position`
+property disagreeing with the same window's `bounds` by exactly the display height on a
+secondary display.
+
+Two further measured facts that belong with it:
+
+- **`winfo_screenwidth` and `winfo_screenheight` report the main display only** — 1512 ×
+  982 on this machine. A bounds check written against them would reject every valid
+  position on two of the user's three displays.
+- **Nothing clamps, and there is a test per display that fails if anyone adds a clamp.**
+  The trap is guarded rather than merely documented, which is the right way round.
+
+This desktop has three displays with **negative global origins**. If you touch geometry,
+assume the origin is not where you think it is, and test off the main display.
+
 #### Every window you open is borrowed
 
 - **Capture the window id at the moment you create it, and only ever act on that id.**
@@ -276,6 +305,12 @@ before it was written down. The pattern:
   caught board with a stale `UNDECIDED` stamp renders the caught form **and** that a
   playable board with a stale `CAUGHT` stamp renders the playing form — in its author's
   words, "so it is not passing merely because decided wins".
+- **A getter answering is not evidence a setter ran.** A fresh Tk toplevel already has a
+  position, `(5, 38)`, so a placement test that merely asks whether the window has a
+  position **would pass with the placement code deleted**. Move to distinctive
+  coordinates and assert those. WI-15 found this in its own docstring, which claimed a
+  fresh window had no position — and corrected the docstring, because the docstring was
+  the false claim.
 
 Every one of these asks a question *about the test* and answers it from the test's own
 data. None of them requires editing working code, which remains prohibited without
@@ -453,6 +488,19 @@ paragraph are worth reading first.
 
 ## 4. Every requirement, and where it is realised
 
+**This table says where a requirement is realised. It does not say the requirement is
+met.** That distinction was missing until a developer reported its own green item as not
+satisfying the requirement traced to it, and it matters most to whoever reads the table
+last. **A row is a pointer, not a claim.**
+
+**One row is currently NOT MET, and it is WIN-4.** S-2 and WI-15 have both landed with
+green suites and WI-15's bar is fully satisfied — the arithmetic against a supplied
+anchor and the graceful degradation are both done and tested. But **there is no permitted
+reader for the anchor**, so what ships follows nothing and centres the window on the main
+display: sane, tested, and not "a little below and to the right of whatever window the
+player was last looking at". **Do not read WIN-4 off the green suite.** It is human item 4
+and it is the one requirement this run cannot honestly claim.
+
 All 49 codes. Verified against the specification: 49 in the spec, 49 traced, none missing
 and none invented.
 
@@ -464,7 +512,7 @@ and none invented.
 | WIN-1 | WI-6 | SCORE-4 | WI-9 + WI-4 |
 | WIN-2 | WI-5 (metrics) + WI-6 | SCORE-5 | WI-8 + WI-12 |
 | WIN-3 | WI-6 | END-1 | WI-10 |
-| WIN-4 | S-2 + WI-15 | END-2 | WI-10 |
+| **WIN-4** | **S-2 + WI-15 — landed, green, and NOT MET.** See below | END-2 | WI-10 |
 | WIN-5 | WI-11 + WI-6 *(assumption A3)* | END-3 | WI-10 |
 | SCRN-1 | WI-4 (rows 0–28) + WI-12 (row 29) | END-4 | WI-4 |
 | SCRN-2 | ground rule 1.4 + WI-5 (the test) | END-5 | WI-11 |
@@ -924,6 +972,19 @@ the whole default suite puts no window on the user's screen.**
 A document tying **each of the 49 requirement codes** to the test or tests that pin it, and
 saying plainly which codes are pinned only by a human check. Where a code has no test,
 that is the finding — report it, do not paper over it.
+
+> **Report what each test establishes. Never report that an item landed.** An item landing
+> is not evidence its requirement is met: a bar can be fully satisfied by tests that are
+> all green while the requirement it was written for is not honoured. **WIN-4 is exactly
+> that case** — S-2 and WI-15 both landed, WI-15's bar is fully met, and the shipped
+> behaviour follows no anchor at all. A line reading "WIN-4 → S-2 + WI-15, both landed,
+> tests green" would be **the single most misleading sentence in the finished
+> documentation**, and section 4's table would have led you straight to writing it.
+>
+> So, as a rule: **any requirement whose satisfaction depends on an unanswered human item
+> is reported NOT MET regardless of the suite**, with the human item named beside it. A
+> green suite is evidence about code, not about promises. Walk the requirements, not the
+> work items.
 *Tests must establish:* nothing new; this item adds a document, and any test it writes is
 one it found missing.
 
@@ -1311,7 +1372,17 @@ them. Route them all to the conductor, which is the only path to the user.
    comfortably** (WIN-2, the architect's assumption A4). No objective test exists. *Blast
    radius:* one constant, plus WI-5's metrics test and WI-6's size test, which both quote
    it. *Owned by WI-17; acted on by WI-19.*
-4. **Decide WIN-4. This is live, not a contingency.** Reading the frontmost window of an
+4. **Decide WIN-4 — and it is now a choice between two closable endings, not a request
+   for a permission.** It has been asked four times; the shape of the question is the
+   problem, so here it is as a decision:
+   - **Grant Accessibility/Automation permission** → the anchor reader is a single
+     substitution point and swapping it is a small tested change. **WIN-4 becomes met.**
+   - **Decline** → **WIN-4 is formally descoped** to the shipped behaviour — the window
+     centres on the main display — and is recorded as not met in the trace table, the
+     coverage audit and the final report. That is an acceptable ending.
+
+   **What is not acceptable is shipping it looking met**, which is why the trace table
+   now says NOT MET in the row and WI-18 is told not to tick it. The background: Reading the frontmost window of an
    arbitrary application needs macOS Accessibility or Automation permission, and the one
    route that would have sidestepped it — Quartz through `ctypes` — is now prohibited
    outright (section 1.5). **No agent may keep attempting this.** The user either grants
