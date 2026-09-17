@@ -16,28 +16,52 @@ content and not the form.
 
 ---
 
-## 0. The one that will bite: placement is not wired to anything
+## 0. The assembled game does not place its window
 
-**Checked at 02:19Z against `dc6fce3`: nothing in the project calls
-`placement_for` or `move_to`.** `terminal_game/shell/placement.py` is
-complete and tested, `GameWindow.move_to` exists and is tested, and **no
-caller invokes either**. WI-14 owns that wiring.
+**This is not a risk. It is the current behaviour, confirmed against WI-14.**
 
-So, as things stand:
+Checked at 02:22Z against `da9ec9c`, with WI-14 merged:
 
-> The game window appears wherever **Tk** puts it — measured at `(5, 38)` on
-> this build — and not where WI-15 decided.
+```
+$ grep -rn "placement_for\|move_to\|no_anchor" terminal_game/
+terminal_game/shell/window.py:366:    def move_to(self, point: "Point") -> None:
+```
 
-**Nothing in the suite catches this.** `test_placement.py` tests the
-arithmetic in isolation; `test_window_placement.py` tests the join through a
-window a test made itself. Neither knows whether the assembled game ever
-asks. A person looking at the running game would see a window near the
-top-left corner, which looks plausible and is wrong.
+The only hit is the definition. **Nothing calls it.** `run_game` builds,
+starts, shows and runs — there is no placement step:
 
-**What WI-17 should do:** before anything else, confirm the assembled game
-actually calls `placement_for(...)` and `move_to(...)`. If it does not, the
-rest of section 3 below is checking a default rather than a decision, and
-should say so.
+```python
+game = build_game(master=master, seed=seed)
+game.start()
+game.window.show()          # <- no move_to, no placement_for
+game.window.run()
+```
+
+So:
+
+> **The game window appears wherever Tk puts it** — measured at `(5, 38)` on
+> this build — and not where WI-15 decided. `placement.py` is complete,
+> tested, and dead.
+
+**Nothing in the suite catches this**, and that is the part worth
+understanding rather than just fixing. `test_placement.py` tests the
+arithmetic in isolation. `test_window_placement.py` tests the join through a
+window the test built itself. Both pass. Neither can know whether the
+assembled game ever asks — **the gap is not inside either item, it is
+between them**, and it is exactly the shape of gap an item's own tests
+cannot see.
+
+A person looking at the running game sees a window near the top-left corner,
+which looks entirely plausible.
+
+**What WI-17 should do:** put this first. Either the wiring is added — one
+call in `run_game`, using `placement_for(no_anchor(), display, window.pixel_size)`
+and `window.move_to(...)` — or the pack must record that **WIN-4 is not met
+and the fallback is not running either**, which is a weaker position than
+WI-15's PR claimed and should not be discovered by the user.
+
+Until it is wired, every position check in section 3.3 is checking Tk's
+default rather than anything this project decided.
 
 ---
 
@@ -246,7 +270,9 @@ person's time is better spent knowing that first.
 
 Everything asserted here as measured was measured by me on this machine:
 the Tk geometry behaviour (02:12Z, `docs/findings/WI-15-tk-geometry-signs.md`),
-the keysym validation (02:07Z, WI-13's PR), the END-4 stack check and the
-"nothing calls placement" check (02:19Z, against `dc6fce3`). Everything I
-took from another lane is attributed to it. Where I am reasoning rather than
-measuring — sections 1.3 and 4 — it says so.
+the keysym validation (02:07Z, WI-13's PR), the END-4 stack check (02:19Z),
+and the "nothing calls placement" check — first at 02:19Z against `dc6fce3`
+and **again at 02:22Z against `da9ec9c` with WI-14 merged**, which is the
+version section 0 reports. Everything I took from another lane is attributed
+to it. Where I am reasoning rather than measuring — sections 1.3 and 4 — it
+says so.
