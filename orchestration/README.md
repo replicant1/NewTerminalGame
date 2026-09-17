@@ -61,6 +61,43 @@ Neither is worth fixing in the monitor. The first is an agent that stopped
 following its instructions, and the second is a log format — both belong
 upstream of here.
 
+## Which repository it is reporting on
+
+With real pull requests, each developer merges its own PR **on the server**.
+Nothing in that path touches this checkout, so local `main` can sit still for
+an entire run while the work lands. Run 7 landed seventeen merges while local
+`main` was 61 commits behind; the Git tab correctly reported every branch as
+unmerged, and the headline read near zero, because it was asking a repository
+the run was not using.
+
+So the server now **fetches** at the top of each poll — throttled to once
+every twenty seconds, since the page polls every three — and measures merge
+state against `origin/main` when the run is using pull requests, and local
+`main` when it is not. `run_mode()` already decided which; that decision is
+now what picks the branch.
+
+Fetching only moves refs. It never touches the working tree, so it is safe to
+do underneath a live run and underneath you.
+
+Two things are shown rather than assumed, at the top of the Git tab:
+
+* **Which branch the merged/ahead answers were measured against.**
+* **How far local `main` has drifted from `origin/main`.** Your checkout not
+  having the run's code is a real thing to know — you cannot run the suite or
+  read the code from a tree that is sixty commits behind — and it is not the
+  monitor's business to fix it for you.
+
+If the fetch fails, the tab says so instead of quietly serving yesterday's
+refs.
+
+**Why run 6 never showed this.** Its conductor kept its progress log as a
+tracked file on `main` and committed it every couple of minutes, and every one
+of those commits had to pull first — forty-eight pulls in the reflog. That
+housekeeping, which nothing asked for, was the only reason this tool told the
+truth. Run 7's conductor had byte-identical instructions and left its log
+untracked, and the pulls stopped. Accuracy that rests on a habit an agent does
+not know it has is accuracy you will lose without being told.
+
 ## Monitor, not driver
 
 The tool does not start or stop agents. It cannot: agents are spawned by the

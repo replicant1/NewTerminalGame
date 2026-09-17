@@ -201,6 +201,8 @@ body.noside aside,body.noside #grip{display:none}
 .pill{display:inline-block;font-size:10px;padding:1px 6px;border-radius:99px;
       border:1px solid var(--line);color:var(--dim);margin-left:6px}
 .pill.merged{color:var(--good);border-color:#2f5f47}
+.pill.remote{color:var(--dim)}
+.gitwarn{font-size:11.5px;color:var(--warn);padding:2px 0;white-space:pre-wrap}
 #toggles{display:flex;gap:5px;flex-wrap:wrap;align-items:center}
 .tg{font-size:11px;padding:2px 9px;border-radius:99px;border:1px solid var(--line);
     background:var(--panel2);color:var(--ink);cursor:pointer;user-select:none}
@@ -946,9 +948,24 @@ function renderTimeline(panes) {
 
 function renderGit(g) {
   let h = `<h3>HEAD</h3><div class="gitline">${esc(g.head)}</div>`;
+
+  // Say which branch the merged/ahead answers below were measured against,
+  // and how far this checkout has drifted from it. Both were silently
+  // assumed before, and the assumption was wrong for a whole run.
+  if (g.fetch && g.fetch.ok === false) {
+    h += `<div class="gitwarn">could not reach origin${g.fetch.error ? ': ' + esc(g.fetch.error) : ''} — everything below may be out of date</div>`;
+  }
+  if (g.trunk) {
+    h += `<div class="gitline">merge state measured against <b>${esc(g.trunk)}</b></div>`;
+  }
+  if (g.behind && g.behind !== '0') {
+    h += `<div class="gitwarn">local main is ${esc(g.behind)} commit(s) behind origin/main — this checkout does not have the run's code. git pull --ff-only</div>`;
+  }
+
   h += '<h3>Branches</h3>';
   for (const b of g.branches) {
     h += `<div class="gitline">${esc(b.name)} <span class="meta">${esc(b.sha)}</span>
+      ${b.remoteOnly ? '<span class="pill remote">origin only</span>' : ''}
       ${b.merged ? '<span class="pill merged">merged</span>'
                  : (b.ahead !== '0' ? `<span class="pill">+${esc(b.ahead)}</span>` : '')}</div>`;
   }

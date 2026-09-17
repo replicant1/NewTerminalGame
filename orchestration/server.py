@@ -145,6 +145,51 @@ def sh(args, cwd=ROOT):
         return ""
 
 
+#: How long a fetched view of the remote is treated as current. The client
+#: polls every three seconds; fetching that often would be absurd. Twenty
+#: seconds is well inside the time it takes a person to notice a merge.
+FETCH_TTL = 20.0
+
+_fetched = {"at": 0.0, "ok": None, "error": ""}
+
+
+def fetch_remote():
+    """Bring the remote refs up to date, at most every FETCH_TTL seconds.
+
+    This file reports on a local checkout, but with real pull requests the
+    work lands on the remote and nothing in this process ever brought it
+    here. Run 7 landed seventeen merges while local main sat on the plan
+    commit, so every merge question below -- what is merged, how far ahead a
+    branch is, how many work items are done -- was being answered against a
+    repository the run was not using, and answered confidently.
+
+    Run 6 did not show the fault, and that is the part worth remembering.
+    Its conductor kept its progress log as a tracked file on main and
+    committed it every couple of minutes; each of those commits had to pull
+    first, and those pulls -- housekeeping, not policy -- were the only
+    reason this tool told the truth. Run 7's conductor, with byte-identical
+    instructions, left its log untracked. Accuracy cannot rest on a habit an
+    agent does not know it has.
+
+    Fetching updates refs only. It never touches the working tree, so it is
+    safe underneath a live run and underneath the user.
+    """
+    now = time.time()
+    if now - _fetched["at"] < FETCH_TTL:
+        return _fetched
+    _fetched["at"] = now
+    try:
+        p = subprocess.run(["git", "fetch", "--prune", "--quiet", "origin"],
+                           cwd=str(ROOT), capture_output=True, text=True, timeout=20)
+        _fetched["ok"] = p.returncode == 0
+        tail = (p.stderr.strip().splitlines() or [""])[-1]
+        _fetched["error"] = "" if p.returncode == 0 else tail
+    except Exception as exc:                    # offline, no origin, git absent
+        _fetched["ok"] = False
+        _fetched["error"] = str(exc)
+    return _fetched
+
+
 def parse_log(path, pane_id=""):
     """A progress log to a list of {kind, item, text, ts, tsSource}."""
     try:
@@ -399,6 +444,9 @@ def panes():
     return result
 
 
+_mode = {"at": 0.0, "value": None}
+
+
 def run_mode():
     """Which mode this run is actually in, observed rather than declared.
 
@@ -407,9 +455,16 @@ def run_mode():
     the user sets is not evidence of anything -- it was defaulting to "local"
     through a run that was using pull requests throughout.
     """
+    if time.time() - _mode["at"] < FETCH_TTL and _mode["value"]:
+        return _mode["value"]
+
     remote = sh(["git", "ls-remote", "--heads", "origin"])
     branches = [l.split("refs/heads/")[-1] for l in remote.splitlines() if "refs/heads/" in l]
-    work = [b for b in branches if re.match(r"(wi|s|hv)-\d", b, re.I)]
+    # Branches are namespaced by run -- r7/wi-5-grid-surface -- and the
+    # anchored match missed every one of them. It reported "0 work branches
+    # on origin" through a run that had fourteen, and only the pull request
+    # count kept the verdict right.
+    work = [b for b in branches if re.match(r"(r\d+/)?(wi|s|hv)-\d", b, re.I)]
     prs = sh(["gh", "pr", "list", "--state", "all", "--limit", "50",
               "--json", "number", "--jq", "length"]) or "0"
     try:
@@ -417,12 +472,28 @@ def run_mode():
     except ValueError:
         n_prs = 0
     non_local = bool(work) or n_prs > 1     # PR #1 predates these runs
-    return {
+    _mode["value"] = {
         "nonLocal": non_local,
         "label": "pull requests" if non_local else "local only",
         "why": ("%d work branch(es) on origin, %d PR(s)" % (len(work), n_prs)) if non_local
                else "no work-item branches on origin",
     }
+    _mode["at"] = time.time()
+    return _mode["value"]
+
+
+def trunk():
+    """The branch that is the truth about what has merged.
+
+    With real pull requests each developer merges its own on the server, and
+    this checkout is told nothing. So the authority is origin/main, and local
+    main is a stale thing that happens to share the name. In local mode there
+    is no remote and local main is all there is.
+    """
+    if run_mode()["nonLocal"] and sh(["git", "rev-parse", "--verify", "--quiet",
+                                      "origin/main"]):
+        return "origin/main"
+    return "main"
 
 
 def run_clock():
@@ -613,10 +684,13 @@ def progress():
     start = run_clock().get("start")
     since = ["--since", datetime.datetime.fromtimestamp(start).isoformat()] if start else []
 
-    log = sh(["git", "log", "main", "--oneline"] + since).lower()
+    tip = trunk()
+    log = sh(["git", "log", tip, "--oneline"] + since).lower()
 
+    # -a: a branch whose worktree has been removed survives only as a
+    # remote-tracking ref, and its work has still landed.
     merged = []
-    for row in sh(["git", "branch", "--merged", "main",
+    for row in sh(["git", "branch", "-a", "--merged", tip,
                    "--format=%(refname:short) %(committerdate:unix)"]).splitlines():
         parts = row.split()
         if len(parts) != 2:
@@ -672,17 +746,41 @@ def progress():
 
 
 def git_state():
-    branches = []
-    for line in sh(["git", "branch", "--format=%(refname:short)|%(objectname:short)"]).splitlines():
-        if "|" in line:
+    tip = trunk()
+    merged_into = set(sh(["git", "branch", "-a", "--merged", tip,
+                          "--format=%(refname:short)"]).splitlines())
+
+    def refs(pattern, strip=""):
+        out = {}
+        for line in sh(["git", "for-each-ref", pattern,
+                        "--format=%(refname:short)|%(objectname:short)"]).splitlines():
+            if "|" not in line:
+                continue
             n, sha = line.split("|", 1)
-            branches.append({
-                "name": n, "sha": sha,
-                "merged": n in sh(["git", "branch", "--merged", "main", "--format=%(refname:short)"]).splitlines(),
-                "ahead": sh(["git", "rev-list", "--count", "main.." + n]) or "0",
-            })
+            if n.endswith("/HEAD"):
+                continue
+            out[n[len(strip):] if strip and n.startswith(strip) else n] = sha
+        return out
+
+    local, remote = refs("refs/heads"), refs("refs/remotes/origin", "origin/")
+    branches = []
+    for n in sorted(set(local) | set(remote)):
+        ref = n if n in local else "origin/" + n
+        branches.append({
+            "name": n, "sha": local.get(n) or remote[n],
+            "remoteOnly": n not in local,
+            "merged": ref in merged_into or ("origin/" + n) in merged_into,
+            "ahead": sh(["git", "rev-list", "--count", tip + ".." + ref]) or "0",
+        })
+
     return {
         "head": sh(["git", "log", "--oneline", "-1"]),
+        # Both are shown rather than reconciled: which branch the merge
+        # answers came from, and how far this checkout has drifted from it.
+        # A number on the screen is cheaper than a question at midnight.
+        "trunk": tip,
+        "behind": sh(["git", "rev-list", "--count", "main..origin/main"]) or "0",
+        "fetch": dict(_fetched),
         "branches": branches,
         "commits": [l for l in sh(["git", "log", "--all", "--oneline", "-25"]).splitlines()],
         "status": [l for l in sh(["git", "status", "--short"]).splitlines()],
@@ -864,6 +962,7 @@ class Handler(BaseHTTPRequestHandler):
             return self._send(200, (STATIC / "index.html").read_bytes(), "text/html; charset=utf-8")
 
         if url.path == "/api/state":
+            fetch_remote()
             archive_artifacts()
             return self._send(200, json.dumps({
                 "root": str(ROOT), "now": time.time(),
