@@ -10,7 +10,8 @@ Newest first. Re-read a section an amendment names before you work in it.
 
 | # | What changed | Sections |
 |---|---|---|
-| **1** | **Calling into Objective-C, AppKit, Quartz or CoreGraphics through `ctypes` is prohibited outright**, after it put three crash dialogs on the user's screen; S-2 and WI-15 lose that route and **WIN-4's general case becomes a decision for the user**, with P2 promoted to how WIN-4 is actually built. **S-1 reported and it is good news: P8 and P4 retire by measurement** — Tk 8.5 is headless-testable, the font is fixed at Menlo 16 (cell 10 × 19, window 400 × 570) — and human item 5 closes. **A measured Tk defect gets an owner:** `root.update()` never returns on a mapped window, which lands on WI-5 and WI-6. **AppleScript's `position` is wrong by a display height on a secondary display**, so WI-15 must use `bounds`. **Five WI-0 deviations ruled on**, of which `unplaced-module` is upheld into the layer rule and the `needs_window` marker is adopted as the one mechanism. **Section 8 settles the log-tail problem** every developer meets at their first merge, and the case of an item that precedes the suite. **A trace gap closed: SCRN-3 splits into WI-3 (glyph) and WI-4 (colour)**, because the original row pointed the whole requirement at an item whose test clause asked only about glyphs, leaving the blue unowned; two specimen facts about wall glyphs go into WI-4's bar with it. Two new human items (7, 8) and two new assumptions (P9, P10). No schedule change: 23 items, 5 iterations, 41 developer-days, every boundary as before. | 1.3, 1.5, 1.6, 1.7, 2, 4, S-1, S-2, WI-3, WI-4, WI-5, WI-6, WI-7, WI-15, WI-17, 6.1, 8, 9, 10 |
+| **1** | **Calling into Objective-C, AppKit, Quartz or CoreGraphics through `ctypes` is prohibited outright**, after it put three crash dialogs on the user's screen; S-2 and WI-15 lose that route and **WIN-4's general case becomes a decision for the user**, with P2 promoted to how WIN-4 is actually built. **S-1 reported and it is good news: P8 and P4 retire by measurement** — Tk 8.5 is headless-testable, the font is fixed at Menlo 16 (cell 10 × 19, window 400 × 570) — and human item 5 closes. **A measured Tk defect gets an owner:** `root.update()` never returns on a mapped window, which lands on WI-5 and WI-6. **AppleScript's `position` is wrong by a display height on a secondary display**, so WI-15 must use `bounds`. **Five WI-0 deviations ruled on**, of which `unplaced-module` is upheld into the layer rule and the `needs_window` marker is adopted as the one mechanism. **Section 8 settles the log-tail problem** every developer meets at their first merge, and the case of an item that precedes the suite. **A trace gap closed: SCRN-3 splits into WI-3 (glyph) and WI-4 (colour)**, because the original row pointed the whole requirement at an item whose test clause asked only about glyphs, leaving the blue unowned; two specimen facts about wall glyphs go into WI-4's bar with it. Two new human items (7, 8) and two new assumptions (P9, P10). | 1.3, 1.5, 1.6, 1.7, 2, 4, S-1, S-2, WI-3, WI-4, WI-5, WI-6, WI-7, WI-15, WI-17, 8, 9, 10 |
+| **1a** | **Two reassignments and one new landing, with the schedule redrawn twice to match.** **WI-8 moves to lane B and to M2**, because lane B owns WI-10 and one developer doing both removes a seam the plan had asked two to manage; WI-13 moves to lane C behind it. **WI-4b is added** to rewrite frame composition onto the field type WI-5 owns, after WI-4 and WI-5 each built that seam independently — **a plan defect, not a developer error**, and section 7 gains the rule that came out of it. **WI-12 is blocked behind WI-4b.** WI-8's bar gains a measured trap in START-1; WI-16's gains the fact its determinism rests on. **Totals now 42 developer-days over 21 project days in 24 items**, up from 41 / 19 / 23. | 4, 5 (WI-2, WI-4b, WI-8, WI-9, WI-16), 6.1, 6.2, 7 |
 
 ---
 
@@ -348,7 +349,8 @@ and the coverage row is wrong. **Ruling: one maze square maps to screen column 2
 c = 0…18, giving 37 columns in a 40-column window and a three-column right-hand margin.**
 WI-4 builds to that.
 
-**C-3 — GHOST-3's reverse clause can never fire in a real maze.** GHOST-3 says the ghost
+**C-3 — GHOST-3's reverse clause can never fire in a real maze. Now measured, not argued:
+5000 ghost steps around the specimen maze reverse zero times.** GHOST-3 says the ghost
 turns back the way it came "only when there is no other choice"; MAZE-5 says every corridor
 square has at least two ways on. With no dead ends the non-reversing exit set is never
 empty, so the clause is unreachable in any maze this game generates. This is not a defect —
@@ -600,7 +602,21 @@ and WIN-5, that a close request ends the session and the window with it. Keep ev
 these off the default suite's screen — assert against the toolkit's own reported state, not
 by looking.
 
-**WI-7 — the walking skeleton.** *(1 day, depends on WI-4 and WI-6, lane A)*
+**WI-4b — frame composition onto the field the surface actually takes.** *(1 day, depends
+on WI-4 and WI-5, lane A)*
+Rewrite WI-4's output so that it produces **the field type WI-5 owns**, rather than the
+parallel one WI-4 invented while WI-5 was still unlanded. WI-5's type wins on its merits
+and not on landing order: it **enforces SCRN-2 in the data**, which a bare tuple of tuples
+cannot, and its own documentation had already declared that both WI-4 and WI-12 would
+produce one. Entirely inside the composing side; touch nothing the surface owns.
+*Tests must establish:* that everything WI-4's tests already establish still holds through
+the new type, and that what `compose_frame` returns is what `present` accepts — **assert
+that join and nothing either side already owns.**
+*Why it is a separate landing rather than the front of WI-7:* the two concerns should be
+able to fail separately, and WI-7 is the first item to put a window on a real person's
+screen, so its pull request should be about that alone.
+
+**WI-7 — the walking skeleton.** *(1 day, depends on WI-4b and WI-6, lane A)*
 An entry point that opens the window, paints exactly one frame composed from a **fixture**
 maze with fixture actor positions and a fixture status row, and closes on `q`. No
 generator, no timer, no rules. Its whole purpose is to prove the vertical slice, and WI-14
@@ -759,6 +775,13 @@ branch**; retarget to `main` once WI-14 merges. Drive the assembled game **headl
 with a fake clock and a seeded random source, through the journeys that no unit test covers:
 a full game played to a win, a full game played to a loss, the END-3 board played to its
 decision, and `q` from Playing and from Decided.
+
+> **Your determinism rests on something invisible, and WI-9 measured it.** The ghost's
+> candidate order is part of the contract: a random choice over a list is repeatable only
+> if the list is, so candidates drawn from a set would send the same seed down a different
+> maze — and **your seeded playthroughs would be worthless while still passing.** WI-9
+> pinned it by walking the specimen 500 steps twice from one seed. If a seeded playthrough
+> here ever goes flaky, look there first.
 *Tests must establish:* that a complete playthrough reaches the right outcome, the right
 final score and the right status line; that the picture after the loss shows the ghost over
 the player; that after the decision the game is frozen and stays frozen; and **that running
@@ -830,30 +853,31 @@ gantt
   WI-4 frame composition (A)        :wi4,  2026-09-24, 2d
   WI-2 maze generation (B)          :wi2,  2026-09-24, 3d
   WI-6 the window owner (C)         :wi6,  2026-09-24, 2d
-  WI-7 the walking skeleton (A)     :wi7,  2026-09-26, 1d
-  M1 complete                       :milestone, m1, 2026-09-27, 0d
+  WI-4b frame onto the field (A)    :wi4b, 2026-09-26, 1d
+  WI-7 the walking skeleton (A)     :wi7,  2026-09-27, 1d
+  M1 complete                       :milestone, m1, 2026-09-28, 0d
 
   section M2 The rules, and the window in its place
-  WI-8  the opening position (B)    :wi8,  2026-09-27, 2d
-  WI-9  ghost movement policy (A)   :wi9,  2026-09-27, 2d
-  WI-10 the turn resolver (B)       :wi10, 2026-09-29, 3d
-  WI-12 the status line (C)         :wi12, 2026-09-29, 1d
-  WI-15 where the window lands (C)  :wi15, 2026-09-30, 2d
-  WI-11 the session controller (A)  :wi11, 2026-10-02, 2d
-  WI-13 input translation (C)       :wi13, 2026-10-02, 1d
-  M2 complete                       :milestone, m2, 2026-10-04, 0d
+  WI-8  the opening position (B)    :wi8,  2026-09-28, 2d
+  WI-9  ghost movement policy (A)   :wi9,  2026-09-28, 2d
+  WI-10 the turn resolver (B)       :wi10, 2026-09-30, 3d
+  WI-12 the status line (C)         :wi12, 2026-09-30, 1d
+  WI-15 where the window lands (C)  :wi15, 2026-10-01, 2d
+  WI-11 the session controller (A)  :wi11, 2026-10-03, 2d
+  WI-13 input translation (C)       :wi13, 2026-10-03, 1d
+  M2 complete                       :milestone, m2, 2026-10-05, 0d
 
   section M3 A game you can play
-  WI-14 the live game (A)           :wi14, 2026-10-04, 3d
-  WI-16 end-to-end behaviour (C)    :wi16, 2026-10-05, 2d
-  WI-18 the coverage audit (B)      :wi18, 2026-10-07, 1d
-  WI-17 human-verification pack (A) :wi17, 2026-10-07, 2d
-  M3 complete                       :milestone, m3, 2026-10-09, 0d
+  WI-14 the live game (A)           :wi14, 2026-10-05, 3d
+  WI-16 end-to-end behaviour (C)    :wi16, 2026-10-06, 2d
+  WI-18 the coverage audit (B)      :wi18, 2026-10-08, 1d
+  WI-17 human-verification pack (A) :wi17, 2026-10-08, 2d
+  M3 complete                       :milestone, m3, 2026-10-10, 0d
 
   section M4 Seen by a human
-  WI-20 release readiness (A)       :wi20, 2026-10-09, 1d
-  WI-19 acting on the answers (B)   :wi19, 2026-10-09, 2d
-  M4 complete                       :milestone, m4, 2026-10-11, 0d
+  WI-20 release readiness (A)       :wi20, 2026-10-10, 1d
+  WI-19 acting on the answers (B)   :wi19, 2026-10-10, 2d
+  M4 complete                       :milestone, m4, 2026-10-12, 0d
 ```
 
 Twenty-three bars, one per work item and spike, and five milestones, one per iteration.
@@ -865,24 +889,35 @@ from the tables.
 | Iteration | Theme | Project days | Ends | Effort | Items | Requirements delivered |
 |---|---|---|---|---|---|---|
 | **M0** | Ground to stand on | 0 → 3 | 24 Sep | **9 dev-days** | S-1, S-2, WI-0, WI-1, WI-3, WI-5 | MAZE-1, SCRN-3 (glyph), SCRN-7, SCRN-2 |
-| **M1** | A picture in a window of its own | 3 → 6 | 27 Sep | **8 dev-days** | WI-2, WI-4, WI-6, WI-7 | WIN-1, WIN-2, WIN-3, SCRN-1 (maze rows), SCRN-3 (colour), SCRN-4, SCRN-5, MAZE-2, MAZE-3, MAZE-4, MAZE-5, MAZE-6, END-4 |
-| **M2** | The rules, and the window in its place | 6 → 13 | 4 Oct | **13 dev-days** | WI-8, WI-9, WI-10, WI-11, WI-12, WI-13, WI-15 | GAME-1, GAME-2, GAME-3, WIN-4, WIN-5, SCRN-1 (status row), SCRN-6, START-1, START-2, START-3, START-4, CTRL-1…5, GHOST-2, GHOST-3, GHOST-4, SCORE-1…5, END-1, END-2, END-3, END-5, END-6, STAT-1, STAT-2, STAT-3 |
-| **M3** | A game you can play | 13 → 18 | 9 Oct | **8 dev-days** | WI-14, WI-16, WI-17, WI-18 | GHOST-1, START-5 |
-| **M4** | Seen by a human | 18 → 20 | 11 Oct | **3 dev-days** | WI-19, WI-20 | — (spends the user's answers) |
-| | | | **Total** | **41 dev-days over 20 project days** | 23 items | 49 of 49 |
+| **M1** | A picture in a window of its own | 3 → 7 | 28 Sep | **9 dev-days** | WI-2, WI-4, WI-4b, WI-6, WI-7 | WIN-1, WIN-2, WIN-3, SCRN-1 (maze rows), SCRN-3 (colour), SCRN-4, SCRN-5, MAZE-2, MAZE-3, MAZE-4, MAZE-5, MAZE-6, END-4 |
+| **M2** | The rules, and the window in its place | 7 → 14 | 5 Oct | **13 dev-days** | WI-8, WI-9, WI-10, WI-11, WI-12, WI-13, WI-15 | GAME-1, GAME-2, GAME-3, WIN-4, WIN-5, SCRN-1 (status row), SCRN-6, START-1, START-2, START-3, START-4, CTRL-1…5, GHOST-2, GHOST-3, GHOST-4, SCORE-1…5, END-1, END-2, END-3, END-5, END-6, STAT-1, STAT-2, STAT-3 |
+| **M3** | A game you can play | 14 → 19 | 10 Oct | **8 dev-days** | WI-14, WI-16, WI-17, WI-18 | GHOST-1, START-5 |
+| **M4** | Seen by a human | 19 → 21 | 12 Oct | **3 dev-days** | WI-19, WI-20 | — (spends the user's answers) |
+| | | | **Total** | **42 dev-days over 21 project days** | 24 items | 49 of 49 |
 
 Every effort total above is the sum of its iteration's bars: M0 = 1+1+1+2+2+2 = 9;
-M1 = 2+3+2+1 = 8; M2 = 2+2+3+1+2+2+1 = 13; M3 = 3+2+1+2 = 8; M4 = 1+2 = 3. Total 41.
+M1 = 2+3+1+2+1 = 9; M2 = 2+2+3+1+2+2+1 = 13; M3 = 3+2+1+2 = 8; M4 = 1+2 = 3. Total 42.
 
-**Redrawn once, and here is why, because two numbers changed.** WI-8 was lane C's and in
-M1; it is now **lane B's and in M2**. Section 7 already listed WI-8 → WI-10 as a pair
-touching the same ground, with a seam two developers would have to manage — and lane B
-owns WI-10, so **one developer doing both removes the seam instead of managing it.** That
-is a better plan than the one first shipped, not merely a faster one. Lane B could not
-fit five days of work into M1's four, so WI-8 moved iteration with its lane: **M1 falls
-from 10 dev-days to 8 and M2 rises from 11 to 13**, total effort unchanged at 41, and the
-project runs 20 project days rather than 19. GAME-1 and START-1…4 move from M1 to M2 with
-the item. Every dependency still holds and no lane does two things at once.
+**Redrawn twice, and here is why, because the numbers changed both times.**
+
+**First, for WI-8.** It was lane C's and in M1; it is now **lane B's and in M2**. Section
+7 already listed WI-8 → WI-10 as a pair touching the same ground, with a seam two
+developers would have to manage — and lane B owns WI-10, so **one developer doing both
+removes the seam instead of managing it.** That is a better plan than the one first
+shipped, not merely a faster one. Lane B could not fit five days of work into M1's four,
+so WI-8 moved iteration with its lane: M1 fell from 10 dev-days to 8 and M2 rose from 11
+to 13, with GAME-1 and START-1…4 moving from M1 to M2 with the item.
+
+**Second, for WI-4b.** WI-4 and WI-5 each built the same Presentation seam independently,
+which was the plan's fault and not a developer's — see section 7. The repair is **its own
+landing rather than the front half of WI-7**, so that the two concerns fail separately and
+WI-7's pull request is about putting a window on somebody's screen and nothing else.
+**M1 rises from 8 dev-days to 9 and gains a day**, and everything downstream shifts one
+day with it.
+
+**So the totals moved: 42 developer-days over 21 project days in 24 items**, where the
+first draft said 41 over 19 in 23. Every dependency still holds and no lane does two
+things at once.
 
 **Each iteration ends with something that runs.** M0 ends with a tested surface and a
 tested maze model; M1 ends with a real window showing a real random maze — the point at
@@ -893,13 +928,13 @@ engine; M3 ends with a game a person can play; M4 ends with the user's answers s
 
 | Lane | M0 | M1 | M2 | M3 | M4 |
 |---|---|---|---|---|---|
-| **A** | S-1, WI-3 | WI-4, WI-7 | WI-9, WI-11 | WI-14, WI-17 | WI-20 |
+| **A** | S-1, WI-3 | WI-4, WI-4b, WI-7 | WI-9, WI-11 | WI-14, WI-17 | WI-20 |
 | **B** | WI-0, WI-1 | WI-2 | WI-8, WI-10 | WI-18 | WI-19 |
 | **C** | S-2, WI-5 | WI-6 | WI-12, WI-15, WI-13 | WI-16 | — |
 
-**Lane occupancy is 41 developer-days against 60 available (3 lanes × 20 days), about 68%.
-The idle is real and I am not hiding it:** C waits 26–29 Sep and from 7 Oct to the end; B
-waits 4–7 Oct and 8–9 Oct; A waits 30 Sep – 2 Oct. It comes from
+**Lane occupancy is 42 developer-days against 63 available (3 lanes × 21 days), about 67%.
+The idle is real and I am not hiding it:** C waits 26–30 Sep and from 8 Oct to the end; B
+waits 27–28 Sep, 5–8 Oct and 9–10 Oct; A waits 30 Sep – 3 Oct. It comes from
 the dependency graph narrowing towards the end, which is
 normal — the final assembly is one person's job and cannot be split without manufacturing
 conflicts. **The conductor may start any item whose dependencies have all landed, even if
@@ -924,6 +959,7 @@ flowchart LR
   WI2["WI-2<br/>maze generation"]
   WI4["WI-4<br/>frame composition"]
   WI6["WI-6<br/>window owner"]
+  WI4b["WI-4b<br/>frame onto the field"]
   WI7["WI-7<br/>walking skeleton"]
   WI8["WI-8<br/>opening position"]
   WI9["WI-9<br/>ghost policy"]
@@ -947,7 +983,10 @@ flowchart LR
   WI3 --> WI4
   WI5 --> WI6
   S1 --> WI6
-  WI4 --> WI7
+  WI4 --> WI4b
+  WI5 --> WI4b
+  WI4b --> WI7
+  WI4b --> WI12
   WI6 --> WI7
   WI1 --> WI8
   WI1 --> WI9
@@ -980,10 +1019,12 @@ flowchart LR
 | WI-0 | WI-1 |
 | WI-1 | WI-2, WI-8, WI-9 |
 | WI-1, WI-3 | WI-4 |
+| WI-4, WI-5 | **WI-4b** |
 | WI-5, S-1 | WI-6 |
-| WI-4, WI-6 | WI-7 |
+| WI-4b, WI-6 | WI-7 |
 | WI-6, S-2 | WI-15 |
-| WI-8 | WI-10, WI-12 |
+| WI-8 | WI-10 |
+| WI-8, **WI-4b** | WI-12 |
 | WI-10 | WI-11, WI-13 |
 | WI-2, WI-7, WI-11, WI-12, WI-13 | WI-14 |
 | WI-14 *(as a stacked branch, not a merge)* | WI-16 |
@@ -1004,9 +1045,21 @@ halves verbatim, touched none of the other lane's lines, and re-ran the whole su
 that both sides run. Neither the conductor nor I heard about it until afterwards, which
 is the correct outcome.
 
-S-1, S-2 and WI-0 touch nothing in common. WI-1, WI-3 and WI-5 sit in three different
-layers. WI-2, WI-4 and WI-6 likewise — domain, presentation-as-data and shell. WI-9,
-WI-10, WI-12 and WI-15 are four separate responsibilities. WI-11 and WI-13 are two.
+S-1, S-2 and WI-0 touch nothing in common. WI-1 and WI-3 sit in two different layers.
+WI-2 and WI-6 likewise — domain and shell. WI-9, WI-10 and WI-15 are three separate
+responsibilities. WI-11 and WI-13 are two.
+
+**A rule this table earned the hard way, so read it before adding to the list.** Two items
+in the same layer that **produce and consume each other's data are not parallel-safe
+merely because they are different modules.** WI-4 and WI-5 were run side by side on the
+strength of "different modules" and each built the Presentation seam independently: two
+incompatible cell types, two field types, two palettes, both landed and both green, with
+nothing joining them. That cost WI-4b.
+
+**A layer split predicts where *source* will collide. It predicts nothing else** — not
+shared test scaffolding (the `conftest`, twice) and not an invented shared seam (this,
+once). Before calling two items parallel-safe, ask what data passes between them and who
+owns its type, not which files they touch.
 
 ### Sequenced because they touch the same ground
 
@@ -1017,7 +1070,8 @@ These are ordered deliberately. Do not run them side by side.
 | WI-1 | WI-2 | The maze representation. WI-1 owns the grid and the checker; WI-2 owns the carving and consumes both. |
 | WI-5 | WI-6 | The shell. **WI-5 owns the drawing surface and the cell metrics; WI-6 owns the window** — title, size, ground, self-close — and asks WI-5 for the pixel size. |
 | WI-6 | WI-15 | The window owner. WI-6 creates and dresses it; **WI-15 is the only later writer, and it adds placement and nothing else.** |
-| WI-4 | WI-12 | The frame. **WI-4 owns rows 0–28 and the assembly of the whole field; WI-12 owns the content of row 29 and nothing else.** WI-4 lands first and therefore defines the seam; WI-12 fills it. |
+| WI-5 | WI-4 → WI-4b | The field, cell and palette types. **WI-5 owns them; WI-4 and WI-12 produce them.** This was originally left unsaid and both items built it — see the rule above. Struck: the old row claiming "WI-4 lands first and therefore defines the seam". |
+| WI-4b | WI-12 | Row 29's type. **WI-12 must not start until WI-4b has landed**, or it will build row 29 against a type being replaced underneath it. WI-4 owns rows 0–28 and the assembly of the whole field; **WI-12 owns the content of row 29 and nothing else.** |
 | WI-8 | WI-10 | The game state. **No longer a seam: both are lane B's, so one developer owns creating it and changing it.** That is why WI-8 was reassigned — a seam removed beats a seam managed. |
 | WI-7 | WI-14 | The entry point. WI-7 builds it with fixtures to prove the slice; **WI-14 supersedes those fixtures** and owns it thereafter. |
 | WI-10 | WI-11, WI-13 | The intent vocabulary and the resolver's surface. WI-10 lands before either starts. |
