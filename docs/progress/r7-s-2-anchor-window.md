@@ -34,3 +34,7 @@
 01:43:18Z  S-2  NOTE    merged origin/main (c76bc37, which brought WI-0 and S-1) into r7/s-2-anchor-window as a76de7e-ish real merge, NO CONFLICTS — S-2 touches only docs/findings, docs/prs and docs/progress, which nobody else wrote to
 01:43:18Z  S-2  TEST    56 passed, 0 failed, 0 skipped  (.venv/bin/python -m pytest -q, from the repository root, venv built with /usr/bin/python3 3.9.6 and pytest 8.4.2)
 01:43:40Z  S-2  COMMIT  a237e53 S-2: lift the crash distinction, kill option B, re-home the Tk hang
+01:44:57Z  S-2  MERGE   PR #76 merged to main as 77c422e at 01:43:58Z; fetched and fast-forwarded, whole suite re-run on 77c422e -> 56 passed, 0 failed, 0 skipped. main is green with S-2 in it
+01:44:57Z  S-2  DRAFT   docs/completions/COMPLETION-M0-DEV-C.md and docs/prs/PR-S-2-completion-record.md
+01:44:57Z  S-2  NOTE    my root.update() hang does NOT contradict S-1: S-1 measured update_idletasks+update on a WITHDRAWN root, which never maps. Mine is the deiconified case, the untested half. Complementary, not conflicting
+01:44:57Z  S-2  DONE    S-2  r7/s-2-anchor-window  merged as 77c422e; completion record follows in a second PR
