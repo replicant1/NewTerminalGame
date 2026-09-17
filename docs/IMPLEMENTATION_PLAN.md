@@ -11,6 +11,7 @@ Newest first. Re-read a section an amendment names before you work in it.
 | # | What changed | Sections |
 |---|---|---|
 | **1** | **Calling into Objective-C, AppKit, Quartz or CoreGraphics through `ctypes` is prohibited outright**, after it put three crash dialogs on the user's screen; S-2 and WI-15 lose that route and **WIN-4's general case becomes a decision for the user**, with P2 promoted to how WIN-4 is actually built. **S-1 reported and it is good news: P8 and P4 retire by measurement** — Tk 8.5 is headless-testable, the font is fixed at Menlo 16 (cell 10 × 19, window 400 × 570) — and human item 5 closes. **A measured Tk defect gets an owner:** `root.update()` never returns on a mapped window, which lands on WI-5 and WI-6. **AppleScript's `position` is wrong by a display height on a secondary display**, so WI-15 must use `bounds`. **Five WI-0 deviations ruled on**, of which `unplaced-module` is upheld into the layer rule and the `needs_window` marker is adopted as the one mechanism. **Section 8 settles the log-tail problem** every developer meets at their first merge, and the case of an item that precedes the suite. **A trace gap closed: SCRN-3 splits into WI-3 (glyph) and WI-4 (colour)**, because the original row pointed the whole requirement at an item whose test clause asked only about glyphs, leaving the blue unowned; two specimen facts about wall glyphs go into WI-4's bar with it. Two new human items (now 8 and 9) and two new assumptions (P9, P10). | 1.3, 1.5, 1.6, 1.7, 2, 4, S-1, S-2, WI-3, WI-4, WI-5, WI-6, WI-7, WI-15, WI-17, 8, 9, 10 |
+| **1i** | **The assembled game never placed its window, and the root cause is this plan's dependency graph.** WI-14's inputs never included WI-15, and **WI-15's only outgoing edge went to a verification item, which consumes nothing** — so nothing was ever told to call placement, and it shipped complete, tested and dead at the toolkit's default corner. **WI-14b** is added to wire it, with a bar saying so plainly. The generalisation is now a rule *and* a check I run on this document: **every item that produces a capability must have a non-verification consumer**. On its first run it found a second instance — **WI-9 had no outgoing edge at all** — so three edges are added to the graph. Also: the WIN-4 row reads **not met and not wired**, WI-16 must assert the assembled game *placed* its window (**no test can catch an absent call site by testing the things either side of it**), human item 4 gains the hidden cost of granting the permission, and section 7 gains lane B's test for whether a guard will rot. **Totals now 43 developer-days over 22 project days in 25 items.** | 3, 4, 5 (WI-14b, WI-16), 6.1, 6.2, 7, 9 |
 | **1h** | **Rule, then affordance, then guard.** The one-source-of-truth rule has now been broken **twice in places nobody would classify as asking whether the game is over** — a `__repr__` and the status row — and **neither was caught by the suite**; both were found by somebody going to look after the first turned up, and the second would have put a stale outcome on the screen where the player reads it. Section 7 now says a rule of the form "everywhere must X" fails invisibly among the things nobody counts as candidates, so close it at three levels. **WI-18 gains a named sweep for reads of the stored outcome — and is told to leave a guard test rather than a finding if it can**, on the model of WI-0's layer test: a sweep runs once, a guard runs forever. Section 1.6 gains a seventh entry, distinct from the six about fixtures: **a double whose lifecycle does not match the real thing gives a false pass on the very behaviour it was built to check.** | 1.6, 5 (WI-18), 7 |
 | **1g** | **Whoever built a thing does not write the script that judges it.** I was minded to move WI-17 to the lane that built the items it verifies; that lane argued **against its own interest** and produced a better third option — *"the checks I fail to think of are exactly the ones I failed to think of when writing the code"* — so **WI-17 stays where it is and the item owners supply its checklist**. That is now a rule about verification items generally. WI-17 also absorbs the **four-arrow key-delivery extension**, because converting a human check into an agent check is that item's whole purpose. **WI-20 gains the one run that includes the `needs_window` tests**, which nothing else executes — an affordance where an audit line would only have recorded the rot. WI-16 gains **END-4 on a state the system produced**, not only a hand-made one. WI-18 gains three precise audit entries: WIN-4 misleading rather than thin, GAME-1 named in no file, SCRN-3 evidenced at the font level and not the rendered one. | 5 (WI-16, WI-17, WI-18, WI-20) |
 | **1f** | **WIN-4 is marked NOT MET in the trace table itself, and WI-18 is told not to tick it.** A developer reported its own green, fully-satisfied item as not honouring the requirement traced to it — and the defect was in **my table**, which had no way to say "traced, implemented, tested, and still not satisfied". Section 4 now says a row is a pointer and not a claim; WI-18's bar says **report what each test establishes, never that an item landed**, and treat any requirement resting on an unanswered human item as NOT MET regardless of the suite. **Human item 4 is recast as a choice between two closable endings** — grant the permission and WIN-4 is met by a small substitution, or decline and it is formally descoped — because asking a fifth time in the same shape would not help. Section 1.5 gains the **coordinate class**: right at the origin, wrong away from it, now twice from two unrelated systems. Section 1.6 gains **"a getter answering is not evidence a setter ran"**. | 1.5, 1.6, 4, 5 (WI-18), 9 |
@@ -505,10 +506,12 @@ last. **A row is a pointer, not a claim.**
 **One row is currently NOT MET, and it is WIN-4.** S-2 and WI-15 have both landed with
 green suites and WI-15's bar is fully satisfied — the arithmetic against a supplied
 anchor and the graceful degradation are both done and tested. But **there is no permitted
-reader for the anchor**, so what ships follows nothing and centres the window on the main
-display: sane, tested, and not "a little below and to the right of whatever window the
-player was last looking at". **Do not read WIN-4 off the green suite.** It is human item 4
-and it is the one requirement this run cannot honestly claim.
+reader for the anchor**, so what ships follows nothing — **and worse, the placement is not
+called at all**, so the window opens at the toolkit's default corner rather than even the
+centred fallback. Measured: the assembled game puts its window at `(5, 38)` where the
+placement says `(556, 206)`. WI-14b connects it. **Do not read WIN-4 off the green suite:
+"not met" alone would leave a reader believing the fallback is running, and it is not.**
+It is human item 4 and it is the one requirement this run cannot honestly claim.
 
 All 49 codes. Verified against the specification: 49 in the spec, 49 traced, none missing
 and none invented.
@@ -521,7 +524,7 @@ and none invented.
 | WIN-1 | WI-6 | SCORE-4 | WI-9 + WI-4 |
 | WIN-2 | WI-5 (metrics) + WI-6 | SCORE-5 | WI-8 + WI-12 |
 | WIN-3 | WI-6 | END-1 | WI-10 |
-| **WIN-4** | **S-2 + WI-15 — landed, green, and NOT MET.** See below | END-2 | WI-10 |
+| **WIN-4** | **S-2 + WI-15 — landed, green, NOT MET and NOT WIRED.** See below | END-2 | WI-10 |
 | WIN-5 | WI-11 + WI-6 *(assumption A3)* | END-3 | WI-10 |
 | SCRN-1 | WI-4 (rows 0–28) + WI-12 (row 29) | END-4 | WI-4 |
 | SCRN-2 | ground rule 1.4 + WI-5 (the test) | END-5 | WI-11 |
@@ -945,6 +948,27 @@ painted and the timer is running before any key is pressed; and the joins — th
 event reaches the resolver and that a completed turn reaches the surface. Assert the seams;
 do not re-prove what WI-10, WI-11, WI-12 and WI-13 already own.
 
+**WI-14b — wire the placement the assembled game never calls.** *(1 day, depends on WI-14
+and WI-15, lane A)*
+`run_game` builds, starts, shows and runs — and never asks where the window should go, so
+the game opens at the toolkit's default corner while a complete, tested placement sits
+unused. **Connect it. Nothing else.** Do not touch the placement arithmetic or the window
+owner: the behaviour was decided by S-2, implemented and tested by WI-15, and this item is
+the call that was missing.
+
+**This is a defect in this plan, not in WI-14.** WI-14's dependencies never included WI-15
+— **WI-15's only outgoing edge went to WI-17, a verification item, which consumes
+nothing** — so nothing ever told the assembly that placement was its business, and WI-14's
+list of joins to pin omitted it. An enumeration that is missing an entry is worse than no
+enumeration, because it reads as complete.
+*Tests must establish:* that **the assembled game places its window** — not that the
+arithmetic is right, which WI-15 already owns, and not that a window the test built can be
+moved, which it also owns, but that **the program asks**.
+*Why its own landing, and not folded into WI-17 or deferred to WI-19:* folding a fix into
+the item that judges it defeats the separation in WI-17's bar, and WI-19 lands after
+WI-17 — so the user would be asked to judge window placement on a build that never
+places, which is worse than not asking.
+
 **WI-16 — the end-to-end behaviour suite.** *(2 days, depends on WI-14, lane C)*
 **Branch this from `r7/wi-14-live-assembly` and open its PR with `--base` set to that
 branch**; retarget to `main` once WI-14 merges. Drive the assembled game **headlessly**,
@@ -978,6 +1002,14 @@ decision, and `q` from Playing and from Decided.
 > a state the running system actually produced. That gap is yours: a full playthrough to
 > a loss reaches a genuine caught position, and that is where END-4 should also be
 > asserted. It is the same instinct as the paragraph above, pointed the other way.
+>
+> **And assert that the assembled game *placed* its window, not merely that it can.** The
+> sharpest instance of the invisible-failure class on this run was an **absent call
+> site**: the arithmetic was tested in isolation, the join was tested through a window a
+> test built itself, both passed, **and neither could know whether the running program
+> ever asked.** It never did. **No test can catch an absent call site by testing the
+> things on either side of it** — only something driving the assembled program can, and
+> that is you.
 *Tests must establish:* that a complete playthrough reaches the right outcome, the right
 final score and the right status line; that the picture after the loss shows the ghost over
 the player; that after the decision the game is frozen and stays frozen; and **that running
@@ -1135,15 +1167,16 @@ gantt
 
   section M3 A game you can play
   WI-14 the live game (A)           :wi14, 2026-10-05, 3d
+  WI-14b wire the placement (A)     :wi14b, 2026-10-08, 1d
   WI-16 end-to-end behaviour (C)    :wi16, 2026-10-06, 2d
   WI-18 the coverage audit (B)      :wi18, 2026-10-08, 1d
-  WI-17 human-verification pack (A) :wi17, 2026-10-08, 2d
-  M3 complete                       :milestone, m3, 2026-10-10, 0d
+  WI-17 human-verification pack (A) :wi17, 2026-10-09, 2d
+  M3 complete                       :milestone, m3, 2026-10-11, 0d
 
   section M4 Seen by a human
-  WI-20 release readiness (A)       :wi20, 2026-10-10, 1d
-  WI-19 acting on the answers (B)   :wi19, 2026-10-10, 2d
-  M4 complete                       :milestone, m4, 2026-10-12, 0d
+  WI-20 release readiness (A)       :wi20, 2026-10-11, 1d
+  WI-19 acting on the answers (B)   :wi19, 2026-10-11, 2d
+  M4 complete                       :milestone, m4, 2026-10-13, 0d
 ```
 
 Twenty-three bars, one per work item and spike, and five milestones, one per iteration.
@@ -1157,12 +1190,12 @@ from the tables.
 | **M0** | Ground to stand on | 0 → 3 | 24 Sep | **9 dev-days** | S-1, S-2, WI-0, WI-1, WI-3, WI-5 | MAZE-1, SCRN-3 (glyph), SCRN-7, SCRN-2 |
 | **M1** | A picture in a window of its own | 3 → 7 | 28 Sep | **9 dev-days** | WI-2, WI-4, WI-4b, WI-6, WI-7 | WIN-1, WIN-2, WIN-3, SCRN-1 (maze rows), SCRN-3 (colour), SCRN-4, SCRN-5, MAZE-2, MAZE-3, MAZE-4, MAZE-5, MAZE-6, END-4 |
 | **M2** | The rules, and the window in its place | 7 → 14 | 5 Oct | **13 dev-days** | WI-8, WI-9, WI-10, WI-11, WI-12, WI-13, WI-15 | GAME-1, GAME-2, GAME-3, WIN-4, WIN-5, SCRN-1 (status row), SCRN-6, START-1, START-2, START-3, START-4, CTRL-1…5, GHOST-2, GHOST-3, GHOST-4, SCORE-1…5, END-1, END-2, END-3, END-5, END-6, STAT-1, STAT-2, STAT-3 |
-| **M3** | A game you can play | 14 → 19 | 10 Oct | **8 dev-days** | WI-14, WI-16, WI-17, WI-18 | GHOST-1, START-5 |
-| **M4** | Seen by a human | 19 → 21 | 12 Oct | **3 dev-days** | WI-19, WI-20 | — (spends the user's answers) |
-| | | | **Total** | **42 dev-days over 21 project days** | 24 items | 49 of 49 |
+| **M3** | A game you can play | 14 → 20 | 11 Oct | **9 dev-days** | WI-14, WI-14b, WI-16, WI-17, WI-18 | GHOST-1, START-5 |
+| **M4** | Seen by a human | 20 → 22 | 13 Oct | **3 dev-days** | WI-19, WI-20 | — (spends the user's answers) |
+| | | | **Total** | **43 dev-days over 22 project days** | 25 items | 49 of 49 |
 
 Every effort total above is the sum of its iteration's bars: M0 = 1+1+1+2+2+2 = 9;
-M1 = 2+3+1+2+1 = 9; M2 = 2+2+3+1+2+2+1 = 13; M3 = 3+2+1+2 = 8; M4 = 1+2 = 3. Total 42.
+M1 = 2+3+1+2+1 = 9; M2 = 2+2+3+1+2+2+1 = 13; M3 = 3+1+2+1+2 = 9; M4 = 1+2 = 3. Total 43.
 
 **Redrawn twice, and here is why, because the numbers changed both times.**
 
@@ -1194,7 +1227,7 @@ engine; M3 ends with a game a person can play; M4 ends with the user's answers s
 
 | Lane | M0 | M1 | M2 | M3 | M4 |
 |---|---|---|---|---|---|
-| **A** | S-1, WI-3 | WI-4, WI-4b, WI-7 | WI-9, WI-11 | WI-14, WI-17 | WI-20 |
+| **A** | S-1, WI-3 | WI-4, WI-4b, WI-7 | WI-9, WI-11 | WI-14, WI-14b, WI-17 | WI-20 |
 | **B** | WI-0, WI-1 | WI-2 | WI-8, WI-10, WI-13 | WI-18 | WI-19 |
 | **C** | S-2, WI-5 | WI-6 | WI-12, WI-15 | WI-16 | — |
 
@@ -1235,6 +1268,7 @@ flowchart LR
   WI13["WI-13<br/>input translation"]
   WI15["WI-15<br/>window placement"]
   WI14["WI-14<br/>the live game"]
+  WI14b["WI-14b<br/>wire the placement"]
   WI16["WI-16<br/>end-to-end suite"]
   WI17["WI-17<br/>human-verification pack"]
   WI18["WI-18<br/>coverage audit"]
@@ -1270,6 +1304,11 @@ flowchart LR
   WI14 -.->|stacked branch| WI16
   WI16 --> WI18
   WI16 --> WI20
+  WI14 --> WI14b
+  WI15 --> WI14b
+  WI9 --> WI14
+  WI14b --> WI16
+  WI14b --> WI17
   WI14 --> WI17
   WI15 --> WI17
   WI17 --> WI19
@@ -1292,9 +1331,10 @@ flowchart LR
 | WI-8 | WI-10 |
 | WI-8, **WI-4b** | WI-12 |
 | WI-10 | WI-11, WI-13 |
-| WI-2, WI-7, WI-11, WI-12, WI-13 | WI-14 |
-| WI-14 *(as a stacked branch, not a merge)* | WI-16 |
-| WI-14, WI-15 | WI-17 |
+| WI-2, WI-7, **WI-9**, WI-11, WI-12, WI-13 | WI-14 |
+| WI-14 *(as a stacked branch, not a merge)*, WI-14b | WI-16 |
+| WI-14, WI-15 | **WI-14b** |
+| WI-14, WI-14b, WI-15 | WI-17 |
 | WI-16 | WI-18, WI-20 |
 | WI-17 | WI-19 |
 
@@ -1347,6 +1387,23 @@ So close a generalisation at all three levels:
    guard, because a sweep runs once and a guard runs forever.** If a rule genuinely needs
    an allowlist that would rot, say so and leave a finding instead — that is a real
    answer.
+
+**How to tell whether a guard will rot, which is worth knowing before you build one.**
+**A guard whose allowlist is empty is permanent; a guard whose allowlist has entries
+decays at the rate people add reasons to it.** The layer rule needs one exemption because
+it forbids a thing that is *legitimately needed somewhere*. The one-source-of-truth rule
+needs none, because the affordance is always available and **no module legitimately needs
+the stored field** — so a zero-exemption guard is available there, and a zero-exemption
+allowlist cannot rot. When you can get to zero exemptions, that is not merely tidy: it is
+the difference between a guard and a future irritation.
+
+**One more thing a graph can be guarded against, because this plan failed it.** *Every
+item that produces a capability must have at least one **non-verification** consumer in
+the dependency graph.* WI-15 had exactly one outgoing edge, to a verification item — and
+**a verification item consumes nothing, it only checks** — so nothing was ever told to use
+placement, and it shipped complete, tested and dead. WI-9 had **no** outgoing edge at all.
+An item whose only consumers are checkers is not finished work; it is an orphan waiting to
+be discovered by a person looking at the screen.
 
 **And when two modules must agree on a type, assert the identity, not the behaviour.**
 Throughout the WI-4/WI-5 divergence every behaviour test on both halves passed, and they
@@ -1459,6 +1516,12 @@ them. Route them all to the conductor, which is the only path to the user.
    problem, so here it is as a decision:
    - **Grant Accessibility/Automation permission** → the anchor reader is a single
      substitution point and swapping it is a small tested change. **WIN-4 becomes met.**
+     *One hidden cost to know before choosing this:* it has been shown that the toolkit
+     *accepts* a negative absolute origin, **not** that the toolkit's (0, 0) is the
+     display server's (0, 0). That assumption is dormant while the reader reads nothing
+     and **becomes load-bearing the moment one does** — so granting the permission also
+     activates a thing nobody has verified. It is checkable, and cheap, but it is work
+     that this answer creates.
    - **Decline** → **WIN-4 is formally descoped** to the shipped behaviour — the window
      centres on the main display — and is recorded as not met in the trace table, the
      coverage audit and the final report. That is an acceptable ending.
