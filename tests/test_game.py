@@ -565,3 +565,70 @@ def test_placing_the_window_does_not_disturb_its_size(tk_root) -> None:
         assert game.window.pixel_size == before == (400, 570)
     finally:
         game.window.close()
+
+
+def test_the_game_asks_the_anchor_reader_it_was_given(tk_root) -> None:
+    """WI-14c: the seam WI-16b needs, and the reason it is on ``build_game``.
+
+    Ground rule 1.6 forbids the default suite from querying the desktop, so
+    a placement test cannot use the shipped reader. Without this seam the
+    only test of placement would be one marked ``needs_window`` — excluded by
+    default, and so unable to catch the very defect WI-14b existed to fix.
+    """
+    from terminal_game.shell import placement
+
+    class RecordingReader(object):
+        def __init__(self, rect):
+            self.rect = rect
+            self.reads = 0
+
+        def read(self):
+            self.reads += 1
+            return self.rect
+
+    anchor = placement.Rect(300, 200, 640, 480)
+    reader = RecordingReader(anchor)
+    game = build_game(
+        master=tk_root, seed=1, maze=open_corridor(), anchor_reader=reader
+    )
+    try:
+        where = game.place()
+
+        assert reader.reads >= 1, "the game never asked for an anchor"
+        assert where == placement.below_and_right_of(anchor)
+        assert game.window.position() == where
+    finally:
+        game.window.close()
+
+
+def test_a_different_anchor_puts_the_window_somewhere_different(tk_root) -> None:
+    """The control: the game uses the answer rather than merely asking for it.
+
+    A game that asked and then ignored the reply would pass the test above if
+    the fallback happened to agree. Two anchors, two positions.
+    """
+    from terminal_game.shell import placement
+
+    class FixedReader(object):
+        def __init__(self, rect):
+            self.rect = rect
+
+        def read(self):
+            return self.rect
+
+    def place_with(rect):
+        game = build_game(
+            master=tk_root,
+            seed=1,
+            maze=open_corridor(),
+            anchor_reader=FixedReader(rect),
+        )
+        try:
+            return game.place()
+        finally:
+            game.window.close()
+
+    first = place_with(placement.Rect(100, 100, 640, 480))
+    second = place_with(placement.Rect(500, 400, 640, 480))
+
+    assert first != second

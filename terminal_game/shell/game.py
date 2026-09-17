@@ -100,9 +100,13 @@ class Game:
         session: Session,
         scheduler: "Optional[Scheduler]" = None,
         cadence_ms: int = CADENCE_MS,
+        anchor_reader: "Optional[placement.AnchorReader]" = None,
     ) -> None:
         self._window = window
         self._session = session
+        self._anchor_reader = (
+            anchor_reader if anchor_reader is not None else placement.no_anchor()
+        )
         self._scheduler = scheduler if scheduler is not None else window
         self._cadence_ms = cadence_ms
         self._handle = None  # type: Optional[str]
@@ -236,6 +240,10 @@ class Game:
         its window nowhere, so a fresh toplevel landed at Tk's own default of
         ``(5, 38)``. Measured for WI-14b.
 
+        The reader comes from the constructor, so a test can supply one and
+        assert both that the game **asked** and that it **used the answer** —
+        see ``anchor_reader`` on :func:`build_game`.
+
         **This does not make WIN-4 met.** The reader is
         :class:`~terminal_game.shell.placement.NoAnchor`, which follows
         nothing, so the window is centred on the main display rather than
@@ -250,7 +258,7 @@ class Game:
             self._window.surface.widget.winfo_screenheight(),
         )
         point = placement.placement_for(
-            placement.no_anchor(), display, self._window.pixel_size
+            self._anchor_reader, display, self._window.pixel_size
         )
         self._window.move_to(point)
         return point
@@ -282,6 +290,7 @@ def build_game(
     maze: "Optional[Maze]" = None,
     scheduler: "Optional[Scheduler]" = None,
     cadence_ms: int = CADENCE_MS,
+    anchor_reader: "Optional[placement.AnchorReader]" = None,
 ) -> Game:
     """Assemble a game. Nothing is shown and no timer runs until :meth:`Game.start`.
 
@@ -300,6 +309,18 @@ def build_game(
         board arrives this way.
     :param scheduler: who calls the tick. Defaults to the window.
     :param cadence_ms: how often. Defaults to :data:`CADENCE_MS`.
+    :param anchor_reader: where :meth:`Game.place` looks for the window the
+        player was last using. Defaults to
+        :class:`~terminal_game.shell.placement.NoAnchor`, which is what ships
+        and which follows nothing.
+
+        **It is injectable here, on ``build_game``, on purpose.** Ground rule
+        1.6 forbids the default suite from querying the desktop, so a test
+        that drives placement cannot use the shipped reader — and without a
+        seam the only test of placement would be one marked ``needs_window``,
+        excluded by default, and therefore unable to catch the very defect
+        WI-14b existed to fix. A capability with no way to test it by default
+        is how that defect survived in the first place.
 
     MAZE-4 is met by generating here: *"a new maze is laid out at random every
     time the game is started"*.
@@ -321,7 +342,13 @@ def build_game(
         new_game(maze), random_source=random_source, on_end=on_end
     )
     session_holder["session"] = session
-    return Game(window, session, scheduler=scheduler, cadence_ms=cadence_ms)
+    return Game(
+        window,
+        session,
+        scheduler=scheduler,
+        cadence_ms=cadence_ms,
+        anchor_reader=anchor_reader,
+    )
 
 
 def _quit_session(holder: dict) -> None:
