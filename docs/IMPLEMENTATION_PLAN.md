@@ -11,6 +11,7 @@ Newest first. Re-read a section an amendment names before you work in it.
 | # | What changed | Sections |
 |---|---|---|
 | **1** | **Calling into Objective-C, AppKit, Quartz or CoreGraphics through `ctypes` is prohibited outright**, after it put three crash dialogs on the user's screen; S-2 and WI-15 lose that route and **WIN-4's general case becomes a decision for the user**, with P2 promoted to how WIN-4 is actually built. **S-1 reported and it is good news: P8 and P4 retire by measurement** — Tk 8.5 is headless-testable, the font is fixed at Menlo 16 (cell 10 × 19, window 400 × 570) — and human item 5 closes. **A measured Tk defect gets an owner:** `root.update()` never returns on a mapped window, which lands on WI-5 and WI-6. **AppleScript's `position` is wrong by a display height on a secondary display**, so WI-15 must use `bounds`. **Five WI-0 deviations ruled on**, of which `unplaced-module` is upheld into the layer rule and the `needs_window` marker is adopted as the one mechanism. **Section 8 settles the log-tail problem** every developer meets at their first merge, and the case of an item that precedes the suite. **A trace gap closed: SCRN-3 splits into WI-3 (glyph) and WI-4 (colour)**, because the original row pointed the whole requirement at an item whose test clause asked only about glyphs, leaving the blue unowned; two specimen facts about wall glyphs go into WI-4's bar with it. Two new human items (now 8 and 9) and two new assumptions (P9, P10). | 1.3, 1.5, 1.6, 1.7, 2, 4, S-1, S-2, WI-3, WI-4, WI-5, WI-6, WI-7, WI-15, WI-17, 8, 9, 10 |
+| **1h** | **Rule, then affordance, then guard.** The one-source-of-truth rule has now been broken **twice in places nobody would classify as asking whether the game is over** — a `__repr__` and the status row — and **neither was caught by the suite**; both were found by somebody going to look after the first turned up, and the second would have put a stale outcome on the screen where the player reads it. Section 7 now says a rule of the form "everywhere must X" fails invisibly among the things nobody counts as candidates, so close it at three levels. **WI-18 gains a named sweep for reads of the stored outcome — and is told to leave a guard test rather than a finding if it can**, on the model of WI-0's layer test: a sweep runs once, a guard runs forever. Section 1.6 gains a seventh entry, distinct from the six about fixtures: **a double whose lifecycle does not match the real thing gives a false pass on the very behaviour it was built to check.** | 1.6, 5 (WI-18), 7 |
 | **1g** | **Whoever built a thing does not write the script that judges it.** I was minded to move WI-17 to the lane that built the items it verifies; that lane argued **against its own interest** and produced a better third option — *"the checks I fail to think of are exactly the ones I failed to think of when writing the code"* — so **WI-17 stays where it is and the item owners supply its checklist**. That is now a rule about verification items generally. WI-17 also absorbs the **four-arrow key-delivery extension**, because converting a human check into an agent check is that item's whole purpose. **WI-20 gains the one run that includes the `needs_window` tests**, which nothing else executes — an affordance where an audit line would only have recorded the rot. WI-16 gains **END-4 on a state the system produced**, not only a hand-made one. WI-18 gains three precise audit entries: WIN-4 misleading rather than thin, GAME-1 named in no file, SCRN-3 evidenced at the font level and not the rendered one. | 5 (WI-16, WI-17, WI-18, WI-20) |
 | **1f** | **WIN-4 is marked NOT MET in the trace table itself, and WI-18 is told not to tick it.** A developer reported its own green, fully-satisfied item as not honouring the requirement traced to it — and the defect was in **my table**, which had no way to say "traced, implemented, tested, and still not satisfied". Section 4 now says a row is a pointer and not a claim; WI-18's bar says **report what each test establishes, never that an item landed**, and treat any requirement resting on an unanswered human item as NOT MET regardless of the suite. **Human item 4 is recast as a choice between two closable endings** — grant the permission and WIN-4 is met by a small substitution, or decline and it is formally descoped — because asking a fifth time in the same shape would not help. Section 1.5 gains the **coordinate class**: right at the origin, wrong away from it, now twice from two unrelated systems. Section 1.6 gains **"a getter answering is not evidence a setter ran"**. | 1.5, 1.6, 4, 5 (WI-18), 9 |
 | **1e** | **C-4 amended: I was wrong about the status line and lane C corrected me from the specification's own examples.** There *is* a column discipline — **the score is left-aligned in a field of 5**, which reproduces all three printed forms verbatim where widths 2, 3, 4, 6, 7 and 8 reproduce none; the column difference I read as inconsistency was only `CAUGHT` being a character shorter than `CLEARED`. Where the literals underdetermine the choice, **STAT-2 settles it**: the score is kept up to date all game, so a fixed separator would make `arrows, q quits` jump columns in front of the player. Section 7 gains **"close a generalisation with an affordance, not only a rule"**, from WI-12 answering a rule with a call that obeys it for you; section 1.6 gains **"pin both directions of a trap"**. Human item 6 is now cheap to flip. | 1.6, 3, 7, 9 |
@@ -306,6 +307,13 @@ before it was written down. The pattern:
   caught board with a stale `UNDECIDED` stamp renders the caught form **and** that a
   playable board with a stale `CAUGHT` stamp renders the playing form — in its author's
   words, "so it is not passing merely because decided wins".
+- **Check that your double matches the real thing's lifecycle.** This one is not about
+  fixtures at all: a scheduler double left its entry pending after firing, where the real
+  `after` is one-shot — **so it reported a timer as still scheduled after the game had
+  deliberately stopped rescheduling, which is a false pass on the exact behaviour the
+  test existed to check.** The game was correct throughout; **the double was fixed, not
+  the code**, and nothing was broken to find out. When a double stands in for something
+  with a lifecycle — fires once, closes, expires, is consumed — pin the lifecycle too.
 - **A getter answering is not evidence a setter ran.** A fresh Tk toplevel already has a
   position, `(5, 38)`, so a placement test that merely asks whether the window has a
   position **would pass with the placement code deleted**. Move to distinctive
@@ -1004,6 +1012,19 @@ that is the finding — report it, do not paper over it.
 >
 > **Also report the `needs_window` tests** — how many exist, and that they are executed
 > only by WI-20's complete run. A test that nothing runs is a claim nobody is checking.
+
+**One named sweep, and preferably a guard rather than a sweep.** The one-source-of-truth
+rule — everything that asks whether the game is over asks the derived function, never the
+stored field — **has been broken twice in places nobody would classify as asking**, and
+neither was caught by the suite. **Find every read of the stored outcome on a game state
+and check each one.** The resolver is the single legitimate reader; everything else asks
+the function.
+
+Then do the better thing: **if that is mechanically expressible, leave a guard test
+behind rather than a finding**, on the model of WI-0's layer-rule test. A finding tells us
+about today; a guard tells whoever adds the third `__repr__` in three weeks. If it cannot
+be expressed without an allowlist that would rot, say so — that is a real answer, and the
+sweep result stands as the finding.
 *Tests must establish:* nothing new; this item adds a document, and any test it writes is
 one it found missing.
 
@@ -1306,13 +1327,26 @@ shared test scaffolding (the `conftest`, twice) and not an invented shared seam 
 once). Before calling two items parallel-safe, ask what data passes between them and who
 owns its type, not which files they touch.
 
-**Close a generalisation with an affordance, not only with a rule.** When this plan issued
-"everything that asks whether the game is over asks the same function", WI-12's answer was
-to add a call that asks it for you — *"so the right thing is the easy thing rather than a
-rule to remember."* That is the better form of the same idea, and it is the general move:
-**a rule relies on everyone recalling it, an affordance does not.** Keep the rule for what
-the affordance cannot reach, and expect the rule alone to be obeyed about as often as it
-is remembered.
+**Rule, then affordance, then guard.** A rule of the form *"everywhere must X"* is the
+weakest thing you can write, because **it fails invisibly in exactly the places nobody
+classifies as candidates.** The one-source-of-truth rule has now been broken twice — in a
+`__repr__` and in the status row — and **neither was found by a test failing**; both were
+found by somebody going to look after the first one turned up. A `__repr__` is not where
+anyone hunts for game logic, and the status-row one would have put a stale outcome on the
+screen in the one place a player reads it.
+
+So close a generalisation at all three levels:
+
+1. **The rule** states the intent. It relies on recall, and recall is what fails.
+2. **The affordance** makes the right thing the easy thing — WI-12 answered the rule with
+   a call that obeys it for you, *"so the right thing is the easy thing rather than a rule
+   to remember."* This closes it wherever people think to look.
+3. **The guard** finds where they didn't. A sweep is the cheap form and **a test is the
+   strong one**: WI-0's layer-rule test already inspects the whole tree and fails on a
+   violation, and most "everywhere" rules can be expressed the same way. **Prefer the
+   guard, because a sweep runs once and a guard runs forever.** If a rule genuinely needs
+   an allowlist that would rot, say so and leave a finding instead — that is a real
+   answer.
 
 **And when two modules must agree on a type, assert the identity, not the behaviour.**
 Throughout the WI-4/WI-5 divergence every behaviour test on both halves passed, and they
