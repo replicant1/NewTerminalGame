@@ -98,11 +98,11 @@ readings pass the three verbatim tests, which are the ones that matter most.
 ## Suite state
 
 ```
-.venv/bin/python -m pytest -q          →  669 passed, 0 failed, 0 skipped, 2 deselected
+.venv/bin/python -m pytest -q          →  788 passed, 0 failed, 0 skipped, 2 deselected
 ```
 
 Run from the repository root, `.venv` from `/usr/bin/python3` 3.9.6 with pytest 8.4.2.
-Baseline when this branch was cut from `ea00019` was **586**; WI-12 adds **83**. The layer
+Run after `git merge origin/main` (`2599b1a`, which brought WI-11 and WI-13) — no conflict. Baseline when this branch was cut from `ea00019` was **586**; WI-12 adds **83** and the merge brought the rest. The layer
 rule sees `terminal_game.presentation.status` and reports no violations. No window is
 opened by any of this; `lsappinfo visibleApplicationCount` 7 before and after, and no new
 crash reports.
