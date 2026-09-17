@@ -10,3 +10,5 @@ WI-10 NOTE    02:02:16Z  a derived outcome forces the eat to happen BEFORE the d
 WI-10 TEST    02:03:30Z  531 passed, 0 failed, 0 skipped  (.venv/bin/python -m pytest -q from the repository root; 485 inherited, 46 new)
 WI-10 NOTE    02:04:44Z  merged origin/main at d06c71b, bringing WI-4b's Presentation seam rewrite down. Clean merge and no conflict: WI-4b reshaped frame.py and test_frame.py, neither of which WI-10 touches. The Application layer sits above Presentation in the import order and does not depend on it, so the seam rewrite cannot reach the resolver
 WI-10 TEST    02:04:44Z  534 passed, 0 failed, 0 skipped after merging origin/main at d06c71b (WI-4b landed)
+WI-10 MERGE   02:05:15Z  PR #89 merged to main as a2373a9; whole suite on the merged result: 534 passed, 0 failed, 0 skipped
+WI-10 DONE    02:05:15Z  WI-10  r7/wi-10-turn-resolver  e163ad4 (merged to main as a2373a9 via PR #89); tail carries forward on my next branch
