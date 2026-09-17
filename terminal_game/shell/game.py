@@ -41,6 +41,7 @@ from terminal_game.presentation import status as status_module
 from terminal_game.presentation.field import Cell, Field
 from terminal_game.presentation.frame import compose_frame
 from terminal_game.presentation.keys import intent_for
+from terminal_game.shell import placement
 from terminal_game.shell.window import GameWindow
 
 #: GHOST-1's *"about seven times a second"*, fixed at 143 ms — assumption P6.
@@ -222,6 +223,38 @@ class Game:
         self.tick()
         self._schedule()
 
+    def place(self) -> "placement.Point":
+        """Put the window where WI-15 says it goes, before it is shown (WIN-4).
+
+        **This is wiring and decides nothing.**  Where the window goes is
+        :func:`~terminal_game.shell.placement.placement_for`'s answer and the
+        fallback inside it is S-2's; all this does is ask, and carry the
+        answer to :meth:`~terminal_game.shell.window.GameWindow.move_to`.
+
+        It exists because WI-14 assembled the game and never called either of
+        them: both were complete and tested, and the running program placed
+        its window nowhere, so a fresh toplevel landed at Tk's own default of
+        ``(5, 38)``. Measured for WI-14b.
+
+        **This does not make WIN-4 met.** The reader is
+        :class:`~terminal_game.shell.placement.NoAnchor`, which follows
+        nothing, so the window is centred on the main display rather than
+        appearing beside whatever the player was last looking at. That is the
+        honest fallback and it is what the user is being asked about — it is
+        not the requirement.
+        """
+        display = placement.Rect(
+            0,
+            0,
+            self._window.surface.widget.winfo_screenwidth(),
+            self._window.surface.widget.winfo_screenheight(),
+        )
+        point = placement.placement_for(
+            placement.no_anchor(), display, self._window.pixel_size
+        )
+        self._window.move_to(point)
+        return point
+
     def stop(self) -> None:
         """Cancel any pending beat. The window and the board are untouched."""
         if self._handle is not None:
@@ -318,6 +351,10 @@ def run_game(
     """
     game = build_game(master=master, seed=seed)
     game.start()
+    # WI-6's show() says placement happens immediately before it, and WI-15
+    # decides where. WI-14 shipped without this call, so the window landed
+    # wherever Tk drops a fresh toplevel; WI-14b is the call.
+    game.place()
     game.window.show()
     if watchdog_ms is not None:
         game.window.after(watchdog_ms, game.window.close)
