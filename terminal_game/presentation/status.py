@@ -59,10 +59,13 @@ preferred, it is this one constant and the tests that quote it.
 
 from __future__ import annotations
 
+from typing import Tuple
+
 from terminal_game.application.turn import outcome_of
 from terminal_game.domain.state import GameState, Outcome
 from terminal_game.presentation import palette
-from terminal_game.presentation.metrics import ROWS
+from terminal_game.presentation.field import BLANK, Cell
+from terminal_game.presentation.metrics import COLUMNS, ROWS
 
 #: SCRN-1's bottom row: the status line's row, derived rather than typed.
 STATUS_ROW = ROWS - 1
@@ -137,6 +140,40 @@ def status_for(state: "GameState") -> str:
     building a state that produces it.
     """
     return status_text(outcome_of(state), state.score)
+
+
+def status_cells(outcome: Outcome, score: int) -> "Tuple[Cell, ...]":
+    """Row 29 as exactly :data:`~terminal_game.presentation.metrics.COLUMNS` cells.
+
+    The same row as :func:`status_text`, in the shape
+    :func:`~terminal_game.presentation.frame.compose_frame` asks for — the
+    status text in :data:`STATUS_COLOUR`, then blanks to the end of the row.
+
+    **The padding lives here on purpose.**  A row that stops short would leave
+    the tail of row 29 showing whatever was under it, so something has to
+    decide how it ends — and STAT-1's "and nothing else" makes that a
+    statement about row 29's content, which is WI-12's and nobody else's.  If
+    the composer padded it, part of row 29 would be composed outside this
+    module.
+
+    :func:`status_text` remains the primary answer.  This is the adaptor for a
+    caller that wants cells, and it exists so that caller does not write the
+    padding itself.
+    """
+    text = status_text(outcome, score)
+    blank = Cell(BLANK, STATUS_COLOUR)
+    return tuple(
+        Cell(character, STATUS_COLOUR) for character in text
+    ) + (blank,) * (COLUMNS - len(text))
+
+
+def cells_for(state: "GameState") -> "Tuple[Cell, ...]":
+    """Row 29 as cells, for a game state.  :func:`status_for`'s shape-adaptor.
+
+    Asks :func:`~terminal_game.application.turn.outcome_of` for the same
+    reason :func:`status_for` does, and for the same reason it matters.
+    """
+    return status_cells(outcome_of(state), state.score)
 
 
 def is_decided(outcome: Outcome) -> bool:

@@ -7,3 +7,5 @@
 02:11:44Z  WI-12  VERIFY  added status_for(state) and the test that matters: a hand-built board with both actors on one square and the stored outcome field left at UNDECIDED. state.outcome is UNDECIDED, outcome_of(state) is CAUGHT, and status_for follows the FUNCTION — renders the CAUGHT form with no arrows. Also the converse, a playable board stamped CAUGHT, which renders the playing form, so the test is not simply "decided wins"
 02:11:44Z  WI-12  TEST    669 passed, 0 failed, 0 skipped, 2 deselected  (.venv/bin/python -m pytest -q; baseline 586, WI-12 adds 83). Layer rule still reports no violations with status.py importing application.turn, which plan 1.3 allows
 02:12:42Z  WI-12  TEST    788 passed, 0 failed, 0 skipped, 2 deselected — whole suite after merging origin/main 2599b1a (WI-11 and WI-13), no conflict. Crash reports still 14, visibleApplicationCount 7
+02:13:27Z  WI-12  MERGE   PR #93 merged to main as 54a32cf at 02:13:05Z; fast-forwarded and re-ran the whole suite on 54a32cf -> 788 passed, 0 failed, 0 skipped, 2 deselected. main is green with WI-12 in it
+02:13:27Z  WI-12  DONE    WI-12  r7/wi-12-status-line  merged as 54a32cf

@@ -1,0 +1,2 @@
+02:15:57Z  WI-12b  START   conductor dispatched the status_cells bridge as its own item, WI-12b, because WI-14 needs it and WI-14 comes before WI-16. Renamed my branch from r7/wi-12a-status-cells to the dispatched r7/wi-12b-status-cells; work already done. Carrying the WI-12 log tail forward on it
+02:15:57Z  WI-12b  TEST    799 passed, 0 failed, 0 skipped, 2 deselected  (.venv/bin/python -m pytest -q; baseline 788, WI-12b adds 11)
