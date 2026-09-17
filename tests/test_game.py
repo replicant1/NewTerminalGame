@@ -632,3 +632,53 @@ def test_a_different_anchor_puts_the_window_somewhere_different(tk_root) -> None
     second = place_with(placement.Rect(500, 400, 640, 480))
 
     assert first != second
+
+
+def test_ending_a_game_between_beats_leaves_no_timer_outstanding(tk_root) -> None:
+    """The defect WI-20's full run found, pinned where it can run by default.
+
+    A game can end between two beats — a ``q``, or the close button — and
+    when it does there is a scheduled beat outstanding that nothing else
+    clears: ``_schedule`` only declines to book the *next* one, and it runs
+    after a beat rather than after a quit. Left alone, ``timer_is_running``
+    goes on reporting ``True`` for a game that is over, and on a shared Tk
+    interpreter the pending ``after`` is still live and still fires.
+
+    Lane C found it on a real window in a ``needs_window`` test. This is the
+    same fact in the default suite, where it costs nothing to keep.
+    """
+    scheduler = RecordingScheduler()
+    game = corridor_game(tk_root, scheduler)
+    try:
+        game.start()
+        assert game.timer_is_running, "nothing was scheduled, so this proves nothing"
+
+        game.handle_key("q")
+
+        assert not game.is_running
+        assert not game.timer_is_running
+        assert not scheduler.has_pending
+        assert scheduler.cancelled, "the scheduled beat was never cancelled"
+    finally:
+        game.window.close()
+
+
+def test_closing_the_window_between_beats_also_clears_the_timer(tk_root) -> None:
+    """The other way in, which is the one the real entry point takes.
+
+    ``run_game``'s watchdog closes the window rather than sending a key, so a
+    fix that only handled the quit intent would leave the real call site
+    exactly as it was.
+    """
+    scheduler = RecordingScheduler()
+    game = corridor_game(tk_root, scheduler)
+    try:
+        game.start()
+        assert game.timer_is_running
+
+        game.window.close()
+
+        assert not game.is_running
+        assert not game.timer_is_running
+    finally:
+        game.window.close()

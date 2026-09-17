@@ -330,38 +330,59 @@ def build_game(
     if maze is None:
         maze = generate(random_source)
 
-    session_holder = {}  # type: dict
+    # The window has to exist before the Game does, and closing the window
+    # has to reach both. One holder, filled in as each becomes available.
+    parts = {}  # type: dict
 
     def on_end() -> None:
         # WIN-5 under assumption P1: reaching Ended closes the window, and
         # the entry point has nothing after run(), so the process follows.
         window.close()
 
-    window = GameWindow(master=master, on_close=lambda: _quit_session(session_holder))
+    window = GameWindow(master=master, on_close=lambda: _on_window_closed(parts))
     session = Session(
         new_game(maze), random_source=random_source, on_end=on_end
     )
-    session_holder["session"] = session
-    return Game(
+    parts["session"] = session
+    game = Game(
         window,
         session,
         scheduler=scheduler,
         cadence_ms=cadence_ms,
         anchor_reader=anchor_reader,
     )
+    parts["game"] = game
+    return game
 
 
-def _quit_session(holder: dict) -> None:
-    """The window closing is a quit, wherever it came from.
+def _on_window_closed(parts: dict) -> None:
+    """The window closing ends the game, and stops its timer.
 
-    The close button is a way to leave the game, so it has to reach the
-    session — otherwise a player who clicks it ends the window with the
-    session still nominally playing. ``Session.quit`` is idempotent and so is
-    ``GameWindow.close``, so the two calling each other settles immediately.
+    **The quit.** The close button is a way to leave the game, so it has to
+    reach the session — otherwise a player who clicks it ends the window with
+    the session still nominally playing. ``Session.quit`` is idempotent and so
+    is ``GameWindow.close``, so the two calling each other settles at once.
+
+    **And the timer.** A game can end between two beats, and when it does
+    there is a scheduled beat outstanding that nothing else will ever clear:
+    :meth:`Game._schedule` only declines to book the *next* one, and it runs
+    after a beat rather than after a quit. Left alone, ``timer_is_running``
+    goes on reporting ``True`` for a game that is over — and on a shared Tk
+    interpreter, which is what a test suite has, the pending ``after`` is
+    still live and still fires.
+
+    **Found by WI-20's full run**, which is the first to execute all ten
+    ``needs_window`` tests together, by lane C's
+    ``test_the_real_entry_point_runs_and_reaps_itself``. That is the whole
+    argument for making that run somebody's requirement: nothing in the
+    default suite could have seen it.
     """
-    session = holder.get("session")
+    session = parts.get("session")
     if session is not None:
         session.quit()
+    game = parts.get("game")
+    if game is not None:
+        game.stop()
 
 
 def run_game(
