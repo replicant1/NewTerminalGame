@@ -1,8 +1,15 @@
 # Coverage audit — all 49 requirement codes
 
-**WI-18.** Developer B, 17 September 2026, **against `main` = `b302b2d`**,
-suite **919 passed, 0 failed, 0 skipped, 5 deselected**
-(`.venv/bin/python -m pytest -q` from the repository root).
+**WI-18.** Developer B, 17 September 2026. Written against **`main` =
+`b302b2d`**, suite **919 passed, 0 failed, 0 skipped, 5 deselected**; then
+**re-checked against `874e0ca`**, suite **929 passed, 0 failed, 0 skipped, 7
+deselected**, after WI-14b and WI-14c landed mid-audit. Both figures were
+read from runs of `.venv/bin/python -m pytest -q` at the repository root,
+not recalled.
+
+**One row changed between the two and §1.1 records both states**, because an
+audit that silently updates itself is a worse document than one that shows
+what moved.
 
 Every row below is a judgement about *what is established*, not about what
 landed. Two rules govern it:
@@ -39,28 +46,42 @@ and no amount of testing settles any of the eleven.
 
 ## 1. The findings, in the order they matter
 
-### 1.1 WIN-4 — not met, and **not wired**
+### 1.1 WIN-4 — the fallback now runs; the requirement is still not met
 
-Checked at **02:26Z against `b302b2d`**: `grep` for `placement_for`,
-`move_to` and `no_anchor` across `terminal_game/` returns exactly one hit —
-`move_to`'s own definition. `tests/test_end_to_end.py` does not mention
-placement. `run_game` is build → start → show → run, with no placement step.
+**This row was re-checked and corrected during the audit**, which is worth
+saying because the audit itself demanded it.
 
-Two separate things are wrong and the distinction matters:
+**At `b302b2d`, when the audit was written**, `grep` for `placement_for`,
+`move_to` and `no_anchor` across `terminal_game/` returned exactly one hit —
+`move_to`'s own definition. `run_game` was build → start → show → run, with
+no placement step. `placement.py` was complete, tested, and **dead**: the
+window appeared at Tk's default corner, measured `(5, 38)`.
 
-1. **The anchor route is an unanswered question with the user** (plan section
-   9, item 4). The shipped reader reads nothing, so the player's last window
-   is not followed. This was a deliberate choice and is documented.
-2. **The fallback is not running either.** `placement.py` is complete,
-   tested, and dead. The window appears at Tk's default corner, measured
-   `(5, 38)`.
+**At `874e0ca`, WI-14b and WI-14c have wired it.** `Game.place()` asks
+`placement_for` and carries the answer to `move_to`, and `run_game` calls it
+immediately before `show()`. WI-14c added an `anchor_reader` seam to
+`build_game`, so a test can supply a reader and assert both that the game
+**asked** and that it **used the answer**.
 
-"Not met" alone would read as the first only, and leave a reader believing
-the fallback is live. It is not.
+So the two things that were wrong are now one:
 
-**WI-14b is reported to be wiring this.** When it lands, row 1 above becomes
-*the fallback runs; WIN-4 is still not met; the route is still with the
-user*. **The row must be re-checked before WI-20 signs anything.**
+| | at `b302b2d` | at `874e0ca` |
+|---|---|---|
+| The fallback runs | **no — dead code** | **yes** |
+| The player's last window is followed | no | **no** |
+
+**WIN-4 remains NOT MET.** The shipped reader is `NoAnchor`, which follows
+nothing, so the window is centred on the main display. That is the honest
+fallback, it is what the user is being asked about, and it is not the
+requirement. The route is still **plan section 9, item 4, unanswered**.
+
+**Why this row is the audit's own best evidence.** The gap existed for the
+length of WI-14, the suite was green throughout, and it was found by reading
+the tree rather than by a test. `test_placement.py` tested the arithmetic in
+isolation; `test_window_placement.py` tested the join through a window the
+test built itself; both passed. **No test can catch an absent call site by
+testing the things on either side of it** — and the fix, correctly, was not
+another unit test but a call plus a test that the assembled game makes it.
 
 **How no test caught it.** `test_placement.py` tests the arithmetic in
 isolation. `test_window_placement.py` tests the join through a window the
@@ -237,7 +258,7 @@ their enclosing class. Read it with section 2 in mind.
 | WIN-1 | MET | 5 | a real toplevel of its own, owned by this process |
 | WIN-2 | **NOT MET** (legibility) | 30 | 40 × 30 at 10 × 19 → 400 × 570 pinned end to end; *"comfortable"* untestable — **human item 3** |
 | WIN-3 | MET, pending a look | 4 | title is exactly `Terminal Game` as a string; no titlebar seen — **human item 2** |
-| WIN-4 | **NOT MET, NOT WIRED** | 1 | arithmetic and fallback tested; **nothing calls them** — §1.1, **human item 4** |
+| WIN-4 | **NOT MET** | 1 | fallback now wired and running (WI-14b/c); the player's last window is still not followed — §1.1, **human item 4** |
 | WIN-5 | **NOT MET** | 14 | tests pin assumption P1, not the requirement — **C-1, human item 1** |
 | SCRN-1 | MET | 2 | 30 rows: 0–28 the maze, 29 the status line |
 | SCRN-2 | PARTLY | 15 | no route to draw anything but glyph + colour; no image object. Rendering unseen |
@@ -303,7 +324,10 @@ shapes.
 
 ## 6. What WI-20 must do with this
 
-1. **Re-check WIN-4** (§1.1). It may have changed under WI-14b.
+1. **WIN-4 is the row to read twice** (§1.1). Its *wiring* was fixed
+   mid-audit by WI-14b/c and the fallback now runs — but the requirement is
+   still not met, and a release note that says "placement fixed" would be
+   true and misleading in the same sentence.
 2. **Run the whole suite including the 4 `needs_window` tests**, once, under
    section 1.5 in full, and report both counts. Those tests are excluded by
    default and **nothing else in the project ever runs them**, so they can
