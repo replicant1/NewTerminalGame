@@ -11,6 +11,7 @@ Newest first. Re-read a section an amendment names before you work in it.
 | # | What changed | Sections |
 |---|---|---|
 | **1** | **Calling into Objective-C, AppKit, Quartz or CoreGraphics through `ctypes` is prohibited outright**, after it put three crash dialogs on the user's screen; S-2 and WI-15 lose that route and **WIN-4's general case becomes a decision for the user**, with P2 promoted to how WIN-4 is actually built. **S-1 reported and it is good news: P8 and P4 retire by measurement** — Tk 8.5 is headless-testable, the font is fixed at Menlo 16 (cell 10 × 19, window 400 × 570) — and human item 5 closes. **A measured Tk defect gets an owner:** `root.update()` never returns on a mapped window, which lands on WI-5 and WI-6. **AppleScript's `position` is wrong by a display height on a secondary display**, so WI-15 must use `bounds`. **Five WI-0 deviations ruled on**, of which `unplaced-module` is upheld into the layer rule and the `needs_window` marker is adopted as the one mechanism. **Section 8 settles the log-tail problem** every developer meets at their first merge, and the case of an item that precedes the suite. **A trace gap closed: SCRN-3 splits into WI-3 (glyph) and WI-4 (colour)**, because the original row pointed the whole requirement at an item whose test clause asked only about glyphs, leaving the blue unowned; two specimen facts about wall glyphs go into WI-4's bar with it. Two new human items (now 8 and 9) and two new assumptions (P9, P10). | 1.3, 1.5, 1.6, 1.7, 2, 4, S-1, S-2, WI-3, WI-4, WI-5, WI-6, WI-7, WI-15, WI-17, 8, 9, 10 |
+| **1d** | **One source of truth means one, not one per component.** The game state carries a stored outcome *and* a derived function computes it, and on a hand-built board they can disagree — found by a failing test in WI-11. The rules are authoritative and the stamp is a cache, so **everything** that asks whether the game is over asks the same function: the session, the status line (**the STAT-3 trace row said "the outcome held on Game State" and was pointing at the stale cache**), the draw order, the tick. **WI-16's bar** gains the warning that a stamp a test sets itself will not be believed, and that its determinism rests on three things — candidate order, seed, **and the ghost's initial heading**. Section 1.6 gains END-5's test as a worked example of asserting the consequence rather than the refusal; section 8 gains "quote the deselections"; human item 8 is upgraded from hypothetical to live now that 235 Presentation tests construct a Tk root on every run. | 1.6, 4, 5 (WI-12, WI-16), 8, 9 |
 | **1c** | **END-3 landed structural, so the section 1.6 fragility note is struck** — the win branch is unreachable while the player and ghost share a square, so there is no ordering left to get wrong, and the question stops costing the user anything. In its place, the plan now records **how to know a test has power without breaking code**: make the fixture prove it discriminates, add the control, make a sweep check itself, and guard the fixture against being flattened — four moves three items invented independently before anyone wrote them down. **Ruled:** eating the last dot on the ghost's square **does** score it, on END-3's own wording, so the final line reads `CAUGHT  score N` including it — player-visible, so it is human item 7 for the user to overturn. **WI-13 returns to lane B**, restoring the original assignment now that the WI-8/WI-10 pair it was moved aside for has landed; same dates, no redraw. | 1.6, 5 (WI-10, WI-13), 6.2, 9, 10 |
 | **1b** | **END-3 becomes structural.** WI-10 derives the outcome as one total function of the state, testing caught before cleared, instead of setting it in two ordered steps — so there is no collision test left to migrate and caution C6's failure mode closes. The section 1.6 fragility note says it will be struck if that lands, but is not struck yet. WI-11's Decided state becomes load-bearing for END-3, and both bars say so. Also **C-6 added**: START-3 and SCORE-4 agree, sit four sections apart, and decide one line of code between them, where reading either alone gives the wrong answer. | 1.6, 3, 5 (WI-10, WI-11) |
 | **1a** | **Two reassignments and one new landing, with the schedule redrawn twice to match.** **WI-8 moves to lane B and to M2**, because lane B owns WI-10 and one developer doing both removes a seam the plan had asked two to manage; WI-13 moved to lane C behind it, and back to lane B once that pair had landed and the reason expired. **WI-4b is added** to rewrite frame composition onto the field type WI-5 owns, after WI-4 and WI-5 each built that seam independently — **a plan defect, not a developer error**, and section 7 gains the rule that came out of it. **WI-12 is blocked behind WI-4b.** WI-8's bar gains a measured trap in START-1; WI-16's gains the fact its determinism rests on. **Totals now 42 developer-days over 21 project days in 24 items**, up from 41 / 19 / 23. | 4, 5 (WI-2, WI-4b, WI-8, WI-9, WI-16), 6.1, 6.2, 7 |
@@ -275,6 +276,13 @@ Every one of these asks a question *about the test* and answers it from the test
 data. None of them requires editing working code, which remains prohibited without
 exception.
 
+**And one worked example of "assert the consequence, not the shape", because the
+difference is easy to miss.** END-5 says a decided game stops. The weak test asserts that
+the session *declines to act*. The test WI-11 actually wrote throws **ten ticks and thirty
+arrows** at a decided game and asserts the **board, score, dots and outcome are all
+identical afterwards** — which catches the case the refusal-test cannot: a session that
+accepts a move and then quietly undoes it.
+
 ### 1.7 Where documents go
 
 **These four shapes govern the documents the *process* produces — not the source tree.** A
@@ -440,7 +448,7 @@ and none invented.
 | SCRN-3 | WI-3 (glyph) + WI-4 (colour) | END-6 | WI-11 |
 | SCRN-4 | WI-4 | STAT-1 | WI-12 |
 | SCRN-5 | WI-4 | STAT-2 | WI-12 |
-| SCRN-6 | WI-12 | STAT-3 | WI-12 |
+| SCRN-6 | WI-12 | STAT-3 | WI-12 (from the derived outcome, not the stored stamp) |
 | SCRN-7 | WI-5 | MAZE-1 | WI-1 |
 | START-1 | WI-8 | MAZE-2 | WI-1 + WI-2 |
 | START-2 | WI-8 | MAZE-3 | WI-2 + WI-10 |
@@ -768,7 +776,16 @@ orderings give different answers, asserting that the outcome is the loss and not
 
 **WI-12 — the status line.** *(1 day, depends on WI-8, lane C)*
 The exact content of row 29, in cyan, and nothing else on that row: the playing form, the
-caught form and the cleared form, chosen by the outcome. Ruling C-4 settles the literals —
+caught form and the cleared form, chosen by the outcome.
+
+> **Ask the rules, not the stamp.** The game state carries a stored outcome *and* there is
+> a derived function that computes the outcome from the state, and **on a hand-built board
+> the two can disagree.** WI-11 found this with a failing test. The settlement is that
+> **the rules are authoritative and the stamp is a cache of them**, so *everything* that
+> asks whether the game is over and how — the session, this status line, the frame
+> composer's draw order, the live game's tick — **asks the same function.** One source of
+> truth means one, not one per component: a status line reading the stale stamp would show
+> a decided game still inviting the player to use the arrow keys. Ruling C-4 settles the literals —
 one leading space, then the requirement's text with the score substituted and its spacing
 exactly as printed, the rest blank.
 *Tests must establish:* STAT-1, that row 29 carries the status and nothing else; STAT-2,
@@ -861,6 +878,20 @@ decision, and `q` from Playing and from Decided.
 > maze — and **your seeded playthroughs would be worthless while still passing.** WI-9
 > pinned it by walking the specimen 500 steps twice from one seed. If a seeded playthrough
 > here ever goes flaky, look there first.
+>
+> **Your determinism rests on three things, not one:** that candidate order, the seed, and
+> **the ghost's initial heading**, which the session fixes. The heading is arbitrary —
+> nothing in the specification chooses one — but it is fixed and pinned precisely so that
+> your playthroughs reproduce.
+>
+> **And a stamp you set yourself will not be believed.** The game state carries a stored
+> outcome, but everything that asks whether the game is over asks the *derived* function
+> instead, because the rules are authoritative and the stamp is only a cache of them
+> (see WI-12). In production the two can never disagree, since the resolver always stamps
+> what the function returned — **so this bites only on boards a test builds, and you are
+> the item most likely to build one.** A fixture stamped `CAUGHT` whose actors stand a
+> square apart gives you a *playing* session and a confusing failure. Build the position,
+> not the verdict.
 *Tests must establish:* that a complete playthrough reaches the right outcome, the right
 final score and the right status line; that the picture after the loss shows the ghost over
 the player; that after the decision the game is frozen and stays frozen; and **that running
@@ -1182,6 +1213,12 @@ All of these, in this order:
    in section 5 for that item.
 2. **The whole suite is green** with the exact command from section 1.2, and you have the
    exact counts in front of you — never "tests pass".
+
+   **Quote the whole line, deselections included.** Once anything carries `needs_window`
+   the line reads like `612 passed, 0 failed, 0 skipped, 2 deselected`. That is the
+   section 1.6 mechanism working, not tests going missing — but **a count that silently
+   drops the deselections hides the day somebody marks a test `needs_window` that should
+   have run.** So report the number and say what it is.
 3. The PR summary exists at `docs/prs/PR-<ITEM>-<slug>.md`, and the pull request carries it
    as its body.
 4. `gh pr ready <n>` and then `gh pr merge <n> --merge`, by you.
@@ -1269,7 +1306,12 @@ them. Route them all to the conductor, which is the only path to the user.
    process, so the tile appears whenever the suite touches the toolkit. It is not a
    window, so the bar in section 1.6 still holds — but it is a visible effect on the
    user's machine that nobody anticipated, and they should get to say. **We proceed on
-   "acceptable".** *If the answer is no:* WI-5 and WI-16 each need a marker excluding
+   "acceptable".**
+   **This has gone from hypothetical to live since it was first raised.** When S-1 asked
+   it there were no Presentation tests; there are now 235, so **every run of the default
+   suite constructs a Tk root and the tile appears every time**, and WI-16 will add more.
+   The question is no longer "would this be acceptable" but "this is happening on every
+   run — is it acceptable". *If the answer is no:* WI-5 and WI-16 each need a marker excluding
    their Tk tests from the default suite, which also costs the headlessness those tests
    were pinning.
 9. **Look at a wall in the running game and say whether the double lines join up into one
