@@ -12,3 +12,5 @@ WI-2 NOTE    01:52:38Z  caught an arithmetic error in my own finding before comm
 WI-2 COMMIT  01:53:00Z  fb007e8 WI-2: maze generation on an odd-coordinate cell lattice; pushed to origin
 WI-2 NOTE    01:53:48Z  merged origin/main at 5850eb4, which brought lane A's WI-4 down. Clean merge. WI-4 consumes WI-1's Maze, WIDTH, HEIGHT and Position and joins them to WI-3's wall_glyph, exactly the seam predicted; it does not touch the generator, so WI-2 and WI-4 do not overlap
 WI-2 TEST    01:53:48Z  235 passed, 0 failed, 0 skipped after merging origin/main at 5850eb4 (WI-4 landed)
+WI-2 MERGE   01:54:23Z  PR #85 merged to main as 589902d; whole suite on the merged result: 235 passed, 0 failed, 0 skipped
+WI-2 DONE    01:54:23Z  WI-2  r7/wi-2-maze-generation  942f2d3 (merged to main as 589902d via PR #85); this log tail carries forward on my next branch per the ruling on contradiction B
