@@ -160,3 +160,6 @@
 01:48:48Z  DECIDE  WI-3 exporting ALL_WALL_GLYPHS -> no ruling needed, it is an internal API between WI-3 and WI-5 and section 1.8 puts those with the developers. Good call, kept
 01:48:48Z  VERIFY  dev A independently confirmed C-2 (all 29 maze rows exactly 37 columns) and C-4 (status row 27 characters with the leading space) against the specimen rather than taking my rulings on trust
 01:48:48Z  VERIFY  two specimen facts for WI-4 from dev A: a wall square with a single wall neighbour draws the full line not a stub (37 such squares, no half-glyphs); and outside the grid is not a wall, proved by the border corners being corner glyphs rather than crossings
+01:49:47Z  TEST    174 passed, 0 failed, 0 skipped via .venv/bin/python -m pytest -q on r7/amend-1-ctypes-prohibition after merging origin/main into it
+01:49:47Z  VERIFY  both plan checkers re-run after the SCRN-3 edit and the merge -> ALL CHECKS PASS, NO OVERLAPS OR DEP VIOLATIONS, 49 of 49 codes still traced, schedule untouched
+01:49:47Z  NOTE    PR 78 is now current with main and green, so the user can merge it the moment the permission is cleared. It stays a draft because gh pr ready is refused
