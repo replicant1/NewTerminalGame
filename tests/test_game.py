@@ -490,3 +490,145 @@ class TestOnTheRealScreen:
         assert not game.window.is_open
         assert game.field is not None
         assert game.state.score >= 0
+
+
+# --------------------------------------------------------------------------
+# WI-14b — the placement WI-15 decided is actually carried out
+# --------------------------------------------------------------------------
+
+
+def test_the_assembled_game_places_its_window_where_wi15_says(tk_root) -> None:
+    """WI-14b: the join WI-14 shipped without.
+
+    ``placement.py`` and ``GameWindow.move_to`` were both complete and
+    tested, and **nothing in the product called either** — so the running
+    game left its window wherever Tk drops a fresh toplevel, measured at
+    ``(5, 38)``. The unit tests either side of the gap were green throughout,
+    which is why only driving the assembly found it.
+
+    This asserts the wiring and not the decision: where the window goes is
+    ``placement_for``'s answer, asked for here rather than recomputed.
+    """
+    from terminal_game.shell import placement
+
+    game = corridor_game(tk_root)
+    try:
+        widget = game.window.surface.widget
+        display = placement.Rect(
+            0, 0, widget.winfo_screenwidth(), widget.winfo_screenheight()
+        )
+        expected = placement.placement_for(
+            placement.no_anchor(), display, game.window.pixel_size
+        )
+
+        where = game.place()
+
+        assert where == expected
+        assert game.window.position() == expected
+    finally:
+        game.window.close()
+
+
+def test_placing_the_window_actually_moves_it(tk_root) -> None:
+    """The control. Without it the test above passes on a game that never moved.
+
+    Tk gives a fresh toplevel a position of its own, so ``position()``
+    answering something is not evidence that anything placed it — WI-15's
+    own docstring says exactly that. The evidence is that the position
+    **changed**, and changed to the computed one.
+    """
+    game = corridor_game(tk_root)
+    try:
+        before = game.window.position()
+        after = game.place()
+
+        assert before != after, (
+            "the window was already where placement wanted it, so this test "
+            "cannot tell a placed window from an unplaced one"
+        )
+        assert game.window.position() == after
+    finally:
+        game.window.close()
+
+
+def test_placing_the_window_does_not_disturb_its_size(tk_root) -> None:
+    """WIN-2 survives WIN-4's attempt.
+
+    A geometry string carrying ``WxH`` would silently overrule the size WI-6
+    computed from the cell metrics. WI-15 writes position only; this is the
+    assembly checking that what it asked for did not cost it the size.
+    """
+    game = corridor_game(tk_root)
+    try:
+        before = game.window.pixel_size
+        game.place()
+        assert game.window.pixel_size == before == (400, 570)
+    finally:
+        game.window.close()
+
+
+def test_the_game_asks_the_anchor_reader_it_was_given(tk_root) -> None:
+    """WI-14c: the seam WI-16b needs, and the reason it is on ``build_game``.
+
+    Ground rule 1.6 forbids the default suite from querying the desktop, so
+    a placement test cannot use the shipped reader. Without this seam the
+    only test of placement would be one marked ``needs_window`` — excluded by
+    default, and so unable to catch the very defect WI-14b existed to fix.
+    """
+    from terminal_game.shell import placement
+
+    class RecordingReader(object):
+        def __init__(self, rect):
+            self.rect = rect
+            self.reads = 0
+
+        def read(self):
+            self.reads += 1
+            return self.rect
+
+    anchor = placement.Rect(300, 200, 640, 480)
+    reader = RecordingReader(anchor)
+    game = build_game(
+        master=tk_root, seed=1, maze=open_corridor(), anchor_reader=reader
+    )
+    try:
+        where = game.place()
+
+        assert reader.reads >= 1, "the game never asked for an anchor"
+        assert where == placement.below_and_right_of(anchor)
+        assert game.window.position() == where
+    finally:
+        game.window.close()
+
+
+def test_a_different_anchor_puts_the_window_somewhere_different(tk_root) -> None:
+    """The control: the game uses the answer rather than merely asking for it.
+
+    A game that asked and then ignored the reply would pass the test above if
+    the fallback happened to agree. Two anchors, two positions.
+    """
+    from terminal_game.shell import placement
+
+    class FixedReader(object):
+        def __init__(self, rect):
+            self.rect = rect
+
+        def read(self):
+            return self.rect
+
+    def place_with(rect):
+        game = build_game(
+            master=tk_root,
+            seed=1,
+            maze=open_corridor(),
+            anchor_reader=FixedReader(rect),
+        )
+        try:
+            return game.place()
+        finally:
+            game.window.close()
+
+    first = place_with(placement.Rect(100, 100, 640, 480))
+    second = place_with(placement.Rect(500, 400, 640, 480))
+
+    assert first != second

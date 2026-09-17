@@ -41,6 +41,7 @@ from terminal_game.presentation import status as status_module
 from terminal_game.presentation.field import Cell, Field
 from terminal_game.presentation.frame import compose_frame
 from terminal_game.presentation.keys import intent_for
+from terminal_game.shell import placement
 from terminal_game.shell.window import GameWindow
 
 #: GHOST-1's *"about seven times a second"*, fixed at 143 ms — assumption P6.
@@ -99,9 +100,13 @@ class Game:
         session: Session,
         scheduler: "Optional[Scheduler]" = None,
         cadence_ms: int = CADENCE_MS,
+        anchor_reader: "Optional[placement.AnchorReader]" = None,
     ) -> None:
         self._window = window
         self._session = session
+        self._anchor_reader = (
+            anchor_reader if anchor_reader is not None else placement.no_anchor()
+        )
         self._scheduler = scheduler if scheduler is not None else window
         self._cadence_ms = cadence_ms
         self._handle = None  # type: Optional[str]
@@ -222,6 +227,42 @@ class Game:
         self.tick()
         self._schedule()
 
+    def place(self) -> "placement.Point":
+        """Put the window where WI-15 says it goes, before it is shown (WIN-4).
+
+        **This is wiring and decides nothing.**  Where the window goes is
+        :func:`~terminal_game.shell.placement.placement_for`'s answer and the
+        fallback inside it is S-2's; all this does is ask, and carry the
+        answer to :meth:`~terminal_game.shell.window.GameWindow.move_to`.
+
+        It exists because WI-14 assembled the game and never called either of
+        them: both were complete and tested, and the running program placed
+        its window nowhere, so a fresh toplevel landed at Tk's own default of
+        ``(5, 38)``. Measured for WI-14b.
+
+        The reader comes from the constructor, so a test can supply one and
+        assert both that the game **asked** and that it **used the answer** —
+        see ``anchor_reader`` on :func:`build_game`.
+
+        **This does not make WIN-4 met.** The reader is
+        :class:`~terminal_game.shell.placement.NoAnchor`, which follows
+        nothing, so the window is centred on the main display rather than
+        appearing beside whatever the player was last looking at. That is the
+        honest fallback and it is what the user is being asked about — it is
+        not the requirement.
+        """
+        display = placement.Rect(
+            0,
+            0,
+            self._window.surface.widget.winfo_screenwidth(),
+            self._window.surface.widget.winfo_screenheight(),
+        )
+        point = placement.placement_for(
+            self._anchor_reader, display, self._window.pixel_size
+        )
+        self._window.move_to(point)
+        return point
+
     def stop(self) -> None:
         """Cancel any pending beat. The window and the board are untouched."""
         if self._handle is not None:
@@ -249,6 +290,7 @@ def build_game(
     maze: "Optional[Maze]" = None,
     scheduler: "Optional[Scheduler]" = None,
     cadence_ms: int = CADENCE_MS,
+    anchor_reader: "Optional[placement.AnchorReader]" = None,
 ) -> Game:
     """Assemble a game. Nothing is shown and no timer runs until :meth:`Game.start`.
 
@@ -267,6 +309,18 @@ def build_game(
         board arrives this way.
     :param scheduler: who calls the tick. Defaults to the window.
     :param cadence_ms: how often. Defaults to :data:`CADENCE_MS`.
+    :param anchor_reader: where :meth:`Game.place` looks for the window the
+        player was last using. Defaults to
+        :class:`~terminal_game.shell.placement.NoAnchor`, which is what ships
+        and which follows nothing.
+
+        **It is injectable here, on ``build_game``, on purpose.** Ground rule
+        1.6 forbids the default suite from querying the desktop, so a test
+        that drives placement cannot use the shipped reader — and without a
+        seam the only test of placement would be one marked ``needs_window``,
+        excluded by default, and therefore unable to catch the very defect
+        WI-14b existed to fix. A capability with no way to test it by default
+        is how that defect survived in the first place.
 
     MAZE-4 is met by generating here: *"a new maze is laid out at random every
     time the game is started"*.
@@ -288,7 +342,13 @@ def build_game(
         new_game(maze), random_source=random_source, on_end=on_end
     )
     session_holder["session"] = session
-    return Game(window, session, scheduler=scheduler, cadence_ms=cadence_ms)
+    return Game(
+        window,
+        session,
+        scheduler=scheduler,
+        cadence_ms=cadence_ms,
+        anchor_reader=anchor_reader,
+    )
 
 
 def _quit_session(holder: dict) -> None:
@@ -318,6 +378,10 @@ def run_game(
     """
     game = build_game(master=master, seed=seed)
     game.start()
+    # WI-6's show() says placement happens immediately before it, and WI-15
+    # decides where. WI-14 shipped without this call, so the window landed
+    # wherever Tk drops a fresh toplevel; WI-14b is the call.
+    game.place()
     game.window.show()
     if watchdog_ms is not None:
         game.window.after(watchdog_ms, game.window.close)

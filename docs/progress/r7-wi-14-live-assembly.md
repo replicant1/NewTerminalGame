@@ -9,3 +9,11 @@ WI-14  02:18:20Z  DECIDE  took lane C's status_cells the moment it landed, repla
 WI-14  02:18:32Z  TEST    886 passed, 0 failed, 0 skipped, 5 deselected — default suite.
 WI-14  02:19:05Z  VERIFY  GHOST-1 is now NAMED in tests, per lane B's audit finding that it was the one code no test mentioned. Two tests carry it in their names and docstrings and assert against CADENCE_MS rather than a literal 143, with one separate line pinning the constant's value — so WI-19 changing it changes the test's meaning rather than breaking it.
 WI-14  02:19:05Z  VERIFY  THE REAL GAME ON A REAL WINDOW, under a 90s deadline in a parent process: 1 passed in 1.15s, elapsed 1.26s, no timeout. This is the only place the 143 ms cadence is a real 143 milliseconds. Crash reports 14 before and 14 after, ZERO new. Nothing left behind — the same visible applications before and after.
+WI-14  02:19:40Z  COMMIT  4fb471c WI-14: the joins, GHOST-1's cadence, and two stale-field defects
+WI-14  02:19:40Z  COMMIT  0fd5162 WI-14: PR summary
+WI-14  02:19:40Z  VERIFY  draft PR #97 -> https://github.com/replicant1/NewTerminalGame/pull/97
+WI-14  02:20:10Z  MERGE   PR #97 merged into main as da9ec9c. 886 passed, 0 failed, 0 skipped, 5 deselected at the moment of merge.
+WI-14  02:20:28Z  VERIFY  main confirmed green afterwards: fast-forwarded 0fd5162..da9ec9c; 886 passed, 0 failed, 0 skipped, 5 deselected. Crash reports 14 — unchanged across the whole item.
+WI-14  02:20:28Z  TEST    886 passed, 0 failed, 0 skipped, 5 deselected
+WI-14  02:20:28Z  NOTE    for lane C: WI-14 has merged, so WI-16's PR can be retargeted from r7/wi-14-live-assembly to main whenever convenient. The surface it branched from at 46f9682 did not move; 4fb471c and 0fd5162 added only tests, the two stale-field fixes and the PR summary.
+WI-14  02:20:28Z  DONE    WI-14 r7/wi-14-live-assembly da9ec9c (PR #97 merged as da9ec9c). The last lines are uncommitted on purpose; the tail is carried forward on the next branch I cut.
