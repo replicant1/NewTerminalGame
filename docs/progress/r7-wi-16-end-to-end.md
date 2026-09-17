@@ -13,3 +13,5 @@
 02:20:54Z  WI-16  TEST    890 passed, 0 failed, 0 skipped, 4 deselected  (.venv/bin/python -m pytest -q on the stacked branch; WI-16 adds 33). Crash reports 14, none new
 02:22:04Z  WI-16  NOTE    CONFLICT on merging origin/main da9ec9c, add/add in my OWN two progress logs. Cause: the read-ahead half of the WI-16 log reached main inside the WI-12b PR, while the branch half was written on a branch cut from 46f9682, which predates it. Neither side was a superset — they were nearly disjoint — so the resolution is the UNION in timestamp order, 13 lines, no line dropped. The WI-12b log was a clean superset and took mine. Nobody else touched either file
 02:22:04Z  WI-16  TEST    919 passed, 0 failed, 0 skipped, 5 deselected — whole suite after merging origin/main da9ec9c, which brought WI-14
+02:23:41Z  WI-16  MERGE   PR #99 merged to main as b302b2d at 02:23:04Z, base main (WI-14 had merged so no retarget was needed); fast-forwarded and re-ran the whole suite on b302b2d -> 919 passed, 0 failed, 0 skipped, 5 deselected. Crash reports still 14, none new since 02:00:51Z
+02:23:41Z  WI-16  DONE    WI-16  r7/wi-16-end-to-end  merged as b302b2d
