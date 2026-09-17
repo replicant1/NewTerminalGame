@@ -42,12 +42,16 @@ the anchor is by definition a different application each time.
    mine rather than the platform's — I did not establish which, on the conductor's ruling.
    Either way WI-15 must not read the window list from inside the Tk process.
 
-## Also measured, and handed to lane A
+## Also measured, and it turns out to be unowned
 
-**`root.update()` blocks forever on Tcl/Tk 8.5 under macOS 26.** `Tk()`, `withdraw()`,
-`geometry()`, `deiconify()` and `update_idletasks()` all return; `update()` never does, pinned
-by a `faulthandler` traceback at `tkinter/__init__.py:1314`. That is S-1 and assumption P8
-territory, not mine — recorded and handed over, not pursued.
+**`root.update()` blocks forever on Tcl/Tk 8.5 under macOS 26, once the window is mapped.**
+`Tk()`, `withdraw()`, `geometry()`, `deiconify()` and `update_idletasks()` all return;
+`update()` never does, pinned by a `faulthandler` traceback at `tkinter/__init__.py:1314`.
+
+I set it aside as S-1's ground and did not pursue it. S-1 has since merged, and its headless
+verdict was measured on a **withdrawn** root, which never reaches this. So it belongs to
+nobody yet, and it lands on **WI-5 and WI-6** — the two items that have to drive a *visible*
+window.
 
 ## What this needs from the user
 
@@ -66,10 +70,19 @@ output is not an agent.
 
 ## Suite state
 
-**No suite exists to run.** `.venv/bin/python -m pytest -q` fails with
-`no such file or directory: .venv/bin/python`; there is no `.venv`, no `conftest.py` and no
-test file anywhere in the tree. WI-0 creates all of that and is in flight in lane B. This
-spike adds no test, by the plan's own instruction for S-2.
+```
+.venv/bin/python -m pytest -q          →  56 passed, 0 failed, 0 skipped
+```
+
+Run from the repository root at 01:43Z, on this branch after `git merge origin/main`
+brought in WI-0 and S-1, in a `.venv` built from `/usr/bin/python3` 3.9.6 with pytest 8.4.2.
+That is the same 56 `main` carries. **This spike adds no test**, by the plan's own
+instruction for S-2: *"nothing in the default suite may query the desktop; the spike's
+conclusions live in the finding."* The merge was clean — S-2 touches only `docs/findings/`,
+`docs/prs/` and `docs/progress/`, which nobody else wrote to.
+
+`lsappinfo visibleApplicationCount` was 7 before and after the suite run, so the default
+suite put no window on the screen.
 
 One thing that should become a test and currently is not: *"nothing in the default suite may
 query the desktop"* is written down in plan section 1.6 and nothing re-runs it. **WI-0 or

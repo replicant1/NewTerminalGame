@@ -18,12 +18,28 @@ built on. macOS 26.6.2, `/usr/bin/python3` 3.9.6, Tcl/Tk 8.5.
 permission of any kind, by any caller, in about 3 milliseconds.** The architect's assumption
 **A2 is wrong on its premise** and the measurement that shows it is in the next section.
 
-**But** the route that reads it is `ctypes` into CoreGraphics, and that **crashed the
-interpreter every time it ran inside a live Tk process** (3 of 3), while working every time
-in a process without Tk (8 of 8). The conductor has since ruled that no agent may call into
-Objective-C, AppKit, Quartz or CoreGraphics through `ctypes` at all. **So the reading is
-established, and whether the product may use it is a question for the user, not for me.**
-Section "What needs the user" puts that in front of them in two minutes.
+### The one thing to read before anything else
+
+This spike crashed Python three times. **The crash was not `ctypes` into CoreGraphics. It
+was `ctypes` into CoreGraphics *inside a process with a live Tk root*.**
+
+| Context | Runs | Outcome |
+|---|---|---|
+| plain Python process, no Tk | **8** | **clean every time** |
+| process with a live `tkinter.Tk()` root | **3** | **crashed every time** |
+
+That distinction is the whole decision. The recommended option below —
+**option A** — is built specifically to avoid the combination: it reads the anchor in a
+short-lived child process, **before the Tk window exists**, so the two are never in the same
+process at the same time. Section 6 has the three crashes and their exact signatures, and is
+honest that one real signature error was found and corrected along the way, so the fault may
+be mine rather than the platform's.
+
+The conductor has ruled that no agent may call into Objective-C, AppKit, Quartz or
+CoreGraphics through `ctypes`, and that the prohibition holds for shipped code too until the
+user rules otherwise. **So the reading is established, and whether the product may use it is
+a question for the user, not for me.** Section "What needs the user" puts that in front of
+them in two minutes.
 
 ---
 
@@ -135,6 +151,12 @@ architect measured on the main display, where the two happen to coincide.
 **Nobody should use AppleScript `position` for WIN-4.** If the AppleScript route is used at
 all, use `bounds`.
 
+**This defect kills option B on its own merits, independently of the consent dialog.** The
+architect's V3 is the only place the AppleScript route has ever been exercised for WIN-4,
+and it used `position`. Anyone reaching for option B because the dialog seems tolerable
+would be reaching for a measurement that is wrong by a display height on two of this
+machine's three screens.
+
 Display layout for context — three active displays, so negative coordinates are normal here:
 
 | Display | Origin | Size | |
@@ -168,14 +190,18 @@ which is `CFIndex`, a signed long, not a `uint32` — so the fault may well be m
 than the platform's. It is recorded here because either way the conclusion is the same:
 **reading the window list from inside the Tk process is not a thing to do.**
 
-### 7. A separate Tk finding, handed to S-1
+### 7. A separate Tk finding, which turns out to be unowned
 
-Not mine to pursue — it belongs to S-1 and to plan assumption P8 — but measured, so recorded:
+**`root.update()` blocks forever on Tcl/Tk 8.5 under macOS 26, once the window is mapped.**
+`tkinter.Tk()`, `withdraw()`, `geometry()`, `deiconify()` and `update_idletasks()` all
+return normally; `update()` never does. A `faulthandler` watchdog pinned it at
+`tkinter/__init__.py` line 1314, in `update`.
 
-**`root.update()` blocks forever on Tcl/Tk 8.5 under macOS 26.** `tkinter.Tk()`,
-`withdraw()`, `geometry()`, `deiconify()` and `update_idletasks()` all return normally;
-`update()` never does. A `faulthandler` watchdog pinned it at
-`tkinter/__init__.py` line 1314, in `update`. Developer A should have this for S-1.
+I set this aside as S-1's ground and plan assumption P8. The conductor reports that S-1 has
+already finished and merged, and that **its headless verdict was measured on a *withdrawn*
+root**, which never reaches this. So this is new and belongs to nobody yet, and it lands on
+**WI-5 and WI-6**, which are the items that have to drive a *visible* window. It is
+recorded here rather than left in a progress log for that reason.
 
 ---
 
@@ -228,7 +254,7 @@ Three options, and what each costs:
 | | What the game would do | What the user grants | What WIN-4 becomes |
 |---|---|---|---|
 | **A** | Read `CGWindowListCopyWindowInfo` via `ctypes`, **in a short-lived child process before the Tk window exists** | **nothing at all** — no dialog, ever, for any application | **Fully met, in general.** The window lands below and right of whatever the player was actually looking at, whichever application that was |
-| **B** | Ask the frontmost application for its window over AppleScript | A macOS **Automation** dialog — *"Terminal Game wants to control Google Chrome"* — **once per application**, forever, as the player's focus moves | Met, but with a dialog the first time the player has been looking at each new application. Also carries the `position` defect in section 5 |
+| **B** | Ask the frontmost application for its window over AppleScript | A macOS **Automation** dialog — *"Terminal Game wants to control Google Chrome"* — **once per application**, forever, as the player's focus moves | Met, but with a dialog the first time the player has been looking at each new application — **and section 5 kills this option even if the dialogs are tolerated**, because the only property the architect's V3 ever used is wrong by a display height off the main screen |
 | **C** | Don't read anything; place the window at a fixed spot, or centred on the main display | nothing | **WIN-4 not met.** The window appears in the same place regardless of what the player was looking at |
 
 **My recommendation is A**, with the child-process isolation in point 2 above, because it is
