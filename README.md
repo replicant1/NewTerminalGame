@@ -34,6 +34,25 @@ Two things you will see and can ignore:
   environment is built the same way.
 * `.venv/` is git-ignored, along with `.pytest_cache/`. Never commit either.
 
+## Playing the game
+
+```sh
+.venv/bin/python -m terminal_game.shell.game
+```
+
+A 400 × 570 window appears, centred on your main display, with a maze in it.
+The ghost is already moving; nothing has to be pressed to begin. **Arrow keys
+move, `q` quits.**
+
+**There is no time limit and no watchdog**, deliberately — GAME-3 forbids
+one — so the window waits as long as you like. If a key ever fails to close
+it, the window's close button is wired independently and always works.
+
+Before you play it for the first time, **`docs/findings/WI-17-human-verification.md`**
+is worth two minutes: it lists the five things only a person can check, says
+what a failure looks like for each, and is honest about what the test suite
+does and does not tell you.
+
 ## Running the suite
 
 ```sh
