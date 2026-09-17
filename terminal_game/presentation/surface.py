@@ -90,7 +90,7 @@ from __future__ import annotations
 
 import tkinter
 import tkinter.font
-from typing import Dict, FrozenSet, List, Optional, Sequence, Tuple
+from typing import FrozenSet, List, Sequence, Tuple
 
 from terminal_game.presentation import palette
 from terminal_game.presentation.field import Cell, Field
@@ -290,20 +290,28 @@ class GridSurface(object):
         canvas.update_idletasks()
 
     def repaint(self) -> None:
-        """Redraw every cell from scratch, whether or not it changed.
+        """Write every cell to the canvas again, whether or not it changed.
 
-        Nothing in the game needs this: :meth:`present` already keeps the
-        canvas equal to the last field it was given.  It exists for the one
-        case where the canvas has been disturbed from outside — a display
-        change, or a test that wants to prove the painter does not depend on
-        its own bookkeeping being right.
+        :meth:`present` already keeps the canvas equal to the last field it
+        was given, so nothing in the ordinary run of the game needs this.  It
+        is for the case where the canvas has been disturbed from outside — a
+        display change, or a caller that wants the picture restored without
+        having kept a copy of the field that produced it.
+
+        It deliberately does **not** go through :meth:`present`'s diff.  A
+        cell that is blank in the painter's record but wrong on the canvas is
+        exactly the case this method exists for, and a diff would skip it.
         """
-        shown = self._painted
-        self._painted = Field().snapshot()
-        field = Field()
+        canvas = self._canvas
         for index in range(COLUMNS * ROWS):
-            field[index % COLUMNS, index // COLUMNS] = shown[index]
-        self.present(field)
+            cell = self._painted[index]
+            canvas.itemconfigure(
+                self._glyphs[index], text=cell.glyph, fill=cell.colour
+            )
+            canvas.itemconfigure(
+                self._backgrounds[index], fill=cell.background
+            )
+        canvas.update_idletasks()
 
     # -- what is actually on the canvas ------------------------------------
 

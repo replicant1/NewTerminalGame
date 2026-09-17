@@ -320,6 +320,24 @@ class TestScrnSevenTheFlickerHalf:
         surface.repaint()
         assert [surface.shown_cell(c, r) for c, r, _ in field.cells()] == before
 
+    def test_a_repaint_restores_a_cell_disturbed_from_outside(self, surface):
+        # The case the method exists for.  The canvas is changed behind the
+        # painter's back — as a display change or a stray caller would — and
+        # `repaint` has to put it right.  A cell the painter believes is
+        # *blank* is the hard case, because a diff would skip it.
+        field = a_full_field()
+        field[3, 4] = Cell()
+        surface.present(field)
+        # item_ids() is every background, then every glyph, both row-major.
+        every_item = surface.item_ids()
+        glyph_of_3_4 = every_item[len(every_item) // 2 + 4 * COLUMNS + 3]
+        surface.widget.itemconfigure(glyph_of_3_4, text="?", fill=palette.STATUS)
+        # The disturbance landed where the test meant it to, which is what
+        # makes the assertion after the repaint mean anything.
+        assert surface.shown_cell(3, 4).glyph == "?"
+        surface.repaint()
+        assert surface.shown_cell(3, 4) == Cell()
+
 
 class TestScrnSevenTheCaretHalf:
     """SCRN-7: *"and the text cursor is never visible"*."""
