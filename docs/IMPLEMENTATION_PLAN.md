@@ -11,6 +11,7 @@ Newest first. Re-read a section an amendment names before you work in it.
 | # | What changed | Sections |
 |---|---|---|
 | **1** | **Calling into Objective-C, AppKit, Quartz or CoreGraphics through `ctypes` is prohibited outright**, after it put three crash dialogs on the user's screen; S-2 and WI-15 lose that route and **WIN-4's general case becomes a decision for the user**, with P2 promoted to how WIN-4 is actually built. **S-1 reported and it is good news: P8 and P4 retire by measurement** — Tk 8.5 is headless-testable, the font is fixed at Menlo 16 (cell 10 × 19, window 400 × 570) — and human item 5 closes. **A measured Tk defect gets an owner:** `root.update()` never returns on a mapped window, which lands on WI-5 and WI-6. **AppleScript's `position` is wrong by a display height on a secondary display**, so WI-15 must use `bounds`. **Five WI-0 deviations ruled on**, of which `unplaced-module` is upheld into the layer rule and the `needs_window` marker is adopted as the one mechanism. **Section 8 settles the log-tail problem** every developer meets at their first merge, and the case of an item that precedes the suite. **A trace gap closed: SCRN-3 splits into WI-3 (glyph) and WI-4 (colour)**, because the original row pointed the whole requirement at an item whose test clause asked only about glyphs, leaving the blue unowned; two specimen facts about wall glyphs go into WI-4's bar with it. Two new human items (now 8 and 9) and two new assumptions (P9, P10). | 1.3, 1.5, 1.6, 1.7, 2, 4, S-1, S-2, WI-3, WI-4, WI-5, WI-6, WI-7, WI-15, WI-17, 8, 9, 10 |
+| **1g** | **Whoever built a thing does not write the script that judges it.** I was minded to move WI-17 to the lane that built the items it verifies; that lane argued **against its own interest** and produced a better third option — *"the checks I fail to think of are exactly the ones I failed to think of when writing the code"* — so **WI-17 stays where it is and the item owners supply its checklist**. That is now a rule about verification items generally. WI-17 also absorbs the **four-arrow key-delivery extension**, because converting a human check into an agent check is that item's whole purpose. **WI-20 gains the one run that includes the `needs_window` tests**, which nothing else executes — an affordance where an audit line would only have recorded the rot. WI-16 gains **END-4 on a state the system produced**, not only a hand-made one. WI-18 gains three precise audit entries: WIN-4 misleading rather than thin, GAME-1 named in no file, SCRN-3 evidenced at the font level and not the rendered one. | 5 (WI-16, WI-17, WI-18, WI-20) |
 | **1f** | **WIN-4 is marked NOT MET in the trace table itself, and WI-18 is told not to tick it.** A developer reported its own green, fully-satisfied item as not honouring the requirement traced to it — and the defect was in **my table**, which had no way to say "traced, implemented, tested, and still not satisfied". Section 4 now says a row is a pointer and not a claim; WI-18's bar says **report what each test establishes, never that an item landed**, and treat any requirement resting on an unanswered human item as NOT MET regardless of the suite. **Human item 4 is recast as a choice between two closable endings** — grant the permission and WIN-4 is met by a small substitution, or decline and it is formally descoped — because asking a fifth time in the same shape would not help. Section 1.5 gains the **coordinate class**: right at the origin, wrong away from it, now twice from two unrelated systems. Section 1.6 gains **"a getter answering is not evidence a setter ran"**. | 1.5, 1.6, 4, 5 (WI-18), 9 |
 | **1e** | **C-4 amended: I was wrong about the status line and lane C corrected me from the specification's own examples.** There *is* a column discipline — **the score is left-aligned in a field of 5**, which reproduces all three printed forms verbatim where widths 2, 3, 4, 6, 7 and 8 reproduce none; the column difference I read as inconsistency was only `CAUGHT` being a character shorter than `CLEARED`. Where the literals underdetermine the choice, **STAT-2 settles it**: the score is kept up to date all game, so a fixed separator would make `arrows, q quits` jump columns in front of the player. Section 7 gains **"close a generalisation with an affordance, not only a rule"**, from WI-12 answering a rule with a call that obeys it for you; section 1.6 gains **"pin both directions of a trap"**. Human item 6 is now cheap to flip. | 1.6, 3, 7, 9 |
 | **1d** | **One source of truth means one, not one per component.** The game state carries a stored outcome *and* a derived function computes it, and on a hand-built board they can disagree — found by a failing test in WI-11. The rules are authoritative and the stamp is a cache, so **everything** that asks whether the game is over asks the same function: the session, the status line (**the STAT-3 trace row said "the outcome held on Game State" and was pointing at the stale cache**), the draw order, the tick. **WI-16's bar** gains the warning that a stamp a test sets itself will not be believed, and that its determinism rests on three things — candidate order, seed, **and the ghost's initial heading**. Section 1.6 gains END-5's test as a worked example of asserting the consequence rather than the refusal; section 8 gains "quote the deselections"; human item 8 is upgraded from hypothetical to live now that 235 Presentation tests construct a Tk root on every run. | 1.6, 4, 5 (WI-12, WI-16), 8, 9 |
@@ -963,6 +964,12 @@ decision, and `q` from Playing and from Decided.
 > the item most likely to build one.** A fixture stamped `CAUGHT` whose actors stand a
 > square apart gives you a *playing* session and a confusing failure. Build the position,
 > not the verdict.
+>
+> **And then check the verdict on positions the system built.** END-4 — the ghost drawn
+> over the player — is pinned today on a **hand-made** position, and nothing checks it on
+> a state the running system actually produced. That gap is yours: a full playthrough to
+> a loss reaches a genuine caught position, and that is where END-4 should also be
+> asserted. It is the same instinct as the paragraph above, pointed the other way.
 *Tests must establish:* that a complete playthrough reaches the right outcome, the right
 final score and the right status line; that the picture after the loss shows the ghost over
 the player; that after the decision the game is frozen and stays frozen; and **that running
@@ -985,12 +992,45 @@ that is the finding — report it, do not paper over it.
 > is reported NOT MET regardless of the suite**, with the human item named beside it. A
 > green suite is evidence about code, not about promises. Walk the requirements, not the
 > work items.
+>
+> **Three entries are already known and should be reported in these terms, not softer
+> ones.** **WIN-4** is not thin, it is *misleading* — three mentions and a green suite
+> while the shipped reader follows nothing. **GAME-1** is named in no file anywhere: it
+> is arguably realised by everything, but *"a code no file mentions is a code nobody has
+> claimed, and I would rather report it than assume it"*. **SCRN-3** has evidence **at
+> the font level, not the rendered level** — the glyph choice and the colour are both
+> pinned and nobody has seen the result, which is human item 9. Precise entries beat
+> alarming ones.
+>
+> **Also report the `needs_window` tests** — how many exist, and that they are executed
+> only by WI-20's complete run. A test that nothing runs is a claim nobody is checking.
 *Tests must establish:* nothing new; this item adds a document, and any test it writes is
 one it found missing.
 
 **WI-17 — the human-verification pack.** *(2 days, depends on WI-14 and WI-15, lane A)*
 Run every check on the real desktop that an agent can run, **strictly under section 1.5**,
-and write up the exact steps for the ones only a person can do — what to run, what to look
+and write up the exact steps for the ones only a person can do
+
+> **The checklist is not yours to invent, and that is deliberate.** It comes from **the
+> lanes that built the things being verified**, and a *different* lane runs it. The
+> reason, in the words of the developer who argued itself out of owning this item:
+> *"there is something wrong with the person who wrote the code also writing the script
+> that judges it — not because I would cheat, but because **the checks I fail to think of
+> are exactly the ones I failed to think of when writing the code**."* So: collect what
+> must be verified, **and what must not be claimed**, from the item owners; then run it
+> as somebody who did not write it.
+>
+> **Shrink the human pack wherever you can, because that is this item's whole purpose.**
+> Every check you convert from a person's job into an agent's is the item working. A
+> worked example that is yours to do: `event_generate("<Key-q>")` is already proved to
+> deliver, with `keysym` returning `"q"` — **for `q` only**. Extending that to the four
+> arrows is four lines in an existing `needs_window` test that already opens and reaps
+> correctly, and it **closes the misspelling risk properly**, where a bind-time check only
+> proves the names exist. Only the *physical* keypress then remains human, which is the
+> honest irreducible.
+>
+> **Reuse the window-opening-and-reaping pattern that already works rather than writing a
+> second one.** The hazard here is a second pattern, not a second author. — what to run, what to look
 at, and what a good answer looks like. Reap every window, including on the failure path.
 Never record as verified anything you did not observe: "I could not determine this without
 the user" is the right answer.
@@ -1008,7 +1048,15 @@ exactly the configuration S-1 measured: the question is not "is the font right" 
 **WI-20 — release readiness.** *(1 day, depends on WI-16, lane A)*
 A full suite run against `main` with the counts recorded, and a short note saying how to
 create the environment and run the game.
-*Tests must establish:* nothing new; the counts are the deliverable.
+
+**And the one run of the year that includes the `needs_window` tests.** Those tests are
+collected cleanly and executed by nothing, so the only thing standing between them and
+rot is somebody choosing to pay the cost — **and this is the item that pays it.** Run the
+whole suite *with* them, once, **under section 1.5 in full** (they are the tests that put
+windows on a real desktop), and **report both counts**: the default suite and the
+complete one. Release readiness is the natural home for it and the one item where a
+window on screen is expected. An audit line would have recorded the rot; this prevents it.
+*Tests must establish:* nothing new; the two counts are the deliverable.
 
 **WI-19 — acting on the answers.** *(2 days, depends on WI-17, lane B — held in reserve)*
 This is the item that spends the user's answers: whatever the ruling on WIN-5 requires, a
