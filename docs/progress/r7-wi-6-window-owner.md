@@ -20,3 +20,5 @@
 02:06:51Z  WI-6  TEST    586 passed, 0 failed, 0 skipped, 2 deselected  (.venv/bin/python -m pytest -q, after merging origin/main a2373a9 with no conflict). needs_window separately: 2 passed
 02:06:51Z  WI-6  DRAFT   docs/prs/PR-WI-6-window-owner.md
 02:07:14Z  WI-6  COMMIT  ec3563c WI-6: the window owner — pushed, draft PR #90 open
+02:08:16Z  WI-6  MERGE   PR #90 merged to main as ea00019 at 02:07:39Z; fast-forwarded and re-ran the whole suite on ea00019 -> 586 passed, 0 failed, 0 skipped, 2 deselected. visibleApplicationCount 7, crash reports still 14 (none new). main is green with WI-6 in it
+02:08:16Z  WI-6  DONE    WI-6  r7/wi-6-window-owner  merged as ea00019; lane C has now landed S-2, WI-5 and WI-6
