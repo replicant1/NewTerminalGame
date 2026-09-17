@@ -3,19 +3,18 @@
 The assembled game driven through the journeys no unit test covers. Plan section 5,
 iteration M3, lane C.
 
-## Stacked, deliberately
+## Stacked, and it cost nothing
 
-**This branch is cut from `r7/wi-14-live-assembly` at `46f9682`, not from `main`, and this
-PR targets that branch.** Plan section 7 makes WI-16 the one stacked item in the project:
-it branches while WI-14 is still in flight because lane C would otherwise wait three days
-for lane A. Based on `main` the diff would show WI-14's commits as WI-16's own and be
-unreadable.
+**This branch is cut from `r7/wi-14-live-assembly` at `46f9682`, not from `main`.** Plan
+section 7 makes WI-16 the one stacked item in the project: it branches while WI-14 is still
+in flight because lane C would otherwise wait three days for lane A. `46f9682` is
+deliberately the first commit on that branch — the public surface, committed before lane A
+wrote any tests, exactly as section 7 asks.
 
-**Retarget with `gh pr edit <n> --base main` once WI-14 merges.**
-
-`46f9682` is deliberately the first commit on that branch — the public surface, committed
-before lane A wrote any tests, exactly as section 7 asks. Nothing here touches lane A's
-code.
+**WI-14 merged as `da9ec9c` while this was being written, so this PR targets `main`
+directly** rather than being opened against the parent and retargeted afterwards.
+`origin/main` is merged in. **The surface did not move under me**, and nothing here touches
+lane A's code.
 
 ## What is here
 
@@ -70,6 +69,17 @@ produce.
   it had.
 - **The END-3 board is checked to be discriminating** before it is used as one.
 
+## END-4 on a position the system produced — lane B's gap, closed
+
+Lane B noticed that **END-4 — the ghost is what you see when both are on one square — is
+pinned only on a hand-made position**, with nothing checking it on a state the system
+actually reached. The loss journey closes that: it plays to a **real** `CAUGHT` and then
+asserts that at the square the two actually met on, the picture is the ghost's three
+glyphs, and that no part of the player shows through the flanks.
+
+Same shape as the stale-stamp rule, from the other side: build the position rather than the
+verdict — and then check the verdict on a position the system built.
+
 ## Deliberately not re-asserted
 
 The resolver's step order (`test_turn.py`), the session's three states
@@ -100,12 +110,18 @@ including after a whole game has been played.
 ## Suite state
 
 ```
-.venv/bin/python -m pytest -q          →  890 passed, 0 failed, 0 skipped, 4 deselected
+.venv/bin/python -m pytest -q          →  919 passed, 0 failed, 0 skipped, 5 deselected
 ```
 
-Repository root, `.venv` from `/usr/bin/python3` 3.9.6, pytest 8.4.2, on this branch —
-which is WI-14's surface commit plus this file. **WI-16 adds 33.** Crash reports **14, none
-new**; the last was at 02:00:51Z.
+Repository root, `.venv` from `/usr/bin/python3` 3.9.6, pytest 8.4.2, after
+`git merge origin/main` (`da9ec9c`, which brought all of WI-14). **WI-16 adds 33.** Crash
+reports **14, none new**; the last was at 02:00:51Z.
+
+**One conflict, in my own two progress logs, and none in code.** The read-ahead half of
+WI-16's log reached `main` inside the WI-12b PR, while the branch half was written on a
+branch cut from `46f9682`, which predates it. Neither side was a superset — they were
+nearly disjoint — so the resolution is the **union in timestamp order**, 13 lines, none
+dropped. Nobody else has touched either file.
 
 ## What needs a human
 

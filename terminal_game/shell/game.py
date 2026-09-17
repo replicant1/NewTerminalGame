@@ -30,7 +30,7 @@ can be exercised without a window reaching the screen.
 from __future__ import annotations
 
 import random
-from typing import Callable, List, Optional
+from typing import Callable, Optional, Tuple
 
 from terminal_game.application.session import Session
 from terminal_game.application.turn import Intent
@@ -41,7 +41,6 @@ from terminal_game.presentation import status as status_module
 from terminal_game.presentation.field import Cell, Field
 from terminal_game.presentation.frame import compose_frame
 from terminal_game.presentation.keys import intent_for
-from terminal_game.presentation.metrics import COLUMNS
 from terminal_game.shell.window import GameWindow
 
 #: GHOST-1's *"about seven times a second"*, fixed at 143 ms — assumption P6.
@@ -68,18 +67,23 @@ class Scheduler:
         raise NotImplementedError
 
 
-def _status_cells(state: GameState) -> "List[Cell]":
-    """Row 29 as 40 cells, from the one string WI-12 decided it should be.
+def _status_cells(outcome: Outcome, score: int) -> "Tuple[Cell, ...]":
+    """Row 29, asked of WI-12 whole.
 
-    **This composes no part of row 29's content.**  WI-12 owns that, in one
-    place, and :func:`~terminal_game.presentation.status.status_for` is that
-    place; all this does is pad the string to the field's width and put each
-    character in a cell, which is the mechanical write the technical lead
-    allowed.  Lane C is bringing a ``status_cells`` of its own as WI-12b and
-    this becomes a one-line call to it.
+    **Nothing about row 29 is decided here, including its padding.**  An
+    earlier draft of this module padded WI-12's string to the field width
+    itself, which was a mechanical write rather than a composition — but
+    WI-12b removed even that: ``status_cells`` returns all 40 cells, so
+    STAT-1's *"and nothing else"* stays a statement WI-12 makes on its own.
+
+    **The outcome comes from the session, not from ``GameState.outcome``.**
+    That field is a cache the resolver stamps, and WI-11 established that the
+    one source of truth is the derived function. Reading the field here would
+    put the stale answer on the screen for exactly the boards WI-16 hands in
+    by hand — the same defect lane C found in ``Session.__repr__``, wearing
+    different clothes.
     """
-    text = status_module.status_for(state).ljust(COLUMNS)
-    return [Cell(character, status_module.STATUS_COLOUR) for character in text]
+    return status_module.status_cells(outcome, score)
 
 
 class Game:
@@ -194,7 +198,7 @@ class Game:
             dots=state.dots,
             player=state.player,
             ghost=state.ghost,
-            status_row=_status_cells(state),
+            status_row=_status_cells(self.outcome, state.score),
         )
         if self._window.is_open:
             self._window.present(self._field)

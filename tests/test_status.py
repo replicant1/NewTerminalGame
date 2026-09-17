@@ -28,7 +28,9 @@ from terminal_game.presentation.status import (
     SCORE_FIELD_WIDTH,
     STATUS_COLOUR,
     STATUS_ROW,
+    cells_for,
     is_decided,
+    status_cells,
     status_for,
     status_text,
 )
@@ -322,6 +324,80 @@ class TestStatusForAGameState:
         assert outcome_of(state) is Outcome.UNDECIDED
         assert status_for(state) == status_text(Outcome.UNDECIDED, 5)
         assert status_for(state).endswith("arrows, q quits")
+
+
+class TestRowTwentyNineAsCells:
+    """`status_cells` — the same row in the shape `compose_frame` asks for.
+
+    The padding lives in WI-12 rather than in the composer: a row that stopped
+    short would leave the tail of row 29 showing whatever was under it, so
+    something has to decide how it ends, and STAT-1's "and nothing else" makes
+    that a statement about row 29's *content*.
+    """
+
+    @pytest.mark.parametrize(
+        "outcome, score",
+        [
+            (Outcome.UNDECIDED, 0),
+            (Outcome.UNDECIDED, 551),
+            (Outcome.CAUGHT, 37),
+            (Outcome.CLEARED, 274),
+        ],
+    )
+    def test_the_row_is_exactly_the_window_wide(self, outcome, score):
+        assert len(status_cells(outcome, score)) == COLUMNS
+
+    @pytest.mark.parametrize(
+        "outcome, score",
+        [(Outcome.UNDECIDED, 0), (Outcome.CAUGHT, 37), (Outcome.CLEARED, 274)],
+    )
+    def test_the_cells_read_back_as_the_text(self, outcome, score):
+        cells = status_cells(outcome, score)
+        assert "".join(cell.glyph for cell in cells) == status_text(
+            outcome, score
+        ).ljust(COLUMNS)
+
+    def test_every_cell_is_cyan_including_the_padding(self, sound_maze):
+        # The padding is blank, so its colour is invisible - but a row of two
+        # colours would be a row composed by two decisions.
+        assert {cell.colour for cell in status_cells(Outcome.CAUGHT, 37)} == {
+            palette.STATUS
+        }
+
+    def test_the_padding_is_blank(self):
+        cells = status_cells(Outcome.CAUGHT, 37)
+        text = status_text(Outcome.CAUGHT, 37)
+        assert all(cell.glyph == " " for cell in cells[len(text) :])
+
+    def test_the_row_goes_into_the_composer_unaltered(self, sound_maze):
+        # The join WI-14 will make. `compose_frame` takes exactly 40 cells and
+        # says it "does not read them and owns nothing of their content"; this
+        # asserts that what comes out the other side is what WI-12 decided.
+        from terminal_game.presentation.frame import compose_frame
+
+        started = new_game(sound_maze)
+        field = compose_frame(
+            sound_maze,
+            started.dots,
+            started.player,
+            started.ghost,
+            cells_for(started),
+        )
+        assert field.row_text(STATUS_ROW) == status_for(started).ljust(COLUMNS)
+
+    def test_cells_for_asks_the_function_not_the_field(self, sound_maze):
+        square = sorted(sound_maze.corridors())[0]
+        state = GameState(
+            sound_maze,
+            dots=[],
+            player=square,
+            ghost=square,
+            score=37,
+            outcome=Outcome.UNDECIDED,
+        )
+        assert "".join(c.glyph for c in cells_for(state)).rstrip() == status_text(
+            Outcome.CAUGHT, 37
+        )
 
 
 class TestScoresThatAreNotScores:

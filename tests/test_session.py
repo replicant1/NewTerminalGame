@@ -553,3 +553,37 @@ def test_the_session_and_the_resolver_share_one_vocabulary() -> None:
     assert session_module.Outcome is state_module.Outcome
     assert session_module.Intent is turn_module.Intent
     assert Session(playable(), first_choice()).outcome is Outcome.UNDECIDED
+
+
+def test_the_repr_reports_the_outcome_the_session_actually_has() -> None:
+    """``repr`` asks the same question every other reader here asks.
+
+    It used to read the stored field, so a hand-built board could print
+    ``Session(decided, undecided, ...)`` — the phase right and the outcome
+    wrong. **``repr`` is what pytest prints in a traceback**, so a misleading
+    one costs whoever is debugging a failed journey an hour chasing the wrong
+    thing. Found by lane C reading ahead into WI-16.
+
+    The board here is the awkward one on purpose: over by the rules, and
+    never stamped.
+    """
+    unstamped = about_to_be_caught().with_player_at(Position(8, 10))
+    assert unstamped.outcome is Outcome.UNDECIDED, "fixture is not unstamped"
+
+    session = Session(unstamped, first_choice())
+    text = repr(session)
+
+    assert "decided" in text
+    assert "caught" in text
+    assert "undecided" not in text, text
+
+
+def test_the_repr_still_says_undecided_while_a_game_is_being_played() -> None:
+    """The control: ``repr`` must be capable of printing ``undecided``.
+
+    Without this, the test above would also pass on a ``repr`` that had been
+    hard-wired to say ``caught``.
+    """
+    text = repr(Session(playable(), first_choice()))
+    assert "playing" in text
+    assert "undecided" in text
