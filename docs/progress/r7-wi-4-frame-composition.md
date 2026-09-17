@@ -10,3 +10,10 @@ WI-4  01:51:20Z  VERIFY  the three-cell actor never overwrites a wall glyph — 
 WI-4  01:51:20Z  DECIDE  the specimen parse -> moved into tests/conftest.py as `read_specimen()` and a `specimen` fixture, because WI-4 needs the maze, the dot field and the actors rather than just the rows, and WI-12/WI-16 will want the status row. Respected lane B's stated choice of conftest-over-importable-module.
 WI-4  01:51:20Z  NOTE    KNOWN DUPLICATION, raised rather than silently resolved: tests/test_wall_glyphs.py (WI-3, mine) still has its own smaller specimen parser. I chose not to churn a landed green file mid-run to de-duplicate 20 lines, and the two parsers independently agreeing on the picture is a weak cross-check rather than a cost. Worth tidying when someone is next in that file; naming it so it is a decision and not an oversight.
 WI-4  01:51:59Z  TEST    192 passed, 0 failed, 0 skipped — `.venv/bin/python -m pytest -q` from the repository root. 174 were already there; WI-4 adds 18.
+WI-4  01:52:30Z  COMMIT  f5231fb WI-4: frame composition, checked against the specimen picture
+WI-4  01:52:30Z  COMMIT  9df1462 WI-4: PR summary
+WI-4  01:52:30Z  VERIFY  pushed r7/wi-4-frame-composition; draft PR #84 opened against main -> https://github.com/replicant1/NewTerminalGame/pull/84. `git merge origin/main` before marking ready: already up to date, no conflict with the conftest.py change.
+WI-4  01:52:55Z  MERGE   PR #84 merged into main as 5850eb4. 192 passed, 0 failed, 0 skipped at the moment of merge.
+WI-4  01:53:07Z  VERIFY  main confirmed green afterwards: `git fetch origin && git merge origin/main` fast-forwarded 9df1462..5850eb4; `.venv/bin/python -m pytest -q` -> 192 passed, 0 failed, 0 skipped.
+WI-4  01:53:07Z  TEST    192 passed, 0 failed, 0 skipped
+WI-4  01:53:07Z  DONE    WI-4 r7/wi-4-frame-composition 5850eb4 (PR #84 merged as 5850eb4). These last lines are uncommitted on purpose: per the technical lead's ruling the tail is carried forward on the next branch I cut rather than becoming a PR of its own.
