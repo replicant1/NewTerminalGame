@@ -11,6 +11,7 @@ Newest first. Re-read a section an amendment names before you work in it.
 | # | What changed | Sections |
 |---|---|---|
 | **1** | **Calling into Objective-C, AppKit, Quartz or CoreGraphics through `ctypes` is prohibited outright**, after it put three crash dialogs on the user's screen; S-2 and WI-15 lose that route and **WIN-4's general case becomes a decision for the user**, with P2 promoted to how WIN-4 is actually built. **S-1 reported and it is good news: P8 and P4 retire by measurement** — Tk 8.5 is headless-testable, the font is fixed at Menlo 16 (cell 10 × 19, window 400 × 570) — and human item 5 closes. **A measured Tk defect gets an owner:** `root.update()` never returns on a mapped window, which lands on WI-5 and WI-6. **AppleScript's `position` is wrong by a display height on a secondary display**, so WI-15 must use `bounds`. **Five WI-0 deviations ruled on**, of which `unplaced-module` is upheld into the layer rule and the `needs_window` marker is adopted as the one mechanism. **Section 8 settles the log-tail problem** every developer meets at their first merge, and the case of an item that precedes the suite. **A trace gap closed: SCRN-3 splits into WI-3 (glyph) and WI-4 (colour)**, because the original row pointed the whole requirement at an item whose test clause asked only about glyphs, leaving the blue unowned; two specimen facts about wall glyphs go into WI-4's bar with it. Two new human items (now 8 and 9) and two new assumptions (P9, P10). | 1.3, 1.5, 1.6, 1.7, 2, 4, S-1, S-2, WI-3, WI-4, WI-5, WI-6, WI-7, WI-15, WI-17, 8, 9, 10 |
+| **1e** | **C-4 amended: I was wrong about the status line and lane C corrected me from the specification's own examples.** There *is* a column discipline — **the score is left-aligned in a field of 5**, which reproduces all three printed forms verbatim where widths 2, 3, 4, 6, 7 and 8 reproduce none; the column difference I read as inconsistency was only `CAUGHT` being a character shorter than `CLEARED`. Where the literals underdetermine the choice, **STAT-2 settles it**: the score is kept up to date all game, so a fixed separator would make `arrows, q quits` jump columns in front of the player. Section 7 gains **"close a generalisation with an affordance, not only a rule"**, from WI-12 answering a rule with a call that obeys it for you; section 1.6 gains **"pin both directions of a trap"**. Human item 6 is now cheap to flip. | 1.6, 3, 7, 9 |
 | **1d** | **One source of truth means one, not one per component.** The game state carries a stored outcome *and* a derived function computes it, and on a hand-built board they can disagree — found by a failing test in WI-11. The rules are authoritative and the stamp is a cache, so **everything** that asks whether the game is over asks the same function: the session, the status line (**the STAT-3 trace row said "the outcome held on Game State" and was pointing at the stale cache**), the draw order, the tick. **WI-16's bar** gains the warning that a stamp a test sets itself will not be believed, and that its determinism rests on three things — candidate order, seed, **and the ghost's initial heading**. Section 1.6 gains END-5's test as a worked example of asserting the consequence rather than the refusal; section 8 gains "quote the deselections"; human item 8 is upgraded from hypothetical to live now that 235 Presentation tests construct a Tk root on every run. | 1.6, 4, 5 (WI-12, WI-16), 8, 9 |
 | **1c** | **END-3 landed structural, so the section 1.6 fragility note is struck** — the win branch is unreachable while the player and ghost share a square, so there is no ordering left to get wrong, and the question stops costing the user anything. In its place, the plan now records **how to know a test has power without breaking code**: make the fixture prove it discriminates, add the control, make a sweep check itself, and guard the fixture against being flattened — four moves three items invented independently before anyone wrote them down. **Ruled:** eating the last dot on the ghost's square **does** score it, on END-3's own wording, so the final line reads `CAUGHT  score N` including it — player-visible, so it is human item 7 for the user to overturn. **WI-13 returns to lane B**, restoring the original assignment now that the WI-8/WI-10 pair it was moved aside for has landed; same dates, no redraw. | 1.6, 5 (WI-10, WI-13), 6.2, 9, 10 |
 | **1b** | **END-3 becomes structural.** WI-10 derives the outcome as one total function of the state, testing caught before cleared, instead of setting it in two ordered steps — so there is no collision test left to migrate and caution C6's failure mode closes. The section 1.6 fragility note says it will be struck if that lands, but is not struck yet. WI-11's Decided state becomes load-bearing for END-3, and both bars say so. Also **C-6 added**: START-3 and SCORE-4 agree, sit four sections apart, and decide one line of code between them, where reading either alone gives the wrong answer. | 1.6, 3, 5 (WI-10, WI-11) |
@@ -271,6 +272,10 @@ before it was written down. The pattern:
 - **Guard the fixture against being flattened.** WI-8's START-2 maze asserts that
   straight-line and corridor distance really do disagree on it, so a later edit cannot
   quietly remove the discrimination while the tests keep passing.
+- **Pin both directions of a trap, not just the one you feared.** WI-12 pinned that a
+  caught board with a stale `UNDECIDED` stamp renders the caught form **and** that a
+  playable board with a stale `CAUGHT` stamp renders the playing form — in its author's
+  words, "so it is not passing merely because decided wins".
 
 Every one of these asks a question *about the test* and answers it from the test's own
 data. None of them requires editing working code, which remains prohibited without
@@ -397,13 +402,31 @@ generated maze never exercises it.
 
 **C-4 — the status line's literals are not internally consistent.** STAT-2's prose gives
 `score 0    arrows, q quits` (26 characters) but the specimen picture's bottom row carries
-a **leading space** (27 characters). The three literals also pad differently from one
-another: `q quits` begins at column 19 in the CAUGHT form and column 20 in the CLEARED
-form, so there is no column discipline to infer. **Ruling: the specimen is normative, as
-the architect's A6 already assumes for the grid mapping** — row 29 is one leading space
-followed by the literal text of STAT-2 or STAT-3 with the score substituted and the
-spacing exactly as the requirement prints it, and the rest of the row blank. WI-12 pins
-all three forms as exact strings.
+a **leading space** (27 characters). **Ruling: the specimen is normative, as the
+architect's A6 already assumes for the grid mapping** — row 29 is one leading space
+followed by the literal text of STAT-2 or STAT-3 with the score substituted, and the rest
+of the row blank. WI-12 pins all three forms as exact strings **and re-reads the specimen
+from the requirements file on every run**, so this ruling cannot drift from its source.
+
+> **Amended — the second half of C-4 was wrong, and lane C corrected it with the
+> specification's own examples.** This paragraph used to say the three literals "pad
+> differently from one another … so there is no column discipline to infer", because
+> `q quits` starts at column 19 in the CAUGHT form and 20 in the CLEARED. **There is a
+> discipline, and the three examples determine it uniquely: the score is left-aligned in
+> a field of 5.** Re-measured independently: width 5 reproduces all three printed forms
+> verbatim and widths 2, 3, 4, 6, 7 and 8 reproduce none. The column difference I took for
+> inconsistency is **entirely `CAUGHT` being one character shorter than `CLEARED`**. I saw
+> that two columns disagreed and concluded there was no rule, instead of asking what would
+> make them disagree by exactly one.
+>
+> **And where the literals could not choose, a requirement could.** A field of 5 and a
+> fixed separator both reproduce all three printed examples; they differ only at score
+> widths the specification never prints. **STAT-2 settles it** — the score is "kept up to
+> date" all game, so the player is watching this line, and with a fixed separator
+> `arrows, q quits` jumps from column 11 to 12 to 13 as the score crosses 10 and 100, in
+> front of them. With a field of 5 it stays at column 11 for every score the 19 × 29 grid
+> can produce. **When the examples underdetermine a choice, look for the requirement that
+> describes the behaviour over time.**
 
 **C-6 — two requirements that agree, sit four sections apart, and decide one line of code
 between them.** START-3 says "every corridor square holds one dot, except the square the
@@ -1174,6 +1197,14 @@ shared test scaffolding (the `conftest`, twice) and not an invented shared seam 
 once). Before calling two items parallel-safe, ask what data passes between them and who
 owns its type, not which files they touch.
 
+**Close a generalisation with an affordance, not only with a rule.** When this plan issued
+"everything that asks whether the game is over asks the same function", WI-12's answer was
+to add a call that asks it for you — *"so the right thing is the easy thing rather than a
+rule to remember."* That is the better form of the same idea, and it is the general move:
+**a rule relies on everyone recalling it, an affordance does not.** Keep the rule for what
+the affordance cannot reach, and expect the rule alone to be obeyed about as often as it
+is remembered.
+
 **And when two modules must agree on a type, assert the identity, not the behaviour.**
 Throughout the WI-4/WI-5 divergence every behaviour test on both halves passed, and they
 always would have — behaviour tests cannot see that two modules are talking about
@@ -1291,8 +1322,11 @@ them. Route them all to the conductor, which is the only path to the user.
    and headless-testable at 01:37:42Z. Nothing needs installing. Kept here numbered so
    that references elsewhere in this plan still resolve.
 6. **Confirm the reading of the status-line literals**, if it matters to them — ruling C-4
-   takes the specimen picture as normative, including its leading space. Low stakes; three
-   assertions in WI-12. Mentioned for completeness rather than as a blocker.
+   takes the specimen picture as normative, including its leading space, and reads the
+   score as left-aligned in a field of 5. Low stakes and **now cheap to flip**: the
+   leading space is pinned by three assertions plus a live comparison against the
+   specimen, and the field width is one constant. Mentioned for completeness rather than
+   as a blocker.
 7. **Overturn, if you disagree, that eating the last dot on the ghost's square still
    scores it.** A player who does that eats the dot, scores it, and is caught — so the
    final line reads `CAUGHT  score N` **including** that dot. **Ruled, not open**, on
