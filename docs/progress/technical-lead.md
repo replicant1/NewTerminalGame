@@ -163,3 +163,9 @@
 01:49:47Z  TEST    174 passed, 0 failed, 0 skipped via .venv/bin/python -m pytest -q on r7/amend-1-ctypes-prohibition after merging origin/main into it
 01:49:47Z  VERIFY  both plan checkers re-run after the SCRN-3 edit and the merge -> ALL CHECKS PASS, NO OVERLAPS OR DEP VIOLATIONS, 49 of 49 codes still traced, schedule untouched
 01:49:47Z  NOTE    PR 78 is now current with main and green, so the user can merge it the moment the permission is cleared. It stays a draft because gh pr ready is refused
+01:50:21Z  DECIDE  Direction and Direction.opposite() in WI-1 -> CONFIRMED. One shared vocabulary in the Domain layer beats two parallel enums, and reconciling them later would be a refactor across two lanes instead of a conversation. WI-1 owns the vocabulary; WI-9 still owns GHOST-2, GHOST-3, GHOST-4 and every test that pins them. Lane A may reshape the type by agreement with lane B without coming back to me
+01:50:21Z  DECIDE  WI-1 deviations 2 and 3, tests/conftest.py and ways_on_from -> no ruling needed, layout and internal API belong to the developers under section 1.8
+01:50:21Z  NOTE    WI-1 made Maze immutable, which is exactly what caution C4 carve-then-repair needs: WI-2 can hold a checked maze while trying a repair on a copy. Provided before WI-2 asked; lane B must be told it is there
+01:50:21Z  NOTE    WI-1 out-of-bounds raises rather than answering WALL. Consequence for WI-10: MAZE-3 test that a move at the grid edge cannot leave it must be satisfied by the border ring stopping the move, not by catching an exception
+01:50:21Z  NOTE    two concerns retired - WI-0 layer test now reads real imports off a real tree, and wall_glyph takes four bare booleans so WI-3 and WI-1 never meet and the join is WI-4 alone
+01:50:55Z  DRAFT   landed the Direction ruling and the two WI-1 consequences into the WI-2, WI-9 and WI-10 bars on the amendment branch. Checkers green, 174 passed

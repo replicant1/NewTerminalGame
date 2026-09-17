@@ -547,6 +547,13 @@ every other. **Caution C4 is the biggest algorithmic risk in the project.** Expe
 carve-then-repair: generate, eliminate each dead end by opening a further wall, verify
 connectivity, and only then hand the maze out. It is also the easiest thing here to test,
 because it needs neither a clock nor a window.
+
+**Two things WI-1 has already given you, before you asked.** The maze is **immutable**, so
+you can hold a maze you have already checked while you try a repair on a copy — which is
+exactly what carve-then-repair needs. And the structural oracle **returns which squares
+fail, not merely whether any do**, so a repair that removes a dead end and breaks
+connectivity tells you *where*; a generator told only "not sound" cannot tell whether its
+last repair helped, and that is the difference between converging and thrashing.
 *Tests must establish:* MAZE-3, MAZE-4, MAZE-5 and MAZE-6 hold **over many seeds, not one**
 — drive WI-1's checker across a large range of seeds and assert all three properties every
 time; MAZE-4, that two different seeds give two different mazes and the same seed gives the
@@ -625,6 +632,13 @@ whatever it is, pinned so it is deterministic.
 A pure function of the maze, the ghost's square and its heading: keep going straight while
 the corridor allows; otherwise choose uniformly at random among the exits other than the one
 it came from; reverse only when that set is empty. **The player is not a parameter.**
+
+**A direction vocabulary already exists in the Domain layer — WI-1 shipped it, including
+`opposite()`. Use it; do not make a second one.** That was ruled deliberately: one shared
+vocabulary beats two parallel ones, and reconciling them later would be a refactor across
+two lanes instead of a conversation. **The vocabulary is WI-1's; the policy is entirely
+yours**, and so is every test that pins GHOST-2, GHOST-3 and GHOST-4. If you want the type
+shaped differently, settle it with WI-1's author — that does not come back to the plan.
 *Tests must establish:* GHOST-2, that a straight corridor is followed without deviation;
 GHOST-3, the random choice at a junction — over a seeded run, that every non-reversing exit
 is chosen and the reversing one never is; the reverse clause, **using a hand-built maze with
@@ -638,6 +652,13 @@ wall — if so nothing happens at all; otherwise move, then test collision, then
 test the win. For a ghost move: move, then test collision. The ghost's next square arrives
 from a policy the resolver is handed, so this does not wait for WI-9. MAZE-3's "no tunnels"
 lives here too: movement never wraps.
+
+**One consequence of how WI-1 built the maze.** Asking about a square outside the grid
+**raises** rather than answering "wall" — deliberately, because a silent "wall" makes an
+out-of-bounds bug look like an ordinary dead end. So MAZE-3's test, that a move at the
+grid edge cannot leave it, **must be satisfied by the border ring stopping the move, not
+by catching an exception.** If you find yourself needing to ask about a square outside the
+grid, that is a design smell rather than a case to handle.
 *Tests must establish:* CTRL-1 and CTRL-2, one intent moves exactly one square; CTRL-3,
 that a blocked move changes nothing at all — not the position, not the score, not the
 outcome; SCORE-1, SCORE-2, SCORE-3; END-1, on both arms — the player walking into the ghost
