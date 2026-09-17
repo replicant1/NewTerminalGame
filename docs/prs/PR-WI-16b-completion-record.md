@@ -50,10 +50,10 @@ Dock tile the default suite now raises.
 ## Suite state
 
 ```
-.venv/bin/python -m pytest -q          →  961 passed, 0 failed, 0 skipped, 9 deselected
+.venv/bin/python -m pytest -q          →  965 passed, 0 failed, 0 skipped, 10 deselected
 ```
 
-Unchanged by this PR, which adds no code and no tests. On `main` at `7518e64`.
+Unchanged by this PR, which adds no code and no tests: the move from 961 is entirely other lanes, arriving with `origin/main` at `c57fce3` (WI-17 and the WI-18 coverage audit). Merged clean.
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
