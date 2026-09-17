@@ -14,3 +14,5 @@ WI-1 COMMIT  01:46:42Z  10074c8 WI-1: the maze as data, and the structural check
 WI-1 COMMIT  01:47:18Z  0720943 WI-1: PR summary; draft PR #81 opened at https://github.com/replicant1/NewTerminalGame/pull/81
 WI-1 TEST    01:47:46Z  174 passed, 0 failed, 0 skipped after merging origin/main at ead97a7 (WI-3 and S-2 landed); clean merge, no conflicts
 WI-1 NOTE    01:47:50Z  WI-3's wall_glyph takes four bare booleans (north, south, east, west) and imports nothing from domain, exactly as the plan intended. No collision with the Direction enum I added here; joining the two is WI-4's seam and it is a clean one
+WI-1 MERGE   01:48:27Z  PR #81 merged to main as ddc250e; git fetch origin && git merge origin/main brought WI-3's completion record down too; whole suite on the merged result: 174 passed, 0 failed, 0 skipped
+WI-1 DONE    01:48:31Z  WI-1  r7/wi-1-maze-grid  e62af10 (merged to main as ddc250e via PR #81); per the lead's ruling on contradiction B, these last lines and the M0 lane B completion record carry forward on WI-2's branch rather than a second PR
