@@ -4,6 +4,14 @@
 **From:** the Technical Lead
 **Inputs:** `docs/FUNCTIONAL_REQUIREMENTS.md` (49 requirement codes) and `docs/ARCHITECTURE.md`
 
+### Amendments
+
+Newest first. Re-read a section an amendment names before you work in it.
+
+| # | What changed | Sections |
+|---|---|---|
+| **1** | **Calling into Objective-C, AppKit, Quartz or CoreGraphics through `ctypes` is prohibited outright**, after it put three crash dialogs on the user's screen; S-2 and WI-15 lose that route and **WIN-4's general case becomes a decision for the user**, with P2 promoted to how WIN-4 is actually built. **S-1 reported and it is good news: P8 and P4 retire by measurement** — Tk 8.5 is headless-testable, the font is fixed at Menlo 16 (cell 10 × 19, window 400 × 570) — and human item 5 closes. **A measured Tk defect gets an owner:** `root.update()` never returns on a mapped window, which lands on WI-5 and WI-6. **AppleScript's `position` is wrong by a display height on a secondary display**, so WI-15 must use `bounds`. **Five WI-0 deviations ruled on**, of which `unplaced-module` is upheld into the layer rule and the `needs_window` marker is adopted as the one mechanism. **Section 8 settles the log-tail problem** every developer meets at their first merge, and the case of an item that precedes the suite. Two new human items (7, 8) and two new assumptions (P9, P10). No schedule change: 23 items, 5 iterations, 41 developer-days, every boundary as before. | 1.3, 1.5, 1.6, 1.7, 2, S-1, S-2, WI-5, WI-6, WI-7, WI-15, WI-17, 8, 9, 10 |
+
 ---
 
 ## 0. The four things to read before anything else
@@ -65,6 +73,7 @@ body.
 | Language | **Python**, written to the **3.9** language level |
 | Interpreter | **`/usr/bin/python3` — CPython 3.9.6**, in a project virtual environment created from it |
 | Windowing toolkit | **`tkinter`**, the standard-library binding, on **Tcl/Tk 8.5** |
+| Font | **Menlo 16** — cell 10 × 19 px, window 400 × 570 for 40 × 30 (measured by S-1, not chosen) |
 | Test runner | **`pytest`** installed into that virtual environment |
 | Suite command | **`.venv/bin/python -m pytest -q`**, run from the repository root |
 
@@ -75,13 +84,15 @@ only one interpreter has one. Measured at 01:29Z on 17 Sep 2026 from this worktr
 no `pyenv`. So the choice is between a modern Python with no window and an old Python with
 one, and candidate 2 settles it.
 
-**The trade is uncomfortable and I am saying so.** Tcl/Tk 8.5 is the old Aqua build and it
-is the weakest part of this stack: box-drawing glyph metrics, font substitution and Retina
-scaling are all places it may disappoint. **S-1 exists to find out on day zero.** If S-1
-finds Tk 8.5 unusable, what I would need is a modern Tk — in practice
-`brew install python-tk@3.14` alongside the Homebrew Python — and **that installs software
-on the user's machine, so it needs their consent and it is in section 9.** Do not assume a
-toolkit that has not been measured.
+**The trade looked uncomfortable and it has come good.** Tcl/Tk 8.5 is the old Aqua build
+and I expected box-drawing metrics, font substitution and Retina scaling to disappoint.
+**S-1 measured it on day zero and it did not.** A Tk root can be built in a test and
+withdrawn so that nothing reaches the screen, and **Menlo at 16 point** gives an exact
+40-character row: cell 10 × 19 pixels, window 400 × 570 for 40 × 30. No modern Tk is
+needed and nothing has to be installed on the user's machine. **The font is therefore
+fixed, not chosen** — of 180 families on this machine only Menlo owns every glyph the game
+draws without substitution, and the row is exact only at sizes 8–16. See S-1 in section 5
+for the numbers and what still cannot be measured.
 
 **What 3.9 forbids.** No structural pattern matching (`match`). No `X | Y` unions or
 built-in generics evaluated at runtime — put `from __future__ import annotations` at the
@@ -96,21 +107,34 @@ Four layers. An arrow reads "may import":
 
 **Shell → Presentation → Application → Domain**
 
-- **Domain** imports nothing from the three layers above it and nothing impure: no
-  windowing toolkit, no clock, no filesystem, no environment, no process. It does not
-  reach for a module-level random source — **randomness arrives as an argument**. This is
-  what makes MAZE-4/5/6 and every `END-*` rule testable with no window and no clock.
-- **Application** imports Domain only. No toolkit. No clock: a tick *arrives as a call*, it
-  is never read from a clock.
-- **Presentation** imports Application and Domain. Everything it produces is **data** — a
+**The rule governs which of the four layers a layer may name.** It is not a ban on
+importing anything at all: `enum`, `typing`, `dataclasses` and the rest of the pure
+standard library are free everywhere. What is forbidden is named, per layer, below.
+*(Confirmed as a ruling on WI-0's reading; it is the only reading under which the layer
+works.)*
+
+- **Domain** names none of the three layers above it, and nothing impure: **no windowing
+  toolkit, no clock, no filesystem, no network, no environment, no process, no
+  randomness it was not handed.** Randomness arrives as an argument. This is what makes
+  MAZE-4/5/6 and every `END-*` rule testable with no window and no clock.
+- **Application** names Domain and no other layer. **No toolkit, and no clock** — a tick
+  *arrives as a call*, it is never read.
+- **Presentation** names Application and Domain. Everything it produces is **data** — a
   field of glyphs and colours — except for the single responsibility that actually paints,
   which is the only part of Presentation permitted to name the toolkit.
-- **Shell** may import anything. It owns the window, the event loop, the tick timer and
-  the entry point.
+- **Shell** may name anything. It owns the window, the event loop, the tick timer and the
+  entry point.
 
-**WI-0 owns the test that pins this**, by inspecting imports across the source tree. It is
-a test, not a sentence in this document, because a sentence remembers what was true once
-and nothing re-runs it.
+**Every module in the package sits in one of the four layers.** A module one level up,
+belonging to no layer, is not outside the rule — it is the hole the rule exists to close,
+and the checker rejects it. Only the package's own top-level `__init__` is exempt.
+*(Upheld from WI-0, where it arrived as a deviation; it is the rule rather than an
+addition to it, so it belongs here as plan text.)*
+
+**WI-0 owns the test that pins all of this**, by inspecting imports across the source
+tree. It is a test, not a sentence in this document, because a sentence remembers what was
+true once and nothing re-runs it. **It has landed and it is green.** If you think the
+checker is wrong, say so and it will be changed — do not work around it.
 
 ### 1.4 Characters only (SCRN-2)
 
@@ -126,9 +150,49 @@ you meet it. The architect's caution C5 asks for exactly this.
 **WI-5 owns the test that pins it**: the surface offers no route to draw anything but a
 glyph and a flat cell colour, and the assembled game creates no image object.
 
-### 1.5 Window hygiene — this runs on somebody's desk while they watch
+### 1.5 What you may do to the user's machine
 
-A real person is sitting in front of this screen. Treat every window you open as borrowed.
+A real person is sitting in front of this screen, watching.
+
+#### Never call into Objective-C through `ctypes`
+
+**Prohibited outright, for the rest of this run, with no exceptions:** no agent may call
+into **Objective-C, AppKit, Quartz or CoreGraphics through `ctypes`** — not in a probe,
+not in a spike, not in a test, not in the application. **This is a technique that is off
+limits, not a defect to be fixed and retried. Do not plan or attempt a safer variant of
+the same call.**
+
+Why, measured: at 01:38:55Z, 01:39:19Z and 01:39:24Z on 17 September 2026, three identical
+*"Python quit unexpectedly"* crash dialogs appeared on the user's screen —
+`EXC_BAD_ACCESS (SIGSEGV)`, `objc_msgSend ← libffi ← _ctypes ← Python`. The source was a
+probe reading the window list through Quartz via `ctypes`. **A segfault is worse than a
+stray window.** It puts a dialog on the screen that only the user can dismiss, and it runs
+no `finally` block, no `atexit` handler and no cleanup of any kind — so every protection
+in the rest of this section is bypassed at once. Nothing was orphaned that time, and only
+luck decided that.
+
+**The evidence is narrower than the rule, and the plan should say so rather than claim
+more than was measured.** S-2 found the same CoreGraphics call ran **clean 8 times out of
+8 in a plain process** and **crashed 3 times out of 3 inside a process with a live Tk
+root**. It is the Tk-plus-`ctypes` combination that is lethal, not the call by itself.
+**That does not narrow the prohibition**, which is the user's to decide and has been put
+to them — a rule that depends on correctly predicting whether a Tk root is live somewhere
+in the process is not a rule anybody can follow. It is recorded because a finding should
+say what was seen.
+
+**If a question can only be answered that way, it is a question for the user, not a
+probe.** Raise it; do not reach for the interpreter.
+
+The permitted routes for anything that must ask the operating system about windows,
+applications or permissions are: **`/usr/bin/lsappinfo`**; **AppleScript addressed to an
+application that is already permitted**; and the consent-state checks that are known not
+to prompt. Consent state measured at 01:36:41Z without prompting anybody: Accessibility
+`True` for the responsible process; Automation — `com.apple.Terminal` permitted,
+`com.apple.finder` permitted, `com.google.Chrome` **would prompt (-1744)**,
+`com.microsoft.VSCode` **would prompt (-1744)**, `com.apple.systemevents` not running
+(-600). **Never address a target that would prompt.**
+
+#### Every window you open is borrowed
 
 - **Capture the window id at the moment you create it, and only ever act on that id.**
   Never "the front window", never by title. The user's own shells, their editor and the
@@ -144,8 +208,8 @@ A real person is sitting in front of this screen. Treat every window you open as
 - **Reap on the failure path too.** A blocked or timed-out work item cleans up before it
   reports.
 
-This binds S-1, S-2, WI-6, WI-7, WI-14, WI-15 and WI-17 in particular, and any spike or
-throwaway script anyone writes.
+All of section 1.5 binds S-1, S-2, WI-6, WI-7, WI-14, WI-15 and WI-17 in particular, and
+any spike or throwaway script anyone writes.
 
 ### 1.6 Testing: what is required, and what is forbidden
 
@@ -159,9 +223,12 @@ test owns the join and nothing else. What the lower thing says is already owned 
 tests; proving it again through a bigger object adds maintenance and nothing else.
 
 **The default suite must never put a window on the user's screen.** WI-5 owns the test
-that pins this for the surface and WI-16 owns it for the assembled game. Any test that
-genuinely needs a real window is marked so it is excluded by default and is subject to
-section 1.5 without exception.
+that pins this for the surface and WI-16 owns it for the assembled game. **The mechanism
+is the `needs_window` marker, excluded by default, which WI-0 built and landed** — use
+that one and do not invent a second. A test carrying it is subject to section 1.5 without
+exception. *(WI-0 built it as a deviation because section 1.6 required the exclusion and
+said nothing about who provided it; adopted, and named here so S-1, WI-5 and WI-16 all
+reach for the same thing.)*
 
 **Forbidden, without exception: do not deliberately break working code to watch a test go
 red.** Not as a mutation check, not as a sweep, not as a one-off. No changing a value, an
@@ -180,6 +247,10 @@ it rather than imposing extra machinery; the user can decide whether more is wan
 
 ### 1.7 Where documents go
 
+**These four shapes govern the documents the *process* produces — not the source tree.** A
+`README`, a `pytest.ini`, a tooling directory and anything else the code needs are part of
+the tree, and section 1.8 leaves the tree to you. Do not ask permission for those.
+
 Do not invent a name. Four places, exactly these shapes:
 
 | Path | One per | Example |
@@ -192,6 +263,15 @@ Do not invent a name. Four places, exactly these shapes:
 `<ITEM>` is the code exactly as this plan writes it. `<slug>` is two or three lowercase
 hyphenated words. Never underscores. If something you need to write fits none of these
 four, ask rather than inventing a fifth.
+
+**Two rulings on `<ITEM>`, both from things that have already come up.** The follow-up
+branch that lands the tail of a work item's log when you have no next branch to carry it
+on (see section 8, step 6) is named `r7/<item>-completion-record` and needs no PR summary
+of its own — it is the same work item. And an **amendment to this plan** by the technical
+lead uses
+`docs/prs/PR-AMEND-<n>-<slug>.md`, numbered as in the amendments table at the top. That
+shape is the technical lead's, not yours; it is written down so you can recognise one, not
+so you can copy it.
 
 Every commit subject starts with the item code: `WI-3: ...`, `S-1: ...`.
 
@@ -235,9 +315,12 @@ the Presentation layer down changes, and the second process disappears.
   and WI-6 applies its result.
 - **SCRN-2 becomes a convention.** Hence the ground rule in section 1.4 and the test in
   WI-5.
-- **WIN-4 is no easier.** Finding "whatever window the player was last looking at" still
-  needs a privileged query of another application's windows. Assumption A2 applies
-  unchanged, and **S-2** exists to find out what it actually costs before WI-15 is written.
+- **WIN-4 is no easier, and it is now the hardest thing left.** Finding "whatever window
+  the player was last looking at" still needs a privileged query of another application's
+  windows. Assumption A2 applies unchanged — and since amendment 1 the one route that
+  would have avoided the permission is prohibited, so **WIN-4's general case is a decision
+  for the user (human item 4)** and WI-15 builds the started-from-a-terminal case that
+  assumption P2 names.
 
 ---
 
@@ -349,17 +432,35 @@ request in section 9.
 *Tests must establish:* whatever the spike proves is pinned by a test that runs in the
 default suite if it can run headlessly; otherwise the finding document stands alone.
 
+> **S-1 has reported, and it closes assumption P8 favourably.** Measured 01:37:42Z: a Tk
+> root followed by `withdraw()` gives `state=withdrawn`, `ismapped=False`,
+> `viewable=False`, with the frontmost application unchanged before and after. **The
+> Presentation layer can be tested headlessly on Tcl/Tk 8.5.** Human item 5 — consent to
+> install a modern Tk — **does not open.**
+>
+> The font is settled by measurement rather than by eye, which retires assumption P4:
+> **Menlo at 16 point, cell 10 × 19 pixels, window 400 × 570 for 40 × 30.** Of 180
+> families only Menlo owns every glyph this game draws with no substitution, and a
+> 40-character row equals 40 × advance only at sizes 8–16 — from 17 up it drifts. **WI-5
+> and WI-6 build to those numbers.** Two things S-1 could not settle are now in section 9.
+
 **S-2 — the anchor question.** *(1 day, depends on nothing, lane C, M0)*
-Find out whether a Python process can read the position of "whatever window the player was
-last looking at" — and specifically whether the terminal application's own frontmost window
-can be read without an Accessibility permission prompt, given that the caller is now the
-game process itself rather than a launcher started from the terminal (the architect's
-caution C3 turned on that distinction, and candidate 2 changes it). Measure what a refusal
-looks like. Section 1.5 applies.
-*Output:* a `docs/findings/` document saying what works, what prompts, and what the
+Find out whether the position of "whatever window the player was last looking at" can be
+read at all, **using only the routes section 1.5 permits** — `/usr/bin/lsappinfo`,
+AppleScript to an application that is already permitted, and consent checks known not to
+prompt. **The Quartz-through-`ctypes` route is prohibited and is not to be retried in any
+form.** Measure what a refusal looks like without provoking one.
+*Output:* a `docs/findings/` document saying what works, what would prompt, and what the
 fallback is. **Do not grant, request or click through any permission dialog** — report it.
 *Tests must establish:* nothing in the default suite may query the desktop; the spike's
 conclusions live in the finding.
+
+> **Already settled by the ruling in section 1.5, so S-2 need not re-derive it:** reading
+> the frontmost window of an arbitrary application needs a privilege that no agent may
+> obtain by any permitted route, so **WIN-4 in the general case is a decision for the
+> user, not a probe** — human item 4. S-2's remaining job is to establish the
+> started-from-a-terminal fallback that assumption P2 now rests on, and to confirm it
+> prompts nobody.
 
 ### Iteration M0 — Ground to stand on
 
@@ -393,10 +494,36 @@ the ones that actually appear in the specimen picture.
 
 **WI-5 — the character grid surface.** *(2 days, depends on WI-0 and S-1, lane C)*
 The thing that turns a 40 × 30 field of glyph-and-colour into pixels: cell metrics for the
-chosen font (so that 40 × 30 cells yield a pixel size), a paint that shows no flicker and
-no caret, and the colours the specification names. **This is the one part of Presentation
+font (so that 40 × 30 cells yield a pixel size), a paint that shows no flicker and no
+caret, and the colours the specification names. **This is the one part of Presentation
 allowed to name the toolkit.** Whether it repaints every cell or only the changed ones is
 yours to decide on its merits — see C-5.
+
+**The font is not a choice any more: S-1 measured it.** Use **Menlo at 16 point**, which
+gives a **10 × 19 pixel cell** and a **400 × 570 window** for 40 × 30. Of 180 families on
+this machine only Menlo owns every glyph the game draws without substitution, and the
+40-character row equals 40 × advance only at sizes 8–16. Compute the window size from the
+metrics rather than writing 400 × 570 down — the derivation is the thing WIN-2 rests on —
+but expect those numbers, and treat a different answer as a defect to investigate.
+Construct the root **withdrawn** in tests, which S-1 proved keeps it off the screen.
+
+> **A measured Tk defect that lands on you, and it is why this is called out here rather
+> than found in a hang.** S-2 bisected it with `faulthandler`: on Tcl/Tk 8.5 under macOS
+> 26, **`root.update()` never returns once the window is mapped.** `Tk()`, `withdraw`,
+> `geometry`, `deiconify` and `update_idletasks()` all return normally; `update()` hangs
+> at `tkinter/__init__.py` line 1314, and a watchdog had to kill it after eight seconds
+> with the window visible on the user's desktop.
+>
+> **SCRN-7's "compose off-screen and present once" is exactly the operation that reaches
+> for `update()`.** So: **do not call `update()` on a mapped window.** `update_idletasks()`
+> returns and is the tool for forcing a repaint; the toolkit's own event loop is what
+> drives presentation in the finished application. S-1's headless verdict is untouched by
+> this — it was measured on a *withdrawn* root, which never reaches that path.
+>
+> Nobody owns this defect: S-2 measured it and rightly declined to chase it, and S-1 had
+> already merged. **WI-5 owns the constraint, WI-6 inherits it, and WI-7 is where a
+> mistake would show as a hang rather than a failure.** If you find a case where
+> `update()` is unavoidable, that is a finding worth a `docs/findings/` document.
 *Tests must establish:* SCRN-7, that a repaint is composed off-screen and presented once
 and that no caret or text-entry focus exists; SCRN-2, that the surface offers no route to
 draw anything but a glyph and a flat cell colour; the cell-metrics calculation, that 40
@@ -445,10 +572,12 @@ actors are on one square the ghost is what you see.
 The application's own native window: titled exactly *Terminal Game*, black ground, sized
 from WI-5's cell metrics to 40 × 30 cells, and able to close itself and end the process on
 request. Placement is **not** yours — that is WI-15, and it is the only later writer here.
-Section 1.5 applies to anything you run.
+Section 1.5 applies to anything you run, and **so does WI-5's `update()` constraint: you
+are the item that maps the window, so you are the first to reach the path that hangs.**
 *Tests must establish:* WIN-1, that a window is created and owned by this process; WIN-3,
 that the title is exactly the string required, with nothing appended; WIN-2, that the
-window's pixel size is the one WI-5's metrics computed for 40 × 30 and the ground is black;
+window's pixel size is the one WI-5's metrics computed for 40 × 30 — expect 400 × 570 from
+Menlo 16 — and the ground is black;
 and WIN-5, that a close request ends the session and the window with it. Keep every one of
 these off the default suite's screen — assert against the toolkit's own reported state, not
 by looking.
@@ -460,6 +589,13 @@ generator, no timer, no rules. Its whole purpose is to prove the vertical slice,
 supersedes its fixtures.
 *Tests must establish:* that the composed frame reaches the surface unaltered — assert the
 join, not what WI-4 and WI-5 already own — and that `q` ends it.
+
+**WI-7's window is the first chance anybody has to see whether Menlo's box-drawing ink
+spans the full cell** — whether a run of the horizontal double-line reads as one unbroken
+line or a dashed one. S-1 could measure advance but not ink: Tk 8.5 has no
+canvas-to-image path and this interpreter has no PyObjC and no PIL. **Look at it, say what
+you saw, and put it in your PR body.** It is human item 8 and WI-17 carries it, but you
+will have the first window.
 
 **WI-8 — the opening position.** *(2 days, depends on WI-1, lane C)*
 The game's starting state: the player on the corridor square nearest the grid centre; the
@@ -508,14 +644,36 @@ the playing string as an exact string at several scores; STAT-3, both decided st
 exact strings, including the examples the requirement prints verbatim; SCRN-6, cyan.
 
 **WI-15 — where the window lands.** *(2 days, depends on WI-6 and S-2, lane C)*
-Read the anchor window's position by whatever route S-2 found, and place the game window a
-little below and to the right of it. If S-2 found that the general case needs a permission
-nobody can grant, implement the fallback it names and **say plainly in the PR body that
-WIN-4 is met under assumption A2 and not in general.** Section 1.5 applies.
+Place the game window a little below and to the right of the anchor window. **The anchor
+may be read only by a route section 1.5 permits** — `/usr/bin/lsappinfo`, or AppleScript
+addressed to an application already known to be permitted (Terminal and Finder are;
+Chrome and VS Code would prompt, so never address them). **Nothing through `ctypes`, in
+any form.** Never provoke a permission prompt: if the anchor cannot be read without one,
+that is not a route to try, it is the fallback path taken.
+
+**WIN-4 in the general case is not yours to solve** — it is human item 4. What you build
+is the started-from-a-terminal case that assumption P2 names, plus a sane default when
+even that fails. **Say plainly in your PR body that WIN-4 is met under P2 and not in
+general.** Section 1.5 applies in full to anything you run.
+
+> **Do not use AppleScript's `position` property. S-2 measured it wrong on a non-main
+> display, and it is the route the architect actually used.** For three windows on
+> secondary displays `position` disagreed with the same window's `bounds` by exactly the
+> display height — window 7104 reported `y=52` against a `bounds` top of `-1388`; 8007,
+> `36` against `-1404`; 2420, `30` against `-1410` — all off by +1440, while two windows
+> on the main display agreed exactly. **The architect's V3 placed a window at
+> "position + (40, 40)"; on this desktop that is wrong by 1440 pixels.**
+>
+> Use `bounds`. And note the coordinate space: three displays with global origins
+> (0, 0) at 1512 × 982, (−3509, −1440) and (−949, −1440), so **origins are negative and
+> "below and to the right" is arithmetic in that global space, not in any display's own**.
+> Assumption P3's +40/+40 is fine as an *offset*; what it is added to is the thing that
+> was wrong.
 *Tests must establish:* WIN-4, that given an anchor position the window's placement is that
 position plus the chosen offset, and that a failure to read the anchor degrades to a sane
-default rather than crashing or prompting. Do this against a supplied anchor position, not
-against the real desktop.
+default rather than crashing or prompting. **Do this against a supplied anchor position,
+not against the real desktop** — that was right when it was written and the ruling makes
+it mandatory.
 
 **WI-11 — the session controller.** *(2 days, depends on WI-10, lane A)*
 Three states and no more: **Playing**, **Decided**, **Ended**. There is no ready state and
@@ -576,7 +734,10 @@ at, and what a good answer looks like. Reap every window, including on the failu
 Never record as verified anything you did not observe: "I could not determine this without
 the user" is the right answer.
 *Output:* a `docs/findings/` document, and the human items in section 9 turned into
-instructions somebody can follow in two minutes.
+instructions somebody can follow in two minutes. **Human item 8 — whether Menlo's
+box-drawing ink spans the full cell, so that a wall run reads as an unbroken line rather
+than a dashed one — is yours to put in front of the user**, because no agent on this
+machine can capture the pixels to judge it.
 
 ### Iteration M4 — Seen by a human
 
@@ -822,6 +983,27 @@ All of these, in this order:
    not the merge.
 6. A `MERGE` line in your progress log with the test count, and your progress log committed
    alongside the work.
+
+   **Steps 4 and 6 cannot both be satisfied from one branch. Here is the one answer, so
+   that five people do not invent five.** The `MERGE` line and its count only exist
+   *after* the merge, by which time the branch carrying the log is already merged. So:
+
+   - Land the work item with its log as complete as it can be, and merge it.
+   - Write the `MERGE` line the moment you have the count.
+   - **Carry the tail forward on the next branch you cut** — it is two lines in a file
+     nobody else touches, and it costs no extra pull request.
+   - **Only if you have no next branch**, land it on a short follow-up named
+     `r7/<item>-completion-record` as its own small pull request, which is what lane B
+     did for WI-0.
+
+   Never hold a work item's merge back to make its log tidy, and never push a tail
+   straight to `main`.
+
+   **If your item legitimately precedes the suite, report what is true.** S-1 merged with
+   an honest `0 passed, 0 failed, 0 skipped` because no suite existed yet, and then
+   re-ran at the merge commit and got 56. That is the right behaviour and this plan
+   should have said so: **report the real counts at the time, then re-run once a suite
+   exists and record the second number too.** Never round `0 passed` up to "green".
 7. Your report to the conductor, in the order `developer.md` prescribes — worktree, branch
    and base; branches merged with PR numbers; what you built; **the exact command and the
    exact counts**; deviations needing a ruling, additive ones included; contradictions you
@@ -853,18 +1035,34 @@ them. Route them all to the conductor, which is the only path to the user.
    comfortably** (WIN-2, the architect's assumption A4). No objective test exists. *Blast
    radius:* one constant, plus WI-5's metrics test and WI-6's size test, which both quote
    it. *Owned by WI-17; acted on by WI-19.*
-4. **Decide what to do about WIN-4 if the anchor cannot be read without permission.**
-   Reading the frontmost window of *any* application needs macOS Accessibility permission,
-   which no agent can grant itself (the architect's assumption A2, unchanged by candidate
-   2). S-2 finds out on day zero. If it is needed, the user must either grant it or accept
-   that WIN-4 is met only for the case where the game is started from a terminal window.
-5. **Consent to installing a modern Tk, if S-1 finds Tcl/Tk 8.5 unusable.** The fallback is
-   `brew install python-tk@3.14` alongside the Homebrew Python, which installs software on
-   the user's machine. **Only ask if S-1 actually fails**; do not install anything on
-   anyone's say-so but the user's.
+4. **Decide WIN-4. This is live, not a contingency.** Reading the frontmost window of an
+   arbitrary application needs macOS Accessibility or Automation permission, and the one
+   route that would have sidestepped it — Quartz through `ctypes` — is now prohibited
+   outright (section 1.5). **No agent may keep attempting this.** The user either grants
+   the permission, or accepts that **WIN-4 holds only for the case where the game is
+   started from a terminal window**, which is assumption P2. The plan proceeds on P2 and
+   WI-15 builds it; an answer either way costs one constant and one test.
+5. ~~**Consent to installing a modern Tk.**~~ **Closed.** S-1 measured Tcl/Tk 8.5 usable
+   and headless-testable at 01:37:42Z. Nothing needs installing. Kept here numbered so
+   that references elsewhere in this plan still resolve.
 6. **Confirm the reading of the status-line literals**, if it matters to them — ruling C-4
    takes the specimen picture as normative, including its leading space. Low stakes; three
    assertions in WI-12. Mentioned for completeness rather than as a blocker.
+7. **Say whether a "Python" Dock tile appearing for the duration of a test run is
+   acceptable.** A withdrawn Tk root still registers with Launch Services as a foreground
+   process, so the tile appears whenever the suite touches the toolkit. It is not a
+   window, so the bar in section 1.6 still holds — but it is a visible effect on the
+   user's machine that nobody anticipated, and they should get to say. **We proceed on
+   "acceptable".** *If the answer is no:* WI-5 and WI-16 each need a marker excluding
+   their Tk tests from the default suite, which also costs the headlessness those tests
+   were pinning.
+8. **Look at a wall in the running game and say whether the double lines join up into one
+   unbroken run, or read as dashes.** S-1 could measure Menlo's glyph *advance* but not
+   its *ink*: Tk 8.5 has no canvas-to-image path and this interpreter has neither PyObjC
+   nor PIL, so no agent on this machine can capture the pixels to judge it. SCRN-3 says
+   the walls "join up neatly", so this is a requirement nobody can verify without eyes.
+   WI-7 gives the first window and should report an impression; WI-17 puts it formally to
+   the user.
 
 ---
 
@@ -876,12 +1074,16 @@ these is a ruling; each is a way of proceeding chosen deliberately.
 | # | Assumption | Rests on it |
 |---|---|---|
 | **P1** | WIN-5 means *when the session ends*, not *when the outcome is decided* (the architect's A3 — see C-1 and human item 1) | WI-6, WI-11, WI-14; the WIN-5 / END-5 / END-6 trace rows |
-| **P2** | "Whatever window the player was last looking at" is the terminal window the game was started from (the architect's A2) | S-2, WI-15, the WIN-4 trace row |
-| **P3** | "A little below and to the right" is a fixed pixel offset chosen by eye; the architect used +40, +40 in his own measurement and that is a reasonable starting point | one constant in WI-15, one test |
-| **P4** | "Large enough to read comfortably" is a fixed point size chosen by eye (the architect's A4) | one constant; WI-5's metrics test and WI-6's size test |
+| **P2** | "Whatever window the player was last looking at" is the terminal window the game was started from (the architect's A2). **Promoted: this is now how WIN-4 is built, pending the user, not merely how we are proceeding** — the general case needs a permission no agent may obtain and the one route that avoided it is prohibited (section 1.5). Human item 4 is the live decision | S-2, WI-15, the WIN-4 trace row |
+| **P3** | "A little below and to the right" is a fixed pixel offset chosen by eye; +40, +40 to start. **Still fine as an offset — but S-2 measured that the thing the architect added it to, AppleScript's `position`, is wrong by the display height on a secondary display. Use `bounds`, and do the arithmetic in a global space whose origins are negative** | one constant in WI-15, one test; the anchor route in WI-15 |
+| ~~**P4**~~ | ~~"Large enough to read comfortably" is a point size chosen by eye (A4)~~ **Retired — measured, not assumed.** S-1 found Menlo 16 the only family owning every glyph without substitution, with the 40-character row exact only at sizes 8–16: cell 10 × 19, window 400 × 570. Human item 3 remains, because only a person can say whether 16 point is *comfortable* | WI-5, WI-6 |
 | **P5** | The specimen picture is normative for the grid-to-screen mapping, the three-cell actor glyphs and the status-line literals (the architect's A6, extended by rulings C-2 and C-4) | WI-4, WI-12 |
 | **P6** | "About seven times a second" is 143 ms, as a named constant | WI-14, the GHOST-1 trace row |
 | **P7** | START-2's "furthest square" may tie; the tie is broken by a deterministic rule of WI-8's choosing, pinned by a test | one test in WI-8 |
-| **P8** | Tcl/Tk 8.5 can render the specimen's box-drawing and block glyphs at a consistent cell width, and a Tk root can be built in a test without a window reaching the screen | **S-1 tests this on day zero**; if it fails, WI-5, WI-6, WI-7, WI-14 and WI-16 all change, and human item 5 opens |
+| ~~**P8**~~ | ~~Tcl/Tk 8.5 can render the box glyphs at a consistent cell width, and a Tk root can be built in a test without a window reaching the screen~~ **Closed favourably by S-1, 01:37:42Z.** `Tk()` then `withdraw()` gives `state=withdrawn`, `ismapped=False`, `viewable=False`, frontmost application unchanged; Menlo 16 has a consistent advance across every glyph the game draws. Human item 5 does not open | — |
+| **P9** | A "Python" Dock tile during a suite run is acceptable to the user, because it is a process indicator and not a window | WI-5 and WI-16, each of which would need a default-excluded marker if the answer is no. Human item 7 |
+| **P10** | Menlo's box-drawing ink spans the full cell, so a wall run reads as one unbroken line. **Nobody has seen it.** Advance was measurable; ink was not — no canvas-to-image path, no PyObjC, no PIL | SCRN-3, and the font choice itself if it is wrong. WI-7 gives the first sight of it; human item 8 |
 
-P8 is the one that would hurt, and it is the reason S-1 runs before anything depends on it.
+P8 was the one that would have hurt, and it is why S-1 ran before anything depended on it;
+it came back good. **P2 and P10 are now the two that would cost most**, and neither can be
+settled by any agent: P2 needs a permission, P10 needs eyes.
