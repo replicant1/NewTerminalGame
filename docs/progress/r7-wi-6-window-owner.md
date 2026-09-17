@@ -19,3 +19,4 @@
 02:06:00Z  WI-6  VERIFY  crashing is ELIMINATED for this shape, not merely avoided, and the evidence is a count: ZERO new .ips since 02:00:51Z across six full-suite runs and one needs_window run between 02:01:40Z and 02:05:00Z. Two paths closed — the dooneevent Tcl call is deleted, and one-interpreter-per-process means the suite can no longer create a second Tk root. Residual, stated plainly: anyone who constructs a second tkinter.Tk() in the same process can still segfault this build
 02:06:51Z  WI-6  TEST    586 passed, 0 failed, 0 skipped, 2 deselected  (.venv/bin/python -m pytest -q, after merging origin/main a2373a9 with no conflict). needs_window separately: 2 passed
 02:06:51Z  WI-6  DRAFT   docs/prs/PR-WI-6-window-owner.md
+02:07:14Z  WI-6  COMMIT  ec3563c WI-6: the window owner — pushed, draft PR #90 open
