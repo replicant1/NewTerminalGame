@@ -58,9 +58,23 @@ the game down with it. There is no surviving supervisor to report what happened.
 
 | Scenario | Priority |
 | --- | --- |
+| [A game state is composed into a 40 × 30 frame, with the ghost drawn last](a-game-state-is-composed-into-a-40-by-30-frame-with-the-ghost-drawn-last.md) | `HIGH` |
+| [A frame is painted onto the grid, touching only the cells that changed](a-frame-is-painted-onto-the-grid-touching-only-the-cells-that-changed.md) | `HIGH` |
+| [A wall square chooses its double-line glyph from its four neighbours](a-wall-square-chooses-its-double-line-glyph-from-its-four-neighbours.md) | `MEDIUM` |
+| [The status row shows the score and the keys that still work](the-status-row-shows-the-score-and-the-keys-that-still-work.md) | `MEDIUM` |
+| [A key press becomes an intent, and an unknown key becomes nothing](a-key-press-becomes-an-intent-and-an-unknown-key-becomes-nothing.md) | `HIGH` |
+| [An arrow key moves the player one square and eats the dot it lands on](an-arrow-key-moves-the-player-one-square-and-eats-the-dot-it-lands-on.md) | `HIGH` |
+| [A clock tick moves the ghost, which is never told where the player is](a-clock-tick-moves-the-ghost-which-is-never-told-where-the-player-is.md) | `HIGH` |
+| [Eating the last dot on the ghost's square is a loss and not a win](eating-the-last-dot-on-the-ghosts-square-is-a-loss-and-not-a-win.md) | `MEDIUM` |
+| [The tick timer keeps the ghost's beat, and stops cleanly when a tick ends the game](the-tick-timer-keeps-the-ghosts-beat-and-stops-cleanly-when-a-tick-ends-the-game.md) | `HIGH` |
+| [A session goes Playing → Decided → Ended, and only `q` leaves it](a-session-goes-playing-to-decided-to-ended-and-only-q-leaves-it.md) | `HIGH` |
+| [A maze is carved into a spanning tree, and then braided until no dead ends remain](a-maze-is-carved-into-a-spanning-tree-and-then-braided-until-no-dead-ends-remain.md) | `MEDIUM` |
+| [A new game puts the player in the middle, the ghost far away, and a dot on every other square](a-new-game-puts-the-player-in-the-middle-the-ghost-far-away-and-a-dot-on-every-other-square.md) | `MEDIUM` |
+| [A window is opened, dressed, and placed where the player was looking](a-window-is-opened-dressed-and-placed-where-the-player-was-looking.md) | `HIGH` |
+| [A font that is missing, substituted or not fixed-width is refused before a window opens](a-font-that-is-missing-substituted-or-not-fixed-width-is-refused-before-a-window-opens.md) | `MEDIUM` |
 | [The window closes itself when the session ends, and the session learns that it did](the-window-closes-itself-when-the-session-ends-and-the-session-learns-that-it-did.md) | `HIGH` |
 
-Fourteen more are listed under [Scenarios not yet written](#scenarios-not-yet-written).
+All fifteen are written.
 
 ## A reading order
 
@@ -90,32 +104,9 @@ way the session actually learns about.
 - **"Why does the window open at (120, 120) and not near my pointer?"** — the
   anchor scenario, and `docs/TRACEABILITY.md` §13.
 
-## Scenarios not yet written
+## Why fifteen again, and why not the same fifteen
 
-Fourteen of the fifteen. This index was written first, deliberately: it fixes the set and the
-priorities before any of the documents exist, so that the set is something to
-disagree with cheaply rather than after two hundred kilobytes have been written
-against it.
-
-| # | Scenario | Priority | Chiefly |
-| --- | --- | --- | --- |
-| 1 | A game state is composed into a 40 × 30 frame, with the ghost drawn last | `HIGH` | `frame_composer`, `Frame`, `picture` |
-| 2 | A frame is painted onto the grid, touching only the cells that changed | `HIGH` | `CharacterGridSurface`, `Frame` |
-| 3 | A wall square chooses its double-line glyph from its four neighbours | `MEDIUM` | `wall_glyphs`, `Maze` |
-| 4 | The status row shows the score and the keys that still work | `MEDIUM` | `status_line` |
-| 5 | A key press becomes an intent, and an unknown key becomes nothing | `HIGH` | `input_translator`, `Intent` |
-| 6 | An arrow key moves the player one square and eats the dot it lands on | `HIGH` | `turn_resolver`, `GameState`, `DotField` |
-| 7 | A clock tick moves the ghost, which is never told where the player is | `HIGH` | `ghost`, `turn_resolver` |
-| 8 | Eating the last dot on the ghost's square is a loss and not a win | `MEDIUM` | `turn_resolver`, `Outcome` |
-| 9 | The tick timer keeps the ghost's beat without drifting | `HIGH` | `TickTimer`, `cadence`, `Game` |
-| 10 | A session goes Playing → Decided → Ended, and only `q` leaves it | `HIGH` | `Session`, `Phase` |
-| 11 | A maze is carved into a spanning tree, then braided until no dead ends remain | `MEDIUM` | `maze_generator`, `maze_invariants` |
-| 12 | A new game puts the player in the middle, the ghost far away, and a dot on every other square | `MEDIUM` | `opening_position`, `DotField` |
-| 13 | A window is opened, dressed, and placed where the player was looking | `HIGH` | `WindowOwner`, `Anchor`, `Toolkit` |
-| 14 | A font that is missing, substituted or not fixed-width is refused before a window opens | `MEDIUM` | `grid_surface`, `TkFontProbe` |
-| ~~15~~ | ~~The window closes itself when the session ends, and the session learns that it did~~ | `HIGH` | **written** |
-
-**Why fifteen again, and why not the same fifteen.** The previous set described
+The previous set described
 the program as it was before candidate 2 was adopted, and four of its scenarios
 are about machinery that no longer exists: a launcher process, a terminal put
 into raw mode and given back, a window resized under a game already drawing into
@@ -128,7 +119,7 @@ The domain scenarios survive almost unchanged in subject, because candidate 2
 kept the Domain and Application layers exactly as candidate 1 had them. The code
 behind them is new; the behaviour they describe is not.
 
-**Number 15 is the one to write first if only one gets written.** A window
+**If only one is read, read the last of them.** A window
 closing correctly while the session never learns it is over was found three times
 in one run, in three different disguises — a close button, a swallowed crash, and
 a scheduled deadline. The rule the run arrived at is worth a document of its own:
