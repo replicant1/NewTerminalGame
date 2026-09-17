@@ -851,7 +851,10 @@ the user" is the right answer.
 instructions somebody can follow in two minutes. **Human item 8 — whether Menlo's
 box-drawing ink spans the full cell, so that a wall run reads as an unbroken line rather
 than a dashed one — is yours to put in front of the user**, because no agent on this
-machine can capture the pixels to judge it.
+machine can capture the pixels to judge it. **Ask it precisely.** The surface's metrics
+took S-1's Menlo 16 and its 10 × 19 cell as constants, so what the user looks at is
+exactly the configuration S-1 measured: the question is not "is the font right" but "does
+*this* read as unbroken lines".
 
 ### Iteration M4 — Seen by a human
 
@@ -1108,6 +1111,13 @@ shared test scaffolding (the `conftest`, twice) and not an invented shared seam 
 once). Before calling two items parallel-safe, ask what data passes between them and who
 owns its type, not which files they touch.
 
+**And when two modules must agree on a type, assert the identity, not the behaviour.**
+Throughout the WI-4/WI-5 divergence every behaviour test on both halves passed, and they
+always would have — behaviour tests cannot see that two modules are talking about
+different objects. WI-4b's guard is the right shape: it asserts that what the composer
+returns is an instance of the field class **the surface itself imported**, and that the
+two names refer to one class. Use that reflex wherever a type crosses a seam.
+
 ### Sequenced because they touch the same ground
 
 These are ordered deliberately. Do not run them side by side.
@@ -1118,7 +1128,7 @@ These are ordered deliberately. Do not run them side by side.
 | WI-5 | WI-6 | The shell. **WI-5 owns the drawing surface and the cell metrics; WI-6 owns the window** — title, size, ground, self-close — and asks WI-5 for the pixel size. |
 | WI-6 | WI-15 | The window owner. WI-6 creates and dresses it; **WI-15 is the only later writer, and it adds placement and nothing else.** |
 | WI-5 | WI-4 → WI-4b | The field, cell and palette types. **WI-5 owns them; WI-4 and WI-12 produce them.** This was originally left unsaid and both items built it — see the rule above. Struck: the old row claiming "WI-4 lands first and therefore defines the seam". |
-| WI-4b | WI-12 | Row 29's type. **WI-12 must not start until WI-4b has landed**, or it will build row 29 against a type being replaced underneath it. WI-4 owns rows 0–28 and the assembly of the whole field; **WI-12 owns the content of row 29 and nothing else.** |
+| WI-4b | WI-12 | Row 29. **WI-12 must not start until WI-4b has landed**, or it will build row 29 against a type being replaced underneath it. WI-4b owns rows 0–28 and the assembly of the whole field; **WI-12 owns the content of row 29 and nothing else.** Whether WI-12 hands over a row of cells or hands over text and a colour for WI-4b to write is **theirs to settle** — but **row 29's content is decided in exactly one place and that place is WI-12**, so no part of its text may be composed anywhere else. |
 | WI-8 | WI-10 | The game state. **No longer a seam: both are lane B's, so one developer owns creating it and changing it.** That is why WI-8 was reassigned — a seam removed beats a seam managed. |
 | WI-7 | WI-14 | The entry point. WI-7 builds it with fixtures to prove the slice; **WI-14 supersedes those fixtures** and owns it thereafter. |
 | WI-10 | WI-11, WI-13 | The intent vocabulary and the resolver's surface. WI-10 lands before either starts. |
