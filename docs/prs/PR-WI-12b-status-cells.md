@@ -54,11 +54,11 @@ STAT-1's *"and nothing else"* makes that a statement about row 29's content.
 ## Suite state
 
 ```
-.venv/bin/python -m pytest -q          →  799 passed, 0 failed, 0 skipped, 2 deselected
+.venv/bin/python -m pytest -q          →  868 passed, 0 failed, 0 skipped, 4 deselected
 ```
 
 Repository root, `.venv` from `/usr/bin/python3` 3.9.6, pytest 8.4.2. Baseline on `main` at
-`54a32cf` was **788**; WI-12b adds **11**. Layer rule: no violations. No window opened;
+`54a32cf` was **788**; WI-12b adds **11**, and merging `origin/main` (`7aebddc`, WI-7 and WI-15) brought the rest — no conflict. Layer rule: no violations. No window opened;
 `lsappinfo visibleApplicationCount` 7 throughout; **crash reports still 14, none new**.
 
 ## Also carried on this branch
