@@ -106,14 +106,27 @@ colour)` is there for a run of glyphs or a status line, and `Field.row_text(row)
 of their tests assert an exact string without knowing what a cell is. If either wants the
 seam shaped differently, that is a conversation between us and not an escalation.
 
+## One conflict, resolved, and not an escalation
+
+Developer B's WI-1 and this branch **both created `tests/conftest.py`** — pytest gives a
+directory exactly one — so `git merge origin/main` conflicted add/add. There is no
+disagreement underneath it: their maze `draw` and `sound_maze` fixtures and this branch's
+withdrawn Tk root are two unrelated sets that do not interact. **Both are kept, under two
+headings, and not a line of theirs is changed.** The whole suite was run afterwards, not
+just my half, so both sides of the resolution are exercised.
+
+One change to *my* half while resolving: the `tkinter` import moved inside the fixture, so
+a run that touches none of the Presentation tests never loads the toolkit.
+
 ## Suite state
 
 ```
-.venv/bin/python -m pytest -q          →  263 passed, 0 failed, 0 skipped
+.venv/bin/python -m pytest -q          →  357 passed, 0 failed, 0 skipped
 ```
 
-Run from the repository root, `.venv` built from `/usr/bin/python3` 3.9.6 with pytest
-8.4.2. Baseline on `main` when this branch was cut was **81 passed**, so WI-5 adds **182**.
+Run from the repository root after `git merge origin/main` (`ddc250e`, which brought WI-1
+and WI-3), `.venv` built from `/usr/bin/python3` 3.9.6 with pytest 8.4.2. Baseline on
+`main` when this branch was cut was **81 passed**; WI-5 adds **183** and WI-1 the rest.
 `lsappinfo visibleApplicationCount` was 7 before and after: no window reached the screen.
 
 ## What needs a human
