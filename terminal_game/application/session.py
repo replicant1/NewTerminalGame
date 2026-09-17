@@ -227,6 +227,18 @@ class Session:
             self._phase = Phase.DECIDED
 
     def __repr__(self) -> str:
+        """Asks the same question every other reader here asks.
+
+        This used to read ``self._game.outcome`` — the stored field that the
+        rest of this module is careful never to trust — and so could print
+        ``Session(decided, undecided, ...)`` for a hand-built board, with the
+        phase right and the outcome wrong. **``repr`` is what pytest prints in
+        a traceback**, so a misleading one costs whoever is debugging a failed
+        journey an hour chasing the wrong thing. Found by lane C reading
+        ahead, and worth recording as the lead's one-source-of-truth rule
+        reaching somewhere nobody thought of: a ``repr`` does not look like a
+        component that asks whether the game is over.
+        """
         return "Session({}, {}, score {})".format(
-            self._phase, self._game.outcome, self._game.score
+            self._phase, self.outcome, self._game.score
         )
