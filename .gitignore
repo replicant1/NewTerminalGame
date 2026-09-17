@@ -3,10 +3,20 @@
 *.swo
 *~
 
-# Python bytecode. There is no build step, no virtualenv and no packaging
-# here (ARCHITECTURE.md §2), so this is the whole of it.
+# Python bytecode. There is still no build step and no packaging.
+# (The "no virtualenv" this comment used to claim came from ARCHITECTURE.md §2,
+# which describes candidate 1. Candidate 2 was adopted and IMPLEMENTATION_PLAN.md
+# §1.2 fixes the runtime as a project virtual environment — see the next stanza.)
 __pycache__/
 *.py[cod]
+
+# The project virtual environment. IMPLEMENTATION_PLAN.md §1.2 fixes the suite
+# command as `.venv/bin/python -m pytest -q` from the repository root, so every
+# developer has one of these and none of them belongs in the repository. It is
+# rebuilt from requirements.txt — see README.md.
+.venv/
+/venv/
+.pytest_cache/
 
 # macOS
 .DS_Store
