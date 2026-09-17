@@ -14,12 +14,11 @@ remembered. The synopsis under each heading is written by hand, because what a
 class is *for* is a judgement about the design and not a fact recoverable from
 it.
 
-**There are no scenario documents for this program yet.** Previous versions of
-this page listed, under each class, the scenarios that class appears in, read
-from those documents' own cast tables. `docs/scenarios/` was cleared when this
-run's inputs were prepared and has not been regenerated against the code that
-now exists, so that part of the page is simply absent rather than guessed at.
-It is the one element of the usual method that could not be applied.
+**The list of scenarios under each class is read from those documents' own cast
+tables**, in [`docs/scenarios/`](scenarios/SCENARIO_INDEX.md), not from a search
+for the name — a scenario that merely mentions a class in passing does not claim
+it. **A class that no scenario has reached yet says so**, because a gap in the
+coverage is worth seeing rather than hiding.
 
 **Each class heading links to the file the class is written in.** The file
 rather than the line: a class is what its file is for, so a line number would
@@ -197,6 +196,15 @@ set, and that is load-bearing rather than tidy: START-1 and START-2 break ties i
 reading order, and a tie-break is only reproducible if the list underneath it
 comes back the same way twice.
 
+**Cast in these scenarios:**
+
+- [A game state is composed into a 40 × 30 field, three cells to an actor](scenarios/a-game-state-is-composed-into-a-40-by-30-field-three-cells-to-an-actor.md)
+- [A maze is carved on a lattice of odd cells, then braided until no dead ends remain](scenarios/a-maze-is-carved-on-a-lattice-of-odd-cells-then-braided-until-no-dead-ends-remain.md)
+- [A new game puts the player in the middle, the ghost far away, and a dot on every other square](scenarios/a-new-game-puts-the-player-in-the-middle-the-ghost-far-away-and-a-dot-on-every-other-square.md)
+- [A tick moves the ghost, which is never told where the player is](scenarios/a-tick-moves-the-ghost-which-is-never-told-where-the-player-is.md)
+- [A wall square chooses its double-line glyph from its four neighbours](scenarios/a-wall-square-chooses-its-double-line-glyph-from-its-four-neighbours.md)
+- [An arrow key moves the player one square and eats the dot it lands on](scenarios/an-arrow-key-moves-the-player-one-square-and-eats-the-dot-it-lands-on.md)
+
 #### [`Position`](../terminal_game/domain/maze.py)
 
 *maze.py* — The maze as data: a fixed 19 x 29 grid of squares, and how to walk it.
@@ -214,6 +222,10 @@ given direction, with bounds deliberately ignored — whether that square exists
 is the maze's business, not a coordinate's. Everything that moves, including the
 carve, moves by asking a position for its neighbour rather than by doing
 arithmetic on two integers.
+
+**Cast in these scenarios:**
+
+- [A new game puts the player in the middle, the ghost far away, and a dot on every other square](scenarios/a-new-game-puts-the-player-in-the-middle-the-ghost-far-away-and-a-dot-on-every-other-square.md)
 
 #### [`Direction`](../terminal_game/domain/maze.py)
 
@@ -233,6 +245,10 @@ every time. Replaying a puzzling game from its seed depends on it.
 `opposite` exists for exactly one requirement: GHOST-3's "turns back the way it
 came only when there is no other choice".
 
+**Cast in these scenarios:**
+
+- [A tick moves the ghost, which is never told where the player is](scenarios/a-tick-moves-the-ghost-which-is-never-told-where-the-player-is.md)
+
 #### [`Square`](../terminal_game/domain/maze.py)
 
 *maze.py* — The maze as data: a fixed 19 x 29 grid of squares, and how to walk it.
@@ -241,6 +257,8 @@ Corridor or wall, and nothing else. A two-member enum rather than a boolean,
 which costs nothing and means a grid cannot be half-built out of `True` and
 `None`. MAZE-2 allows exactly these two, and having them be an enum is what
 makes "exactly these two" a fact about the program rather than a comment.
+
+**No scenario has reached this class yet.**
 
 #### [`GameState`](../terminal_game/domain/state.py)
 
@@ -266,6 +284,12 @@ be taken, so the ghost passing over one neither eats it nor hides it.
 The `outcome` field is *stamped* by the resolver rather than derived here, and
 one consumer pointedly does not trust it — see [`Session`](#session).
 
+**Cast in these scenarios:**
+
+- [A new game puts the player in the middle, the ghost far away, and a dot on every other square](scenarios/a-new-game-puts-the-player-in-the-middle-the-ghost-far-away-and-a-dot-on-every-other-square.md)
+- [An arrow key moves the player one square and eats the dot it lands on](scenarios/an-arrow-key-moves-the-player-one-square-and-eats-the-dot-it-lands-on.md)
+- [Eating the last dot on the ghost's square is a loss and not a win](scenarios/eating-the-last-dot-on-the-ghosts-square-is-a-loss-and-not-a-win.md)
+
 #### [`Outcome`](../terminal_game/domain/state.py)
 
 *state.py* — Where a game starts, and what a game in progress consists of.
@@ -278,6 +302,13 @@ field they are kept in; END-1, END-2 and END-3 are the turn resolver's, and
 END-3 turns entirely on the order two of these are tested in. Keeping the
 vocabulary and the ruling in different places is what let the resolver make that
 order structural.
+
+**Cast in these scenarios:**
+
+- [A new game puts the player in the middle, the ghost far away, and a dot on every other square](scenarios/a-new-game-puts-the-player-in-the-middle-the-ghost-far-away-and-a-dot-on-every-other-square.md)
+- [An arrow key moves the player one square and eats the dot it lands on](scenarios/an-arrow-key-moves-the-player-one-square-and-eats-the-dot-it-lands-on.md)
+- [Eating the last dot on the ghost's square is a loss and not a win](scenarios/eating-the-last-dot-on-the-ghosts-square-is-a-loss-and-not-a-win.md)
+- [The status row shows the score and the keys that still work](scenarios/the-status-row-shows-the-score-and-the-keys-that-still-work.md)
 
 #### [`StructureReport`](../terminal_game/domain/structure.py)
 
@@ -352,6 +383,10 @@ classDiagram
 
 ### The classes in this diagram
 
+**Cast in these scenarios:**
+
+- [A maze is carved on a lattice of odd cells, then braided until no dead ends remain](scenarios/a-maze-is-carved-on-a-lattice-of-odd-cells-then-braided-until-no-dead-ends-remain.md)
+
 #### [`RandomSource`](../terminal_game/domain/generation.py) — the carver's
 
 *generation.py* — A fresh maze every game, from a random source that is handed in.
@@ -364,6 +399,10 @@ shuffle**, and that is a deliberate narrowing. A maze then depends only on the
 sequence of integers it was given, and not on the shuffling algorithm of
 whatever library supplied them — so the same seed gives the same maze across
 Python versions, which is the entire value of being able to replay one.
+
+**Cast in these scenarios:**
+
+- [A maze is carved on a lattice of odd cells, then braided until no dead ends remain](scenarios/a-maze-is-carved-on-a-lattice-of-odd-cells-then-braided-until-no-dead-ends-remain.md)
 
 #### [`Cell`](../terminal_game/domain/generation.py)
 
@@ -390,6 +429,10 @@ And that the original maze was built this way is **measured, not guessed**:
 decoding all 29 rows of the specimen picture in the requirements gives zero
 corridor squares with both coordinates even.
 
+**Cast in these scenarios:**
+
+- [A maze is carved on a lattice of odd cells, then braided until no dead ends remain](scenarios/a-maze-is-carved-on-a-lattice-of-odd-cells-then-braided-until-no-dead-ends-remain.md)
+
 #### [`GenerationFailed`](../terminal_game/domain/generation.py)
 
 *generation.py* — A fresh maze every game, from a random source that is handed in.
@@ -409,6 +452,10 @@ repair loop that might not settle; on this lattice there is nothing for it to
 fight with. The exception stays because "it cannot happen" and "nothing checks"
 are different claims.
 
+**Cast in these scenarios:**
+
+- [A maze is carved on a lattice of odd cells, then braided until no dead ends remain](scenarios/a-maze-is-carved-on-a-lattice-of-odd-cells-then-braided-until-no-dead-ends-remain.md)
+
 #### [`RandomSource`](../terminal_game/domain/ghost.py) — the ghost's
 
 *ghost.py* — GHOST-2, GHOST-3 and GHOST-4 — how the ghost decides where to go.
@@ -417,6 +464,10 @@ One method, `choice`: given the ways on the ghost may take, pick one. Consulted
 **only** when the ghost cannot carry straight on and has more than one way to
 turn, which makes a seeded run's consumption of randomness predictable as well
 as its outcome.
+
+**Cast in these scenarios:**
+
+- [A tick moves the ghost, which is never told where the player is](scenarios/a-tick-moves-the-ghost-which-is-never-told-where-the-player-is.md)
 
 #### [`GhostMove`](../terminal_game/domain/ghost.py)
 
@@ -494,6 +545,10 @@ classDiagram
 
 ### The classes in this diagram
 
+**Cast in these scenarios:**
+
+- [A tick moves the ghost, which is never told where the player is](scenarios/a-tick-moves-the-ghost-which-is-never-told-where-the-player-is.md)
+
 #### [`Session`](../terminal_game/application/session.py)
 
 *session.py* — The session — three states, and the only thing that decides when a game is over.
@@ -529,6 +584,15 @@ hour chasing the wrong thing. It was found by a developer reading ahead, and it
 is the one-source-of-truth rule reaching somewhere nobody thought to look: a
 `repr` does not look like a component that asks whether the game is over.
 
+**Cast in these scenarios:**
+
+- [A key press becomes an intent, and an unknown key becomes nothing](scenarios/a-key-press-becomes-an-intent-and-an-unknown-key-becomes-nothing.md)
+- [A session goes Playing → Decided → Ended, and only `q` leaves it](scenarios/a-session-goes-playing-to-decided-to-ended-and-only-q-leaves-it.md)
+- [A tick moves the ghost, which is never told where the player is](scenarios/a-tick-moves-the-ghost-which-is-never-told-where-the-player-is.md)
+- [Eating the last dot on the ghost's square is a loss and not a win](scenarios/eating-the-last-dot-on-the-ghosts-square-is-a-loss-and-not-a-win.md)
+- [The tick timer keeps the ghost's beat, and stops when the game is decided](scenarios/the-tick-timer-keeps-the-ghosts-beat-and-stops-when-the-game-is-decided.md)
+- [The window closes itself when the session ends, and the process runs out of work](scenarios/the-window-closes-itself-when-the-session-ends-and-the-process-runs-out-of-work.md)
+
 #### [`Phase`](../terminal_game/application/session.py)
 
 *session.py* — The session — three states, and the only thing that decides when a game is over.
@@ -552,6 +616,11 @@ new way, and it will break here rather than in the resolver.
 
 It is called *phase* rather than *state* only because `GameState` is already the
 board.
+
+**Cast in these scenarios:**
+
+- [A session goes Playing → Decided → Ended, and only `q` leaves it](scenarios/a-session-goes-playing-to-decided-to-ended-and-only-q-leaves-it.md)
+- [The window closes itself when the session ends, and the process runs out of work](scenarios/the-window-closes-itself-when-the-session-ends-and-the-process-runs-out-of-work.md)
 
 #### [`Intent`](../terminal_game/application/turn.py)
 
@@ -614,6 +683,12 @@ classDiagram
 
 ### The classes in this diagram
 
+**Cast in these scenarios:**
+
+- [A key press becomes an intent, and an unknown key becomes nothing](scenarios/a-key-press-becomes-an-intent-and-an-unknown-key-becomes-nothing.md)
+- [A session goes Playing → Decided → Ended, and only `q` leaves it](scenarios/a-session-goes-playing-to-decided-to-ended-and-only-q-leaves-it.md)
+- [An arrow key moves the player one square and eats the dot it lands on](scenarios/an-arrow-key-moves-the-player-one-square-and-eats-the-dot-it-lands-on.md)
+
 #### [`Cell`](../terminal_game/presentation/field.py)
 
 *field.py* — The 40 x 30 field of glyph-and-colour — everything the player sees, as data.
@@ -634,6 +709,12 @@ same kind of thing.
 Cells compare by value, which is what lets a painter ask "did this cell change?"
 and get an answer about the picture rather than about object identity.
 
+**Cast in these scenarios:**
+
+- [A field is painted onto the canvas, touching only the cells that changed](scenarios/a-field-is-painted-onto-the-canvas-touching-only-the-cells-that-changed.md)
+- [A game state is composed into a 40 × 30 field, three cells to an actor](scenarios/a-game-state-is-composed-into-a-40-by-30-field-three-cells-to-an-actor.md)
+- [The status row shows the score and the keys that still work](scenarios/the-status-row-shows-the-score-and-the-keys-that-still-work.md)
+
 #### [`Field`](../terminal_game/presentation/field.py)
 
 *field.py* — The 40 x 30 field of glyph-and-colour — everything the player sees, as data.
@@ -651,6 +732,11 @@ field, which cells actually changed. `row_text` and `rows` give the picture back
 as strings, which is what lets a test assert the whole screen as a picture
 rather than cell by cell — and it is how the composer's output is held against
 the specimen in the requirements.
+
+**Cast in these scenarios:**
+
+- [A field is painted onto the canvas, touching only the cells that changed](scenarios/a-field-is-painted-onto-the-canvas-touching-only-the-cells-that-changed.md)
+- [A game state is composed into a 40 × 30 field, three cells to an actor](scenarios/a-game-state-is-composed-into-a-40-by-30-field-three-cells-to-an-actor.md)
 
 #### [`CellMetrics`](../terminal_game/presentation/metrics.py)
 
@@ -717,6 +803,11 @@ classDiagram
 ```
 
 ### The class in this diagram
+
+**Cast in these scenarios:**
+
+- [A field is painted onto the canvas, touching only the cells that changed](scenarios/a-field-is-painted-onto-the-canvas-touching-only-the-cells-that-changed.md)
+- [The font is measured at start-up, and the window's size is derived from what was found](scenarios/the-font-is-measured-at-start-up-and-the-windows-size-is-derived-from-what-was-found.md)
 
 #### [`GridSurface`](../terminal_game/presentation/surface.py)
 
@@ -868,6 +959,12 @@ classDiagram
 
 ### The classes in this diagram
 
+**Cast in these scenarios:**
+
+- [A field is painted onto the canvas, touching only the cells that changed](scenarios/a-field-is-painted-onto-the-canvas-touching-only-the-cells-that-changed.md)
+- [The font is measured at start-up, and the window's size is derived from what was found](scenarios/the-font-is-measured-at-start-up-and-the-windows-size-is-derived-from-what-was-found.md)
+- [The window is opened withdrawn, dressed, placed, and only then shown](scenarios/the-window-is-opened-withdrawn-dressed-placed-and-only-then-shown.md)
+
 #### [`Game`](../terminal_game/shell/game.py)
 
 *game.py* — WI-14 — the live game: everything joined up.
@@ -901,6 +998,14 @@ GHOST-1's "about seven times a second" — rather than a number in a call,
 because "about" is a judgement somebody made once and should be able to find
 again.
 
+**Cast in these scenarios:**
+
+- [A key press becomes an intent, and an unknown key becomes nothing](scenarios/a-key-press-becomes-an-intent-and-an-unknown-key-becomes-nothing.md)
+- [A session goes Playing → Decided → Ended, and only `q` leaves it](scenarios/a-session-goes-playing-to-decided-to-ended-and-only-q-leaves-it.md)
+- [The tick timer keeps the ghost's beat, and stops when the game is decided](scenarios/the-tick-timer-keeps-the-ghosts-beat-and-stops-when-the-game-is-decided.md)
+- [The window closes itself when the session ends, and the process runs out of work](scenarios/the-window-closes-itself-when-the-session-ends-and-the-process-runs-out-of-work.md)
+- [The window is opened withdrawn, dressed, placed, and only then shown](scenarios/the-window-is-opened-withdrawn-dressed-placed-and-only-then-shown.md)
+
 #### [`Scheduler`](../terminal_game/shell/game.py)
 
 *game.py* — WI-14 — the live game: everything joined up.
@@ -916,6 +1021,10 @@ are injectable" buys.
 It is worth noticing what is *not* in this protocol: no notion of now, no
 repeating timer, no cancellation of everything. One call scheduled, one call
 cancelled. A narrow seam is a seam a test double cannot get subtly wrong.
+
+**Cast in these scenarios:**
+
+- [The tick timer keeps the ghost's beat, and stops when the game is decided](scenarios/the-tick-timer-keeps-the-ghosts-beat-and-stops-when-the-game-is-decided.md)
 
 #### [`GameWindow`](../terminal_game/shell/window.py)
 
@@ -948,6 +1057,14 @@ title is whatever this process says it is with nothing composing around it, the
 size is a pixel rectangle this process asks for, and the window closes because
 the process that owns it closes it.
 
+**Cast in these scenarios:**
+
+- [A field is painted onto the canvas, touching only the cells that changed](scenarios/a-field-is-painted-onto-the-canvas-touching-only-the-cells-that-changed.md)
+- [The font is measured at start-up, and the window's size is derived from what was found](scenarios/the-font-is-measured-at-start-up-and-the-windows-size-is-derived-from-what-was-found.md)
+- [The tick timer keeps the ghost's beat, and stops when the game is decided](scenarios/the-tick-timer-keeps-the-ghosts-beat-and-stops-when-the-game-is-decided.md)
+- [The window closes itself when the session ends, and the process runs out of work](scenarios/the-window-closes-itself-when-the-session-ends-and-the-process-runs-out-of-work.md)
+- [The window is opened withdrawn, dressed, placed, and only then shown](scenarios/the-window-is-opened-withdrawn-dressed-placed-and-only-then-shown.md)
+
 #### [`Rect`](../terminal_game/shell/placement.py)
 
 *placement.py* — Where the game window lands — WIN-4, and what to do when it cannot be known.
@@ -965,6 +1082,10 @@ clamping would push a perfectly good anchor on a second display back onto the
 first. Nothing in the module clamps, and that is a decision rather than an
 omission.
 
+**Cast in these scenarios:**
+
+- [The window is opened withdrawn, dressed, placed, and only then shown](scenarios/the-window-is-opened-withdrawn-dressed-placed-and-only-then-shown.md)
+
 #### [`Point`](../terminal_game/shell/placement.py)
 
 *placement.py* — Where the game window lands — WIN-4, and what to do when it cannot be known.
@@ -979,6 +1100,10 @@ means x = −877 and y = −1348 — while the tidier-looking
 `"{:+d}{:+d}".format(...)` gives `-877-1348`, which Tk reads as 877 from the
 **right** edge and 1348 from the **bottom**. A different place entirely, on a
 different display, with no error anywhere.
+
+**Cast in these scenarios:**
+
+- [The window is opened withdrawn, dressed, placed, and only then shown](scenarios/the-window-is-opened-withdrawn-dressed-placed-and-only-then-shown.md)
 
 #### [`AnchorReader`](../terminal_game/shell/placement.py)
 
@@ -1000,6 +1125,10 @@ reader that raises a permission dialog turns starting a game into an
 interaction. And if it fails it may raise, because the module turns a raising
 reader into `None` rather than letting a placement problem stop a game from
 starting.
+
+**Cast in these scenarios:**
+
+- [The window is opened withdrawn, dressed, placed, and only then shown](scenarios/the-window-is-opened-withdrawn-dressed-placed-and-only-then-shown.md)
 
 #### [`NoAnchor`](../terminal_game/shell/placement.py)
 
@@ -1060,6 +1189,10 @@ classDiagram
 
 ### The classes in this diagram
 
+**Cast in these scenarios:**
+
+- [The window is opened withdrawn, dressed, placed, and only then shown](scenarios/the-window-is-opened-withdrawn-dressed-placed-and-only-then-shown.md)
+
 #### [`ImportSite`](../tools/layer_rule.py)
 
 *layer_rule.py* — The dependency rule between layers, as something that runs.
@@ -1071,6 +1204,10 @@ it was.
 The line number is the reason this is a type rather than a pair of strings. A
 layering violation is fixed by editing one line, and a report that names the
 module without naming the line makes the reader search for it.
+
+**Cast in these scenarios:**
+
+- [Every import in the tree is checked against the layer rule](scenarios/every-import-in-the-tree-is-checked-against-the-layer-rule.md)
 
 #### [`Violation`](../tools/layer_rule.py)
 
@@ -1084,6 +1221,10 @@ test assert that a specific rule is what caught something. The reason is what
 the person who broke it reads, and it is written for them — the difference
 between "layer violation" and "Application may name no clock; a tick arrives
 as a call" is the difference between a puzzle and an instruction.
+
+**Cast in these scenarios:**
+
+- [Every import in the tree is checked against the layer rule](scenarios/every-import-in-the-tree-is-checked-against-the-layer-rule.md)
 
 #### [`SourceModule`](../tools/layer_rule.py)
 
@@ -1105,6 +1246,10 @@ key means, which glyph a wall is drawn as, what row 29 says — it is written as
 a function over values, and that is what makes it checkable without a window.
 
 ### The five that are whole requirements
+
+**Cast in these scenarios:**
+
+- [Every import in the tree is checked against the layer rule](scenarios/every-import-in-the-tree-is-checked-against-the-layer-rule.md)
 
 #### [`presentation/frame.py`](../terminal_game/presentation/frame.py)
 
@@ -1132,6 +1277,12 @@ on all 264 corridor squares of the specimen rather than trusting the argument.
 Row 29 is **supplied from outside** and copied in unexamined apart from its
 width, because its content belongs to `status.py`.
 
+**Cast in these scenarios:**
+
+- [A game state is composed into a 40 × 30 field, three cells to an actor](scenarios/a-game-state-is-composed-into-a-40-by-30-field-three-cells-to-an-actor.md)
+- [A wall square chooses its double-line glyph from its four neighbours](scenarios/a-wall-square-chooses-its-double-line-glyph-from-its-four-neighbours.md)
+- [The status row shows the score and the keys that still work](scenarios/the-status-row-shows-the-score-and-the-keys-that-still-work.md)
+
 #### [`presentation/status.py`](../terminal_game/presentation/status.py)
 
 *Row 29 — STAT-1, STAT-2, STAT-3 and SCRN-6.*
@@ -1147,6 +1298,10 @@ three literals "pad differently … so there is no column discipline to infer",
 **there is one**: the score sits left-aligned in a field of five characters,
 and width 5 is the only width that reproduces all three of the specification's
 own examples verbatim. Width 4 and width 6 each break at least one.
+
+**Cast in these scenarios:**
+
+- [The status row shows the score and the keys that still work](scenarios/the-status-row-shows-the-score-and-the-keys-that-still-work.md)
 
 #### [`presentation/wall_glyphs.py`](../terminal_game/presentation/wall_glyphs.py)
 
@@ -1176,6 +1331,11 @@ could not be measured. It is `╬`, taken from the same double-line family, and
 it is **marked as derived** everywhere it appears so nobody later mistakes it
 for something that was observed.
 
+**Cast in these scenarios:**
+
+- [A game state is composed into a 40 × 30 field, three cells to an actor](scenarios/a-game-state-is-composed-into-a-40-by-30-field-three-cells-to-an-actor.md)
+- [A wall square chooses its double-line glyph from its four neighbours](scenarios/a-wall-square-chooses-its-double-line-glyph-from-its-four-neighbours.md)
+
 #### [`presentation/keys.py`](../terminal_game/presentation/keys.py)
 
 *Key presses in, intents out — CTRL-1, CTRL-4, CTRL-5.*
@@ -1198,6 +1358,10 @@ folding would also swallow anything else that happened to fold onto them.
 **Nothing here names the toolkit.** So the module knows Tk's vocabulary without
 depending on Tk — and the suite checks that vocabulary against a real Tk rather
 than trusting it.
+
+**Cast in these scenarios:**
+
+- [A key press becomes an intent, and an unknown key becomes nothing](scenarios/a-key-press-becomes-an-intent-and-an-unknown-key-becomes-nothing.md)
 
 #### [`presentation/palette.py`](../terminal_game/presentation/palette.py)
 
@@ -1222,6 +1386,11 @@ player sees depend on the toolkit's table rather than on this file — and a tes
 could only assert the name back at itself.
 
 ### The one that is a visible milestone
+
+**Cast in these scenarios:**
+
+- [A game state is composed into a 40 × 30 field, three cells to an actor](scenarios/a-game-state-is-composed-into-a-40-by-30-field-three-cells-to-an-actor.md)
+- [A wall square chooses its double-line glyph from its four neighbours](scenarios/a-wall-square-chooses-its-double-line-glyph-from-its-four-neighbours.md)
 
 #### [`shell/skeleton.py`](../terminal_game/shell/skeleton.py)
 
@@ -1253,6 +1422,8 @@ prose half of the rule that `tools/layer_rule.py` enforces — and the plan's
 reason for having both is that the sentence tells a reader what is intended
 while the test is what re-runs it.
 
+**No scenario has reached this module yet.**
+
 #### [`terminal_game/__init__.py`](../terminal_game/__init__.py)
 
 The four layers, and the arrow that reads "may import". It is also **the only
@@ -1267,6 +1438,8 @@ It also fixes a structural rule: nothing may live directly under
 `terminal_game` except this file, because **a module with no layer is a module
 the rule cannot judge**.
 
+**No scenario has reached this module yet.**
+
 #### [`domain/__init__.py`](../terminal_game/domain/__init__.py)
 
 The rules of the game, and nothing else. Imports nothing from the layers above
@@ -1274,10 +1447,14 @@ and nothing impure — no toolkit, no clock, no filesystem, no environment, no
 process, and no module-level random source. Randomness arrives as an argument,
 which is what makes every maze and ending rule testable with no window.
 
+**No scenario has reached this module yet.**
+
 #### [`application/__init__.py`](../terminal_game/application/__init__.py)
 
 The session controller and the turn resolver. May import Domain and itself. No
 toolkit, and no clock: a tick *arrives as a call*.
+
+**No scenario has reached this module yet.**
 
 #### [`presentation/__init__.py`](../terminal_game/presentation/__init__.py)
 
@@ -1286,6 +1463,8 @@ except the single module that actually paints, which is the only part permitted
 to name the toolkit — and that exception is named once, in one constant, so
 renaming it is a one-line change and widening it is not.
 
+**No scenario has reached this module yet.**
+
 #### [`shell/__init__.py`](../terminal_game/shell/__init__.py)
 
 The window, the event loop, the tick timer and the entry point. May import
@@ -1293,7 +1472,12 @@ anything. **It is the only layer with no restriction, which is exactly why it
 should stay thin**: whatever can be moved down out of here becomes testable
 without a window.
 
+**No scenario has reached this module yet.**
+
 #### [`tools/__init__.py`](../tools/__init__.py)
 
 Developer tooling that is not part of the game, deliberately outside the tree
 that the layer rule scans, and importable by nothing inside it.
+
+**No scenario has reached this module yet.**
+
