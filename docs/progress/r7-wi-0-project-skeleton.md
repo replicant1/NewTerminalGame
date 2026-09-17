@@ -9,3 +9,4 @@ WI-0 VERIFY  01:35:54Z  .venv created from /usr/bin/python3 is 3.9.6 and keeps _
 WI-0 DECIDE  01:37:00Z  where the layer-rule scanner lives -> tools/layer_rule.py, outside the package it scans, because a scanner inside terminal_game would have to judge itself and would have to be exempted, which is the first hole anyone would use
 WI-0 DECIDE  01:37:03Z  the scanner reads source with ast rather than importing modules -> ast, because importing a presentation module to inspect it would run its module body and under candidate 2 that is exactly the code that could put a window on the user's screen
 WI-0 TEST    01:38:11Z  56 passed, 0 failed, 0 skipped  (.venv/bin/python -m pytest -q from the repository root)
+WI-0 COMMIT  01:38:37Z  77a6443 WI-0: project skeleton, the pinned runtime, and the layer rule
