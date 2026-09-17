@@ -13,3 +13,11 @@ WI-7  02:13:40Z  VERIFY  HUMAN ITEM 8 ANSWERED, by measurement rather than by th
 WI-7  02:13:40Z  DRAFT   docs/findings/WI-7-box-drawing-ink.md — the verdict, the per-glyph table, the controls, and what it does not settle.
 WI-7  02:13:40Z  NOTE    the control that makes the ink measurement mean something: an ordinary M stops well inside its advance (36..1095) and the dot stops a long way inside it (219..1013), so "ink reaches the edge" is a real property of the box-drawing set and not true of every glyph. Sharper still, each corner reaches the edge on EXACTLY the two sides where it has an arm and stops at the centre stub on the other two.
 WI-7  02:13:40Z  NOTE    what I did NOT establish: the font's geometry is not the renderer's output. At 0.156 px the horizontal overlap is a fraction of a pixel and hinting could still do something at 16pt. The design intent is unambiguous; the appearance is still a question for a person, and WI-17 should put it as a cosmetic check rather than as a risk. NOBODY HAS YET SEEN THIS GAME.
+WI-7  02:14:20Z  COMMIT  3c58be3 WI-7: the walking skeleton, and an answer to human item 8
+WI-7  02:14:20Z  COMMIT  372541f WI-7: PR summary
+WI-7  02:14:20Z  VERIFY  pushed r7/wi-7-walking-skeleton; draft PR #94 -> https://github.com/replicant1/NewTerminalGame/pull/94
+WI-7  02:14:50Z  NOTE    merged origin/main before marking ready; it brought WI-12 (lane C, the status line). Clean merge, no conflict. 716 -> 799 passed.
+WI-7  02:15:00Z  MERGE   PR #94 merged into main as 45c86f1. 799 passed, 0 failed, 0 skipped, 4 deselected at the moment of merge.
+WI-7  02:15:10Z  VERIFY  main confirmed green afterwards: fast-forwarded 99808b0..45c86f1; `.venv/bin/python -m pytest -q` -> 799 passed, 0 failed, 0 skipped, 4 deselected. Crash reports still 14 — unchanged across the whole item.
+WI-7  02:15:10Z  TEST    799 passed, 0 failed, 0 skipped, 4 deselected
+WI-7  02:15:10Z  DONE    WI-7 r7/wi-7-walking-skeleton 45c86f1 (PR #94 merged as 45c86f1). The vertical slice is proven: a real 400x570 window, on a real desktop, showing the specification's own picture, closing itself. The last lines are uncommitted on purpose; the tail is carried forward on the next branch I cut.
