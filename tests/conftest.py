@@ -1,5 +1,12 @@
 """Shared test scaffolding.
 
+Three unrelated sets of fixtures live here — from WI-1, WI-4 and WI-5 —
+because pytest gives a directory exactly one ``conftest.py``.  They do not
+interact; the headings below say which is which.
+
+Mazes, from WI-1
+----------------
+
 Every structural property of a maze is a property of a *shape*, so a test
 about one is only as good as a reader's ability to see the shape it is talking
 about.  The :func:`draw` fixture lets a test write the shape out:
@@ -20,11 +27,34 @@ Placed as a fixture in ``conftest.py`` rather than a module the tests import,
 so that nothing has to be added to ``sys.path`` and ``tests/`` stays a plain
 directory of test files.
 
-The second half of this file is the **specimen picture** of
+The specimen picture, from WI-4
+-------------------------------
+
+The middle of this file is the **specimen picture** of
 ``docs/FUNCTIONAL_REQUIREMENTS.md``, taken apart into the maze, the dot field
 and the two actor positions that compose it.  Assumption P5 makes that picture
 normative, and it is the only fixture in the project that can catch a picture
 composed correctly but *differently* from what the specification shows.
+
+A toolkit with no window, from WI-5
+-----------------------------------
+
+**Nothing here puts a window on the user's screen**, which is plan section
+1.6's bar for the default suite and one of the things WI-5 must establish.
+The technique is S-1's, measured in ``docs/findings/S-1-tk-headless.md``: call
+``withdraw()`` on the root *before the first turn of the event loop*.  Tk
+defers mapping a toplevel to idle time, so a root withdrawn before any
+``update_idletasks()`` never maps at all — it is not shown and then hidden, it
+is never shown.
+
+``tests/test_surface.py`` asserts that this actually held, rather than taking
+it on trust.
+
+One root serves the whole session.  Repeatedly creating and destroying Tk
+roots in one process is a well-known source of flakiness, and there is nothing
+for a second root to do.  The toolkit is imported inside the fixture rather
+than at module scope, so a run that touches none of the Presentation tests
+never loads it.
 """
 
 from __future__ import annotations
@@ -52,6 +82,10 @@ from terminal_game.domain.maze import (
     Maze,
     Position,
 )
+
+# --------------------------------------------------------------------------
+# Mazes, from WI-1
+# --------------------------------------------------------------------------
 
 
 def _rows_of(picture: str) -> List[str]:
@@ -237,3 +271,32 @@ def read_specimen() -> Specimen:
 def specimen() -> Specimen:
     """The specimen picture of ``docs/FUNCTIONAL_REQUIREMENTS.md``, parsed."""
     return read_specimen()
+
+# --------------------------------------------------------------------------
+# A toolkit with no window, from WI-5
+# --------------------------------------------------------------------------
+
+
+@pytest.fixture(scope="session")
+def tk_root():
+    """A Tk root that never reaches the screen, for the whole test session."""
+    import tkinter
+
+    root = tkinter.Tk()
+    root.withdraw()          # must be the very next statement — see above
+    try:
+        yield root
+    finally:
+        root.destroy()
+
+
+@pytest.fixture
+def surface(tk_root):
+    """A fresh :class:`GridSurface` on the withdrawn root, reaped afterwards."""
+    from terminal_game.presentation.surface import GridSurface
+
+    made = GridSurface(tk_root)
+    try:
+        yield made
+    finally:
+        made.widget.destroy()
