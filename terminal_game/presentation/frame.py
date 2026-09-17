@@ -1,15 +1,27 @@
-"""The whole 40 x 30 field of glyph-and-colour, as data.
+"""What the picture *is*, for rows 0 to 28 — the maze, the dots and the actors.
 
 This is Presentation with nothing impure in it: it takes a maze, a dot field
-and two actor positions, and returns a grid of characters and colour names.
-It never paints, never names a toolkit and never reads a pixel.  WI-5 turns
-what comes out of here into light; WI-7 and WI-14 join the two.
+and two actor positions, and fills in a :class:`~terminal_game.presentation.field.Field`.
+It never paints, never names a toolkit and never reads a pixel.
+``terminal_game.presentation.surface`` is the only thing that turns a field
+into light.
 
-**What WI-4 owns and what it does not.**  Rows 0 to 28 are the maze
-(SCRN-1), and they are composed here.  **Row 29 is supplied from outside** —
-WI-12 owns its content, this module only places it — so
-:func:`compose_frame` takes it as an argument and copies it in unexamined
-apart from its width.
+**What WI-4 owns and what it does not.**  Rows 0 to 28 are the maze (SCRN-1),
+and they are composed here.  **Row 29 is supplied from outside** — WI-12 owns
+its content, this module only places it — so :func:`compose_frame` takes it as
+an argument and copies it in unexamined apart from its width.
+
+**On the data type, and why this module changed shape.**  WI-4 and WI-5 landed
+within minutes of each other and each invented this seam, differently: WI-4
+returned a tuple of tuples with a colour *enum*, WI-5 built
+:class:`~terminal_game.presentation.field.Field` with ``#rrggbb`` colours and
+declared in its own docstring that *"WI-4 composes rows 0-28 and WI-12 supplies
+row 29; both produce one of these"*.  WI-5's is the seam, for three reasons
+that are in its code rather than in anyone's preference: it had already been
+specified there, it enforces SCRN-2 *in the data* where a tuple of tuples
+cannot, and ``surface.present`` already consumes it.  WI-4b is this module
+moving to it.  Colours therefore come from
+:mod:`terminal_game.presentation.palette` and not from anything here.
 
 **The grid mapping, which is measured rather than assumed.**  Ruling C-2:
 maze square ``x`` is drawn at screen column ``2 * x`` for ``x`` in 0..18, so a
@@ -26,8 +38,9 @@ square's own column plus the connector either side — the specimen draws the
 player at columns 19, 20, 21 and the ghost at 1, 2, 3.  That is safe because a
 connector beside a corridor square is always blank: a horizontal wall join
 needs walls on *both* sides, and an actor stands on a corridor.  So a
-three-cell actor can never overwrite a wall glyph, and the tests check that
-rather than trusting it.
+three-cell actor can never overwrite a wall glyph, and the tests check that by
+standing the player on all 264 corridor squares of the specimen rather than
+trusting it.
 
 **The order the layers go down is load-bearing.**  Ground, then walls, then
 dots, then the player, then **the ghost last** — END-4: *"when both actors are
@@ -37,21 +50,22 @@ show what happened.
 
 from __future__ import annotations
 
-import enum
-from typing import Iterable, List, NamedTuple, Sequence, Tuple
+from typing import Iterable, Sequence, Tuple
 
 from terminal_game.domain.maze import HEIGHT, WIDTH, Maze, Position
+from terminal_game.presentation import palette
+from terminal_game.presentation.field import Cell, Field
+from terminal_game.presentation.metrics import COLUMNS, ROWS
 from terminal_game.presentation.wall_glyphs import wall_glyph
 
 # --------------------------------------------------------------------------
 # The shape of the field
 # --------------------------------------------------------------------------
 
-#: WIN-2.  The window is 40 characters wide and 30 rows deep.
-COLUMNS = 40
-ROWS = 30
-
 #: SCRN-1.  The top 29 rows are the maze; the bottom row is the status line.
+#: ``COLUMNS`` and ``ROWS`` themselves belong to
+#: :mod:`terminal_game.presentation.metrics`, which is where the window's size
+#: is decided; this is only how SCRN-1 divides them up.
 MAZE_ROWS = HEIGHT
 STATUS_ROW = ROWS - 1
 
@@ -60,45 +74,6 @@ STATUS_ROW = ROWS - 1
 #: margin"*).
 MAZE_COLUMNS = 2 * WIDTH - 1
 RIGHT_MARGIN = COLUMNS - MAZE_COLUMNS
-
-
-class Colour(enum.Enum):
-    """The colours the specification names, as names rather than as pixels.
-
-    Presentation produces data; turning a name into something a screen can
-    show is WI-5's, and it is the only part of the program that should know
-    what "gold" is in hexadecimal.  Each member cites the requirement that
-    asks for it.
-    """
-
-    #: SCRN-3, ruled to WI-4: the walls, *and* the lone block, are one blue.
-    BLUE = "blue"
-    #: SCRN-4: *"a small dim gold square"*.
-    GOLD = "gold"
-    #: SCRN-5: the player is *"a bright yellow block"*.
-    YELLOW = "yellow"
-    #: SCRN-5: the ghost is *"a pink block of a different shape"*.
-    PINK = "pink"
-    #: SCRN-6: the status line.  WI-12 owns row 29's content; this member is
-    #: here because the colour vocabulary is one vocabulary, and section 7
-    #: makes WI-4 the item that defines the seam WI-12 fills.
-    CYAN = "cyan"
-    #: WIN-2: the black ground.  The colour of a cell with nothing in it.
-    BLACK = "black"
-
-    def __str__(self) -> str:
-        return self.value
-
-
-class Cell(NamedTuple):
-    """One character of the picture: what it is, and what colour it is."""
-
-    glyph: str
-    colour: Colour
-
-
-#: Nothing here.  A space on the black ground.
-BLANK = Cell(" ", Colour.BLACK)
 
 # --------------------------------------------------------------------------
 # The glyphs that are not walls
@@ -140,13 +115,13 @@ def _is_wall(maze: "Maze", x: int, y: int) -> bool:
     return maze.is_wall(Position(x, y))
 
 
-def _blank_field() -> List[List[Cell]]:
-    """A 40 x 30 field of black ground, ready to be drawn on."""
-    return [[BLANK for _ in range(COLUMNS)] for _ in range(ROWS)]
+def _draw_walls(field: "Field", maze: "Maze") -> None:
+    """SCRN-3: every wall square, and the connectors that join them up.
 
-
-def _draw_walls(field: List[List[Cell]], maze: "Maze") -> None:
-    """SCRN-3: every wall square, and the connectors that join them up."""
+    The colour is :data:`palette.WALL` for both, which is the technical lead's
+    ruling on SCRN-3 — *"a lone block renders in the same blue as a line,
+    since SCRN-3 names one colour for both"*.
+    """
     for y in range(HEIGHT):
         for x in range(WIDTH):
             if not _is_wall(maze, x, y):
@@ -157,42 +132,42 @@ def _draw_walls(field: List[List[Cell]], maze: "Maze") -> None:
                 east=_is_wall(maze, x + 1, y),
                 west=_is_wall(maze, x - 1, y),
             )
-            field[y][_screen_column(x)] = Cell(glyph, Colour.BLUE)
+            field[_screen_column(x), y] = Cell(glyph, palette.WALL)
 
         # A connector carries the line only between two walls.  Anything else
         # stays blank, which is what leaves room for a three-cell actor.
         for x in range(WIDTH - 1):
             if _is_wall(maze, x, y) and _is_wall(maze, x + 1, y):
-                field[y][_screen_column(x) + 1] = Cell(
-                    CONNECTOR_GLYPH, Colour.BLUE
+                field[_screen_column(x) + 1, y] = Cell(
+                    CONNECTOR_GLYPH, palette.WALL
                 )
 
 
-def _draw_dots(field: List[List[Cell]], dots: Iterable["Position"]) -> None:
+def _draw_dots(field: "Field", dots: Iterable["Position"]) -> None:
     """SCRN-4: one dim gold square on each corridor square that still has one."""
     for dot in dots:
-        field[dot.y][_screen_column(dot.x)] = Cell(DOT_GLYPH, Colour.GOLD)
+        field[_screen_column(dot.x), dot.y] = Cell(DOT_GLYPH, palette.DOT)
 
 
 def _draw_actor(
-    field: List[List[Cell]],
+    field: "Field",
     position: "Position",
     glyphs: Tuple[str, str, str],
-    colour: "Colour",
+    colour: str,
 ) -> None:
     """SCRN-5: an actor, three cells wide, centred on its own column.
 
-    A column outside the field is skipped rather than wrapped.  MAZE-3's solid
-    border means an actor can never stand on column 0 or 18, so this cannot
-    happen in a real game — but a negative index in Python quietly addresses
-    the far end of the row, and a silent wrap is a worse bug than a missing
-    half-block.
+    A column outside the field is skipped rather than allowed to raise.
+    MAZE-3's solid border means an actor can never stand on column 0 or 18, so
+    this cannot happen in a real game — but half an actor drawn at the edge of
+    a hand-built test maze is a clearer failure than an ``IndexError`` from
+    two layers down.
     """
     centre = _screen_column(position.x)
     for offset, glyph in zip((-1, 0, 1), glyphs):
         column = centre + offset
         if 0 <= column < COLUMNS:
-            field[position.y][column] = Cell(glyph, colour)
+            field[column, position.y] = Cell(glyph, colour)
 
 
 def compose_maze_rows(
@@ -200,24 +175,25 @@ def compose_maze_rows(
     dots: Iterable["Position"],
     player: "Position",
     ghost: "Position",
-) -> Tuple[Tuple[Cell, ...], ...]:
-    """Rows 0 to 28 of the picture: the maze, the dots and the two actors.
+) -> "Field":
+    """The maze, the dots and the two actors, drawn into rows 0 to 28.
 
     :param maze: which squares are wall and which are corridor.
     :param dots: the corridor squares that still hold a dot.  Read, never
         changed — SCORE-4 says an actor standing on a dot *hides* it.
     :param player: the player's square.
     :param ghost: the ghost's square.
-    :returns: 29 rows of 40 :class:`Cell`.
+    :returns: a :class:`Field`.  It is 40 x 30 because a field always is;
+        **row 29 is left blank** for :func:`compose_frame` or for WI-12.
 
     The order is ground, walls, dots, player, **ghost last** (END-4).
     """
-    field = _blank_field()
+    field = Field()
     _draw_walls(field, maze)
     _draw_dots(field, frozenset(dots))
-    _draw_actor(field, player, PLAYER_GLYPHS, Colour.YELLOW)
-    _draw_actor(field, ghost, GHOST_GLYPHS, Colour.PINK)
-    return tuple(tuple(row) for row in field[:MAZE_ROWS])
+    _draw_actor(field, player, PLAYER_GLYPHS, palette.PLAYER)
+    _draw_actor(field, ghost, GHOST_GLYPHS, palette.GHOST)
+    return field
 
 
 def compose_frame(
@@ -225,15 +201,15 @@ def compose_frame(
     dots: Iterable["Position"],
     player: "Position",
     ghost: "Position",
-    status_row: Sequence[Cell],
-) -> Tuple[Tuple[Cell, ...], ...]:
+    status_row: Sequence["Cell"],
+) -> "Field":
     """The whole 40 x 30 field: the maze rows, and row 29 placed beneath them.
 
     :param status_row: exactly 40 cells, whatever WI-12 says they are.  This
         function does not read them and owns nothing of their content — it
-        checks the width, because a short row would silently ragged the field,
-        and copies them in.
-    :returns: 30 rows of 40 :class:`Cell`.
+        checks the width, because a short row would leave the tail of row 29
+        showing whatever was under it, and copies them in.
+    :returns: a :class:`Field` ready for ``surface.present``.
     """
     if len(status_row) != COLUMNS:
         raise ValueError(
@@ -241,4 +217,7 @@ def compose_frame(
                 COLUMNS, len(status_row)
             )
         )
-    return compose_maze_rows(maze, dots, player, ghost) + (tuple(status_row),)
+    field = compose_maze_rows(maze, dots, player, ghost)
+    for column, cell in enumerate(status_row):
+        field[column, STATUS_ROW] = cell
+    return field
