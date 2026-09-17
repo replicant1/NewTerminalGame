@@ -38,3 +38,4 @@
 01:44:57Z  S-2  DRAFT   docs/completions/COMPLETION-M0-DEV-C.md and docs/prs/PR-S-2-completion-record.md
 01:44:57Z  S-2  NOTE    my root.update() hang does NOT contradict S-1: S-1 measured update_idletasks+update on a WITHDRAWN root, which never maps. Mine is the deiconified case, the untested half. Complementary, not conflicting
 01:44:57Z  S-2  DONE    S-2  r7/s-2-anchor-window  merged as 77c422e; completion record follows in a second PR
+01:45:57Z  S-2  MERGE   PR #79 merged to main as a33a4c6 at 01:45:25Z; fast-forwarded and re-ran the whole suite on a33a4c6 -> 56 passed, 0 failed, 0 skipped. S-2 closed: plan section 8 steps 1-7 all done
