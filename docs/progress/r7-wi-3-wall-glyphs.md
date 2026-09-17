@@ -10,3 +10,11 @@ WI-3  01:44:04Z  PLAN    terminal_game/presentation/wall_glyphs.py: all sixteen 
 WI-3  01:45:03Z  TEST    81 passed, 0 failed, 0 skipped — `.venv/bin/python -m pytest -q` from the repository root. 56 were already there; WI-3 adds 25 (16 parametrised named cases plus 9 others). The module's two doctests also pass under `python -m doctest` but are deliberately NOT wired into the suite, since pytest.ini does not enable doctest collection and changing that is not WI-3's to decide.
 WI-3  01:45:03Z  DECIDE  SCRN-3's colour -> NOT implemented here. WI-3 returns a character and names no colour, because WI-4 owns "the whole field of glyph-and-colour". But section 4 of the plan traces SCRN-3 to WI-3 alone, and WI-3's own "tests must establish" clause asks only about glyphs — so the "blue" half of SCRN-3 currently has no owner. Raised as a contradiction rather than absorbed quietly.
 WI-3  01:45:03Z  NOTE    for WI-4 (also lane A, also me): the resolver takes four plain booleans and an edge square passes False for the neighbours that do not exist. terminal_game.presentation.wall_glyphs.ALL_WALL_GLYPHS is the twelve-character alphabet, which is also what WI-5's font check wants.
+WI-3  01:45:40Z  COMMIT  7775c61 WI-3: wall glyph resolution, measured from the specimen picture
+WI-3  01:45:40Z  COMMIT  cd7bec8 WI-3: PR summary
+WI-3  01:45:40Z  VERIFY  pushed r7/wi-3-wall-glyphs; draft PR #80 opened against main -> https://github.com/replicant1/NewTerminalGame/pull/80
+WI-3  01:45:55Z  NOTE    merged origin/main into the branch before marking ready — it had moved on by S-2's finding and completion record (docs only). No conflict; nothing of mine was touched. Suite still 81 passed.
+WI-3  01:46:00Z  MERGE   PR #80 merged into main as ead97a7. 81 passed, 0 failed, 0 skipped at the moment of merge.
+WI-3  01:46:14Z  VERIFY  main confirmed green afterwards: `git fetch origin && git merge origin/main` fast-forwarded 5324ec4..ead97a7; `.venv/bin/python -m pytest -q` -> 81 passed, 0 failed, 0 skipped.
+WI-3  01:46:14Z  TEST    81 passed, 0 failed, 0 skipped
+WI-3  01:46:39Z  DONE    WI-3 r7/wi-3-wall-glyphs ead97a7 (PR #80 merged as ead97a7). M0 lane A complete; completion record extended to cover S-1 and WI-3 together.
