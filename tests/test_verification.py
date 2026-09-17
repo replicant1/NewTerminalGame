@@ -129,3 +129,66 @@ class TestKeysTkActuallyReports:
 
         assert seen == ["a"], "the key never arrived, so this proves nothing"
         assert intent_for("a") is None
+
+
+@pytest.mark.needs_window
+class TestWhatCanBeCheckedOnTheRealGame:
+    """Everything an agent can settle about the running game, in one window.
+
+    One window rather than six, because each one is a disturbance on
+    somebody's desk and none of these checks needs its own. Section 1.5
+    applies without exception; the pattern is WI-7's, unchanged.
+
+    **What is deliberately absent:** anything about how it *looks*. This can
+    ask Tk what the title string is; it cannot see the titlebar. It can ask
+    where the window was placed; it cannot see whether that is a sensible
+    place on this person's desk. Those are in the human pack, and the pack is
+    only honest if what is left in it is genuinely irreducible.
+    """
+
+    def test_the_running_game_is_titled_sized_and_placed_as_specified(
+        self, tk_root
+    ) -> None:
+        """WIN-1, WIN-2, WIN-3 and WI-14b's placement, on the real thing.
+
+        Read from inside an ``after`` callback while the window is up, then
+        closed by the same callback — so the failure mode of every assertion
+        is a closed window and a red test.
+        """
+        from terminal_game.shell import placement
+        from terminal_game.shell.game import build_game
+
+        game = build_game(master=tk_root, seed=11)
+        seen = {}  # type: Dict[str, object]
+        try:
+            game.start()
+            intended = game.place()
+
+            def look_then_close() -> None:
+                window = game.window
+                seen["mapped"] = window.is_on_screen()
+                seen["title"] = window.title
+                seen["size"] = window.pixel_size
+                seen["position"] = window.position()
+                seen["ground"] = window.ground
+                # Lane B's 1.4 check, the half an agent can do: Tk accepts an
+                # absolute coordinate and reports the same one back. Whether
+                # Tk's (0, 0) is the display server's (0, 0) needs an eye.
+                window.move_to(placement.Point(600, 300))
+                seen["round_trip"] = window.position()
+                window.close()
+
+            game.window.show()
+            game.window.after(400, look_then_close)
+            game.window.after(5000, game.window.close)  # always an exit
+            game.window.run()
+        finally:
+            game.window.close()
+
+        assert seen.get("mapped") is True, "the window never reached the screen"
+        assert seen["title"] == "Terminal Game"        # WIN-3
+        assert seen["size"] == (400, 570)              # WIN-2
+        assert seen["ground"] == "#000000"             # WIN-2's black ground
+        assert seen["position"] == intended            # WI-14b
+        assert seen["round_trip"] == placement.Point(600, 300)
+        assert not game.window.is_open
