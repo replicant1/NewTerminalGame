@@ -11,3 +11,11 @@ WI-11  02:07:40Z  NOTE    a test of mine failed and it was the CODE that was wro
 WI-11  02:08:05Z  DECIDE  the session asks outcome_of and never reads the stored field. One source of truth, which is what structural END-3 means. Consequence, pinned by a test: a board stamped CAUGHT whose actors are a square apart is treated as PLAYING, because the rules are authoritative and the stamp is a cache of them. In production the two can never disagree — the resolver always stamps what outcome_of returned.
 WI-11  02:08:25Z  NOTE    discipline applied throughout this file, per the lead's generalisation: EVERY "nothing happened" test is paired with a control proving the same action DOES happen while Playing. A tick moving nothing in Decided is worthless unless the identical tick on the identical board visibly moves the ghost in Playing.
 WI-11  02:08:25Z  TEST    560 passed, 0 failed, 0 skipped — `.venv/bin/python -m pytest -q` from the repository root. 534 were already there; WI-11 adds 26.
+WI-11  02:08:55Z  COMMIT  6683b5b WI-11: the session controller
+WI-11  02:08:55Z  COMMIT  1030774 WI-11: PR summary
+WI-11  02:08:55Z  VERIFY  pushed r7/wi-11-session-controller; draft PR #91 opened against main -> https://github.com/replicant1/NewTerminalGame/pull/91
+WI-11  02:09:20Z  NOTE    merged origin/main before marking ready; it brought WI-6 (lane C, the window owner) with it. Clean merge, no conflict. The count line gains "2 deselected" from here on — WI-6's needs_window tests, excluded by pytest.ini as section 1.6 requires. 560 -> 612 passed.
+WI-11  02:09:30Z  MERGE   PR #91 merged into main as a356a86. 612 passed, 0 failed, 0 skipped, 2 deselected at the moment of merge.
+WI-11  02:09:42Z  VERIFY  main confirmed green afterwards: fast-forwarded 61c57f0..a356a86; `.venv/bin/python -m pytest -q` -> 612 passed, 0 failed, 0 skipped, 2 deselected.
+WI-11  02:09:42Z  TEST    612 passed, 0 failed, 0 skipped, 2 deselected
+WI-11  02:09:42Z  DONE    WI-11 r7/wi-11-session-controller a356a86 (PR #91 merged as a356a86). The last lines are uncommitted on purpose: the tail is carried forward on the next branch I cut, which should be WI-7 now that WI-6 has landed.
