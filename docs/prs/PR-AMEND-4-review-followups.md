@@ -6,16 +6,27 @@ abandoned and fixes the state in which a completed work item silently fails to l
 Amendment 4. **The first change in this sequence that makes the definitions smaller:**
 
 ```
-code-reviewer.md   5541 → 2344 words   (−58%)
-conductor.md       4683 → 4545
-technical-lead.md  4279 → 4174
-developer.md       6261 → 6258
+                     base   head
+code-reviewer.md     5243   2344    −2899
+conductor.md         4471   4545      +74
+technical-lead.md    4279   4174     −105
+developer.md         6041   6264     +223
+                    -----  -----   ------
+                    20034  19327     −707
 ```
 
-The figures are `wc -w` at this pull request's head, and they moved during its own
-review: `code-reviewer.md` bottomed out at 2210 and came back to 2344 when three rules
-the subtraction had dropped were restored, each as a clause. `developer.md`'s net change
-is three words — its review sections shrank and the merge exception was added.
+**Measured with `wc -w` at this branch's merge base (`0e1c785`) and at its head**, which is
+the only pair a reader can reproduce. An earlier version of this table quoted a "before"
+column taken mid-branch, after this branch had already added content — it made the headline
+−60%, and it was not reproducible from any commit in the history. The reviewer caught the
+discrepancy on one file and then found the whole column unverifiable; the numbers above are
+what replaced it.
+
+**They say something less flattering and more useful.** `code-reviewer.md` really did lose
+55% of its words. But `conductor.md` and `developer.md` *grew*, because this branch also added
+the unmerged-approval dispatch and the merge exception — real additions that the compression
+headline was quietly netting against. Across the four files the change is −707 words, not −60%
+of anything.
 
 ## 0. Why this is mostly a deletion
 

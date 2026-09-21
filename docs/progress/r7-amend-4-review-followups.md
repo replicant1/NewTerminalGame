@@ -44,3 +44,14 @@
                 pull_requests:write and contents:read on one public repo. AGENTS-SETUP.md now says never
                 to run the mint to inspect it
 05:29:31Z  TEST    986 passed, 0 failed, 10 deselected
+05:35:04Z  NOTE    round 3: one blocking comment. developer.md is 6264 at head, not 6258 -- I measured it
+                before my own developer.md hunk in the same commit, and the sign was wrong with it:
+                the table said a three-word reduction while the prose beneath described an increase
+05:35:04Z  VERIFY  the reviewer also found the whole "before" column unreproducible, and it is right. At the
+                merge base 0e1c785: code-reviewer 5243, conductor 4471, technical-lead 4279, developer
+                6041. I had measured three of the four mid-branch, after this branch had already added
+                content, which is how -55% became -60%
+05:35:04Z  DECIDE  replace the table with base-and-head figures at 0e1c785 -> the honest picture is that
+                code-reviewer lost 55%, conductor and developer GREW by the additions this branch made,
+                and the four together are -707 words. Less flattering, reproducible
+05:35:04Z  TEST    986 passed, 0 failed, 10 deselected

@@ -55,8 +55,16 @@ success.
 token; echoing it puts a working credential wherever that output lands — a terminal, a log,
 a transcript — and redacting it afterwards does not unsend it. `eval` it, or read
 `$CODE_REVIEWER_LOGIN` afterwards, and check the token only with `test -n`. If one is
-exposed, it expires within the hour; to end the window sooner, uninstall and reinstall the
-App, which invalidates every token issued to that installation.
+exposed it expires within the hour, but do not wait it out — **revoke it**:
+
+```
+curl -X DELETE -H "Authorization: Bearer <the exposed token>" \
+  https://api.github.com/installation/token
+```
+
+That is one call, it needs no App admin, and it invalidates that token alone. Only if the
+token is no longer to hand, uninstall and reinstall the App, which invalidates every token
+issued to that installation — heavier, and it needs a human with admin rights.
 
 **The login is discovered, not assumed.** App names are unique across GitHub, so the slug you
 are given decides the login; nothing hardcodes it.
