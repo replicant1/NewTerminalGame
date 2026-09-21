@@ -174,7 +174,7 @@ class TestTheScreen:
 
         counts = pixels.histogram(shot)
         assert not pixels.blank(counts), (
-            "a plain Tk canvas with box-drawing glyphs on it photographed as "
+            "a plain Tk canvas with block glyphs on it photographed as "
             "one flat colour: the toolkit is mapping windows without painting "
             "them, and no application code is implicated"
         )

@@ -18,15 +18,23 @@ from __future__ import annotations
 
 import struct
 
-import pytest
-
 from tests import pixels
 
 WALL_BLUE = (0x21, 0x21, 0xDE)
 
 
-def _bmp(pixels_rgb, width=2, height=2, depth=32):
+#: 32 only, and not a parameter. A conformant 24bpp BMP pads every row to a
+#: four-byte boundary and ``histogram`` does not skip the padding — measured:
+#: a padded 3x2 file yields two spurious black pixels. A ``depth`` argument
+#: here would let a later test certify a depth the parser cannot read. Every
+#: capture this project takes is 32bpp, which `screencapture -t bmp` emits
+#: with no padding and no trailer.
+DEPTH = 32
+
+
+def _bmp(pixels_rgb, width=2, height=2):
     """A minimal BMP carrying ``pixels_rgb``, bottom-up as the format wants."""
+    depth = DEPTH
     step = depth // 8
     body = b"".join(
         struct.pack("<BBBB", b, g, r, 255)[:step] for (r, g, b) in pixels_rgb
@@ -74,6 +82,12 @@ class TestBlank:
 
     def test_ink_on_two_per_cent_of_it_is_not_blank(self):
         assert not pixels.blank({(0, 0, 0): 97, WALL_BLUE: 3})
+
+    def test_the_threshold_is_inclusive(self):
+        """Exactly 98 % dominant is blank; a hair under is not. ``TestNear``
+        pins its tolerance at exactly 24 and 25, and this is the same job."""
+        assert pixels.blank({(0, 0, 0): 98, WALL_BLUE: 2}, threshold=0.98)
+        assert not pixels.blank({(0, 0, 0): 97, WALL_BLUE: 3}, threshold=0.98)
 
     def test_an_empty_count_is_not_called_blank(self):
         """Nothing measured is not the same as nothing drawn, and saying so
