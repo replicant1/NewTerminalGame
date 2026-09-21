@@ -190,6 +190,17 @@ def fetch_remote():
     return _fetched
 
 
+def _seconds(hour, minute, second):
+    return hour * 3600 + minute * 60 + second
+
+
+#: How far a stamp must jump forwards, reading the log backwards, before it is
+#: taken to belong to the previous day. A midnight crossing is most of a day;
+#: a log written slightly out of order is seconds. Twelve hours separates the
+#: two with room to spare in both directions.
+MIDNIGHT_JUMP_S = 12 * 3600
+
+
 def date_stamped(entries, path):
     """Give every ``HH:MM:SSZ`` stamp a date, by anchoring the log to its file.
 
@@ -216,6 +227,15 @@ def date_stamped(entries, path):
 
     Run 7 checks out: its last line reads ``02:38:54Z``, its mtime is 12:38
     local, and 02:38:54Z *is* 12:38 local. The two agree to the minute.
+
+    **mtime is best-effort, and it is worth knowing where it fails.** Git
+    rewrites it on checkout, merge and clone, so in a fresh clone every
+    *tracked* log carries today's date and this falls back to the behaviour it
+    replaced. That is tolerable for the panes, and it does not reach the one
+    file the progress bar depends on: the conductor's log is git-ignored, so
+    git never rewrites it. **That is a fact about the configuration rather
+    than a guarantee** -- if the conductor's log were ever tracked, the run
+    clock would go back to reading today and nothing here would say so.
     """
     stamped = [e for e in entries if e.get("stamp")]
     if not stamped:
@@ -248,7 +268,17 @@ def date_stamped(entries, path):
     later = None
     for entry in reversed(stamped):
         h, mi, sec = entry["stamp"]
-        if later is not None and (h, mi, sec) > later:
+        # **A forward jump is only a midnight if it is a big one.** Logs are
+        # not monotonic: ``docs/progress/r7-s-2-anchor-window.md`` in this
+        # repository runs 01:34:41, 01:35:10, 01:34:58 -- twelve seconds
+        # backwards, because two lines were written in the order they were
+        # thought of rather than the order the clock was read. Reading that as
+        # a midnight put both lines a day early and reported an eleven-minute
+        # agent as having run for 24h 11m.
+        #
+        # A real crossing is most of a day. Noise is seconds.
+        if (later is not None
+                and _seconds(h, mi, sec) - _seconds(*later) > MIDNIGHT_JUMP_S):
             day -= datetime.timedelta(days=1)
         entry["ts"] = datetime.datetime(
             day.year, day.month, day.day, h, mi, sec,

@@ -50,3 +50,22 @@
                 a run. Suite 1015
 07:10:22Z  VERIFY  live monitor unchanged by either fix: start 01:25:23Z, end 02:38:54Z, finished, 1:13:31
 07:10:22Z  TEST    1015 passed, 0 failed, 12 deselected
+07:16:44Z  NOTE    review round 1: the backwards walk read ANY forward jump as a midnight. Real logs are not
+                monotonic -- r7-s-2-anchor-window.md in this repo runs 01:34:41, 01:35:10, 01:34:58,
+                twelve seconds backwards -- so two lines landed a day early and an eleven-minute agent
+                reported as 24h 11m. A NEW failure: the old "everything is today" code made order moot
+07:16:44Z  NOTE    and my guard test could not fail for any input. Stepping the day back on every forward
+                jump makes the output sorted by construction, so "stamps == sorted(stamps)" is true even
+                for the wrongly dated file. A hollow assertion named in the summary as the guard
+07:16:44Z  DECIDE  threshold at 12 hours -> a real crossing between consecutive lines is most of a day,
+                because progress-tracking.md tells agents never to go more than a few minutes without
+                writing. Noise is seconds. Twelve hours separates them with room in both directions
+07:16:44Z  VERIFY  r7-s-2-anchor-window.md now lands on one day, span 0:11:16, measured against the file as
+                it sits in the tree -- and that file is now a test
+07:16:44Z  NOTE    rewrote test_two_midnights_step_back_twice: it used 10:00/02:00/01:00, which asserts two
+                midnights with an 8h and a 23h gap between CONSECUTIVE lines. That log cannot exist,
+                so the test pinned behaviour on input the system never produces
+07:16:44Z  NOTE    the #elapsed hover still read "time since the first line" under a label saying "run took
+                ... finished". Set from tickElapsed now, and the UI branches on run.finished, which
+                run_clock sets and nothing read
+07:16:44Z  TEST    1017 passed, 0 failed, 12 deselected

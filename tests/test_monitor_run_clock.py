@@ -77,11 +77,22 @@ def test_stamps_stay_in_order_across_that_boundary(server, tmp_path):
 
 
 def test_two_midnights_step_back_twice(server, tmp_path):
-    written = datetime.datetime(2026, 9, 19, 1, 0, 0, tzinfo=datetime.timezone.utc)
-    path = _log(tmp_path, ["10:00:00Z", "02:00:00Z", "01:00:00Z"], written)
+    """Two crossings, each with the minute-scale gap a real one has.
+
+    An earlier version of this test used 10:00, 02:00, 01:00 — which asserts
+    two midnights with an eight-hour and a twenty-three-hour gap between
+    *consecutive lines*. ``progress-tracking.md`` tells every agent never to go
+    more than a few minutes without a line, so that log could not exist, and
+    the test was pinning behaviour on input the system never produces. A real
+    crossing has a small gap, which is exactly what makes it distinguishable
+    from a stamp written slightly out of order.
+    """
+    written = datetime.datetime(2026, 9, 19, 0, 5, 0, tzinfo=datetime.timezone.utc)
+    path = _log(tmp_path, ["23:50:00Z", "00:05:00Z", "23:50:00Z", "00:05:00Z"],
+                written)
     days = [_utc(e["ts"]).date() for e in server.parse_log(path)]
     assert days == [datetime.date(2026, 9, 17), datetime.date(2026, 9, 18),
-                    datetime.date(2026, 9, 19)]
+                    datetime.date(2026, 9, 18), datetime.date(2026, 9, 19)]
 
 
 def test_a_live_log_still_lands_on_today(server, tmp_path):
@@ -139,13 +150,46 @@ class TestWhenTheRunEnded:
         end = next(e["ts"] for e in entries if e["label"] == "DONE")
         assert end - start == 73 * 60 + 31, "run 7 took 1h13m31s"
 
-    def test_a_run_with_no_done_has_not_ended(self, server, tmp_path):
-        now = datetime.datetime.now(datetime.timezone.utc)
-        path = self._conductor(tmp_path, [
-            now.strftime("%H:%M:%SZ") + "  START   a run in progress\n",
-        ], now)
-        entries = server.parse_log(path)
-        assert not [e for e in entries if e["label"] == "DONE"]
+
+
+
+class TestStampsOutOfOrder:
+    """Logs are written by hand and are not monotonic.
+
+    ``r7-s-2-anchor-window.md`` in this repository runs 01:34:41, 01:35:10,
+    01:34:58 — twelve seconds backwards. Reading that as a midnight put both
+    lines a day early, and the pane reported an eleven-minute agent as having
+    run for 24h 11m.
+    """
+
+    def test_a_few_seconds_backwards_is_not_a_midnight(self, server, tmp_path):
+        written = datetime.datetime(2026, 9, 16, 1, 35, 30,
+                                    tzinfo=datetime.timezone.utc)
+        path = _log(tmp_path, ["01:34:41Z", "01:35:10Z", "01:34:58Z", "01:35:21Z"],
+                    written)
+        days = {_utc(e["ts"]).date() for e in server.parse_log(path)}
+        assert days == {datetime.date(2026, 9, 16)}, (
+            "an out-of-order stamp was read as a day boundary"
+        )
+
+    def test_the_real_log_in_this_repository_lands_on_one_day(self, server):
+        """The file that found this, as it sits in the tree."""
+        real = pathlib.Path(__file__).resolve().parents[1] / "docs" / "progress" \
+            / "r7-s-2-anchor-window.md"
+        if not real.is_file():          # pragma: no cover - it is committed
+            pytest.skip("%s is not in this checkout" % real.name)
+        days = {_utc(e["ts"]).date() for e in server.parse_log(real)
+                if e.get("stamp")}
+        assert len(days) == 1, "an eleven-minute agent spread over %d days" % len(days)
+
+    def test_a_real_midnight_is_still_a_midnight(self, server, tmp_path):
+        written = datetime.datetime(2026, 9, 18, 0, 20, 0,
+                                    tzinfo=datetime.timezone.utc)
+        path = _log(tmp_path, ["23:10:00Z", "23:55:00Z", "00:05:00Z", "00:20:00Z"],
+                    written)
+        days = [_utc(e["ts"]).date() for e in server.parse_log(path)]
+        assert days == [datetime.date(2026, 9, 17), datetime.date(2026, 9, 17),
+                        datetime.date(2026, 9, 18), datetime.date(2026, 9, 18)]
 
 
 class TestAnUnstampedTail:

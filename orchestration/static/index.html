@@ -286,7 +286,7 @@ dialog pre#vbody{margin:0;padding:14px 18px;max-height:72vh;overflow:auto;white-
     <span class="pbpct" id="pbpct">—</span>
     <span class="pblab" id="pblab"></span>
     <span class="spacer"></span>
-    <span id="elapsed" title="Time since the first line any agent wrote in this run. Not the age of this page, and not the age of the monitor."></span>
+    <span id="elapsed"></span>
     <span class="spacer"></span>
     <span class="pbnext" id="pbnext"></span>
   </div>
@@ -760,6 +760,7 @@ async function renderFiles() {
 // between three-second polls.
 let runStart = null, runSource = '';
 let runEnd = 0;
+let runFinished = false;
 function hms(sec) {
   sec = Math.max(0, Math.floor(sec));
   const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), ss = sec % 60;
@@ -773,8 +774,13 @@ function tickElapsed() {
   // A finished run's clock stops at its DONE. Ticking on to now would report
   // how long ago the run was, under a label that says how long it took.
   const upto = runEnd || (Date.now() / 1000);
-  el.innerHTML = (runEnd ? 'run took <b>' : 'run elapsed <b>') + hms(upto - runStart) + '</b>'
-    + (runEnd ? ' <span style="opacity:.75">finished</span>'
+  // The hover was a fixed attribute reading "time since the first line",
+  // which contradicts the label once a run has finished.
+  el.title = runFinished
+    ? "How long the run took, from the conductor's START to its DONE."
+    : 'Time since the first line any agent wrote in this run. Not the age of this page, and not the age of the monitor.';
+  el.innerHTML = (runFinished ? 'run took <b>' : 'run elapsed <b>') + hms(upto - runStart) + '</b>'
+    + (runFinished ? ' <span style="opacity:.75">finished</span>'
               : (runSource ? ' <span style="opacity:.75">since ' + esc(runSource) + '</span>' : ''));
 }
 // Each agent's own run time, ticked on the same second as the run clock so a
@@ -1045,6 +1051,7 @@ async function refresh() {
     if (s.run && s.run.start) {
       runStart = s.run.start;
       runEnd = s.run.end || 0;
+      runFinished = !!s.run.finished;   // the field run_clock sets, which nothing read
       runSource = s.run.source ? s.run.source.replace(/\s+START$/, "'s first line") : '';
     }
     tickElapsed();
