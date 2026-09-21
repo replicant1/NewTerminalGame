@@ -27,3 +27,12 @@
 05:41:52Z  VERIFY  panes now read code-reviewer-r7-amend-2-code-reviewer, r7-wi-18-coverage-audit and so on,
                 with 4 to 18 lines each instead of 260
 05:41:52Z  TEST    994 passed, 0 failed, 10 deselected
+05:47:51Z  NOTE    the header read "run elapsed 100h". run_clock returned start and no end, so the UI counted
+                to now: 17 Sept 01:25:23Z to today is 100.4 hours, which is how long AGO the run was,
+                under a label saying how long it TOOK
+05:47:51Z  VERIFY  run 7 took 1:13:31 -- START 01:25:23Z to DONE 02:38:54Z. Corroborated three ways: every
+                other agent log falls inside that window (earliest 01:27:03Z, latest 02:32:36Z); 158 of
+                the 168 commits that day sit inside it; the first is the lead's PLAN at 01:33:08Z and the
+                last is WI-20's merge at 02:37:45Z, 69 seconds before DONE
+05:47:51Z  DECIDE  a conductor's DONE ends the run -> clock stops there, header reads "run took" and "finished"
+05:47:51Z  TEST    996 passed, 0 failed, 10 deselected (2 more)

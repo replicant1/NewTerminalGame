@@ -566,10 +566,20 @@ def run_clock():
     for pane in all_panes:
         if pane.get("role") != "conductor":
             continue
+        start = end = None
         for line in pane["lines"]:
-            if line["label"] == "START" and line.get("ts"):
-                return {"start": line["ts"], "source": "conductor START",
-                        "now": time.time()}
+            if line["label"] == "START" and line.get("ts") and start is None:
+                start = line["ts"]
+            # A conductor's DONE is the run ending, and the clock stops there.
+            # Without it "run elapsed" counts from the start to *now*, so a run
+            # that finished in an hour and a quarter on 17 September read 100h
+            # four days later -- a number that says only how long ago it was.
+            if line["label"] == "DONE" and line.get("ts"):
+                end = line["ts"]
+        if start is not None:
+            return {"start": start, "source": "conductor START",
+                    "end": end, "finished": end is not None,
+                    "now": time.time()}
 
     earliest, source = None, ""
     for pane in all_panes:
@@ -581,7 +591,8 @@ def run_clock():
                 continue
             if earliest is None or ts < earliest:
                 earliest, source = ts, "%s %s" % (pane["title"], line["label"])
-    return {"start": earliest, "source": source, "now": time.time()}
+    return {"start": earliest, "source": source, "end": None,
+            "finished": False, "now": time.time()}
 
 
 def in_hand():

@@ -3,7 +3,7 @@
 Risk: MEDIUM — no application code, but this is the instrument the run is watched through,
 and a monitor that misreports is worse than one that says nothing.
 
-Two functions in `orchestration/server.py`, plus tests. Tooling, not process: no work item, no
+Three defects in `orchestration/server.py` and one in the page it serves, plus tests. Tooling, not process: no work item, no
 plan amendment, nothing in `docs/IMPLEMENTATION_PLAN.md` changes.
 
 ## Why
@@ -105,7 +105,25 @@ after    code-reviewer-r7-amend-2-code-reviewer       18
 One pane still reads `technical-lead`: an archived worktree that was never dirty and so wrote
 no log of its own. The heuristic has nothing better to offer there, and it is honest about it.
 
+## A third: the clock never stopped
+
+The header read **`run elapsed 100h`**. `run_clock()` returned a start and no end, so the page
+counted from it to *now* — and 17 September 01:25:23Z to today is 100.4 hours. That is how long
+**ago** the run was, printed under a label that says how long it **took**.
+
+A conductor's `DONE` is the run ending, so the clock now stops there and the header reads
+`run took 1h 13m 31s · finished`.
+
+**What run 7 actually took: 1:13:31**, and three independent sources agree.
+
+- The conductor's own log: `START 01:25:23Z` → `DONE 02:38:54Z`.
+- Every other agent's log falls inside that window — earliest line 01:27:03Z (the technical
+  lead), latest 02:32:36Z.
+- Git: 158 of the 168 commits made that day sit inside it. The first is the technical lead's
+  `PLAN: adopt candidate 2` at 01:33:08Z, eight minutes after `START`; the last is WI-20's
+  merge at 02:37:45Z, sixty-nine seconds before `DONE`.
+
 ## Suite
 
-`.venv/bin/python -m pytest -q` → **994 passed, 10 deselected**, up from 986 by the 8 tests
+`.venv/bin/python -m pytest -q` → **996 passed, 10 deselected**, up from 986 by the 10 tests
 here. No application code is touched.

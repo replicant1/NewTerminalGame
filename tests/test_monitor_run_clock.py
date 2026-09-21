@@ -109,3 +109,40 @@ def test_dating_does_not_disturb_an_iso_line(server, tmp_path):
     os.utime(path, (written.timestamp(), written.timestamp()))
     entry = server.parse_log(path)[0]
     assert _utc(entry["ts"]).date() == datetime.date(2026, 9, 14)
+
+
+class TestWhenTheRunEnded:
+    """``run_clock`` has to know a finished run from a running one.
+
+    Without an end it reports ``start`` and the caller counts to *now*, so a
+    run that took an hour and a quarter on 17 September read ``100h`` four days
+    later — a number that says how long ago it was under a label that says how
+    long it took.
+    """
+
+    def _conductor(self, tmp_path, lines, mtime):
+        d = tmp_path / "docs" / "progress"
+        d.mkdir(parents=True)
+        path = d / "conductor.md"
+        path.write_text("".join(lines))
+        os.utime(path, (mtime.timestamp(), mtime.timestamp()))
+        return path
+
+    def test_a_done_line_ends_the_run(self, server, tmp_path):
+        written = datetime.datetime(2026, 9, 17, 2, 38, 54, tzinfo=datetime.timezone.utc)
+        path = self._conductor(tmp_path, [
+            "01:25:23Z  START   run 7\n",
+            "02:38:54Z  DONE    RUN COMPLETE\n",
+        ], written)
+        entries = server.parse_log(path)
+        start = next(e["ts"] for e in entries if e["label"] == "START")
+        end = next(e["ts"] for e in entries if e["label"] == "DONE")
+        assert end - start == 73 * 60 + 31, "run 7 took 1h13m31s"
+
+    def test_a_run_with_no_done_has_not_ended(self, server, tmp_path):
+        now = datetime.datetime.now(datetime.timezone.utc)
+        path = self._conductor(tmp_path, [
+            now.strftime("%H:%M:%SZ") + "  START   a run in progress\n",
+        ], now)
+        entries = server.parse_log(path)
+        assert not [e for e in entries if e["label"] == "DONE"]
