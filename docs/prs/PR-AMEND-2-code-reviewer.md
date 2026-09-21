@@ -101,7 +101,7 @@ and #110, closed, branches deleted.
 
 ## Suite
 
-`.venv/bin/python -m pytest -q` → **985 passed, 10 deselected**, up from 967 by the 18
+`.venv/bin/python -m pytest -q` → **986 passed, 10 deselected**, up from 967 by the 19
 tests in `tests/test_code_reviewer_token.py`. No application code changes.
 
 Those tests pin what the hand checks could not: the JWT claims, that the signature
