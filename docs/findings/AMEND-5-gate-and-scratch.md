@@ -109,13 +109,31 @@ It is a claim about the shape: an output indistinguishable from a correct one fi
 anomaly-watcher, so only an independent check can reach it. Said of the three, it would be
 circular — they entered this document by having been found that way.
 
-**A note on how this document kept going wrong.** Four references in it drifted across seven
-review rounds, every one the same shape: *"that last sentence"*, *"the paragraph three lines
-below"*, *"this paragraph"*, *"those two"*. Each was true when written and false after the next
-insertion, and none of them announced it. **A cross-reference in durable prose should name its
-target** — a file, a heading, or the phrase it points at — rather than counting lines or
-gesturing at a neighbour. That would retire the class instead of the four instances, and is
-worth an amendment of its own rather than a rule smuggled in at this one's seventh round.
+**A note on a class of defect this amendment kept committing.** Five references drifted across
+its eight review rounds, and they were not all in one file — a miscount this note made about
+itself until a reviewer corrected it:
+
+| where | what it said | what was wrong |
+| --- | --- | --- |
+| this finding | *"that last sentence"* | an inserted paragraph took the referent |
+| this finding | *"the paragraph three lines below"* | counted lines into **another file** |
+| `conductor.md` | *"Neither of those last two"* | named items 2 and 3; the query answers 1 and 3 |
+| `conductor.md` | *"this paragraph"* | named a paragraph that says no such thing |
+| `conductor.md` | *"those two"* | pointed four paragraphs back, past a third item |
+
+Each was true when written and false after the next edit, and not one announced it.
+
+**A cross-reference in durable prose should name its target** — a file, a heading, or the
+phrase it points at — rather than counting lines or gesturing at a neighbour. `developer.md`
+already does it well twice: *"for the reason given under 'Pass one'"*.
+
+**That rule is not in this amendment, deliberately.** Adding a standing instruction at an
+amendment's eighth round is how the previous one grew past what anyone could review. It needs
+its own item — and it has already escaped this document: `.claude/agents/technical-lead.md`
+says the gate *"is the code review described in the next section"*, where the next section is
+`When a branch conflicts with main` and the review gate is seventy-nine lines earlier. That one
+is on `main` today, it is wrong today, and it is in a file an agent acts on rather than a note
+somebody reads — which is the argument for the rule, and the first thing for it to fix.
 
 An earlier draft called all three "reading failures rather than writing ones", which section 2
 of this document contradicts directly: the lesson there is *stop writing into a shared

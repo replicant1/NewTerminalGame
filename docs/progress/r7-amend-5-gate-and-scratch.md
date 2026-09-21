@@ -119,3 +119,19 @@
 08:14:58Z  VERIFY  swept all four files for counting or gesturing references; the only hits left are the
                 quoted examples inside that note
 08:14:58Z  TEST    999 passed, 0 failed, 12 deselected
+08:20:15Z  NOTE    round 8: the note I wrote about miscounted references miscounted. It said four drifted
+                "in it"; two of the four it quotes were in conductor.md, not the finding. And a fifth
+                of the same shape was uncounted -- "Neither of those last two", fixed back in round 5,
+                which my own round-5 log describes in the same terms
+08:20:15Z  VERIFY  the reviewer also found one OUTSIDE this pull request and correctly refused to comment
+                on it: technical-lead.md says the gate "is the code review described in the next
+                section", where the next heading is "When a branch conflicts with main" and the review
+                gate is 79 lines EARLIER. On main, wrong today, in a file an agent acts on
+08:20:15Z  DECIDE  the note now names all five with their file and what was wrong, as a table -- and carries
+                the technical-lead.md instance as the evidence that the class has already escaped this
+                document. The rule still does not go into an agent file at round 8
+08:20:15Z  NOTE    the reviewer's criticism of the deferral is fair and I am acting on it: "recorded in the
+                finding" is weaker than it sounds, since nothing instructs an agent to read findings,
+                and "deserves its own item" was a sentence in a commit message with no item behind it.
+                The follow-up PR gets opened as soon as this merges, rather than promised
+08:20:15Z  TEST    999 passed, 0 failed, 12 deselected
