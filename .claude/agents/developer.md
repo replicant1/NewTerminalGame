@@ -124,6 +124,8 @@ The body opens with one of three verdict headers and carries its own count of fi
 | `### 🟡 Changes recommended` | it has comments for you |
 | `### 🔵 Needs a closer look` | it is not confident; read it and decide |
 
+**Its overview list goes stale, and will mislead you.** Because it never re-runs, the summary at the top of its review keeps listing every finding as "Open" however many of them you have answered. Judge by the threads — each carries your `REVIEW-REPLY` — and never by that list.
+
 **Copilot is clean when its review has no comment you have not either fixed or answered.** That is the observable condition, and it is the whole of it. Note it is about the comments, not about the head: its review stays bound to the sha it was written for and will not follow your fixes.
 
 If it has comments, assess each one exactly as you would a human's. **A valid comment you fix**, commit and push. **A comment you believe is wrong you answer on its thread, saying why** — do not resolve it silently, and do not change correct code to make a bot stop talking.
@@ -169,7 +171,9 @@ There are three outcomes:
   Never change code you believe is correct merely to clear a comment. That is how a defect gets introduced by a review.
 
   When you have answered all of them, request the next round with a fresh `REVIEW-REQUEST: <ITEM> round <n+1> risk <level> head <sha>` comment.
-- **A comment beginning `REVIEW-VERDICT: BLOCKED`** — three rounds have passed without converging, and the request for changes still stands. **Do not merge.** Report the PR number, the comments still outstanding and your position on each; the technical lead settles it.
+- **A comment beginning `REVIEW-VERDICT: BLOCKED`** — the review has stopped converging, and the request for changes still stands. **Do not merge.** Report the PR number, the comments still outstanding and your position on each; the technical lead settles it.
+
+  Rounds by themselves do not trigger this, so do not count them or hurry because of them. What triggers it is a disagreement that has had its exchange, a round in which nothing moved — nothing new entered the loop, rather than nothing being settled — or the six-round backstop. A round where you fix what was found and the reviewer finds something else is the process working — and so is one where you dispute with your reasoning and the reviewer answers. **Nothing moved** means nothing new entered the loop at all: you fixed nothing, withdrew nothing and said nothing you had not already said.
 
 **If you run out of road before the verdict arrives** — you are interrupted, or you have been at it too long — report the PR number, the round and that it is awaiting review, and stop. The conductor will dispatch a developer to pick up the rework. What you must not do is fall silent, because a PR awaiting review and a PR abandoned look identical from outside.
 
