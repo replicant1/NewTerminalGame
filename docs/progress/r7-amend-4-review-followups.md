@@ -13,3 +13,9 @@
 05:12:05Z  DRAFT   conductor dispatch for an approval, the narrow merge exception, git show for stale instructions
 05:12:05Z  DRAFT   corrected the AMEND-3 summary's restatement of test B; left AMEND-2's alone as an accurate record
 05:12:05Z  TEST    986 passed, 0 failed, 10 deselected
+05:15:45Z  NOTE    Copilot on #113: git show assumed the head sha was in the worktree, and a MEDIUM review
+                fetches nothing -- it would have failed with unknown revision before the review began
+05:15:45Z  NOTE    and "where it disagrees with anything else, it wins" let a file UNDER REVIEW outrank the
+                dispatch brief. A PR can edit code-reviewer.md; it must not be able to rewrite the terms
+                of its own review. Precedence now covers the stale prompt and worktree copies only
+05:15:45Z  TEST    986 passed, 0 failed, 10 deselected
