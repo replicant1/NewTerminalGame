@@ -20,6 +20,15 @@ Both are ``needs_window``: they put a real window on the screen, so ground
 rule 1.6 keeps them out of the default suite. Run them deliberately:
 
     .venv/bin/python -m pytest -m needs_window -q
+
+**One thing here has never been exercised in the passing direction**, and
+cannot be until something on this machine paints. :func:`pixels.blank`'s
+threshold and :func:`pixels.near`'s tolerance decide both verdicts, and nobody
+knows whether a correctly drawn maze — thin antialiased box-drawing strokes on
+black — clears 2 % non-dominant colour, or how much of its blue survives a
+tolerance of 24 after the Retina colour profile. **Re-check both numbers the
+first time either test goes green**, because a threshold tuned only against
+failure is a threshold tuned against one example.
 """
 
 from __future__ import annotations
@@ -35,10 +44,15 @@ from tests import pixels
 
 pytestmark = pytest.mark.needs_window
 
-#: The blue a wall is drawn in. Asserting on this rather than on "not white"
-#: means the test is satisfied by *the game's own ink* and not by a window
-#: manager's chrome, a wallpaper, or a neighbouring window.
-WALL_BLUE = (0x21, 0x21, 0xDE)
+#: The blue a wall is drawn in, taken from the palette rather than repeated
+#: here: that module exists so a colour lives in exactly one place, and a
+#: duplicate would make a palette edit fail this test with "the maze did not
+#: arrive on the screen".
+#:
+#: Asserting on the game's own ink, rather than on "not white", means the test
+#: cannot be satisfied by a window manager's chrome, a wallpaper, or a
+#: neighbouring window.
+WALL_BLUE = tuple(int(palette.WALL[i:i + 2], 16) for i in (1, 3, 5))
 
 
 def _drive(root, schedule, cancel, close, results, widget, path,
@@ -60,25 +74,28 @@ def _drive(root, schedule, cancel, close, results, widget, path,
     """
     booked = {}  # type: dict
 
-    def drop(which):
-        handle = booked.pop(which, None)
-        if handle is not None:
-            cancel(handle)
-
     def once():
-        drop("watchdog")
         try:
             results["why"] = pixels.capture(widget, path)
         finally:
             close()
 
-    def expire():
-        drop("shot")
-        close()
-
     booked["shot"] = schedule(settle_ms, once)
-    booked["watchdog"] = schedule(watchdog_ms, expire)
-    root.mainloop()
+    booked["watchdog"] = schedule(watchdog_ms, close)
+    try:
+        root.mainloop()
+    finally:
+        # **After the loop, never inside it.** Cancelling the watchdog at the
+        # top of the shot callback would leave the capture and the close --
+        # the only two steps that can fail -- with no independent exit at all.
+        # A close() that raises is swallowed by Tk's callback reporter, the
+        # loop keeps turning, and in the game's case the 143 ms beat keeps
+        # rebooking itself: the run hangs with a window on somebody's desk.
+        for handle in booked.values():
+            try:
+                cancel(handle)
+            except Exception:       # already fired, or the widget is gone
+                pass
 
 
 @pytest.fixture(autouse=True)
@@ -89,7 +106,7 @@ def _needs_a_screen():
 
 class TestTheScreen:
     def test_a_plain_canvas_reaches_the_screen(self, tk_root, tmp_path):
-        """The control: Tk alone, no project code, one unmissable rectangle.
+        """The control: Tk alone, no project code, unmissable glyphs.
 
         If this fails, nothing below it means anything — the toolkit is not
         drawing, and no amount of correct application code would show.
@@ -104,28 +121,46 @@ class TestTheScreen:
                                 background=palette.GROUND,
                                 highlightthickness=0, borderwidth=0)
         canvas.pack()
-        canvas.create_rectangle(50, 50, 350, 520,
-                                fill="#%02x%02x%02x" % WALL_BLUE, outline="")
+        # **Glyphs, not a rectangle.** The game's wall ink arrives only ever
+        # through ``create_text`` — every per-cell rectangle in the surface is
+        # filled with the ground. A control that filled a rectangle would pass
+        # on a build that can fill and cannot draw glyphs, and then the pair
+        # would blame the application for a toolkit that had failed at exactly
+        # the primitive the check depends on.
+        for row in range(6):
+            canvas.create_text(
+                200, 60 + row * 80, text="════════", fill=palette.WALL,
+                font=("Menlo", 48), anchor="center",
+            )
         top.deiconify()
 
         def shut():
+            # Never destroy the session root: it is shared, and later tests
+            # need the interpreter it owns. Leave the loop instead.
             if top.winfo_exists():
                 top.destroy()
-            tk_root.quit()          # leave the loop; the root is shared
+            tk_root.quit()
 
         _drive(tk_root, top.after, top.after_cancel, shut, results, canvas, shot)
 
-        if results.get("why"):
-            pytest.skip("could not photograph the window: %s" % results["why"])
+        why = results.get("why")
+        if why is not None and why.environmental:
+            pytest.skip("could not photograph the window: %s" % why.why)
+        assert why is None, (
+            "the window was never photographable: %s. That is not an "
+            "environment problem and must not skip — a window that is not on "
+            "the screen is the defect this test exists to catch" % why.why
+            if why is not None else ""
+        )
 
         counts = pixels.histogram(shot)
         assert not pixels.blank(counts), (
-            "a plain Tk canvas with a solid rectangle on it photographed as "
+            "a plain Tk canvas with box-drawing glyphs on it photographed as "
             "one flat colour: the toolkit is mapping windows without painting "
             "them, and no application code is implicated"
         )
         assert pixels.near(counts, WALL_BLUE) > 0, (
-            "the rectangle's own colour is nowhere in the capture"
+            "the glyphs' own colour is nowhere in the capture"
         )
 
     def test_the_game_reaches_the_screen(self, tk_root, tmp_path):
@@ -150,8 +185,15 @@ class TestTheScreen:
             game.stop()
             tk_root.quit()
 
-        if results.get("why"):
-            pytest.skip("could not photograph the window: %s" % results["why"])
+        why = results.get("why")
+        if why is not None and why.environmental:
+            pytest.skip("could not photograph the window: %s" % why.why)
+        assert why is None, (
+            "the window was never photographable: %s. That is not an "
+            "environment problem and must not skip — a window that is not on "
+            "the screen is the defect this test exists to catch" % why.why
+            if why is not None else ""
+        )
 
         counts = pixels.histogram(shot)
         assert not pixels.blank(counts), (

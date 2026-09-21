@@ -27,3 +27,20 @@
 06:26:24Z  DECIDE  disputed the fourth: "the blue a wall is drawn in" is idiomatic English, not a typo
 06:26:24Z  VERIFY  ran -m needs_window twice in a row: 10 passed 2 failed both times, nothing left behind
 06:26:24Z  TEST    986 passed, 0 failed, 12 deselected
+06:33:30Z  NOTE    review round 1: 4 comments, all valid. The best of them: the control filled a RECTANGLE
+                while the game's wall ink only ever arrives through create_text -- so on a build that
+                can fill and cannot draw glyphs, the control would pass, the check would fail, and the
+                pair would blame the application for a toolkit failing at the very primitive the check
+                depends on. The control now draws glyphs
+06:33:30Z  NOTE    and every capture failure became a skip, including "not on the screen", which IS the
+                defect. A guard that skips itself whenever it is about to be useful. capture() now says
+                whether a failure is the environment's, and only those skip
+06:33:30Z  NOTE    third instance of the watchdog class: once() cancelled the watchdog on its first line,
+                so the capture and the close -- the only two steps that can fail -- ran with no
+                independent exit. Cancelled after mainloop returns now
+06:33:30Z  DECIDE  WALL_BLUE derived from palette.WALL; a duplicated colour would fail this test on a
+                palette edit with "the maze did not arrive on the screen"
+06:33:30Z  RISK    blank()'s threshold and near()'s tolerance have never been exercised in the PASSING
+                direction and cannot be until something here paints. Recorded in the module docstring:
+                re-check both the first time either test goes green
+06:33:30Z  TEST    986 passed, 0 failed, 12 deselected; needs_window 10 passed, 2 failed as designed

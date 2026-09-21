@@ -27,13 +27,22 @@ from typing import Dict, Optional, Tuple
 
 Colour = Tuple[int, int, int]
 
+#: Why a capture did not happen, and whether that is the environment's fault.
+#:
+#: The distinction decides whether a test skips or fails, so it is returned
+#: rather than sniffed out of a message. **A window that is not on the screen
+#: is not an environment problem — it is the defect these tests exist to
+#: catch**, and reporting it as "could not photograph" would turn the guard
+#: into a test that skips itself whenever it is about to be useful.
+Unphotographable = collections.namedtuple("Unphotographable", "why environmental")
+
 #: Long enough for any real capture, short enough that the watchdog below it
 #: still gets to run. A capture of one window takes well under a second.
 CAPTURE_TIMEOUT_S = 5
 
 
-def capture(widget, path) -> "Optional[str]":
-    """Photograph ``widget`` exactly. Returns why it could not, or ``None``.
+def capture(widget, path) -> "Optional[Unphotographable]":
+    """Photograph ``widget`` exactly. ``None``, or why it could not.
 
     Call it from inside a running event loop — an ``after`` callback — the way
     the application draws. Never call ``update()`` to force a paint first:
@@ -41,11 +50,12 @@ def capture(widget, path) -> "Optional[str]":
     """
     widget.update_idletasks()
     if not widget.winfo_ismapped():
-        return "the widget is not on the screen"
+        return Unphotographable("the widget is not on the screen", False)
     x, y = widget.winfo_rootx(), widget.winfo_rooty()
     w, h = widget.winfo_width(), widget.winfo_height()
     if w <= 1 or h <= 1:
-        return "the widget has no size yet (%dx%d)" % (w, h)
+        return Unphotographable(
+            "the widget has no size yet (%dx%d)" % (w, h), False)
     # Bounded, because this call blocks the event loop that owns the
     # watchdog. A `screencapture` that hung -- waiting on a permission
     # service, say -- would take the test's only independent exit down with
@@ -57,9 +67,13 @@ def capture(widget, path) -> "Optional[str]":
             capture_output=True, timeout=CAPTURE_TIMEOUT_S,
         )
     except subprocess.TimeoutExpired:
-        return "screencapture did not return within %ss" % CAPTURE_TIMEOUT_S
+        return Unphotographable(
+            "screencapture did not return within %ss" % CAPTURE_TIMEOUT_S, True)
+    except OSError as problem:
+        return Unphotographable("screencapture would not run: %s" % problem, True)
     if done.returncode != 0:
-        return "screencapture failed: %s" % done.stderr.decode().strip()
+        return Unphotographable(
+            "screencapture failed: %s" % done.stderr.decode().strip(), True)
     return None
 
 
