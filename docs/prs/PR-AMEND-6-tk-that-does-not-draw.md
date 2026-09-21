@@ -103,14 +103,51 @@ of it is correct on a window whose interior is blank.
   to be installed on the user's machine"*. Both are recorded as paid, not argued away. They are
   the price of the two pixel tests.
 
+## Review round 1 — Copilot, 🟡 Changes recommended, 4 findings
+
+Three fixed, one disputed on the remedy and fixed on the defect underneath it. All four
+answered on their threads; `070af51`.
+
+- **`.claude/agents/code-reviewer.md` grew the venv command and not the formula** (HIGH).
+  Correct. A clean review machine would fail `tests/test_runtime.py` before a single game
+  test ran. `brew install python-tk@3.14` is now the first line of that block, marked *once
+  per machine, not per worktree*.
+- **The 3.9 syntax wall went with the interpreter** (MEDIUM). Accepted: documenting the loss
+  in this summary is not the same as accepting it. `tests/test_runtime.py` now parses every
+  module in `terminal_game/`, `tests/` and `tools/` with
+  `ast.parse(..., feature_version=(3, 9))` — CPython's parser told to accept only 3.9, no 3.9
+  interpreter needed. It carries a control (a parser told to accept 3.9 must refuse `match`)
+  and a non-empty check. **Verified by putting a `match` into `palette.py`:** the sweep fails
+  and names the file and line. Syntax only, and the test says so — `functools.cache` is an
+  attribute access no parser will see, and review owns that half.
+- **README's later 3.9 section still said "the interpreter is 3.9"** (LOW). Right, and my
+  sweep missed it by searching for `3.9.6`. It now says the interpreter is 3.14, the source
+  is 3.9, and names what enforces each half.
+- **Pin the Tk patch version** (MEDIUM) — *declined, and the defect under it is worse than the
+  comment said.* A version string is a proxy for a measurement this project already takes:
+  `test_the_font_on_this_machine_gives_the_measured_cell` asks the real font, so a patch that
+  moved the cell fails at the measurement rather than at a version guard, and `9.0.5` would
+  fail a pin while measuring identically. **But the ceiling had no such backing.**
+  `exact_cell_grid()` returns `size <= EXACT_GRID_CEILING` — two constants, one set from the
+  other, so it cannot fail while both are wrong. S-1 section 7 asked for the real test and
+  nothing built it, which is how the ceiling moved 16 → 12 in this PR on one scan with no
+  standing test to notice if it moves again. `TestTheExactCellGridIsMeasuredAndNotAsserted`
+  now measures it: a 40-glyph row lands where 40 cells land at the size in use, **and does
+  not one size above** — the control that makes the ceiling an edge rather than a chosen
+  number. **Verified by setting `FONT_SIZE` to 13:** all 20 glyphs drift, `410 != 40 x 11`.
+
+Both new guards were run against the defect they exist to catch before being believed.
+
 ## Suite
 
 ```
-.venv/bin/python -m pytest -q                       1017 passed, 12 deselected
-.venv/bin/python -m pytest -q -m needs_window       12 passed, 1017 deselected
+.venv/bin/python -m pytest -q                       1023 passed, 12 deselected
+.venv/bin/python -m pytest -q -m needs_window       12 passed, 1023 deselected
 .venv/bin/python -m pytest -q -m "needs_window or not needs_window"
-                                                    1029 passed
+                                                    1035 passed
 ```
+
+Round 1 added six tests: three for the language level, three for the exact-grid ceiling.
 
 **All twelve window tests pass for the first time.** Baseline on `main` at `a4c6766` was
 1017 / 12 deselected, and 10 passed / 2 failed on the excluded marker.

@@ -46,3 +46,23 @@
                 budget. Same order, same conclusion, both columns now in the scenario doc
 10:56:00Z  VERIFY  ran the game and photographed it: blue maze, dots, player, status line, all drawing
 10:57:00Z  TEST    1017 passed, 12 deselected; 12 passed on -m needs_window; 1029 passed with both
+11:04:00Z  NOTE    review round 1, Copilot: 4 findings, 1 high 2 medium 1 low. Three valid and fixed
+                -- the reviewer agent's setup block grew the venv command and not the brew formula
+                that makes it work; README's later 3.9 section still said "the interpreter is 3.9",
+                which my sweep missed by searching for 3.9.6; and the 3.9 syntax wall, which it was
+                right that documenting the loss is not the same as accepting it
+11:06:00Z  DECIDE  rebuild the wall with ast.parse(feature_version=(3,9)) rather than a 3.9 subprocess
+                -> no second interpreter to depend on, and it is CPython's own parser. Syntax only,
+                said in the test: functools.cache is an attribute access and no parser sees it
+11:08:00Z  VERIFY  put a match statement in palette.py and the sweep failed naming the file and line
+11:12:00Z  DISPUTE the fourth asked to pin Tk's patch version. Declined: a version string is a proxy
+                for a measurement this project already takes, and 9.0.5 would fail the pin while
+                measuring identically
+11:14:00Z  VERIFY  the finding UNDER it is real and worse. exact_cell_grid() returns
+                size <= EXACT_GRID_CEILING -- two constants, one set from the other, and it cannot
+                fail while both are wrong. S-1 section 7 asked for the real measurement and nothing
+                built it, so the ceiling moved 16 -> 12 in this PR on one scan with nothing standing
+11:16:00Z  VERIFY  the measurement exists now and was proved able to fail: FONT_SIZE = 13 drifts all
+                20 glyphs at 410 != 40 x 11, and the control asserts one size above the ceiling is
+                NOT exact, so the ceiling is an edge and not a number we chose
+11:18:00Z  TEST    1023 passed, 12 deselected; 12 on the marker; 1035 with both
