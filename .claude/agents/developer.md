@@ -212,8 +212,9 @@ Two things the merge alone does not settle, so do both straight after it:
 
 **One narrow exception, and it is the conductor's to invoke, not yours.** If the conductor dispatches you to merge a pull request whose author has finished and gone, merge it — that is the case the rule above would otherwise strand, because an approval usually arrives after its developer has ended and nobody else is permitted to act on it. Two conditions, both yours to check rather than to take from the brief:
 
-1. **Run the three tests yourself**, exactly as you would on your own pull request. The conductor tells you it is approved and at which sha; it does not certify that the approval still matches the head, and between its dispatch and your merge somebody may have pushed.
-2. **Change nothing.** You are merging, not adopting. If the gate does not pass — a stale approval, a red suite, an unanswered comment — report that and stop. Do not fix it into passing: you did not write the code and the reviewer did not review yours.
+1. **Check the whole merge gate yourself**, exactly as you would on your own pull request — the suite green on that branch, Copilot's baseline answered, and an approval satisfying all three of its tests. Not the approval alone: "the three tests" above are the approval's, and a branch whose author has gone is precisely the one whose suite nobody has run lately. The conductor tells you it is approved and at which sha; it certifies nothing, and somebody may have pushed between its dispatch and your merge.
+2. **Confirm what landed is green afterwards**, as you would after any merge of your own, and record it.
+3. **Change nothing.** You are merging, not adopting. If the gate does not pass — a stale approval, a red suite, an unanswered comment — report that and stop. Do not fix it into passing: you did not write the code and the reviewer did not review yours.
 
 The exception is this narrow on purpose. The rule exists so that nobody merges work they did not write and cannot answer for, and a dispatch from the conductor does not make you able to answer for it — it only makes you the one person allowed to press the button.
 

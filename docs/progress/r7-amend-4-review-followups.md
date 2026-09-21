@@ -27,3 +27,11 @@
 05:17:41Z  DRAFT   escalation stated once, in code-reviewer.md; the other three say what BLOCKED means to
                 them and stop. App install steps moved to docs/AGENTS-SETUP.md
 05:17:41Z  TEST    986 passed, 0 failed, 10 deselected
+05:24:14Z  NOTE    round 1: CHANGES_REQUESTED, 3 comments, all of them "a rule that is now stated nowhere" --
+                which is the question the Scrutiny section asked. The subtraction did lose three things
+05:24:14Z  NOTE    the silent-developer deadlock is the one I was warned about and shipped anyway: AMEND-3
+                argued the exit explicitly ("request changes the first time, nothing moved the second")
+                and I kept the first half while deleting the test that carried the second
+05:24:14Z  DECIDE  close it with one clause, not by restoring the cap -- the reviewer said plainly it was not
+                asking for the two tests back and that a round count is still the wrong signal
+05:24:14Z  TEST    986 passed, 0 failed, 10 deselected
