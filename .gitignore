@@ -41,3 +41,9 @@ orchestration/requests/
 # and collides with any pull that brings the same path down from a branch.
 # Untracked-and-in-the-way is the one state git will not resolve for you.
 docs/progress/conductor.md
+
+# The code reviewer's GitHub App private key, if anyone ever puts one here.
+# It belongs outside the repository — this repository is public, so a committed
+# key is a published key — but the ignore rule costs nothing and the mistake is
+# not undoable by deleting the file in a later commit.
+*.pem
