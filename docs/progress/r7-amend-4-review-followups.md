@@ -55,3 +55,11 @@
                 code-reviewer lost 55%, conductor and developer GREW by the additions this branch made,
                 and the four together are -707 words. Less flattering, reproducible
 05:35:04Z  TEST    986 passed, 0 failed, 10 deselected
+05:40:18Z  NOTE    nine reviews left nine worktrees. The harness cleans a worktree only if unchanged; every
+                reviewer writes a progress log into it because code-reviewer.md says to; that log is the
+                only change and is therefore what keeps the worktree alive. The file says the log "dies
+                with the worktree" and it is the reason the worktree does not die
+05:40:18Z  DECIDE  conductor reaps after the verdict, reviewer deletes its own scratch -> do NOT stop writing
+                the log, because the monitor reads worktree logs and that is what makes a live review
+                visible at all
+05:40:18Z  TEST    986 passed, 0 failed, 10 deselected

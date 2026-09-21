@@ -116,11 +116,34 @@ carrying the superseded framing.
 `PR-AMEND-2`'s "three rounds is the cap" is **left alone deliberately**: that is an accurate
 record of what AMEND-2 shipped. This one was not.
 
+## 5. Nothing reaped the reviewer's worktree
+
+The same class as §1 — a lifecycle step nobody owns. The conductor spawns a reviewer and never
+removes it. The harness only cleans a worktree that is **unchanged**, and every reviewer writes
+a progress log into its own `docs/progress/`, because this file tells it to. That log is the
+only change in the tree, and it is what stops the tree being cleaned.
+
+Nine reviews on this project left **nine worktrees**, each appearing in the orchestration
+monitor as a live developer that will never do anything again. Two carried extra litter: a
+`docs/reviews/` directory written under the fifth document shape AMEND-2 withdrew, and a stray
+`verdict.md` that nothing had ever told a reviewer to remove.
+
+The irony is exact. `code-reviewer.md` says its log "dies with the worktree" — it is the reason
+the worktree does not die.
+
+So the conductor now reaps the worktree once it has the verdict, and the reviewer deletes its
+own scratch before finishing. The log stays where it is: the monitor reads worktree logs, so
+writing it there is what makes a running review visible, which is its whole purpose.
+
 ## Scrutiny
 
 - **The deletion itself** — the thing to check is whether anything load-bearing went with it.
   Every rule removed was either the cap machinery or a restatement of a rule that survives
   elsewhere; if you find one that is now stated nowhere, that is the finding.
+- `.claude/agents/conductor.md`, the reap — `--force` on a worktree deletes uncommitted work
+  by definition. Check that what it destroys is only ever the reviewer's own log, and that
+  "take anything worth keeping out of its report first" is stated before the command rather
+  than after it.
 - `.claude/agents/code-reviewer.md`, "When you and the developer disagree" — the entire
   escalation rule. If a genuine deadlock can now run forever, this is where it happens.
 - `.claude/agents/developer.md`, the merge exception — the failure mode is width. If it can be

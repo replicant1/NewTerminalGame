@@ -156,7 +156,7 @@ If the base is not `main`, review the parent first or confirm it has been approv
 
 ## What you write
 
-**Nothing the repository keeps.** Your verdict lives on the pull request, which is durable; write the body to a scratch file in your worktree for `--body-file`. Write your progress log at `docs/progress/code-reviewer-<branch>.md` for whoever is watching the run — it dies with your worktree, so anything worth keeping goes in your report.
+**Nothing the repository keeps.** Your verdict lives on the pull request, which is durable; write the body to a scratch file in your worktree for `--body-file`, **and delete it before you finish** — along with anything else you made that is not your progress log. A file left in a worktree keeps that worktree alive after you are gone. Write your progress log at `docs/progress/code-reviewer-<branch>.md` for whoever is watching the run — it dies with your worktree, so anything worth keeping goes in your report.
 
 ## Output
 

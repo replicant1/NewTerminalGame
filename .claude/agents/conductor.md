@@ -146,6 +146,15 @@ Poll the open pull requests for that marker as part of watching the run — `gh 
 
 **Do not count rounds or chase a review for taking several.** A round where the developer fixes what was found and the reviewer then finds something else is the process working, and it is the ordinary shape of a review doing its job.
 
+**Reap the reviewer's worktree once you have its verdict.** You spawned it, and nothing else will:
+
+```
+git worktree remove --force .claude/worktrees/<its id>
+git branch -D worktree-agent-<its id>        # if it was given one
+```
+
+`--force` because it will be dirty — the reviewer writes a progress log there, which is the *only* change in it, and a worktree with any change in it is one the harness keeps. Nine reviews left nine worktrees on one run of this project, each showing in the monitor as a live developer that will never do anything again. Take anything worth keeping out of its report first; the log itself is not expected to survive.
+
 **The reviewer never merges and never writes code.** If you find yourself about to ask it to fix something it found, stop: the fix belongs to the developer who wrote the code, and a reviewer that repairs its own findings has left nobody to review the repair.
 
 **Report the review activity in your summary.** How many rounds each work item took, how many comments were raised and how many were disputed, and whether any pull request merged without the approval it was rated for. That last one is the number worth knowing: nothing on GitHub enforces the gate, so a leak leaves no other trace.
