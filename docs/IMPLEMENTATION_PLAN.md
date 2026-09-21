@@ -10,6 +10,7 @@ Newest first. Re-read a section an amendment names before you work in it.
 
 | # | What changed | Sections |
 |---|---|---|
+| **2** | **A code reviewer stands in front of `main` in non-local mode.** Copilot reviews every pull request; one rated **MEDIUM or HIGH** must then be **approved on GitHub** by the code reviewer before its developer may merge, and an approval counts only when it is by that reviewer and bound to the commit being merged — there is no branch protection here, so a push does not dismiss one. **Section 1.7 gains a fifth shape**, `docs/reviews/`, because the reviewer produces a document the four did not anticipate. **Section 1.9 is new: every work item carries a risk floor**, which a developer may raise and may never lower, and which defaults to MEDIUM wherever this plan does not yet name one. Three measured findings land with it — Copilot never reviews drafts and never approves; an author can neither approve nor request changes on their own pull request; `reviewDecision` is empty on this repository and must not be used as a gate. No change to the work items, the lanes, the effort totals or the gantt. | 1.7, 1.9 |
 | **1** | **Calling into Objective-C, AppKit, Quartz or CoreGraphics through `ctypes` is prohibited outright**, after it put three crash dialogs on the user's screen; S-2 and WI-15 lose that route and **WIN-4's general case becomes a decision for the user**, with P2 promoted to how WIN-4 is actually built. **S-1 reported and it is good news: P8 and P4 retire by measurement** — Tk 8.5 is headless-testable, the font is fixed at Menlo 16 (cell 10 × 19, window 400 × 570) — and human item 5 closes. **A measured Tk defect gets an owner:** `root.update()` never returns on a mapped window, which lands on WI-5 and WI-6. **AppleScript's `position` is wrong by a display height on a secondary display**, so WI-15 must use `bounds`. **Five WI-0 deviations ruled on**, of which `unplaced-module` is upheld into the layer rule and the `needs_window` marker is adopted as the one mechanism. **Section 8 settles the log-tail problem** every developer meets at their first merge, and the case of an item that precedes the suite. **A trace gap closed: SCRN-3 splits into WI-3 (glyph) and WI-4 (colour)**, because the original row pointed the whole requirement at an item whose test clause asked only about glyphs, leaving the blue unowned; two specimen facts about wall glyphs go into WI-4's bar with it. Two new human items (now 8 and 9) and two new assumptions (P9, P10). | 1.3, 1.5, 1.6, 1.7, 2, 4, S-1, S-2, WI-3, WI-4, WI-5, WI-6, WI-7, WI-15, WI-17, 8, 9, 10 |
 | **1j** | **The seven-capability sweep came back six wired, one correctly unreachable, and placement the only real failure** — and the value is the standing source-level guard it left behind, not the second discovery it did not make. **WI-20 is resequenced to run last**: my M4 had it finishing *before* WI-19, so its deliverable — a count — would have been stale by construction; the missing edge is now drawn and the project runs 23 project days. Section 7 gains **"a guard needs a control"**, because a guard that catches something invisible passes when it finds nothing, *including when the guard itself is broken*. Section 1.6 gains an eighth entry: **never assert against a value the environment supplied.** Human item 4 gains a second hidden price — **the placement code swallows every exception deliberately, so a reader wired with the wrong shape looks exactly like the fallback working.** | 1.6, 5 (WI-20), 6.1, 6.2, 7, 9 |
 | **1i** | **The assembled game never placed its window, and the root cause is this plan's dependency graph.** WI-14's inputs never included WI-15, and **WI-15's only outgoing edge went to a verification item, which consumes nothing** — so nothing was ever told to call placement, and it shipped complete, tested and dead at the toolkit's default corner. **WI-14b** is added to wire it, with a bar saying so plainly. The generalisation is now a rule *and* a check I run on this document: **every item that produces a capability must have a non-verification consumer**. On its first run it found a second instance — **WI-9 had no outgoing edge at all** — so three edges are added to the graph. Also: the WIN-4 row reads **not met and not wired**, WI-16 must assert the assembled game *placed* its window (**no test can catch an absent call site by testing the things either side of it**), human item 4 gains the hidden cost of granting the permission, and section 7 gains lane B's test for whether a guard will rot. **Totals now 43 developer-days over 22 project days in 25 items.** | 3, 4, 5 (WI-14b, WI-16), 6.1, 6.2, 7, 9 |
@@ -342,11 +343,11 @@ accepts a move and then quietly undoes it.
 
 ### 1.7 Where documents go
 
-**These four shapes govern the documents the *process* produces — not the source tree.** A
+**These five shapes govern the documents the *process* produces — not the source tree.** A
 `README`, a `pytest.ini`, a tooling directory and anything else the code needs are part of
 the tree, and section 1.8 leaves the tree to you. Do not ask permission for those.
 
-Do not invent a name. Four places, exactly these shapes:
+Do not invent a name. Five places, exactly these shapes:
 
 | Path | One per | Example |
 | --- | --- | --- |
@@ -354,10 +355,16 @@ Do not invent a name. Four places, exactly these shapes:
 | `docs/completions/COMPLETION-<MILESTONE>-DEV-<X>.md` | lane, per iteration | `docs/completions/COMPLETION-M2-DEV-B.md` |
 | `docs/progress/<branch-name>.md` | branch | `docs/progress/r7-wi-3-wall-glyphs.md` |
 | `docs/findings/<ITEM>-<slug>.md` | measurement worth keeping | `docs/findings/S-1-tk-headless.md` |
+| `docs/reviews/REVIEW-<ITEM>-<round>.md` | review round (amendment 2) | `docs/reviews/REVIEW-WI-7-2.md` |
 
 `<ITEM>` is the code exactly as this plan writes it. `<slug>` is two or three lowercase
 hyphenated words. Never underscores. If something you need to write fits none of these
-four, ask rather than inventing a fifth.
+five, ask rather than inventing a sixth.
+
+**The fifth is the code reviewer's, not yours** — one document per review round, holding the
+text of that round's verdict. Amendment 2 added it because the reviewer produces something
+the original four did not anticipate: not a pull request, not a completion, not a progress
+log, and not a measurement.
 
 **Two rulings on `<ITEM>`, both from things that have already come up.** The follow-up
 branch that lands the tail of a work item's log when you have no next branch to carry it
@@ -557,6 +564,39 @@ and none invented.
 
 Effort is in **developer-days**, which are a planning unit of work rather than wall-clock
 time. "Tests must establish" is the bar for done; it is not an exhaustive test list.
+
+
+### 1.9 Risk floors, and who may move them
+
+**Every work item carries a risk floor — HIGH, MEDIUM or LOW.** It answers one question and
+not any other: *how much harm would follow if bad code in this work item reached production?*
+Not how hard it was, not how large the diff.
+
+- **HIGH** — a defect would corrupt data, compromise security, break the game for every
+  player, or leave the user's machine in a state they must repair by hand. On this project
+  that includes anything that opens, sizes, positions or closes a window on the real desktop.
+- **MEDIUM** — a defect would break a feature, or would be expensive to unpick once other
+  work is built on top of it. Anything other work items will depend on is at least this.
+- **LOW** — a defect is visible, local and cheap to fix. Documentation, a spike whose output
+  is a finding rather than shipped code, an isolated leaf.
+
+**Until this plan names a floor for a work item, its floor is MEDIUM.** The items in section 5
+were written before amendment 2 and carry no rating, and a developer cannot be asked to obey
+a gate whose threshold nothing states. MEDIUM rather than LOW because the default must fail
+towards being read, not towards being merged unseen; MEDIUM rather than HIGH because a floor
+that is always HIGH sends every pull request through a review round and pinches three lanes
+back towards one. The technical lead states an explicit floor on every item it writes or
+amends from here.
+
+**A developer may raise its pull request above the floor. It may never lower it.** The code
+reviewer may raise it again, and a MEDIUM it raises to HIGH is one whose suite it must run.
+Nobody may move a rating downwards, because the author deciding whether its own work gets
+reviewed is the one place where its interest and the project's point in opposite directions.
+
+**In local mode none of this runs.** There is no pull request, no Copilot and no comment
+thread, so there is no review loop; the technical lead's own merge is the gate, as section 8
+describes. Rate the items anyway — a run may change mode, and the rating is a judgement worth
+keeping.
 
 ### Spikes
 

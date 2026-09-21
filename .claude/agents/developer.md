@@ -92,7 +92,7 @@ Your pull request does not go from ready straight to merged. **Every pull reques
 
 ### Rate the risk, and point the reviewer at what matters
 
-The implementation plan gives each work item a **risk floor** — HIGH, MEDIUM or LOW — which the technical lead sets against how much harm would follow if bad code reached production. Your pull request carries a rating, and two rules govern it:
+The implementation plan gives each work item a **risk floor** — HIGH, MEDIUM or LOW — in section 1.9, set against how much harm would follow if bad code reached production. **Where the plan names no floor for your item, it is MEDIUM**; §1.9 says so, and you do not have to guess. Your pull request carries a rating, and two rules govern it:
 
 - **You may raise it above the floor. You may never lower it.** If what you actually touched turned out riskier than the plan could foresee — you ended up in the input path, or in something everything else depends on — raise it and say why. Lowering it is not a judgement you have: it is the one decision where your interest and the project's point in opposite directions.
 - **The rating goes in the PR summary**, on its own line near the top, in exactly the form `Risk: HIGH`, `Risk: MEDIUM` or `Risk: LOW`, followed by one sentence of justification. The summary is the pull request's body, so writing it there puts it on the PR where the reviewer and the conductor can find it.
@@ -136,7 +136,9 @@ gh pr edit <number> --add-reviewer Copilot
 
 **No pull request on this project has ever received a second Copilot review**, because nobody has ever re-requested one — so this path is documented but unproven. If the re-request is refused, or nothing arrives within the window below, record an `ASK` and an `ASSUME`, say so in the PR summary, and go on to pass two. Do not retry with different flags.
 
-**If no review has appeared fifteen minutes after you marked it ready** — about twice the slowest ever measured here — treat it as absent: record the `ASK` and the `ASSUME`, note it in the PR summary, and go on. A run does not stall waiting on a bot, but nobody may be left thinking a pass happened that did not.
+**If no review has appeared fifteen minutes after you marked it ready, stop. Do not merge.** Fifteen minutes is about twice the slowest ever measured here, and all 108 pull requests were reviewed, so absence does not mean "nothing to say" — it means something is broken. Record `BLOCKED`, say so in your report, and leave the pull request open for the operator.
+
+**A missing review is not a clean review.** It is tempting to read silence as consent and carry on, and that is precisely the failure this gate exists to prevent: it would let a LOW RISK pull request merge with nothing having looked at it at all, and let a MEDIUM or HIGH one reach the code reviewer while the stated precondition — *Copilot is clean* — has not been met. A run that stalls with an honest `BLOCKED` costs a message; one that merged because a bot was quiet cannot be found afterwards.
 
 ### Pass two: the code reviewer
 
@@ -167,6 +169,8 @@ There are three outcomes:
   - **Wrong**: reply with `REVIEW-REPLY: DISPUTE` and your reasoning. This is a legitimate answer and the reviewer is required to weigh it — but it must be *made*. A comment you ignore comes back next round and costs you the round.
 
   Never change code you believe is correct merely to clear a comment. That is how a defect gets introduced by a review.
+
+  **If you pushed anything, Copilot's pass is stale too.** The merge gate wants Copilot clean against the head you are merging, and the review it left is bound to the sha before your fixes — so re-request it (`gh pr edit <number> --add-reviewer Copilot`) and wait for it again, exactly as in pass one, before asking for the next review round. A round that changed no code needs no re-request.
 
   When you have answered all of them, request the next round with a fresh `REVIEW-REQUEST: <ITEM> round <n+1> risk <level> head <sha>` comment.
 - **A comment beginning `REVIEW-VERDICT: BLOCKED`** — three rounds have passed without converging, and the request for changes still stands. **Do not merge.** Report the PR number, the comments still outstanding and your position on each; the technical lead settles it.

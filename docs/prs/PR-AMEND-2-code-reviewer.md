@@ -4,9 +4,10 @@ Risk: MEDIUM — no production code changes, but this governs how every future w
 reaches `main`, and a mistake in it either lets unreviewed code land or stalls every
 developer at their merge.
 
-Amendment 2 to the agent definitions. One new agent, three amended, one tool, three
-findings. No change to `docs/IMPLEMENTATION_PLAN.md`, to the work items, or to the
-schedule.
+Amendment 2. One new agent, three amended, one tool with its tests, three findings, and
+two changes to `docs/IMPLEMENTATION_PLAN.md` — a fifth document shape in §1.7 and a new
+§1.9 for risk floors. **No change to the work items, the lanes, the effort totals or the
+gantt.**
 
 ## Why
 
@@ -42,11 +43,12 @@ merges on Copilot and a green suite alone.
 
 The four places most worth a reviewer's attention:
 
-- `tools/code_reviewer_token.py:66` — JWT construction. A ten-minute lifetime is
+- `tools/code_reviewer_token.py:73` — JWT construction. A ten-minute lifetime is
   GitHub's ceiling and the 60-second backdating absorbs clock skew; both are load-bearing.
   Verified by having `openssl dgst -verify` check a signature against its public key.
-- `tools/code_reviewer_token.py:141` — the failure path prints **nothing** to stdout,
-  because the call site is `eval "$(...)"`. A partial line would be eval'd as success.
+- `tools/code_reviewer_token.py:151` — the `except Failed` block prints **nothing** to
+  stdout, because the call site is `eval "$(...)"`. A partial line would be eval'd as a
+  success. Pinned by `TestAFailedMintPrintsNothing`.
 - `.claude/agents/developer.md`, "Then merge it yourself" — the three-part gate. The
   third test (approval's `commit_id` equals `headRefOid`) is the only thing standing
   between a stale approval and an unreviewed merge; there is no branch protection here
@@ -97,10 +99,14 @@ and #110, closed, branches deleted.
 
 ## Suite
 
-`.venv/bin/python -m pytest -q` — unchanged by this PR, which touches no application
-code. `tools/code_reviewer_token.py` compiles under the pinned 3.9.6 and its two failure
-paths were exercised by hand; its three API calls were exercised end to end against the
-installed App on PR #110.
+`.venv/bin/python -m pytest -q` → **985 passed, 10 deselected**, up from 967 by the 18
+tests in `tests/test_code_reviewer_token.py`. No application code changes.
+
+Those tests pin what the hand checks could not: the JWT claims, that the signature
+verifies under `openssl`, that every spelling of the origin remote parses, that a DNS or
+timeout failure becomes `Failed` rather than a traceback, and that a failed mint writes
+nothing to stdout. The three API calls were exercised end to end against the installed
+App on PR #110 and are not re-tested here; nothing in the suite touches the network.
 
 ## What needs a human
 

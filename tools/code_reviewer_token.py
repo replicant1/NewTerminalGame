@@ -39,6 +39,7 @@ import base64
 import json
 import os
 import re
+import socket
 import subprocess
 import sys
 import time
@@ -46,6 +47,10 @@ import urllib.error
 import urllib.request
 
 API = "https://api.github.com"
+
+# A conductor blocked on a hung socket looks exactly like a conductor thinking.
+# Ten seconds is far longer than any of these three calls has ever taken.
+TIMEOUT_SECONDS = 10
 
 
 class Failed(Exception):
@@ -86,12 +91,21 @@ def call(method, path, token, scheme="Bearer"):
     request.add_header("Accept", "application/vnd.github+json")
     request.add_header("X-GitHub-Api-Version", "2022-11-28")
     try:
-        with urllib.request.urlopen(request) as response:
+        with urllib.request.urlopen(request, timeout=TIMEOUT_SECONDS) as response:
             return json.loads(response.read().decode())
     except urllib.error.HTTPError as error:
         detail = error.read().decode().strip()
         raise Failed("%s %s -> %s %s\n%s"
                      % (method, path, error.code, error.reason, detail))
+    except urllib.error.URLError as error:
+        # DNS, TLS and connection failures arrive here rather than as HTTPError.
+        # They must become Failed like everything else: the caller's contract is
+        # that a failed mint explains itself and prints nothing to stdout, and a
+        # traceback escaping to the shell satisfies neither half of that.
+        raise Failed("%s %s -> could not reach GitHub: %s" % (method, path, error.reason))
+    except (socket.timeout, TimeoutError) as error:
+        raise Failed("%s %s -> timed out after %ss (%s)"
+                     % (method, path, TIMEOUT_SECONDS, error))
 
 
 def repo_from_origin():

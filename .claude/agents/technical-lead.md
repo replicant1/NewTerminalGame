@@ -85,6 +85,8 @@ In non-local mode every pull request is reviewed by Copilot automatically, and o
 
 **Give every work item in the plan a risk floor: HIGH, MEDIUM or LOW.** The question the rating answers is a single one: *how much harm would follow if bad code in this work item reached production?* Not how hard it was, not how large the diff is.
 
+The floors are section 1.9 of the plan, and the items written before amendment 2 carry none — **so their floor is MEDIUM by default**, and you state an explicit one on every item you write or amend from here. A gate whose threshold nothing states cannot be obeyed, which is why the default is written down rather than left to each developer.
+
 - **HIGH** — a defect would corrupt data, compromise security, break the application for every user, or drive the user's machine into a state they have to recover by hand. On this project that includes anything that opens, sizes or closes windows on the user's real desktop.
 - **MEDIUM** — a defect would break a feature, or would be expensive to unpick once other work is built on top of it. Anything load-bearing that other work items will depend on belongs here at least.
 - **LOW** — a defect is visible, local and cheap to fix. Documentation, a spike whose output is a finding rather than shipped code, an isolated leaf.
