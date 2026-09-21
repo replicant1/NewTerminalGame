@@ -7,26 +7,31 @@ Amendment 4. **The first change in this sequence that makes the definitions smal
 
 ```
                      base   head
-code-reviewer.md     5243   2344    −2899
-conductor.md         4471   4545      +74
-technical-lead.md    4279   4174     −105
-developer.md         6041   6264     +223
-                    -----  -----   ------
-                    20034  19327     −707
+code-reviewer.md       5243   2377    -2866
+conductor.md           4471   4657     +186
+technical-lead.md      4279   4174     -105
+developer.md           6041   6264     +223
+                      -----  -----   ------
+                      20034  17472    -2562
 ```
 
-**Measured with `wc -w` at this branch's merge base (`0e1c785`) and at its head**, which is
-the only pair a reader can reproduce. An earlier version of this table quoted a "before"
-column taken mid-branch, after this branch had already added content — it made the headline
-−60%, and it was not reproducible from any commit in the history. The reviewer caught the
-discrepancy on one file and then found the whole column unverifiable; the numbers above are
-what replaced it.
+**Measured with `wc -w` at `0e1c785`, this branch's merge base, and at `0388c97`.** The counts are
+labelled with the commits they were taken at, because an unlabelled one goes stale on the next
+commit to any of these four files — which this table did three times before it said so, once
+with the arithmetic wrong as well. A figure tied to a sha is a measurement; one that is not is
+a claim that quietly stops being true.
+
+**They say something less flattering and more useful than the headline they replaced.**
+`code-reviewer.md` really did lose more than half its words. But `conductor.md` and
+`developer.md` *grew*, because this branch also added the unmerged-approval dispatch, the merge
+exception and the worktree reaping — real additions that a compression percentage was quietly
+netting against.
 
 **They say something less flattering and more useful.** `code-reviewer.md` really did lose
 55% of its words. But `conductor.md` and `developer.md` *grew*, because this branch also added
 the unmerged-approval dispatch and the merge exception — real additions that the compression
-headline was quietly netting against. Across the four files the change is −707 words, not −60%
-of anything.
+headline was quietly netting against. Across the four files the change is −2,562 words at
+that commit, which is a number rather than a percentage of anything.
 
 ## 0. Why this is mostly a deletion
 

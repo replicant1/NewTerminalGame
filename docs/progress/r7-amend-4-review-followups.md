@@ -63,3 +63,13 @@
                 the log, because the monitor reads worktree logs and that is what makes a live review
                 visible at all
 05:40:18Z  TEST    986 passed, 0 failed, 10 deselected
+06:49:14Z  NOTE    before requesting round 4 I checked every reviewer thread for a REVIEW-REPLY and found
+                round 3's comment unanswered -- I fixed it in 679f630 and never replied. By this
+                project's own rule an unanswered comment alone earns another rejection
+06:49:14Z  VERIFY  and the table was wrong a FOURTH time: the reaping commit moved code-reviewer.md and
+                conductor.md, and my own head total read 19327 where my four figures sum to 17327.
+                Stale AND arithmetically wrong, in the pull request about facts stated twice
+06:49:14Z  DECIDE  generate it mechanically and label it with the two shas -> a figure tied to a commit is
+                a measurement and cannot go stale; an unlabelled one is a claim that quietly stops
+                being true. That is why AMEND-2's summary was correctly left alone
+06:49:14Z  TEST    986 passed, 0 failed, 10 deselected
