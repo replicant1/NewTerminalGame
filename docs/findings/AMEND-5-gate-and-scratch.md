@@ -105,9 +105,10 @@ check, and would catch a plausible wrong answer — that is this project's own d
 `tests-that-can-fail`. These three escaped because they live in agent-instruction markdown,
 which nothing executes.
 
-**That last sentence is not a claim about the three defects.** They were found that way because
-that is the only way defects of this shape *can* be found; saying so about these three would be
-circular, since they entered this document by being found. It is a claim about the shape.
+**That each was caught by somebody checking a result is not a claim about these three defects.**
+It is a claim about the shape: an output indistinguishable from a correct one fires no
+anomaly-watcher, so only an independent check can reach it. Said of the three, it would be
+circular — they entered this document by having been found that way.
 
 An earlier draft called all three "reading failures rather than writing ones", which section 2
 of this document contradicts directly: the lesson there is *stop writing into a shared

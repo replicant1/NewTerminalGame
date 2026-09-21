@@ -88,3 +88,18 @@
                 test asserting a consequence against an independently sourced value IS an independent
                 check. These escaped because they live in markdown nothing executes. Corrected anyway
 07:42:02Z  TEST    999 passed, 0 failed, 12 deselected
+07:45:35Z  NOTE    round 6: the paragraph I inserted last round sat between "That last sentence" and the
+                sentence it referred to, so the deixis silently retargeted onto the inserted text --
+                whose last sentence begins "These three", making it unambiguously a claim about the
+                three defects, which the next line then denies. It also disarmed the anti-circularity
+                guard those lines exist to be
+07:45:35Z  DECIDE  replace the deixis with the clause it means rather than reorder the paragraphs -- a
+                pointer that names its target cannot drift when something is inserted above it, and
+                this document has now been broken twice by insertion
+07:45:35Z  NOTE    the reviewer declined two things it could have raised and said why: row 3 names the
+                misfiling where rows 1 and 2 name the innocent alternative -- but that wording was
+                what its own round 5 comment prescribed, and changing the target after compliance
+                would be grazing. And list item 1 also covers a standing REQUEST-CHANGES with a
+                departed developer, which an APPROVED-only query cannot surface; the items-1-and-3
+                mapping was its own, and the rework half is covered earlier in the file
+07:45:35Z  TEST    999 passed, 0 failed, 12 deselected
