@@ -27,6 +27,10 @@ from typing import Dict, Optional, Tuple
 
 Colour = Tuple[int, int, int]
 
+#: Long enough for any real capture, short enough that the watchdog below it
+#: still gets to run. A capture of one window takes well under a second.
+CAPTURE_TIMEOUT_S = 5
+
 
 def capture(widget, path) -> "Optional[str]":
     """Photograph ``widget`` exactly. Returns why it could not, or ``None``.
@@ -42,11 +46,18 @@ def capture(widget, path) -> "Optional[str]":
     w, h = widget.winfo_width(), widget.winfo_height()
     if w <= 1 or h <= 1:
         return "the widget has no size yet (%dx%d)" % (w, h)
-    done = subprocess.run(
-        ["screencapture", "-x", "-t", "bmp", "-R",
-         "%d,%d,%d,%d" % (x, y, w, h), str(path)],
-        capture_output=True,
-    )
+    # Bounded, because this call blocks the event loop that owns the
+    # watchdog. A `screencapture` that hung -- waiting on a permission
+    # service, say -- would take the test's only independent exit down with
+    # it, and a window that cannot be closed is somebody's desktop.
+    try:
+        done = subprocess.run(
+            ["screencapture", "-x", "-t", "bmp", "-R",
+             "%d,%d,%d,%d" % (x, y, w, h), str(path)],
+            capture_output=True, timeout=CAPTURE_TIMEOUT_S,
+        )
+    except subprocess.TimeoutExpired:
+        return "screencapture did not return within %ss" % CAPTURE_TIMEOUT_S
     if done.returncode != 0:
         return "screencapture failed: %s" % done.stderr.decode().strip()
     return None

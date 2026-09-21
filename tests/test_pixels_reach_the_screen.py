@@ -41,7 +41,7 @@ pytestmark = pytest.mark.needs_window
 WALL_BLUE = (0x21, 0x21, 0xDE)
 
 
-def _drive(root, schedule, close, results, widget, path,
+def _drive(root, schedule, cancel, close, results, widget, path,
            settle_ms=900, watchdog_ms=9000):
     """Let the loop run, photograph from inside it, then take the window down.
 
@@ -51,15 +51,33 @@ def _drive(root, schedule, close, results, widget, path,
 
     The watchdog is plan section 1.5 — a test that maps a window must have an
     exit that does not depend on the thing it is testing working.
+
+    **Whichever path runs cancels the other.** These are scheduled on the
+    session's shared interpreter, and a pending ``after`` outlives the widget
+    that scheduled it — the same fact ``_on_window_closed`` in the game exists
+    to deal with. Left booked, this watchdog fires in the middle of the *next*
+    ``needs_window`` test and quits that test's event loop for it.
     """
+    booked = {}  # type: dict
+
+    def drop(which):
+        handle = booked.pop(which, None)
+        if handle is not None:
+            cancel(handle)
+
     def once():
+        drop("watchdog")
         try:
             results["why"] = pixels.capture(widget, path)
         finally:
             close()
 
-    schedule(settle_ms, once)
-    schedule(watchdog_ms, close)
+    def expire():
+        drop("shot")
+        close()
+
+    booked["shot"] = schedule(settle_ms, once)
+    booked["watchdog"] = schedule(watchdog_ms, expire)
     root.mainloop()
 
 
@@ -95,7 +113,7 @@ class TestTheScreen:
                 top.destroy()
             tk_root.quit()          # leave the loop; the root is shared
 
-        _drive(tk_root, top.after, shut, results, canvas, shot)
+        _drive(tk_root, top.after, top.after_cancel, shut, results, canvas, shot)
 
         if results.get("why"):
             pytest.skip("could not photograph the window: %s" % results["why"])
@@ -125,7 +143,8 @@ class TestTheScreen:
         game.place()
         game.window.show()
         try:
-            _drive(tk_root, game.window.after, game.window.close, results,
+            _drive(tk_root, game.window.after, game.window.cancel,
+                   game.window.close, results,
                    game.window.surface.widget, shot)
         finally:
             game.stop()

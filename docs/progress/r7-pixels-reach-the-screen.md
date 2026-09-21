@@ -16,4 +16,14 @@
                 the surface module bans. Capture from an after callback inside mainloop instead
 06:15:40Z  NOTE    first draft created its own tkinter.Tk(); this build can crash on a second interpreter
                 in one process, and it hung the run. Use the session tk_root and quit(), never destroy
-06:15:40Z  TEST    986 passed, 10 deselected by default; needs_window: 10 passed, 2 failed as designed
+06:15:40Z  TEST    986 passed, 12 deselected by default; needs_window: 10 passed, 2 failed as designed
+06:26:24Z  NOTE    Copilot: 4 findings, 3 mine. The capture blocked the loop that owns the watchdog, so a
+                hung screencapture would have taken the test's only independent exit with it -- the
+                exact thing the watchdog exists to prevent, defeated by the call it guards
+06:26:24Z  NOTE    and the watchdog handle was never cancelled. These are booked on the SHARED interpreter
+                and a pending after outlives the widget that scheduled it, so it would have fired in
+                the middle of the next needs_window test and quit that test's loop. The game's own
+                _on_window_closed exists for this exact fact and I did not apply it
+06:26:24Z  DECIDE  disputed the fourth: "the blue a wall is drawn in" is idiomatic English, not a typo
+06:26:24Z  VERIFY  ran -m needs_window twice in a row: 10 passed 2 failed both times, nothing left behind
+06:26:24Z  TEST    986 passed, 0 failed, 12 deselected
