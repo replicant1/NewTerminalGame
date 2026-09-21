@@ -44,3 +44,16 @@
                 direction and cannot be until something here paints. Recorded in the module docstring:
                 re-check both the first time either test goes green
 06:33:30Z  TEST    986 passed, 0 failed, 12 deselected; needs_window 10 passed, 2 failed as designed
+06:39:40Z  NOTE    review round 2: 3 comments. The second is my own round-1 fix creating a new defect --
+                swapping the control's rectangle for box-drawing glyphs dropped its ink from 62% of
+                the canvas to about 2%, which is blank()'s own threshold. The control could have
+                failed on a Tk that draws correctly, which is the worst verdict this pair can give:
+                it says "Tk cannot draw" about a Tk that can. Full blocks now, above by construction
+06:39:40Z  DECIDE  the reviewer is right that half the docstring's claim was false -- blank() and near()
+                are pure functions of a colour count and can be exercised today with no screen. Only
+                "are 0.98 and 24 right for a real maze" is genuinely open
+06:39:40Z  VERIFY  wrote tests/test_pixels.py, twelve tests, default suite. They failed on first run and
+                found a real defect: histogram stopped at len(data) - step and never read the last
+                pixel. A census of four pixels returned three. Both verdicts rest on that function
+                and the reviewer had flagged it as untested without making it a condition
+06:39:40Z  TEST    998 passed, 0 failed, 12 deselected; needs_window 10 passed, 2 failed as designed

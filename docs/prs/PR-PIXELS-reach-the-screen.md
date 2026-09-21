@@ -32,8 +32,9 @@ four accidental captures to notice.
   Standard library and `screencapture`; `requirements.txt` is untouched.
 - **`tests/test_pixels_reach_the_screen.py`** — two tests, and **which one fails tells you
   where the fault is**:
-  - *the control*, twenty lines of Tk owing nothing to this project — a canvas, one filled
-    rectangle. If it fails the toolkit cannot draw and no application code is implicated.
+  - *the control*, twenty lines of Tk owing nothing to this project — a canvas and block
+    glyphs drawn with `create_text`, the same primitive the game's ink arrives by. If it
+    fails the toolkit cannot draw and no application code is implicated.
   - *the check*, the real game, asserting its wall ink is in the frame.
 
   Section 7 of the plan asks for exactly this pairing — *a guard needs a control* — and a
@@ -77,5 +78,10 @@ a broken screen would be worse than none.
 
 ## Suite
 
-`.venv/bin/python -m pytest -q` → **986 passed, 12 deselected**, unchanged.
+`.venv/bin/python -m pytest -q` → **998 passed, 12 deselected**, up from 986 by the twelve
+tests in `tests/test_pixels.py`.
 `-m needs_window` → **10 passed, 2 failed**, the two being these.
+
+Those twelve found a defect on their first run: `histogram` stopped at `len(data) - step` and
+so **never read the last pixel** — a census of a four-pixel image returned three. Both
+verdicts in this pull request rest on that function, and nothing had exercised it.

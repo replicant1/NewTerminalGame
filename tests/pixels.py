@@ -89,7 +89,11 @@ def histogram(path, sample_every: int = 53) -> "Dict[Colour, int]":
     depth, = struct.unpack_from("<H", data, 28)
     step = depth // 8
     counts = collections.Counter()  # type: collections.Counter
-    for i in range(offset, len(data) - step, step * sample_every):
+    # ``- step + 1``: a pixel starting at exactly ``len(data) - step`` is a
+    # whole pixel and belongs in the count. Stopping at ``len(data) - step``
+    # silently dropped the last one, which a census of a four-pixel image
+    # reported as three.
+    for i in range(offset, len(data) - step + 1, step * sample_every):
         counts[(data[i + 2], data[i + 1], data[i])] += 1
     return counts
 

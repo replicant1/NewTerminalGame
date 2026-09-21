@@ -3,9 +3,15 @@
 **Two tests, and which of them fails tells you where the fault is.**
 
 ``test_a_plain_canvas_reaches_the_screen`` is the control. It is twenty lines
-of Tk owing nothing to this project: a canvas, one filled rectangle, one
-capture. If it fails, the toolkit cannot draw and no application code is
-implicated.
+of Tk owing nothing to this project: a canvas, block glyphs drawn with
+``create_text``, one capture. If it fails, the toolkit cannot draw and no
+application code is implicated.
+
+**Glyphs rather than a rectangle, deliberately.** The game's ink arrives only
+ever through ``create_text``; a control that filled a rectangle would pass on a
+build that can fill and cannot draw a glyph, and the pair would then blame the
+application for a toolkit that had failed at the very primitive the check
+depends on.
 
 ``test_the_game_reaches_the_screen`` is the check. If the control passes and
 this fails, the fault is ours.
@@ -21,12 +27,16 @@ rule 1.6 keeps them out of the default suite. Run them deliberately:
 
     .venv/bin/python -m pytest -m needs_window -q
 
-**One thing here has never been exercised in the passing direction**, and
-cannot be until something on this machine paints. :func:`pixels.blank`'s
-threshold and :func:`pixels.near`'s tolerance decide both verdicts, and nobody
-knows whether a correctly drawn maze — thin antialiased box-drawing strokes on
-black — clears 2 % non-dominant colour, or how much of its blue survives a
-tolerance of 24 after the Retina colour profile. **Re-check both numbers the
+**Two numbers decide both verdicts, and only one of the questions about them
+is open.** :func:`pixels.blank`'s threshold and :func:`pixels.near`'s tolerance
+are pure functions of a colour count — ``tests/test_pixels.py`` exercises both
+directions of each in the default suite, with no screen involved, and that is
+where to look for what a tolerance of 24 actually admits.
+
+What **cannot** be settled until something on this machine paints is whether
+those numbers are the right ones *for a real maze capture*: whether thin
+antialiased box-drawing strokes on black clear 2 % non-dominant colour, and how
+much of the wall blue survives the Retina colour profile. **Re-check both the
 first time either test goes green**, because a threshold tuned only against
 failure is a threshold tuned against one example.
 """
@@ -127,9 +137,18 @@ class TestTheScreen:
         # on a build that can fill and cannot draw glyphs, and then the pair
         # would blame the application for a toolkit that had failed at exactly
         # the primitive the check depends on.
+        # **Full blocks, not box-drawing.** ``═`` is two thin bars in an
+        # otherwise empty cell: six rows of it put roughly 2 % ink on the
+        # canvas, which is the same order as ``blank()``'s own threshold, so
+        # the control could fail on a toolkit that was drawing correctly. A
+        # false failure of the *control* is the worst verdict this pair can
+        # give — it says "Tk cannot draw" about a Tk that can, and makes the
+        # check unreadable. U+2588 fills its cell, so the ink is above the
+        # threshold by construction rather than by a font metric nobody here
+        # can measure.
         for row in range(6):
             canvas.create_text(
-                200, 60 + row * 80, text="════════", fill=palette.WALL,
+                200, 60 + row * 80, text="████████", fill=palette.WALL,
                 font=("Menlo", 48), anchor="center",
             )
         top.deiconify()
