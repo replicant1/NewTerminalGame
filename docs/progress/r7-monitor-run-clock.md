@@ -69,3 +69,15 @@
                 ... finished". Set from tickElapsed now, and the UI branches on run.finished, which
                 run_clock sets and nothing read
 07:16:44Z  TEST    1017 passed, 0 failed, 12 deselected
+07:27:40Z  NOTE    round 2: one comment, and it is the unfinished documentation half of round 1's. The
+                Scrutiny section still said the code assumes stamps are non-decreasing except at
+                midnight -- the opposite of what it now assumes -- still named the hollow test as the
+                guard after I had agreed it protected nothing, and never mentioned MIDNIGHT_JUMP_S,
+                so main would carry no record of why a bare 12 is 12
+07:27:40Z  VERIFY  reproduced the reviewer's threshold measurements myself over docs/progress: largest
+                backwards inversion anywhere 12s, largest real gap between consecutive lines 4951s
+                (83 min), threshold 43200s -- 3600x margin below, 9x above
+07:27:40Z  NOTE    its reduction is better than my prose: the rule is "the mod-24 forward gap exceeds
+                twelve hours", which picks the nearer of the two readings of an undated gap. Twelve
+                is the only midpoint, not a tunable
+07:27:40Z  TEST    1017 passed, 0 failed, 12 deselected

@@ -54,14 +54,38 @@ done, two of them dispatched minutes earlier.
 
 ## Scrutiny
 
-- `orchestration/server.py`, `date_stamped()` — the backwards walk. It assumes stamps within a
-  file are non-decreasing except at midnight. A log written out of order would be mis-dated,
-  and `test_stamps_stay_in_order_across_that_boundary` is the guard.
+- `orchestration/server.py`, `date_stamped()` — the backwards walk, and **`MIDNIGHT_JUMP_S`**.
+  An earlier draft assumed stamps within a file are non-decreasing except at midnight; they are
+  not, and that assumption dated two lines of `r7-s-2-anchor-window.md` a day early. It also
+  named `test_stamps_stay_in_order_across_that_boundary` as the guard, which could not fail for
+  any input — stepping the day back on every forward jump makes the output sorted by
+  construction.
+
+  **Why twelve hours, since a bare constant explains nothing.** The rule reduces to *the mod-24
+  forward gap between consecutive lines exceeds twelve hours*, which picks the nearer of the two
+  possible readings of an undated gap. Twelve is the only midpoint; any other value is worse in
+  one direction. Measured over every log in `docs/progress`:
+
+  | | |
+  | --- | --- |
+  | largest backwards inversion anywhere | **12s** — the case that found this |
+  | largest real gap between consecutive lines | **4951s (83 min)** |
+  | threshold | **43200s** |
+  | margin against noise | ~3600× |
+  | margin against real gaps | ~9× |
+
+  `progress-tracking.md` — *"Never go more than a few minutes without a line"* — is what makes
+  the upper margin hold. **The log that would defeat it** is a genuine crossing with twelve
+  hours of silence between consecutive lines: a run paused overnight. In that case the result is
+  the behaviour this change replaced, so it is never worse than before, and no threshold can do
+  better with only a time of day to go on.
 - **mtime is the load-bearing assumption.** A log copied or touched carries a wrong mtime and
   would date wrongly — still better than *today*, but wrong. Worth deciding if that is
   acceptable.
 - `tests/test_monitor_run_clock.py` — these assert which **day** a line lands on, not that a
-  function was called.
+  function was called. The out-of-order test reads `r7-s-2-anchor-window.md` **from the tree**
+  rather than a fixture, and asserts a count of distinct days — so it is independent of the
+  mtime git rewrites on checkout, and it fails on the code this PR replaces.
 
 ## Result
 
@@ -142,5 +166,5 @@ wins, and a *developer's* `DONE` does not end a run.
 
 ## Suite
 
-`.venv/bin/python -m pytest -q` → **1015 passed, 12 deselected**, with 16 tests in
+`.venv/bin/python -m pytest -q` → **1017 passed, 12 deselected**, with 18 tests in
 `tests/test_monitor_run_clock.py`. No application code is touched.
