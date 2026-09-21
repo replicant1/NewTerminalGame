@@ -150,6 +150,19 @@ A human can ask for a fresh pass with the re-request control on the pull request
 gh pr comment <number> --body "REVIEW-REQUEST: WI-3 round 1 risk HIGH head <sha>"
 ```
 
+**Resync the pull request's body first**, every time, if the summary has changed since you last
+pushed it:
+
+```
+gh pr edit <number> --body-file docs/prs/PR-<ITEM>-<slug>.md
+```
+
+The file and the body are one document in two places, and the body is the one a reviewer
+arriving at the pull request actually reads — including the Scrutiny section that tells it
+where the dangerous part is. It moves no head, so it costs nothing and cannot invalidate an
+approval. Doing it here rather than "when you remember" is the point: on this project the body
+has gone stale three times, each time because a fix landed in the file and nobody pushed it on.
+
 The conductor watches for that marker and spawns the reviewer; you cannot spawn it, message it, or be messaged by it. Everything between you and the reviewer travels on this pull request.
 
 **The reviewer has its own GitHub identity**, separate from yours, which is what lets it approve a pull request you opened — GitHub refuses both `--approve` and `--request-changes` from an author, as `docs/findings/AMEND-2-review-permissions.md` records. So its verdict is a real review, not a comment pretending to be one. Poll the reviews list for it:
@@ -171,9 +184,9 @@ There are three outcomes:
   Never change code you believe is correct merely to clear a comment. That is how a defect gets introduced by a review.
 
   When you have answered all of them, request the next round with a fresh `REVIEW-REQUEST: <ITEM> round <n+1> risk <level> head <sha>` comment.
-- **A comment beginning `REVIEW-VERDICT: BLOCKED`** — the review has stopped converging, and the request for changes still stands. **Do not merge.** Report the PR number, the comments still outstanding and your position on each; the technical lead settles it.
+- **A comment beginning `REVIEW-VERDICT: BLOCKED`** — you and the reviewer disagree about a comment and have each had your say. **Do not merge.** Report the PR number, the comment and your position on it; the technical lead settles it.
 
-  Rounds by themselves do not trigger this, so do not count them or hurry because of them. What triggers it is a disagreement that has had its exchange, a round in which nothing moved — nothing new entered the loop, rather than nothing being settled — or the six-round backstop. A round where you fix what was found and the reviewer finds something else is the process working — and so is one where you dispute with your reasoning and the reviewer answers. **Nothing moved** means nothing new entered the loop at all: you fixed nothing, withdrew nothing and said nothing you had not already said.
+  That is the only thing that ends the loop other than an approval. Rounds do not: a round where you fix what was found and the reviewer finds something else is the process working, so do not count them or hurry because of them.
 
 **If you run out of road before the verdict arrives** — you are interrupted, or you have been at it too long — report the PR number, the round and that it is awaiting review, and stop. The conductor will dispatch a developer to pick up the rework. What you must not do is fall silent, because a PR awaiting review and a PR abandoned look identical from outside.
 
@@ -209,6 +222,14 @@ Two things the merge alone does not settle, so do both straight after it:
 2. **Record it** with a `MERGE` line, then report the PR number, the branch and that test count.
 
 **Merge only your own PR.** Never merge, approve or close another developer's, and never merge before your suite is green or before its review gate is satisfied. **The code reviewer never merges either** — it reviews and nothing else, so an approved pull request is waiting for you and for nobody else.
+
+**One narrow exception, and it is the conductor's to invoke, not yours.** If the conductor dispatches you to merge a pull request whose author has finished and gone, merge it — that is the case the rule above would otherwise strand, because an approval usually arrives after its developer has ended and nobody else is permitted to act on it. Three conditions, the first two yours to check rather than to take from the brief, the third a prohibition:
+
+1. **Check the whole merge gate yourself**, exactly as you would on your own pull request — the suite green on that branch, Copilot's baseline answered, and an approval satisfying all three of its tests. Not the approval alone: "the three tests" above are the approval's, and a branch whose author has gone is precisely the one whose suite nobody has run lately. The conductor tells you it is approved and at which sha; it certifies nothing, and somebody may have pushed between its dispatch and your merge.
+2. **Confirm what landed is green afterwards**, as you would after any merge of your own, and record it.
+3. **Change nothing.** You are merging, not adopting. If the gate does not pass — a stale approval, a red suite, an unanswered comment — report that and stop. Do not fix it into passing: you did not write the code and the reviewer did not review yours.
+
+The exception is this narrow on purpose. The rule exists so that nobody merges work they did not write and cannot answer for, and a dispatch from the conductor does not make you able to answer for it — it only makes you the one person allowed to press the button.
 
 **A stacked branch targets its parent, not `main`.** If your work item builds on a branch that has not merged yet — yours or another developer's — the PR must be opened with `--base <parent-branch>`. Based on `main`, it would show the parent's commits as its own and the diff would be unreadable. Say in the PR body which branch it is stacked on and why. Once the parent merges, retarget it with `gh pr edit <number> --base main`.
 

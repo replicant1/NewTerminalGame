@@ -34,8 +34,11 @@ observed rather than counted.** Two tests, either sufficient:
 
 - **A disagreement that has had its exchange** — comment raised, disputed with reasoning,
   held once with reasons, disputed again. Neither party decides it.
-- **A round that resolved nothing** — every comment carried in is still outstanding, none
-  fixed, none withdrawn, none argued to a conclusion.
+- **A round in which nothing moved** — at least one comment carried in, and none of them
+  fixed, none withdrawn, and no reasoning offered that had not already been given. Note the
+  framing: the test asks whether anything *entered* the loop, not whether anything was
+  *settled*. An exchange where the developer disputes and the reviewer answers settles
+  nothing and moves a great deal, so it does not fire this.
 
 Six rounds remains as a backstop against a runaway, explicitly not as the mechanism.
 
