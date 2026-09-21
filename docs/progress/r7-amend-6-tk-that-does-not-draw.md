@@ -101,3 +101,8 @@
                 documented `eval "$(... code_reviewer_token.py)"` mint. NOT worked around -- posting
                 the review under the author's identity would leave the gate looking closed while it
                 is open, which is the exact failure AMEND-5 was about. Raised to the user
+12:10:00Z  DECIDE  the user was given three options for the blocked gate -- fix the credentials and
+                re-dispatch, post the verdict themselves from the bot identity, or merge on their
+                own authority -- and chose to merge. Recorded in the PR summary as merged WITHOUT
+                the reviewer's approval, with what is still owed, rather than smoothed over
+12:11:00Z  VERIFY  the head being merged is green: 1024 passed / 12 deselected, 12 on the marker

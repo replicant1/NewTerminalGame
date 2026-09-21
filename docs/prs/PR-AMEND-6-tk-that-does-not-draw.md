@@ -184,6 +184,39 @@ reviewer's own observation below.
 - **Whether the project wants the annotation sweep at all**, or is content leaving that half
   to review. It is in, because it is cheap and it makes the docstring's claim true.
 
+## How this merged — **without the code reviewer's approval, on the user's authority**
+
+**Read this before treating #118 as a precedent.** A HIGH-risk pull request is supposed to
+carry an approval from the code reviewer bound to the merged sha. **This one does not, and
+the record should not be read as though it does.**
+
+What actually happened, in order:
+
+1. The code reviewer was dispatched at round 1 and **completed a full review** — it built a
+   venv from `/opt/homebrew/bin/python3.14` in its own worktree, ran the suite itself, and
+   returned `REVIEW-VERDICT: REQUEST-CHANGES AMEND-6 round 1 — 2 comments` against
+   `f21e691`.
+2. **It could not post any of it.** Two independent causes, both measured by it:
+   `CODE_REVIEWER_APP_ID` and `CODE_REVIEWER_PRIVATE_KEY` are not present in a spawned
+   agent's environment, so `tools/code_reviewer_token.py` fails before any network call; and
+   the harness refuses the documented `eval "$(… code_reviewer_token.py)"` recipe outright.
+   Its verdict therefore exists only in its hand-back report and in this document.
+3. **Both of its comments were valid, and both are fixed** — round 2 above. So what is
+   missing is not the fixes; it is the *re-review of the fixes* and the approval that would
+   have followed.
+4. The alternative of posting the verdict from the author's account **was considered and
+   refused**: GitHub would record it as a plain comment by the PR author, and the gate would
+   look closed while it was open. That is precisely the failure AMEND-5 exists to prevent,
+   and doing it here would have made the same mistake in the same repository one amendment
+   later.
+5. The user was given the three options — fix the credentials and re-dispatch, post the
+   verdict themselves from the bot identity, or merge on their own authority — and **chose
+   to merge.** Their repository, their gate, recorded rather than smoothed over.
+
+**What is owed as a result:** a second look at this branch by the code reviewer, whenever
+its identity works again, and the fix to the dispatch environment that the reviewer's own
+section 9 set out. Neither is done here.
+
 ## Suite
 
 ```
