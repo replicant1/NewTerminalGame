@@ -87,7 +87,9 @@ opening another pull request:
   491s; it never approves — all 108 reviews are `COMMENTED`; the reviewer you *request*
   (`Copilot`) is not the account that *answers* (`copilot-pull-request-reviewer`); and
   the automatic review is an **account** setting, so nothing in a checkout records that
-  the first pass exists at all.
+  the first pass exists at all; and **it cannot be re-run** — four routes to requesting a
+  second pass were tried on this very pull request and none registers a request, which is
+  why Copilot's pass is a baseline rather than a per-head condition.
 - `docs/findings/AMEND-2-review-permissions.md` — an author cannot approve or request
   changes on their own PR (exact errors recorded); the App can do both, plus inline
   comments; a push does **not** dismiss an approval, so the sha check is what catches it;

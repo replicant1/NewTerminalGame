@@ -124,17 +124,15 @@ The body opens with one of three verdict headers and carries its own count of fi
 | `### 🟡 Changes recommended` | it has comments for you |
 | `### 🔵 Needs a closer look` | it is not confident; read it and decide |
 
-**Copilot is clean when a review exists against your current head and either recommends approval or has no comment you have not answered.** That is the observable condition, and it is the whole of it.
+**Copilot is clean when its review has no comment you have not either fixed or answered.** That is the observable condition, and it is the whole of it. Note it is about the comments, not about the head: its review stays bound to the sha it was written for and will not follow your fixes.
 
-If it has comments, assess each one exactly as you would a human's. **A valid comment you fix**, commit and push. **A comment you believe is wrong you answer on its thread, saying why** — do not resolve it silently, and do not change correct code to make a bot stop talking. Then re-request the review so the next pass runs against your new head:
+If it has comments, assess each one exactly as you would a human's. **A valid comment you fix**, commit and push. **A comment you believe is wrong you answer on its thread, saying why** — do not resolve it silently, and do not change correct code to make a bot stop talking.
 
-```
-gh pr edit <number> --add-reviewer Copilot
-```
+**You cannot re-run Copilot, and you must not try.** Four routes were measured and none of them registers a request: `gh pr edit --add-reviewer Copilot` fails because `gh` resolves the name as a user and Copilot is a Bot; the REST `requested_reviewers` endpoint accepts `Copilot` with a 200 and does nothing; the same endpoint refuses the posting account with *"Reviews may only be requested from collaborators"*; and that account resolves to an Organization rather than to the Bot that was requested. `docs/findings/AMEND-2-copilot-review-behaviour.md` has the detail.
 
-**Note the two different names.** The reviewer you *request* is `Copilot`; the account that *posts* the review is `copilot-pull-request-reviewer`. Requesting the second one will fail.
+**So Copilot's pass is a baseline, not a per-head condition.** It reviews the pull request when you first mark it ready, you answer what it found, and that is the whole of its part. It does not re-review your fixes, and no later head of yours is covered by it. What covers every later head is the code reviewer, whose approval must be bound to the exact commit being merged — and on a LOW RISK pull request, nothing does, which is what LOW RISK means.
 
-**No pull request on this project has ever received a second Copilot review**, because nobody has ever re-requested one — so this path is documented but unproven. If the re-request is refused, or nothing arrives within the window below, record an `ASK` and an `ASSUME`, say so in the PR summary, and go on to pass two. Do not retry with different flags.
+A human can ask for a fresh pass with the re-request control on the pull request page. That is an operator's action and not yours; if you think one is warranted, say so in your report rather than reaching for the API.
 
 **If no review has appeared fifteen minutes after you marked it ready, stop. Do not merge.** Fifteen minutes is about twice the slowest ever measured here, and all 108 pull requests were reviewed, so absence does not mean "nothing to say" — it means something is broken. Record `BLOCKED`, say so in your report, and leave the pull request open for the operator.
 
@@ -170,8 +168,6 @@ There are three outcomes:
 
   Never change code you believe is correct merely to clear a comment. That is how a defect gets introduced by a review.
 
-  **If you pushed anything, Copilot's pass is stale too.** The merge gate wants Copilot clean against the head you are merging, and the review it left is bound to the sha before your fixes — so re-request it (`gh pr edit <number> --add-reviewer Copilot`) and wait for it again, exactly as in pass one, before asking for the next review round. A round that changed no code needs no re-request.
-
   When you have answered all of them, request the next round with a fresh `REVIEW-REQUEST: <ITEM> round <n+1> risk <level> head <sha>` comment.
 - **A comment beginning `REVIEW-VERDICT: BLOCKED`** — three rounds have passed without converging, and the request for changes still stands. **Do not merge.** Report the PR number, the comments still outstanding and your position on each; the technical lead settles it.
 
@@ -182,7 +178,7 @@ There are three outcomes:
 Merge when, and only when, all of these hold:
 
 1. your suite is green;
-2. Copilot is clean against your current head, or you have recorded that no review arrived;
+2. Copilot's baseline pass was clean — every comment it made either fixed or answered. It is a baseline and not a per-head test, for the reason given under "Pass one": it cannot be re-run, so it covers the pull request as first marked ready and nothing after;
 3. the PR is rated LOW, **or** it carries an `APPROVED` review that satisfies all three of the tests below.
 
 An approval counts when, and only when:

@@ -48,9 +48,20 @@ and carries its own count of findings on a `**Comments generated:** N` line — 
 
 The reviewer you **request** is `Copilot` (a `Bot`, id 175728472, as recorded by the `review_requested` timeline event). The account that **posts** the review is `copilot-pull-request-reviewer`. They are not interchangeable: filter on the second, request the first.
 
-## It has never re-reviewed
+## It cannot be re-run, and it has never re-reviewed
 
-**No pull request on this project has more than one Copilot review.** Nobody has ever re-requested one, so the re-request path is documented but unproven — treat a refusal or a silent re-request as something to record and proceed past, not something to retry.
+**No pull request on this project has more than one Copilot review**, and on 2026-09-21 four routes to asking for a second one were tried on PR #111. None registers a request — no `review_requested` event appears on the timeline afterwards:
+
+| Route | Result |
+| --- | --- |
+| `gh pr edit 111 --add-reviewer Copilot` | `GraphQL: Could not resolve user with login 'copilot'` — `gh` resolves the name as a *user*, and Copilot is a Bot |
+| `POST /pulls/111/requested_reviewers` with `reviewers[]=Copilot` | HTTP 200, `requested_reviewers: []`, no timeline event. Accepted and ignored |
+| the same with `reviewers[]=copilot-pull-request-reviewer` | HTTP 422, *"Reviews may only be requested from collaborators"* |
+| `GET /users/copilot-pull-request-reviewer` | resolves to an **Organization**, id 213165537 — not the Bot that was requested (`Copilot`, id 175728472) |
+
+The timeline's own record of the automatic request names `Copilot`, a `Bot`, which is not a login any of these endpoints will take from this account.
+
+**So Copilot's pass is a baseline and not a per-head condition.** It reviews a pull request once, when it is first marked ready. It does not follow the fixes made in answer to it, and no agent on this project can make it. A human can use the re-request control on the pull request page; nothing in the workflow may depend on that happening.
 
 ## The automatic review is an account setting, not a repository setting
 
