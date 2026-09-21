@@ -113,8 +113,10 @@ test -n "$CODE_REVIEWER_GH_TOKEN" || { echo "mint failed; stopping" >&2; exit 1;
 ## The verdict
 
 ```
-GH_TOKEN="$CODE_REVIEWER_GH_TOKEN" gh pr review <n> --approve --body-file verdict.md
-GH_TOKEN="$CODE_REVIEWER_GH_TOKEN" gh pr review <n> --request-changes --body-file verdict.md
+GH_TOKEN="$CODE_REVIEWER_GH_TOKEN" gh pr review <n> --approve \
+  --body-file VERDICT-<ITEM>-<round>.md          # in your worktree, named for this round
+GH_TOKEN="$CODE_REVIEWER_GH_TOKEN" gh pr review <n> --request-changes \
+  --body-file VERDICT-<ITEM>-<round>.md
 ```
 
 Begin the body with one of these, character for character:
@@ -156,7 +158,13 @@ If the base is not `main`, review the parent first or confirm it has been approv
 
 ## What you write
 
-**Nothing the repository keeps.** Your verdict lives on the pull request, which is durable; write the body to a scratch file in your worktree for `--body-file`, **and delete it before you finish** — along with anything else you made that is not your progress log. A file left in a worktree keeps that worktree alive after you are gone. Write your progress log at `docs/progress/code-reviewer-<branch>.md` for whoever is watching the run — it dies with your worktree, so anything worth keeping goes in your report.
+**Nothing the repository keeps.** Your verdict lives on the pull request, which is durable; write the body to a scratch file for `--body-file`, **and delete it before you finish** — along with anything else you made that is not your progress log. A file left in a worktree keeps that worktree alive after you are gone.
+
+**Write it in your own worktree, and name it `VERDICT-<ITEM>-<round>.md`.** Not `verdict.md`, and not in a scratch directory shared with other agents. Both halves of that matter, and they were learned the hard way: a reviewer on this project read a *stale* `verdict.md` that an earlier review had left in the shared scratchpad, and posted an approval carrying the previous round's `REVIEW-VERDICT: REQUEST-CHANGES` text. It caught it only because it read its own posted body back.
+
+A plausible filename in a shared directory is the trap — a name every reviewer reaches for by reflex, holding somebody else's words. Your worktree is yours alone and is reaped after you; a name carrying the item and the round cannot be confused with another review's.
+
+**Read your verdict back after you post it**, whichever route you used, and check the first line says what you meant. It is one call, and it is the only thing standing between a misfiled body and a permanent record of a verdict you did not give. Write your progress log at `docs/progress/code-reviewer-<branch>.md` for whoever is watching the run — it dies with your worktree, so anything worth keeping goes in your report.
 
 ## Output
 
