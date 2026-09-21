@@ -190,6 +190,55 @@ def fetch_remote():
     return _fetched
 
 
+def date_stamped(entries, path):
+    """Give every ``HH:MM:SSZ`` stamp a date, by anchoring the log to its file.
+
+    An agent writes the time and not the date, so a stamp alone cannot say
+    which day it belongs to.  This used to fill that in with *today*, which is
+    right for a log being appended right now and wrong for every other one --
+    and it was wrong silently, because a time is still a time.
+
+    It cost the progress bar.  ``progress()`` counts a work item done when its
+    merge is reachable from the trunk *since the run began*, and ``run_clock()``
+    takes that beginning from the conductor's ``START``.  Dated to today, run
+    7's ``START`` at ``01:25:23Z`` became this morning, every one of its
+    twenty-five merges fell before the window, and a finished project reported
+    ``0 of 25`` with ``S-1`` up next.  The README already knew stamps land on
+    today -- it says so about the timeline, and calls it not worth fixing
+    there.  Nobody noticed it also zeroed the bar.
+
+    So anchor on something real: **the last stamped line was written at about
+    the file's mtime**, which is a date the filesystem remembers.  Walk
+    backwards from it, and every time a stamp runs *forwards* as you go back,
+    you have stepped over a midnight, so the date goes back a day with it.
+    A live log still lands on today, because its mtime is now -- the old
+    behaviour survives exactly where it was right.
+
+    Run 7 checks out: its last line reads ``02:38:54Z``, its mtime is 12:38
+    local, and 02:38:54Z *is* 12:38 local. The two agree to the minute.
+    """
+    stamped = [e for e in entries if e.get("stamp")]
+    if not stamped:
+        return
+    try:
+        anchor = datetime.datetime.fromtimestamp(
+            path.stat().st_mtime, datetime.timezone.utc).date()
+    except OSError:
+        anchor = datetime.datetime.now(datetime.timezone.utc).date()
+
+    day = anchor
+    later = None
+    for entry in reversed(stamped):
+        h, mi, sec = entry["stamp"]
+        if later is not None and (h, mi, sec) > later:
+            day -= datetime.timedelta(days=1)
+        entry["ts"] = datetime.datetime(
+            day.year, day.month, day.day, h, mi, sec,
+            tzinfo=datetime.timezone.utc).timestamp()
+        entry["tsSource"] = "log"
+        later = (h, mi, sec)
+
+
 def parse_log(path, pane_id=""):
     """A progress log to a list of {kind, item, text, ts, tsSource}."""
     try:
@@ -222,15 +271,9 @@ def parse_log(path, pane_id=""):
             else:
                 out.append({"kind": "note", "label": "", "item": "", "text": line.rstrip()})
     new_generation(pane_id or str(path), len(out))
-    today = datetime.datetime.now(datetime.timezone.utc).date()
+    date_stamped(out, path)
     for entry in out:
         if entry.get("stamp"):
-            # A stamp the agent wrote as it appended the line: authoritative.
-            h, mi, sec = entry["stamp"]
-            entry["ts"] = datetime.datetime(
-                today.year, today.month, today.day, h, mi, sec,
-                tzinfo=datetime.timezone.utc).timestamp()
-            entry["tsSource"] = "log"
             continue
         m = ISO_RE.search(entry["text"])
         if m:
