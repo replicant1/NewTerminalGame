@@ -168,9 +168,16 @@ The conductor watches for that marker and spawns the reviewer; you cannot spawn 
 **The reviewer has its own GitHub identity**, separate from yours, which is what lets it approve a pull request you opened — GitHub refuses both `--approve` and `--request-changes` from an author, as `docs/findings/AMEND-2-review-permissions.md` records. So its verdict is a real review, not a comment pretending to be one. Poll the reviews list for it:
 
 ```
-gh api repos/{owner}/{repo}/pulls/<number>/reviews \
+gh api --paginate repos/{owner}/{repo}/pulls/<number>/reviews \
   --jq '.[]|{user:.user.login,state,commit_id}'
 ```
+
+**`--paginate`, always.** Without it `gh` returns the first thirty reviews and stops, and
+**every inline reply you or the reviewer writes creates a `COMMENTED` review**. A pull request
+with a real conversation on it passes thirty quickly — one on this project did, at its sixth
+round, and the approval was the thirty-first. Unpaginated, the gate below reported `BLOCKED`
+on a pull request that was properly approved and ready to merge. It fails towards not
+merging, which is the right direction to fail in, but it tells you nothing about why.
 
 **Do not use `reviewDecision` for this.** It is empty on this repository — measured, not assumed — because nothing requires a review here, so it answers a question about branch protection rather than about whether anybody approved. The reviews list is well-defined either way.
 
@@ -201,10 +208,13 @@ Merge when, and only when, all of these hold:
 An approval counts when, and only when:
 
 ```
-gh api repos/{owner}/{repo}/pulls/<number>/reviews \
+gh api --paginate repos/{owner}/{repo}/pulls/<number>/reviews \
   --jq '[.[]|select(.state=="APPROVED")|{user:.user.login,commit_id}]'
 gh pr view <number> --json headRefOid,author --jq '{head:.headRefOid,author:.author.login}'
 ```
+
+**`--paginate` here too, for the reason above.** This is the query the merge turns on, so it is
+the one place the omission costs most.
 
 1. such a review **exists**;
 2. its `user.login` is **the code reviewer's**, which the conductor names when it dispatches you. Not merely "not the author": any collaborator could satisfy that, and so could an account added to the repository for some other purpose. The gate is an approval by the agent that read the code. **If the conductor did not tell you the reviewer's login, stop and ask** rather than accepting whatever approval is on the pull request;

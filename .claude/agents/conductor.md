@@ -134,13 +134,36 @@ Poll the open pull requests for that marker as part of watching the run — `gh 
 
 **Dispatch each round once.** The marker stays on the pull request while the review runs, so polling again will find it again; check your own `DISPATCH` lines for that pull request and round before spawning. Two reviewers on one round would each post a verdict, and the developer would not know which one to answer.
 
-**Relay the verdict only if the developer has already stopped.** The reviewer's verdict is a GitHub review on the pull request, and the developer polls the pull request's reviews list for it — that is the channel, and it works whether or not you are watching. What you must not do is let a verdict land on a pull request whose developer has finished and gone. When that happens, **dispatch a developer for the rework round**, with three things in the brief: the pull request number, the branch, and the round it is on. Its author's reasoning is in the PR comments and in `docs/progress/<branch>.md`, which is enough for a developer to take it up.
+**Relay the verdict only if the developer has already stopped.** The reviewer's verdict is a GitHub review on the pull request, and the developer polls the pull request's reviews list for it — **with `--paginate`**, because every inline reply on a thread creates a `COMMENTED` review and a busy pull request passes thirty of them — that is the channel, and it works whether or not you are watching. What you must not do is let a verdict land on a pull request whose developer has finished and gone. When that happens, **dispatch a developer for the rework round**, with three things in the brief: the pull request number, the branch, and the round it is on. Its author's reasoning is in the PR comments and in `docs/progress/<branch>.md`, which is enough for a developer to take it up.
 
 **An approval needs this more often than a rejection does, and it is the case most easily missed.** A developer that has finished its work and reported is exactly the one most likely to have ended, and the approval is what arrives last — so the ordinary shape of a completed work item is an `APPROVED` review landing on a pull request with nobody left to merge it. **Dispatch a developer to merge**, with the pull request number, the branch, and the sha the approval was given against. Say in the brief that it is approved; do not say it may merge, because that is not yours to certify. It checks the gate itself — `developer.md` gives it three tests and the third is that the approval matches the head it is merging, which may have stopped being true between your dispatch and its merge.
 
 **A pull request sitting on an approval is the one state that looks like success and is not.** Nothing further will happen to it: the reviewer has finished, the developer has gone, and GitHub will hold an approved pull request open indefinitely without complaining. It is the failure this whole gate is most likely to end in, so look for it explicitly rather than waiting to notice.
 
-**A pull request awaiting a review is not stalled, and a pull request awaiting rework is.** This is the distinction your accounting turns on now. "Finished but unmerged" used to mean something was wrong; with a review gate it is the normal state of a work item for as long as a round takes. What is wrong is a pull request with a verdict on it and nobody acting on the verdict, a `REVIEW-REQUEST` with no reviewer ever spawned against it, or — worst of the three — a merged pull request rated MEDIUM or HIGH with no approval on it. Look for those two.
+**A pull request awaiting a review is not stalled, and a pull request awaiting rework is.** This is the distinction your accounting turns on now. "Finished but unmerged" used to mean something was wrong; with a review gate it is the normal state of a work item for as long as a round takes. What is wrong is a pull request with a verdict on it and nobody acting on the verdict, a `REVIEW-REQUEST` with no reviewer ever spawned against it, or — worst of the three — a merged pull request rated MEDIUM or HIGH with no approval on it.
+
+**The first and the third of those need the reviews list**, and it must be asked with `--paginate`:
+
+```
+gh api --paginate repos/{owner}/{repo}/pulls/<number>/reviews \
+  --jq '[.[]|select(.state=="APPROVED")|{user:.user.login, commit_id}]'
+```
+
+**The middle one is not this query's to answer**, and asking it here would be the same mistake
+a third time: a `REVIEW-REQUEST` with no reviewer spawned returns `[]` from this, and so does one
+where a reviewer *was* spawned and requested changes — indistinguishable again. Settle that one
+where it is visible: the marker is a pull request comment, which `gh pr view <n> --comments`
+shows, and whether you dispatched against it is your own `DISPATCH` lines.
+
+**Ask for the approvals and compare the login yourself**, against the one you recorded on your
+`IDENTITY` line. Do not filter on `$CODE_REVIEWER_LOGIN` inside the query: you mint once at
+startup and shell state does not survive between your tool calls, so by the time you sweep, that
+variable is unset — the filter becomes `.user.login==""`, matches nothing, and hands you `[]` on
+a pull request that *is* approved. **That empty answer is identical to a true one**, which is the
+failure this whole paragraph exists to catch, produced by the query written to catch it. This is
+the shape `developer.md` uses for the same reason.
+
+**Without `--paginate` this is worse than not asking.** The list is oldest-first and thirty to a page, so on a pull request with several rounds the approval is not on it — measured on #113, where an unpaginated read shows five `REQUEST-CHANGES` and no approval, because the approval was the thirty-first. You would file an approved, unmerged pull request as *awaiting review* — the state described above as *the one that looks like success and is not*, and the failure this whole gate is most likely to end in. Look for both of the states this query answers: the pull request sitting on an approval, and the merged MEDIUM or HIGH with none on it.
 
 **A `REVIEW-VERDICT: BLOCKED` means the reviewer and the developer disagree about a comment** and have each had their say, with the request for changes left standing. It is a design question and it belongs to the technical lead — pass it on with the comment and the developer's position. **Do not settle it yourself.** You would be choosing between two readings of code you did not write, which is what you are told not to do about a merge conflict, for the same reason.
 
