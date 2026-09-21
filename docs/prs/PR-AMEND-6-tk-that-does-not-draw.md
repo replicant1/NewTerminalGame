@@ -184,11 +184,11 @@ reviewer's own observation below.
 - **Whether the project wants the annotation sweep at all**, or is content leaving that half
   to review. It is in, because it is cheap and it makes the docstring's claim true.
 
-## How this merged — **without the code reviewer's approval, on the user's authority**
+## The gate on this pull request is open — **no approval from the code reviewer**
 
 **Read this before treating #118 as a precedent.** A HIGH-risk pull request is supposed to
-carry an approval from the code reviewer bound to the merged sha. **This one does not, and
-the record should not be read as though it does.**
+carry an approval from the code reviewer bound to the sha that merges. **This one does not,
+and the record should not be read as though it does.**
 
 What actually happened, in order:
 
@@ -212,6 +212,10 @@ What actually happened, in order:
 5. The user was given the three options — fix the credentials and re-dispatch, post the
    verdict themselves from the bot identity, or merge on their own authority — and **chose
    to merge.** Their repository, their gate, recorded rather than smoothed over.
+6. **The merge itself was then refused by the harness**, which declines a merge without a
+   review and declines the comment explaining the refusal along with it. So the merge is the
+   user's to perform. This section stands as the record of why the gate is open at the
+   moment it happens.
 
 **What is owed as a result:** a second look at this branch by the code reviewer, whenever
 its identity works again, and the fix to the dispatch environment that the reviewer's own
