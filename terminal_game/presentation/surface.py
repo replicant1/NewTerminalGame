@@ -36,9 +36,10 @@ once.  That is "composed off-screen and presented once": the toolkit coalesces
 the changes and repaints the affected area a single time.
 
 Only the cells that differ from the last frame are touched.  Measured on this
-machine at Menlo 16: reconfiguring all 1200 cells costs 7.3 ms, and the twelve
-or so cells an actor move really touches cost 0.092 ms, against a tick budget
-of 143 ms.  So the diffing is not there for speed; it is there because it
+machine at the 10 x 19 cell: reconfiguring all 1200 cells costs 7.3 ms, and the
+twelve or so cells an actor move really touches cost 0.092 ms, against a tick
+budget of 143 ms.  (Both were read on Tk 8.5.9; AMEND-6 re-read them on Tk
+9.0.4 and got 6.3 ms and 0.154 ms — the same order, and the same conclusion.)  So the diffing is not there for speed; it is there because it
 keeps the item set fixed, and because caution C-5 warns against dirty-*region*
 rendering — which this is not.  Every item permanently owns exactly one cell
 and is always set to that cell's current content, so there is no region that
@@ -80,6 +81,13 @@ window is mapped.  Measured under S-2 and bisected with ``faulthandler``:
 ``tkinter/__init__.py`` line 1314.  ``docs/findings/S-2-anchor-window.md``
 section 7 has it.
 
+**AMEND-6: that defect belongs to the toolkit that was replaced.**  On the
+Tcl/Tk 9.0.4 the project now pins, ``update()`` on a mapped window returns.
+**The prohibition stays**, because nothing here needs to lift it — every
+repaint path is built on ``update_idletasks()``, which was never the problem —
+and because a rule that costs nothing to keep is cheaper than a second
+measurement of a hang.
+
 This surface therefore calls :meth:`~tkinter.Misc.update_idletasks` and never
 :meth:`~tkinter.Misc.update`.  That is the right call regardless: it flushes
 the pending redraw without reprocessing the event queue, so a repaint cannot
@@ -99,7 +107,7 @@ from terminal_game.presentation.metrics import (
     EXACT_GRID_CEILING,
     FONT_FAMILY,
     FONT_SIZE,
-    MEASURED_MENLO_16,
+    MEASURED_MENLO_12,
     ROWS,
     CellMetrics,
 )
@@ -234,14 +242,14 @@ class GridSurface(object):
         return (self._font.actual("family"), int(self._font.actual("size")))
 
     def metrics_match_measurement(self) -> bool:
-        """Whether this font gives the cell size S-1 measured for Menlo 16.
+        """Whether this font gives the cell size measured for the chosen font.
 
         False means the font was substituted, or the size changed, and WIN-2's
         pixel rectangle is not the 400 x 570 the plan records.  That is not an
         error here — the window simply becomes whatever the font says — but it
         is something a caller should be able to notice.
         """
-        return self._metrics == MEASURED_MENLO_16
+        return self._metrics == MEASURED_MENLO_12
 
     def exact_cell_grid(self) -> bool:
         """Whether a row drawn as one string lands where per-cell placement does.

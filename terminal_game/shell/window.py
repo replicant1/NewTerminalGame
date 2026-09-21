@@ -52,6 +52,13 @@ window is mapped — measured under S-2, bisected with ``faulthandler``, pinned
 at ``tkinter/__init__.py`` line 1314.  Nothing in this module calls it, and
 WI-5's surface does not either.
 
+**AMEND-6: that defect belongs to the toolkit that was replaced.**  On the
+Tcl/Tk 9.0.4 the project now pins, ``update()`` on a mapped window returns.
+**The prohibition stays**, because nothing here needs to lift it — every
+repaint path is built on ``update_idletasks()``, which was never the problem —
+and because a rule that costs nothing to keep is cheaper than a second
+measurement of a hang.
+
 The obvious worry was that the event loop shared that path, in which case the
 first item to show a real window would hang with it on the user's desk.  **It
 does not.**  Measured for WI-6 on a real mapped window: ``mainloop()`` ran,

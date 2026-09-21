@@ -20,7 +20,7 @@ import pytest
 
 from terminal_game.presentation import palette
 from terminal_game.presentation.field import Cell, Field
-from terminal_game.presentation.metrics import COLUMNS, MEASURED_MENLO_16, ROWS
+from terminal_game.presentation.metrics import COLUMNS, MEASURED_MENLO_12, ROWS
 from terminal_game.shell.window import TITLE, GameWindow
 
 
@@ -116,7 +116,7 @@ class TestWinTwoTheSizeAndTheGround:
     def test_that_size_is_four_hundred_by_five_seventy_here(self, window):
         # The measured cell on this machine, which is what makes the
         # derivation above a real number rather than a tautology.
-        assert window.metrics == MEASURED_MENLO_16
+        assert window.metrics == MEASURED_MENLO_12
         assert window.requested_size == (400, 570)
 
     def test_the_window_is_the_size_of_its_grid(self, window):
@@ -404,7 +404,10 @@ class TestTheEventLoopOnARealWindow:
     ``root.update()`` never returns on a mapped window on Tk 8.5 / macOS 26
     (measured under S-2), and if the event loop shared that path, WI-7 would
     discover it as a hang with a window on the user's desk.  It does not, and
-    this is the test that says so.
+    this is the test that says so.  AMEND-6 moved the project to Tk 9.0.4,
+    where ``update()`` itself returns; what this test asserts about the event
+    loop is the same either way, and it is the reason the class survives the
+    defect that prompted it.
 
     Section 1.5 in full: the window is this process's own, held by the object
     reference captured at creation; the exit path is scheduled *before* the

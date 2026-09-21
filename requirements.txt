@@ -1,20 +1,20 @@
 # Everything the project needs beyond the standard library.
 #
-# The interpreter is fixed at /usr/bin/python3 (CPython 3.9.6) because it is
-# the only interpreter on this machine with a working _tkinter, and candidate 2
-# needs a window.  See IMPLEMENTATION_PLAN.md section 1.2.
+# The interpreter is fixed at /opt/homebrew/bin/python3.14 (CPython 3.14.7)
+# with the python-tk@3.14 formula installed, because the Tk bound to it draws.
+# The previous pin, /usr/bin/python3 (CPython 3.9.6), binds Apple's Tk 8.5.9,
+# which on current macOS maps a window and paints nothing into it.  See
+# AMEND-6 and IMPLEMENTATION_PLAN.md section 1.2.
 #
 # tkinter is NOT listed here and cannot be: it is a standard-library binding
 # that ships with the interpreter, so it comes from the interpreter the venv
-# was created from and from nowhere else.  A venv made from the Homebrew
-# python will have no tkinter and tests/test_runtime.py will say so.
+# was created from and from nowhere else.  For the Homebrew python it arrives
+# with a separate formula rather than with the interpreter, and a venv made
+# without it will have no tkinter at all -- tests/test_runtime.py will say so.
 #
-#   /usr/bin/python3 -m venv .venv
+#   brew install python-tk@3.14
+#   /opt/homebrew/bin/python3.14 -m venv .venv
 #   .venv/bin/python -m pip install -r requirements.txt
 #   .venv/bin/python -m pytest -q
-#
-# The bundled pip is 21.2.4 and prints a notice that a newer pip is available.
-# That notice is cosmetic; upgrading pip is not required and is not done, so
-# that every developer's environment is built the same way.
 
 pytest==8.4.2

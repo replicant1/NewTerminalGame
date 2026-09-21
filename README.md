@@ -10,29 +10,37 @@ titles, sizes and closes itself.
 
 ## Setting up, from a clean clone
 
-Three commands, and nothing else. They take about half a minute.
+Four commands, and nothing else. They take about half a minute.
 
 ```sh
+brew install python-tk@3.14
 git clone git@github.com:replicant1/NewTerminalGame.git
 cd NewTerminalGame
-/usr/bin/python3 -m venv .venv
+/opt/homebrew/bin/python3.14 -m venv .venv
 .venv/bin/python -m pip install -r requirements.txt
 .venv/bin/python -m pytest -q
 ```
 
-**Use `/usr/bin/python3` and not whatever `python3` resolves to.** On this
-machine `python3` may be the Homebrew 3.14, which has no `_tkinter` at all and
-therefore cannot open a window; `/usr/bin/python3` is CPython 3.9.6 with Tk 8.5.
-That choice is `docs/IMPLEMENTATION_PLAN.md` section 1.2 and it is fixed, not a
-preference. `tests/test_runtime.py` fails immediately and says so if the
-environment was built any other way, so you find out here rather than in WI-5.
+**Use `/opt/homebrew/bin/python3.14`, and install `python-tk@3.14` before you
+do.** The interpreter is not chosen for the language it offers; it is chosen
+for the Tk bound to it, and the plain Homebrew python has no `_tkinter` at all
+until that formula is installed. `docs/IMPLEMENTATION_PLAN.md` section 1.2, as
+amended by AMEND-6, fixes it, and `tests/test_runtime.py` fails immediately and
+says so if the environment was built any other way.
+
+**Not `/usr/bin/python3`.** It is CPython 3.9.6 bound to Apple's Tk 8.5.9, and
+on current macOS that Tk *maps windows without painting them*: the game opens a
+window and draws nothing into it. All 1017 headless tests pass on it, and so do
+ten of the twelve window tests — the two in
+`tests/test_pixels_reach_the_screen.py` that photograph the screen are the only
+ones that can tell, and they are the reason the interpreter moved. AMEND-6 has
+the measurements.
 
 Two things you will see and can ignore:
 
-* `pip` in the bundled venv is 21.2.4 and prints a notice that a newer version
-  is available. It is cosmetic. Nobody upgrades it, so that every developer's
-  environment is built the same way.
 * `.venv/` is git-ignored, along with `.pytest_cache/`. Never commit either.
+* The window tests below put real windows on your screen for a moment and
+  close them again.
 
 ## Playing the game
 

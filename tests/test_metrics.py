@@ -14,7 +14,7 @@ from terminal_game.presentation.metrics import (
     EXACT_GRID_CEILING,
     FONT_FAMILY,
     FONT_SIZE,
-    MEASURED_MENLO_16,
+    MEASURED_MENLO_12,
     ROWS,
     CellMetrics,
 )
@@ -61,22 +61,22 @@ class TestTheGridIsFixed:
 class TestThePixelSize:
     """WIN-2's window size, derived from a cell size."""
 
-    def test_menlo_sixteen_gives_four_hundred_by_five_seventy(self):
+    def test_the_measured_cell_gives_four_hundred_by_five_seventy(self):
         # The number S-1 measured and the plan's runtime table records.  This
         # is the derivation, not the measurement: given a 10 x 19 cell, a
         # 40 x 30 grid is 400 x 570 and could not be anything else.
-        assert MEASURED_MENLO_16.window_pixel_size() == (400, 570)
+        assert MEASURED_MENLO_12.window_pixel_size() == (400, 570)
 
     def test_the_measured_cell_is_ten_by_nineteen(self):
-        assert (MEASURED_MENLO_16.advance, MEASURED_MENLO_16.linespace) == (10, 19)
+        assert (MEASURED_MENLO_12.advance, MEASURED_MENLO_12.linespace) == (10, 19)
 
     @pytest.mark.parametrize(
         "advance, linespace, expected",
         [
-            (5, 9, (200, 270)),      # Menlo 8, from S-1's table
-            (7, 13, (280, 390)),     # Menlo 11
-            (10, 19, (400, 570)),    # Menlo 16, the one in use
-            (14, 28, (560, 840)),    # Menlo 24
+            (5, 9, (200, 270)),      # Menlo 8 as S-1 read it on Tk 8.5.9
+            (7, 13, (280, 390)),     # Menlo 8 as AMEND-6 reads it on Tk 9.0.4
+            (10, 19, (400, 570)),    # the cell in use, under both
+            (14, 28, (560, 840)),    # a cell twice the width of a Menlo 8
             (1, 1, (40, 30)),        # the degenerate but legal cell
         ],
     )
@@ -117,12 +117,12 @@ class TestCellPlacement:
             assert this_top == previous_bottom
 
     def test_the_last_cell_ends_exactly_at_the_window_edge(self):
-        metrics = MEASURED_MENLO_16
+        metrics = MEASURED_MENLO_12
         _, _, right, bottom = metrics.cell_bounds(COLUMNS - 1, ROWS - 1)
         assert (right, bottom) == metrics.window_pixel_size()
 
     def test_every_cell_has_a_different_origin(self):
-        metrics = MEASURED_MENLO_16
+        metrics = MEASURED_MENLO_12
         origins = {
             metrics.cell_origin(column, row)
             for column in range(COLUMNS)
@@ -152,9 +152,11 @@ class TestTheFontConstants:
         assert FONT_FAMILY == "Menlo"
 
     def test_the_size_is_at_the_exact_grid_ceiling(self):
-        # S-1 measured that a 40-character row lines up with 40 placed cells
-        # only at size 16 and below.  The size in use is the largest that
-        # still does, which is why it is 16 and not 17 or 20.
+        # AMEND-6 measured that a 40-character row lines up with 40 placed
+        # cells only at size 12 and below on Tk 9.0.4.  The size in use is the
+        # largest that still does, which is why it is 12 and not 13 or 15.
+        # (S-1 measured the same property on Tk 8.5.9 and found the ceiling at
+        # 16; both readings describe the same cell — see metrics.py.)
         assert FONT_SIZE == EXACT_GRID_CEILING
 
     def test_the_size_is_not_above_the_ceiling(self):

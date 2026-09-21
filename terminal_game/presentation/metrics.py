@@ -14,15 +14,24 @@ and only the two numbers it starts from have to come from a real font.
 
 Those two numbers are **advance** (how far the pen moves after one character)
 and **linespace** (how far it moves after one line).  S-1 measured them for the
-font this project uses:
+font this project uses, and AMEND-6 re-measured them on the Tk the project now
+runs on:
 
-    Menlo 16 -> advance 10, linespace 19 -> 40 x 30 cells is 400 x 570 pixels
+    Menlo 12 -> advance 10, linespace 19 -> 40 x 30 cells is 400 x 570 pixels
 
-and also measured the thing that makes size 16 the ceiling: at 16 and below, a
-40-character row drawn as one string lands on the same pixels as 40 characters
-placed one cell at a time, and above 16 it does not.  ``EXACT_GRID_CEILING``
-records that, because it is the reason the size is not simply "whatever looks
-big enough".
+**The nominal size changed and the cell did not.**  S-1 measured Menlo 16 on
+Tk 8.5.9, which took a point as a pixel; Tk 9.0.4 applies the 96/72 scaling a
+point is owed, so the same cell is asked for as 12.  The pixels are identical
+— cell 10 x 19, window 400 x 570, the glyph bboxes unchanged — which is why
+human item 3's verdict on the type size survives the move.  ``FONT_SIZE`` is a
+number in the toolkit's units, not a size on the glass, and only the second of
+those is what WIN-2 and a human care about.
+
+AMEND-6 also re-measured the thing that makes 12 the ceiling: at 12 and below,
+a 40-character row drawn as one string lands on the same pixels as 40
+characters placed one cell at a time, and above 12 it does not.
+``EXACT_GRID_CEILING`` records that, because it is the reason the size is not
+simply "whatever looks big enough".
 
 Nothing here knows what a canvas is.  :class:`CellMetrics` is handed its two
 numbers by whoever measured them, which in production is
@@ -58,15 +67,19 @@ FONT_FAMILY = "Menlo"
 #: :data:`EXACT_GRID_CEILING`.  It is also assumption P4, "large enough to read
 #: comfortably", which no test can settle; a human looks at it in WI-17 and
 #: WI-19 changes this one constant if the answer is no.
-FONT_SIZE = 16
+#:
+#: **12 here is the 16 S-1 recommended.**  It is stated in the toolkit's units,
+#: which changed under it — see the module docstring.  The cell this produces
+#: is the cell a human already looked at.
+FONT_SIZE = 12
 
 #: Above this size a 40-character row drawn as one string no longer lands on
-#: the same pixels as 40 characters placed one at a time — S-1 measured drifts
-#: of up to 18 px over 40 cells at sizes 17 and above.  Below and at it, a
-#: painter may place per cell, per row, or per changed cell and get the same
-#: picture.  If :data:`FONT_SIZE` is ever raised past this, the painter loses
-#: that freedom and must place every cell individually.
-EXACT_GRID_CEILING = 16
+#: the same pixels as 40 characters placed one at a time — AMEND-6 measured
+#: drifts of 4 to 38 px over 40 cells at every size from 13 to 36.  Below and
+#: at it, a painter may place per cell, per row, or per changed cell and get
+#: the same picture.  If :data:`FONT_SIZE` is ever raised past this, the
+#: painter loses that freedom and must place every cell individually.
+EXACT_GRID_CEILING = 12
 
 
 class CellMetrics(object):
@@ -112,7 +125,7 @@ class CellMetrics(object):
         return (columns * self.advance, rows * self.linespace)
 
     def window_pixel_size(self) -> Tuple[int, int]:
-        """WIN-2's 40 x 30 grid as a pixel rectangle.  Menlo 16 gives 400 x 570."""
+        """WIN-2's 40 x 30 grid as a pixel rectangle.  Menlo 12 gives 400 x 570."""
         return self.pixel_size(COLUMNS, ROWS)
 
     # -- where things go ---------------------------------------------------
@@ -123,7 +136,8 @@ class CellMetrics(object):
         Cells abut exactly: the cell at column ``c`` starts where the cell at
         ``c - 1`` ends, with no gap and no overlap.  S-1 confirmed that on a
         real canvas at Menlo 16 — a glyph at x = 0 has bbox ``[-1, 0, 11, 19]``
-        and the same glyph at x = 10 has ``[9, 0, 21, 19]``.
+        and the same glyph at x = 10 has ``[9, 0, 21, 19]``.  AMEND-6 re-read
+        both bboxes at Menlo 12 on Tk 9.0.4 and got the same two rectangles.
         """
         self.check_in_grid(column, row)
         return (column * self.advance, row * self.linespace)
@@ -179,7 +193,9 @@ class CellMetrics(object):
         )
 
 
-#: The metrics S-1 measured for :data:`FONT_FAMILY` at :data:`FONT_SIZE`.
+#: The metrics measured for :data:`FONT_FAMILY` at :data:`FONT_SIZE` — by S-1
+#: as Menlo 16 on Tk 8.5.9, and by AMEND-6 as Menlo 12 on Tk 9.0.4, which are
+#: the same cell asked for in the two toolkits' different units.
 #:
 #: This is a **record of a measurement, not a substitute for one.**  The
 #: surface measures the real font at start-up and uses what it finds, so that a
@@ -187,4 +203,4 @@ class CellMetrics(object):
 #: constant is here so that the pure tests, WI-6's size test and anyone reading
 #: the plan have the expected answer to compare against — and so that a
 #: substitution shows up as a disagreement instead of going unnoticed.
-MEASURED_MENLO_16 = CellMetrics(advance=10, linespace=19)
+MEASURED_MENLO_12 = CellMetrics(advance=10, linespace=19)

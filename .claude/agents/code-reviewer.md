@@ -85,7 +85,7 @@ GH_TOKEN="$CODE_REVIEWER_GH_TOKEN" gh api repos/{owner}/{repo}/pulls/<n>/comment
 ```
 git fetch origin <branch>
 git checkout --detach FETCH_HEAD                     # the developer holds the branch
-/usr/bin/python3 -m venv .venv                       # your worktree has none
+/opt/homebrew/bin/python3.14 -m venv .venv            # your worktree has none
 .venv/bin/python -m pip install -q -r requirements.txt
 <the suite command the plan pins>
 ```

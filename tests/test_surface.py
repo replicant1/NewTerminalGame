@@ -23,7 +23,7 @@ from terminal_game.presentation import palette
 from terminal_game.presentation.field import Cell, Field
 from terminal_game.presentation.metrics import (
     COLUMNS,
-    MEASURED_MENLO_16,
+    MEASURED_MENLO_12,
     ROWS,
     CellMetrics,
 )
@@ -82,10 +82,11 @@ class TestWinTwoThePixelSize:
     """WIN-2: 40 x 30 cells of the chosen font, derived from the real font."""
 
     def test_the_font_on_this_machine_gives_the_measured_cell(self, surface):
-        # The one thing only a real font can answer: that Menlo 16 here is
-        # the 10 x 19 cell S-1 measured and the plan's runtime table records.
+        # The one thing only a real font can answer: that Menlo 12 here is
+        # the 10 x 19 cell S-1 measured, AMEND-6 re-measured on Tk 9.0.4, and
+        # the plan's runtime table records.
         # The arithmetic that turns it into 400 x 570 is test_metrics.py's.
-        assert surface.metrics == MEASURED_MENLO_16
+        assert surface.metrics == MEASURED_MENLO_12
         assert surface.metrics_match_measurement()
 
     def test_the_canvas_is_the_size_the_metrics_computed(self, surface):
@@ -116,7 +117,7 @@ class TestWinTwoThePixelSize:
         # being, rather than the window quietly coming out a different size.
         family, size = surface.font_description
         assert family == "Menlo"
-        assert size == 16
+        assert size == 12
 
     def test_the_size_in_use_keeps_an_exact_cell_grid(self, surface):
         assert surface.exact_cell_grid()
@@ -132,7 +133,7 @@ class TestEveryGlyphTheGameDrawsSharesOneCellWidth:
 
     def test_every_wall_glyph_is_one_cell_wide(self, surface):
         font = tkinter.font.Font(
-            root=surface.widget, family="Menlo", size=16
+            root=surface.widget, family="Menlo", size=12
         )
         one_cell = font.measure("M")
         wrong = {
@@ -143,7 +144,7 @@ class TestEveryGlyphTheGameDrawsSharesOneCellWidth:
         assert wrong == {}, "these glyphs are not one cell wide: {}".format(wrong)
 
     def test_every_actor_and_dot_glyph_is_one_cell_wide(self, surface):
-        font = tkinter.font.Font(root=surface.widget, family="Menlo", size=16)
+        font = tkinter.font.Font(root=surface.widget, family="Menlo", size=12)
         one_cell = font.measure("M")
         # The dot (SCRN-4) and the block glyphs the specimen draws the two
         # actors with (SCRN-5).
@@ -153,7 +154,7 @@ class TestEveryGlyphTheGameDrawsSharesOneCellWidth:
 
     def test_the_cell_width_is_not_zero(self, surface):
         # Keeps the two tests above from passing because everything measured 0.
-        font = tkinter.font.Font(root=surface.widget, family="Menlo", size=16)
+        font = tkinter.font.Font(root=surface.widget, family="Menlo", size=12)
         assert font.measure("M") == surface.metrics.advance > 0
 
 
@@ -385,9 +386,12 @@ class TestBuildingASurface:
     def test_a_different_font_size_gives_a_different_window(self, tk_root):
         made = GridSurface(tk_root, size=8)
         try:
-            # S-1's table: Menlo 8 is advance 5, linespace 9.
-            assert made.metrics == CellMetrics(5, 9)
-            assert made.pixel_size == (200, 270)
+            # AMEND-6's rescan: Menlo 8 is advance 7, linespace 13 on Tk 9.0.4.
+            # (S-1 read 5 x 9 for it on Tk 8.5.9 — the same 4/3 the chosen size
+            # moved by, which is why this test's numbers moved and the window's
+            # did not.)
+            assert made.metrics == CellMetrics(7, 13)
+            assert made.pixel_size == (280, 390)
             assert not made.metrics_match_measurement()
         finally:
             made.widget.destroy()

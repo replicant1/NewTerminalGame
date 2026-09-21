@@ -46,7 +46,7 @@ LEFT_DISPLAY = Rect(-3509, -1440, 2560, 1440)
 UPPER_DISPLAY = Rect(-949, -1440, 2560, 1440)
 ALL_DISPLAYS = [MAIN_DISPLAY, LEFT_DISPLAY, UPPER_DISPLAY]
 
-#: WI-6's window, as measured for P4: Menlo 16, cell 10x19, 40x30 cells.
+#: WI-6's window, as measured for P4: Menlo 12, cell 10x19, 40x30 cells.
 WINDOW_SIZE = (400, 570)
 
 
