@@ -87,3 +87,13 @@
                 Scrutiny list missing the --force pointer a reviewer needs. Third failure to propagate,
                 so resyncing is now part of posting a REVIEW-REQUEST rather than a thing to remember
 06:53:36Z  TEST    986 passed, 0 failed, 10 deselected
+06:57:07Z  NOTE    round 5: 2 comments, one root cause. My renumbering loop replaced the FIRST match of each
+                number in the whole file rather than within the Output section, so it shifted four items
+                of "What to review for" instead. Output read 1,2,2,3,4,5,7,8,9 with no 6 and two 2s, and
+                the criteria list read 1,3,4,5,6 under a heading saying "Five things"
+06:57:07Z  DECIDE  renumber each list within its own section boundaries, mechanically, and verify by printing
+                both lists rather than by reading the diff
+06:57:07Z  VERIFY  the only positional cross-reference is conductor.md:156 "its first output item", which is
+                still the worktree path; and "the best finding of the five" is true again
+06:57:07Z  NOTE    reaped the round 5 reviewer's worktree by the path it reported. No agent worktrees remain
+06:57:07Z  TEST    986 passed, 0 failed, 10 deselected
