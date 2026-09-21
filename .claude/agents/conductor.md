@@ -142,12 +142,18 @@ Poll the open pull requests for that marker as part of watching the run — `gh 
 
 **A pull request awaiting a review is not stalled, and a pull request awaiting rework is.** This is the distinction your accounting turns on now. "Finished but unmerged" used to mean something was wrong; with a review gate it is the normal state of a work item for as long as a round takes. What is wrong is a pull request with a verdict on it and nobody acting on the verdict, a `REVIEW-REQUEST` with no reviewer ever spawned against it, or — worst of the three — a merged pull request rated MEDIUM or HIGH with no approval on it.
 
-**Neither of those last two can be seen with `gh pr list` or `gh pr view --comments`.** Ask the reviews list, and ask it with `--paginate`:
+**The first and the third of those need the reviews list**, and it must be asked with `--paginate`:
 
 ```
 gh api --paginate repos/{owner}/{repo}/pulls/<number>/reviews \
   --jq '[.[]|select(.state=="APPROVED")|{user:.user.login, commit_id}]'
 ```
+
+**The middle one is not this query's to answer**, and asking it here would be the same mistake
+a third time: a `REVIEW-REQUEST` with no reviewer spawned returns `[]` from this, and so does one
+where a reviewer *was* spawned and requested changes — indistinguishable again. Settle that one
+where it is visible: the marker is a pull request comment, which `gh pr view <n> --comments`
+shows, and whether you dispatched against it is your own `DISPATCH` lines.
 
 **Ask for the approvals and compare the login yourself**, against the one you recorded on your
 `IDENTITY` line. Do not filter on `$CODE_REVIEWER_LOGIN` inside the query: you mint once at

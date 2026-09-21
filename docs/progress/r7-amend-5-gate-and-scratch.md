@@ -70,3 +70,21 @@
                 returned, which is why no test finds them -- and the verification point is now stated
                 as a claim about the SHAPE rather than about these three
 07:37:25Z  TEST    999 passed, 0 failed, 12 deselected
+07:42:02Z  NOTE    round 5: table row 3 named the wrong consequence -- "[] is indistinguishable from a merged
+                item that was never approved". Three things contradict it: a merged item with no
+                approval is exactly what conductor.md tells the conductor to REPORT, so it is anomalous
+                rather than invisible; section 3's own text says [] is what a genuinely UNAPPROVED pull
+                request returns; and my own reply accepting round 4 named it as an approved PR filed as
+                awaiting review. The one row that failed to exhibit the property its table exists for
+07:42:02Z  NOTE    and "neither of those last two" pointed at items 2 and 3 where the query answers 1 and 3.
+                Item 2 -- a REVIEW-REQUEST with no reviewer spawned -- returns [] from that query
+                whether nobody was spawned or somebody was and requested changes. The same
+                indistinguishable empty answer, a THIRD time, in the sentence introducing the corrected
+                query. And gh pr view --comments does see half of it: the marker is a PR comment
+07:42:02Z  DECIDE  item 2 is settled where it is visible -- the marker from the comments, the dispatch from
+                the conductor's own DISPATCH lines
+07:42:02Z  NOTE    the reviewer declined to comment on "which is why no test would have found any of them",
+                because round 4 prescribed that wording -- but it is right that the reason is wrong. A
+                test asserting a consequence against an independently sourced value IS an independent
+                check. These escaped because they live in markdown nothing executes. Corrected anyway
+07:42:02Z  TEST    999 passed, 0 failed, 12 deselected

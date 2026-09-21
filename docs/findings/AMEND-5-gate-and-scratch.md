@@ -92,13 +92,18 @@ actually share, and it is what made all three survivable long enough to reach a 
 | --- | --- | --- |
 | the unpaginated gate | `BLOCKED` | a pull request nobody has approved yet |
 | the stale verdict file | a review reading `REQUEST-CHANGES` | a real rejection |
-| the empty-login query | `[]` | a merged item that was never approved |
+| the empty-login query | `[]` | an approved pull request still awaiting review |
 
 None of them raises, logs or returns anything anomalous. A wrong answer that looks exactly
-like a right one cannot be caught by watching for failures, which is why no test would have
-found any of them and why each was caught instead by somebody checking a result they had every
-reason to believe — a verdict re-verified rather than taken, an agent reading back its own
-output, a query run both ways.
+like a right one cannot be caught by watching for failures, so each was caught instead by
+somebody checking a result they had every reason to believe — a verdict re-verified rather than
+taken, an agent reading back its own output, a query run both ways.
+
+**No test would have found any of them either, though not for that reason.** A test that
+asserts a consequence against an independently sourced expected value *is* an independent
+check, and would catch a plausible wrong answer — that is this project's own doctrine in
+`tests-that-can-fail`. These three escaped because they live in agent-instruction markdown,
+which nothing executes.
 
 **That last sentence is not a claim about the three defects.** They were found that way because
 that is the only way defects of this shape *can* be found; saying so about these three would be
