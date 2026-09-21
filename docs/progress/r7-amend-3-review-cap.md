@@ -28,3 +28,12 @@
 04:46:21Z  NOTE    and code-reviewer.md's older dispute paragraph still escalated after ONE dispute, which
                 contradicts the two-dispute sequence the new rule defines
 04:46:21Z  TEST    986 passed, 0 failed, 10 deselected
+04:50:28Z  NOTE    code review round 1: CHANGES_REQUESTED, 3 comments. Test B fired on the exchange test A
+                governs -- developer disputes with reasoning, reviewer answers once, nothing is "resolved",
+                so test B escalates the very round line 235 says is not a deadlock. It reinstated the
+                escalate-after-one-dispute behaviour Copilot's finding had just removed, one screen above
+04:50:28Z  DECIDE  test B asks whether anything ENTERED the loop, not whether anything was settled -> an
+                exchange moves information both ways even though it resolves nothing
+04:50:28Z  NOTE    and the six-round backstop named no stopping action, while every other file now says not to
+                count rounds -- so the only runaway guard in the system did nothing
+04:50:28Z  TEST    986 passed, 0 failed, 10 deselected

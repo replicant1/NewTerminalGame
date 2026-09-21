@@ -216,13 +216,15 @@ Rounds are not the measure. A review where each round finds real defects, the de
 **Two things say the loop has stopped converging. Either is grounds to stop:**
 
 - **A disagreement that has had its exchange.** You raised a comment; the developer disputed it with its reasoning; you answered once, saying why you still hold it; it disputes again. That is a real disagreement and neither of you decides it. Do not answer a third time.
-- **A round that resolved nothing.** Every comment you carried into the round is still outstanding — none fixed, none withdrawn, none argued to a conclusion. The loop is going nowhere, whichever round it is.
+- **A round in which nothing moved.** You carried at least one comment in, and the round added nothing to any of them: the developer fixed none, withdrew none, and offered no reasoning it had not already given — and you withdrew none.
+
+  **An exchange is not this.** A round where the developer disputes with its reasoning and you answer resolves nothing and yet moves a great deal: both sides have now said something new, and where that ends is the first test's business, not this one. Ask whether anything *entered* the loop, not whether anything was settled. If you find yourself about to escalate a round in which the developer had just disputed and you had just answered, you are firing this test on the exchange the first test exists to govern.
 
 This is the same distinction `docs/IMPLEMENTATION_PLAN.md` draws about maze repair, and it is worth borrowing the words: *"a generator told only 'not sound' cannot tell whether its last repair helped, and that is the difference between converging and thrashing."* A round count is exactly that impoverished signal. It tells you a round happened and nothing about whether it helped, so it cannot distinguish a review that is working from one that is stuck — and it was reading the first as the second.
 
-**Six rounds is a backstop, not the mechanism.** If you reach a sixth, something has gone wrong that neither test above managed to name, and that is itself worth reporting. Do not treat it as the rule; the two tests are the rule.
+**Six rounds is a backstop, not the mechanism.** If you begin a sixth round, **stop and post the `BLOCKED` verdict below**, giving `six rounds` as the reason. Something has gone wrong that neither test above managed to name, and saying so is more useful than a seventh round. Do not treat six as the rule — the two tests are the rule, and a review that reaches the backstop has already told you they need another look.
 
-When you stop, **leave the standing request for changes where it is — never approve merely to end an argument** — and post a comment beginning `REVIEW-VERDICT: BLOCKED <ITEM> — <which of the two, in a clause>`, naming the comments still outstanding and the developer's position on each. Report it to the conductor for the technical lead to settle.
+When you stop, **leave the standing request for changes where it is — never approve merely to end an argument** — and post a comment beginning `REVIEW-VERDICT: BLOCKED <ITEM> — <disagreement | nothing moved | six rounds>`, naming the comments still outstanding and the developer's position on each. Report it to the conductor for the technical lead to settle.
 
 ## When the developer disputes a comment
 

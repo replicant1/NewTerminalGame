@@ -124,6 +124,8 @@ The body opens with one of three verdict headers and carries its own count of fi
 | `### 🟡 Changes recommended` | it has comments for you |
 | `### 🔵 Needs a closer look` | it is not confident; read it and decide |
 
+**Its overview list goes stale, and will mislead you.** Because it never re-runs, the summary at the top of its review keeps listing every finding as "Open" however many you have answered, and its review stays bound to the sha it was written for. Judge by the threads — each carries your `REVIEW-REPLY` — and never by that list.
+
 **Copilot is clean when its review has no comment you have not either fixed or answered.** That is the observable condition, and it is the whole of it. Note it is about the comments, not about the head: its review stays bound to the sha it was written for and will not follow your fixes.
 
 If it has comments, assess each one exactly as you would a human's. **A valid comment you fix**, commit and push. **A comment you believe is wrong you answer on its thread, saying why** — do not resolve it silently, and do not change correct code to make a bot stop talking.

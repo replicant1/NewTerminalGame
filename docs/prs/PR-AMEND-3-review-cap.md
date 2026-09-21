@@ -4,8 +4,9 @@ Risk: MEDIUM — no production code, but this governs when a review is abandoned
 to the technical lead, so a mistake in it either stalls work that was converging or lets a
 real deadlock run forever.
 
-Amendment 3 to the agent definitions. Three files, one rule, three tidy-ups the round 3
-reviewer of AMEND-2 flagged for the technical lead rather than the pull request. **No change
+Amendment 3 to the agent definitions. **Four files** — the rule was stated in four places and
+changing it in three would have left it unchanged — plus three tidy-ups the round 3 reviewer
+of AMEND-2 flagged for the technical lead rather than the pull request. **No change
 to `docs/IMPLEMENTATION_PLAN.md`** — the cap was never in it — and none to the work items or
 the schedule.
 
@@ -52,6 +53,10 @@ the difference between converging and thrashing."* A round count is that impover
   positions is removed. Check nothing downstream still counts rounds.
 - `.claude/agents/developer.md` — the developer must not hurry or count rounds either; a
   gate is only as good as the least patient party to it.
+- `.claude/agents/technical-lead.md` — the fourth copy, which Copilot found and the author
+  had missed. It budgeted three rounds and escalated after three. Check that what replaced
+  it gives the lead something it can actually plan against, having removed the number it
+  used to plan against.
 
 ## The three tidy-ups
 
