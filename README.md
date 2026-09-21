@@ -134,9 +134,18 @@ So: no `match`; no `X | Y` unions and no built-in generics evaluated at runtime
 annotations as strings; no `functools.cache`, no `itertools.pairwise`, and
 nothing else from 3.10 or later.
 
-**What enforces it.** `tests/test_runtime.py` parses every module in
-`terminal_game/`, `tests/` and `tools/` with `ast.parse(..., feature_version=(3,
-9))`, so 3.10+ *syntax* fails the suite on the interpreter that would otherwise
-accept it. A 3.10+ *library call* is not syntax and no parser can see it —
-`functools.cache` is a plain attribute access. **Review owns that half**, and
-the list above is what review is reading against.
+**What enforces it, and what does not.** `tests/test_runtime.py` parses every
+module in `terminal_game/`, `tests/` and `tools/` with `ast.parse(...,
+feature_version=(3, 9))`, so 3.10+ *syntax* — `match`, `except*`, PEP 695 —
+fails the suite on the interpreter that would otherwise accept it. The same
+file asserts that every module carries `from __future__ import annotations`,
+which is what makes an `X | Y` or a `list[int]` **in an annotation** harmless:
+it is never evaluated.
+
+Three things are guarded by neither, because they parse at every version and
+are not library calls either: `X | Y` **evaluated at runtime**
+(`isinstance(x, int | str)`), a built-in generic **evaluated at runtime**
+(`dict[str, int]()`), and 3.10+ library APIs like `functools.cache`. 3.9's
+*interpreter* caught those and the parser cannot, and the interpreter is what
+AMEND-6 traded away. **Review owns all three**, and the list above is what
+review is reading against.

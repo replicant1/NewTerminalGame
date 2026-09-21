@@ -108,12 +108,22 @@ so the property fails as decisively as S-1 found it failing above 16.
 
 ### What this means for human item 3
 
-Section 9's item 3 — *is the type large enough to read comfortably* — was answered by a
-person looking at a running game in WI-17. **That verdict survives this change untouched**,
-because the window it was given is the window this produces: the same 400 × 570 rectangle,
-the same 10 × 19 cell, the same glyph bboxes. `FONT_SIZE` is a number in the toolkit's
-units, not a size on the glass. Only the second of those was ever put to a human, and it
-has not changed.
+Section 9's item 3 — *is the type large enough to read comfortably* — **is still open, and
+this neither answers it nor invalidates it.** The cell is the same 10 × 19, the window the
+same 400 × 570, the glyph bboxes the same, so nothing a person would be judging has moved.
+`FONT_SIZE` is a number in the toolkit's units, not a size on the glass, and only the
+second was ever going to be put to a human.
+
+**An earlier draft of this section said the item had been answered in WI-17 and that the
+verdict carried over. That was wrong, and the record says so plainly:**
+`docs/findings/WI-17-human-verification.md` lists *WIN-2 (comfortable type)* as **open**,
+and `docs/findings/WI-17-pixels-reach-the-screen.md` opens with *"after the user looked at
+the running game and said there was no maze in it"*. The one time a person has looked at
+this window, it was blank — so there was never a verdict to carry.
+
+The right way round: **AMEND-6 is what makes the question askable at all.** Until the
+toolkit moved, anyone sent to judge the type would have been sent to look at an empty
+rectangle. Item 3 is not closed by this; it is unblocked by it.
 
 ## 5. What changed, and what did not
 

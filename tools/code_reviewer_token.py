@@ -35,6 +35,8 @@ all of GitHub, so "Code Reviewer" may already be taken and the slug you end up
 with decides the bot's login.  Nothing in this project hardcodes it.
 """
 
+from __future__ import annotations
+
 import base64
 import json
 import os

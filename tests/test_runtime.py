@@ -103,12 +103,30 @@ class TestTheSourceStaysAtThreeNine:
     interpreter to run it: CPython's own parser, told to accept only what 3.9
     accepted.
 
-    **What this cannot see.** Syntax only.  ``functools.cache`` is an
-    attribute access and ``itertools.pairwise`` is a name — both parse
-    perfectly at every version, and no parser will ever catch them.  The
-    3.10+ *library* half of section 1.2's list is enforced by review and by
-    nothing else, which is stated here so that a green suite is not read as
-    saying more than it does.
+    **What this cannot see, in full.**  Section 1.2's list has four bullets
+    and this sweep reaches one of them.  Measured, not assumed:
+
+    ===================================  ==========================================
+    ``match``, ``except*``, PEP 695       refused — this is what the sweep catches
+    ``X | Y`` in an annotation            parses at every version
+    ``X | Y`` evaluated at runtime        parses at every version
+    ``list[int]`` evaluated at runtime    parses at every version
+    ``functools.cache`` and friends       parses at every version
+    ===================================  ==========================================
+
+    Only the first is syntax.  The rest are ordinary expressions that 3.9's
+    *parser* accepted and 3.9's *interpreter* rejected, and the interpreter is
+    the thing AMEND-6 traded away, so no parser recovers them.
+
+    The annotation row is closed separately, by
+    :meth:`test_every_module_defers_its_annotations` below: with
+    ``from __future__ import annotations`` an annotation is never evaluated,
+    so ``X | Y`` in one cannot raise whatever the interpreter is.
+
+    **The last three rows are review's, and nothing else guards them.**  Said
+    here in full because an earlier draft of this docstring named only the
+    library row, which quietly implied the union and generic rows were
+    covered.  They are not.
     """
 
     LANGUAGE_LEVEL = (3, 9)
@@ -146,6 +164,33 @@ class TestTheSourceStaysAtThreeNine:
         with pytest.raises(SyntaxError):
             ast.parse("match x:\n    case 1:\n        pass\n",
                       feature_version=self.LANGUAGE_LEVEL)
+
+    def test_every_module_defers_its_annotations(self) -> None:
+        """``from __future__ import annotations``, everywhere, as section 1.2 says.
+
+        This is what makes ``X | Y`` and ``list[int]`` *in an annotation*
+        harmless on any interpreter: the annotation becomes a string and is
+        never evaluated.  Without it the sweep above would be the only guard
+        and would not see them, which is the gap the review that prompted
+        this test found.
+        """
+        missing = []
+        for path in self._sources():
+            tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+            deferred = any(
+                isinstance(node, ast.ImportFrom)
+                and node.module == "__future__"
+                and any(alias.name == "annotations" for alias in node.names)
+                for node in tree.body
+            )
+            if not deferred:
+                missing.append(str(path.relative_to(
+                    pathlib.Path(__file__).resolve().parent.parent)))
+        assert missing == [], (
+            "these modules do not defer their annotations, so an `X | Y` or a "
+            "`list[int]` in one would be evaluated at import and the language "
+            "level would rest on nobody having written one: {}".format(missing)
+        )
 
     def test_the_sweep_is_not_empty(self) -> None:
         """And that it found the codebase, rather than an empty directory."""

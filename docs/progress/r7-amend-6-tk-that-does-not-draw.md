@@ -66,3 +66,38 @@
                 20 glyphs at 410 != 40 x 11, and the control asserts one size above the ceiling is
                 NOT exact, so the ceiling is an edge and not a number we chose
 11:18:00Z  TEST    1023 passed, 12 deselected; 12 on the marker; 1035 with both
+11:40:00Z  NOTE    review round 2, the code reviewer: REQUEST-CHANGES, 2 comments, both about a
+                CLAIM OF PROOF rather than about code -- which is what this amendment is made of.
+                Both valid, both mine, both fixed
+11:42:00Z  VERIFY  comment (a): I claimed a human verdict that was never given. metrics.py said the
+                cell "is the cell a human already looked at" and P4 said the verdict "carries over
+                unchanged". The record says otherwise -- WI-17-human-verification.md lists WIN-2
+                (comfortable type) as OPEN, and WI-17-pixels-reach-the-screen.md opens "after the
+                user looked at the running game and said there was no maze in it". The one time a
+                person looked at this window it was blank, so there was no verdict to carry
+11:44:00Z  DECIDE  say what the progress log already said: item 3 is neither answered nor invalidated,
+                and AMEND-6 UNBLOCKS it rather than closing it -- until the toolkit moved, anyone
+                sent to judge the type would have been looking at an empty rectangle. WI-19 reads
+                metrics.py, so that constant must not tell it the question was settled
+11:47:00Z  VERIFY  comment (b): the wall's "what this cannot see" named the library row and left out
+                two others. Measured: X | Y in an annotation, X | Y at runtime and list[int] at
+                runtime ALL parse at feature_version=(3,9). They are not syntax and not library
+                calls, so neither half of my docstring's split covered them
+11:50:00Z  DECIDE  document all four rows, and close the annotation row rather than only describing
+                it -> a sweep asserting `from __future__ import annotations` in every module, which
+                is what makes X | Y in an annotation harmless on any interpreter. 60 of 61 modules
+                already had it; tools/code_reviewer_token.py did not, and now does
+11:52:00Z  VERIFY  the new sweep was proved able to fail: removed the future import from palette.py
+                and it failed naming that module. The runtime rows stay review's, said plainly in
+                both the docstring and the README
+11:55:00Z  NOTE    ONE UNEXPLAINED FLAKE. The combined run failed once ("1 failed, 1035 passed")
+                immediately after these edits, and I did not capture which test. Not reproduced in
+                10 combined runs and 8 focused runs of the pixel pair since. Most likely candidate
+                is the screen-photographing pair, which is sensitive to what is in front of the
+                window at the instant it captures. Recorded rather than dismissed
+11:56:00Z  TEST    1024 passed, 12 deselected; 12 on the marker; 1036 with both
+11:58:00Z  BLOCKED the reviewer could not post. Its verdict exists only in its hand-back report: the
+                App credentials are not in a spawned agent's environment and the harness refuses the
+                documented `eval "$(... code_reviewer_token.py)"` mint. NOT worked around -- posting
+                the review under the author's identity would leave the gate looking closed while it
+                is open, which is the exact failure AMEND-5 was about. Raised to the user

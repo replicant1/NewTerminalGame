@@ -69,8 +69,13 @@ FONT_FAMILY = "Menlo"
 #: WI-19 changes this one constant if the answer is no.
 #:
 #: **12 here is the 16 S-1 recommended.**  It is stated in the toolkit's units,
-#: which changed under it — see the module docstring.  The cell this produces
-#: is the cell a human already looked at.
+#: which changed under it — see the module docstring.  The cell it produces is
+#: unchanged, so **human item 3 is neither answered nor invalidated by the
+#: move: it is still owed.**  An earlier draft of this comment said the cell
+#: was one a human had already looked at, which is not what the record says —
+#: the only time a person has looked at this window it was blank, which is the
+#: defect AMEND-6 fixes.  WI-19 reads this constant, so it must not be told
+#: the question was settled.
 FONT_SIZE = 12
 
 #: Above this size a 40-character row drawn as one string no longer lands on
