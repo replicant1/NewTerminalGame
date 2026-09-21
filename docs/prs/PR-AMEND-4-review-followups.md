@@ -6,11 +6,16 @@ abandoned and fixes the state in which a completed work item silently fails to l
 Amendment 4. **The first change in this sequence that makes the definitions smaller:**
 
 ```
-code-reviewer.md   5541 → 2210 words   (−60%)
+code-reviewer.md   5541 → 2344 words   (−58%)
 conductor.md       4683 → 4545
 technical-lead.md  4279 → 4174
-developer.md       6261 → 6199
+developer.md       6261 → 6258
 ```
+
+The figures are `wc -w` at this pull request's head, and they moved during its own
+review: `code-reviewer.md` bottomed out at 2210 and came back to 2344 when three rules
+the subtraction had dropped were restored, each as a clause. `developer.md`'s net change
+is three words — its review sections shrank and the merge exception was added.
 
 ## 0. Why this is mostly a deletion
 

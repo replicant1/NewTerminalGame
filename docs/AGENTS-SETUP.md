@@ -51,5 +51,12 @@ on this repository, and GitHub issued a token for it. A failure prints nothing t
 explains itself on stderr — the call site is `eval`, so a partial line would be eval'd as a
 success.
 
+**Never run the mint just to look at what it prints.** Its stdout is a live installation
+token; echoing it puts a working credential wherever that output lands — a terminal, a log,
+a transcript — and redacting it afterwards does not unsend it. `eval` it, or read
+`$CODE_REVIEWER_LOGIN` afterwards, and check the token only with `test -n`. If one is
+exposed, it expires within the hour; to end the window sooner, uninstall and reinstall the
+App, which invalidates every token issued to that installation.
+
 **The login is discovered, not assumed.** App names are unique across GitHub, so the slug you
 are given decides the login; nothing hardcodes it.

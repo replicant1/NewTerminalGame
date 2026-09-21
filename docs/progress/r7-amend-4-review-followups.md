@@ -35,3 +35,12 @@
 05:24:14Z  DECIDE  close it with one clause, not by restoring the cap -- the reviewer said plainly it was not
                 asking for the two tests back and that a round count is still the wrong signal
 05:24:14Z  TEST    986 passed, 0 failed, 10 deselected
+05:29:31Z  NOTE    round 2: CHANGES_REQUESTED, 2 comments, both defects the previous commit introduced and
+                both the same shape as the failure this amendment exists to name -- a fact stated twice
+                and changed once. "Two conditions" over a three-item list, and the word-count table that
+                is section 0's own evidence, stale by its own review
+05:29:31Z  RISK    I printed a live installation token into the session transcript while checking the mint's
+                output format, with a redaction that only masked its prefix. Expires 06:28:44Z; scope is
+                pull_requests:write and contents:read on one public repo. AGENTS-SETUP.md now says never
+                to run the mint to inspect it
+05:29:31Z  TEST    986 passed, 0 failed, 10 deselected
