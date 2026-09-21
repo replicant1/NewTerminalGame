@@ -1,0 +1,15 @@
+# r7/amend-4-review-followups
+
+05:11:36Z  START   AMEND-4: three things AMEND-3's review found and deliberately did not fix in AMEND-3
+05:11:36Z  READ    conductor.md, developer.md, code-reviewer.md, docs/prs/PR-AMEND-3-review-cap.md
+05:11:36Z  NOTE    the round 3 reviewer found the fifth statement of the rule and did NOT comment on it, because
+                it had passed that text in round 2 and its own termination rule forbids reopening what it
+                passed. It said so in its report instead. That is the rule working, and this branch is where
+                the consequence gets paid
+05:11:36Z  WEIGH   an approval landing after the developer has gone : conductor merges | reviewer merges |
+                conductor dispatches a developer to merge
+05:11:36Z  DECIDE  dispatch a developer -> the conductor merging would put it in the middle of a decision it did
+                not make, and the reviewer merging would make it author and executor of the same verdict
+05:12:05Z  DRAFT   conductor dispatch for an approval, the narrow merge exception, git show for stale instructions
+05:12:05Z  DRAFT   corrected the AMEND-3 summary's restatement of test B; left AMEND-2's alone as an accurate record
+05:12:05Z  TEST    986 passed, 0 failed, 10 deselected

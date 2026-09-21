@@ -48,3 +48,4 @@
 05:02:10Z  DECIDE  a silent resubmit gets "request changes again" the first time, "nothing moved" the second,
                 because escalating a developer that was careless once spends the escalation on a sentence
 05:02:10Z  TEST    986 passed, 0 failed, 10 deselected
+05:10:27Z  MERGE   r7/amend-3-review-cap into main -- 986 passed, 10 deselected, by the developer after APPROVED @da5582f

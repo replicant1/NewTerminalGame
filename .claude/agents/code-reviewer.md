@@ -31,6 +31,16 @@ If you arrive at a pull request whose Copilot review still has comments the deve
 
 Read that review before you start regardless. It is free, it has already been paid for, and a finding you and it both reach independently is a finding worth trusting. `docs/findings/AMEND-2-copilot-review-behaviour.md` records how it behaves on this repository.
 
+## Read your own instructions at the head you are reviewing
+
+**Do not trust the copy of this file you were started with, and do not trust the one in your worktree either.** Both have been wrong, in different reviews: a system prompt rendered from a commit before the fix it was reviewing, and a worktree that arrived at the merge base carrying a rule the pull request under review had removed. Neither source is reliable on its own, and this project amends agent definitions as work items — so the rules you are given are exactly the thing most likely to be out of date.
+
+```
+git show <head sha>:.claude/agents/code-reviewer.md
+```
+
+That is the copy that governs. Read it before you start, and where it disagrees with anything else, it wins.
+
 ## Your input
 
 The conductor gives you the pull request number and the work item code. Everything else you fetch yourself:
