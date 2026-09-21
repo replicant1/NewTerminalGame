@@ -25,13 +25,8 @@ a claim that quietly stops being true.
 `code-reviewer.md` really did lose more than half its words. But `conductor.md` and
 `developer.md` *grew*, because this branch also added the unmerged-approval dispatch, the merge
 exception and the worktree reaping — real additions that a compression percentage was quietly
-netting against.
-
-**They say something less flattering and more useful.** `code-reviewer.md` really did lose
-55% of its words. But `conductor.md` and `developer.md` *grew*, because this branch also added
-the unmerged-approval dispatch and the merge exception — real additions that the compression
-headline was quietly netting against. Across the four files the change is −2,562 words at
-that commit, which is a number rather than a percentage of anything.
+netting against. Across the four files the change is **−2,562 words at that commit**, which is
+a number rather than a percentage of anything.
 
 ## 0. Why this is mostly a deletion
 
@@ -146,7 +141,9 @@ writing it there is what makes a running review visible, which is its whole purp
   Every rule removed was either the cap machinery or a restatement of a rule that survives
   elsewhere; if you find one that is now stated nowhere, that is the finding.
 - `.claude/agents/conductor.md`, the reap — `--force` on a worktree deletes uncommitted work
-  by definition. Check that what it destroys is only ever the reviewer's own log, and that
+  by definition, and `git worktree list` also holds developers who are still working. The
+  conductor must reap **the path the reviewer reported** and nothing else; check that the
+  reviewer is actually required to report it. Check that what it destroys is only ever the reviewer's own log, and that
   "take anything worth keeping out of its report first" is stated before the command rather
   than after it.
 - `.claude/agents/code-reviewer.md`, "When you and the developer disagree" — the entire

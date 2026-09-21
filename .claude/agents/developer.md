@@ -150,6 +150,19 @@ A human can ask for a fresh pass with the re-request control on the pull request
 gh pr comment <number> --body "REVIEW-REQUEST: WI-3 round 1 risk HIGH head <sha>"
 ```
 
+**Resync the pull request's body first**, every time, if the summary has changed since you last
+pushed it:
+
+```
+gh pr edit <number> --body-file docs/prs/PR-<ITEM>-<slug>.md
+```
+
+The file and the body are one document in two places, and the body is the one a reviewer
+arriving at the pull request actually reads — including the Scrutiny section that tells it
+where the dangerous part is. It moves no head, so it costs nothing and cannot invalidate an
+approval. Doing it here rather than "when you remember" is the point: on this project the body
+has gone stale three times, each time because a fix landed in the file and nobody pushed it on.
+
 The conductor watches for that marker and spawns the reviewer; you cannot spawn it, message it, or be messaged by it. Everything between you and the reviewer travels on this pull request.
 
 **The reviewer has its own GitHub identity**, separate from yours, which is what lets it approve a pull request you opened — GitHub refuses both `--approve` and `--request-changes` from an author, as `docs/findings/AMEND-2-review-permissions.md` records. So its verdict is a real review, not a comment pretending to be one. Poll the reviews list for it:

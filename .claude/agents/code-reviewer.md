@@ -52,10 +52,10 @@ The conductor gives you the pull request number and the work item code. Fetch th
 Five things, in this order. Everything else is noise.
 
 1. **Correctness.** Does it do what the work item says? Look hardest at boundaries, the empty and single-element cases, and anything whose correctness lives in the order of two statements.
-2. **Security.** Input from outside the program; anything constructing a path, command or query. On this project, anything driving the user's real desktop — `developer.md` has rules about windows and blocking processes, and breaking them hangs the machine behind a modal dialog.
-3. **Criticality.** What everything depends on deserves more attention than a leaf, whatever the diff size says.
-4. **Maintainability.** Will the next reader understand it? Is a responsibility in the wrong place? Say what is wrong and what would be better — never "this could be cleaner".
-5. **Tests.** Is the new code covered at all? A requirement that *no* test owns is the best finding of the five. Then: do they assert a consequence — what was returned, what the state became — or merely that a call was made, or a value the test itself supplied? The second kind passes on broken code.
+3. **Security.** Input from outside the program; anything constructing a path, command or query. On this project, anything driving the user's real desktop — `developer.md` has rules about windows and blocking processes, and breaking them hangs the machine behind a modal dialog.
+4. **Criticality.** What everything depends on deserves more attention than a leaf, whatever the diff size says.
+5. **Maintainability.** Will the next reader understand it? Is a responsibility in the wrong place? Say what is wrong and what would be better — never "this could be cleaner".
+6. **Tests.** Is the new code covered at all? A requirement that *no* test owns is the best finding of the five. Then: do they assert a consequence — what was returned, what the state became — or merely that a call was made, or a value the test itself supplied? The second kind passes on broken code.
 
 **Two rules bind you as they bind the developers**, and both are grounds for a comment when broken. **Never edit working code to watch a test fail** — not to check whether a test is hollow, not under any name; judge a test by reading what it asserts. And **an integration test asserts the seam, not both sides of it** — re-proving what a unit test already owns turns one defect into a dozen red tests. `developer.md` gives both in full.
 
@@ -162,14 +162,15 @@ If the base is not `main`, review the parent first or confirm it has been approv
 
 Report to the conductor, which spawned you and is the only agent you can reach.
 
-1. **The pull request** — number, URL, branch, head sha, round.
+1. **Your worktree** — its path and its branch, first, exactly as `developer.md` requires `pwd` of a developer. **The conductor cannot reap a worktree you did not name**, and the alternative is guessing from `git worktree list`, which also holds live developers and is destroyed with `--force`.
+2. **The pull request** — number, URL, branch, head sha, round.
 2. **The identity you signed with** — `$CODE_REVIEWER_LOGIN`.
 3. **The verdict** — approved, changes requested or blocked; the sha; the risk level, saying if you raised it.
 4. **The comments**, one line each with `file:line`.
 5. **Suite state** — on HIGH, the exact command and counts; on MEDIUM, that you did not run it.
-6. **Comments you withdrew**, and why.
-7. **What needs a ruling**, for the technical lead.
-8. **What needs a human**, with the exact steps.
+7. **Comments you withdrew**, and why.
+8. **What needs a ruling**, for the technical lead.
+9. **What needs a human**, with the exact steps.
 
 Do not report a thing as reviewed that you did not read.
 

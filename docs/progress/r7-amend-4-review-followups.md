@@ -73,3 +73,17 @@
                 a measurement and cannot go stale; an unlabelled one is a claim that quietly stops
                 being true. That is why AMEND-2's summary was correctly left alone
 06:49:14Z  TEST    986 passed, 0 failed, 10 deselected
+06:53:36Z  NOTE    round 4: 3 comments. My splice left the superseded paragraph sitting under the new one --
+                two copies that disagreed, in the commit whose purpose was to stop a figure quietly
+                ceasing to be true. The failure this PR is named for, committed while fixing it
+06:53:36Z  NOTE    and the reap named a worktree the conductor has no way to resolve: it spawns the reviewer
+                with the PR number and item code and nothing else, and code-reviewer.md's Output list is
+                the one agent report here that omits its own worktree path, where developer.md requires
+                pwd. The only fallback is git worktree list, which holds LIVE developers, and --force
+                does not ask twice
+06:53:36Z  DECIDE  the worktree path becomes the reviewer's first output item, and the conductor is told to
+                use the reported path and reap nothing if none was reported
+06:53:36Z  NOTE    the PR body was three commits stale -- no section 5, the table round 2 rejected, and a
+                Scrutiny list missing the --force pointer a reviewer needs. Third failure to propagate,
+                so resyncing is now part of posting a REVIEW-REQUEST rather than a thing to remember
+06:53:36Z  TEST    986 passed, 0 failed, 10 deselected
