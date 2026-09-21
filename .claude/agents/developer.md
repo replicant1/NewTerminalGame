@@ -169,7 +169,9 @@ There are three outcomes:
   Never change code you believe is correct merely to clear a comment. That is how a defect gets introduced by a review.
 
   When you have answered all of them, request the next round with a fresh `REVIEW-REQUEST: <ITEM> round <n+1> risk <level> head <sha>` comment.
-- **A comment beginning `REVIEW-VERDICT: BLOCKED`** — three rounds have passed without converging, and the request for changes still stands. **Do not merge.** Report the PR number, the comments still outstanding and your position on each; the technical lead settles it.
+- **A comment beginning `REVIEW-VERDICT: BLOCKED`** — the review has stopped converging, and the request for changes still stands. **Do not merge.** Report the PR number, the comments still outstanding and your position on each; the technical lead settles it.
+
+  Rounds by themselves do not trigger this, so do not count them or hurry because of them. What triggers it is a disagreement that has had its exchange, or a round in which nothing was resolved. A round where you fix what was found and the reviewer finds something else is the process working.
 
 **If you run out of road before the verdict arrives** — you are interrupted, or you have been at it too long — report the PR number, the round and that it is awaiting review, and stop. The conductor will dispatch a developer to pick up the rework. What you must not do is fall silent, because a PR awaiting review and a PR abandoned look identical from outside.
 

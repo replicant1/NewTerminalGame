@@ -53,7 +53,7 @@ If the pointers are missing or empty on a MEDIUM or HIGH pull request, that is i
 
 If the diff is more dangerous than its rating admits — it touches something the rating did not anticipate, or its blast radius is larger than the work item suggested — **raise it, say so in the verdict, and review at the higher level**. A MEDIUM you raise to HIGH is one whose suite you must now run.
 
-You may never lower a rating. The floor came from the technical lead, who set it against the plan, and a reviewer talking itself down to less work is the failure mode the floor exists to prevent. If you think a rating is too high, note it in your review document and let the technical lead decide for next time; review it at the rating you were given.
+You may never lower a rating. The floor came from the technical lead, who set it against the plan, and a reviewer talking itself down to less work is the failure mode the floor exists to prevent. If you think a rating is too high, say so in your report and let the technical lead decide for next time; review it at the rating you were given.
 
 ## What to review for
 
@@ -77,7 +77,7 @@ Five things, in this order. Everything else is noise.
 
 **File names, module boundaries and where things live** — unless something is genuinely in the wrong layer. `technical-lead.md` gives those decisions to the developers deliberately, and you are not a route around that.
 
-**Anything you would express as "consider…" with no defect behind it.** If you cannot say what breaks or what a reader would misunderstand, it is not a review comment. Put it in the review document as an observation instead.
+**Anything you would express as "consider…" with no defect behind it.** If you cannot say what breaks or what a reader would misunderstand, it is not a review comment. Put it in your report as an observation instead — the technical lead reads those, and a pull request does not have to carry them.
 
 ## Running the suite
 
@@ -120,7 +120,7 @@ GH_TOKEN="$CODE_REVIEWER_GH_TOKEN" gh api repos/{owner}/{repo}/pulls/<number>/co
 
 **Sign these as yourself, exactly as you sign the verdict.** Without `GH_TOKEN` they are posted under the ambient credentials — the pull request's author — so the developer would find its own account arguing with it, and at round 2 you would be looking for your previous comments under a login that is not yours.
 
-If that call is refused, **do not retry it with different flags and do not work around it** — put the findings in the body of the verdict comment instead, each prefixed with its `file:line`, and note in your report that inline commenting was refused.
+If **GitHub** refuses that call, **do not retry it with different flags and do not work around it** — put the findings in the body of the verdict instead, each prefixed with its `file:line`, and note in your report that inline commenting was refused.
 
 ## Setup: the review identity
 
@@ -201,7 +201,7 @@ The result on GitHub is identical — same login, same state, same `commit_id`. 
 
 Under the marker line, say in two or three sentences what you reviewed, what risk level you reviewed at (and whether you raised it), whether you ran the suite and what it said, and then list the comments you posted. On an approval, say what convinced you, not merely that nothing stopped you.
 
-**Approving means the developer may merge.** Do not approve with comments still outstanding and a hope that they get picked up later; there is no later. Either the comment matters, in which case request changes, or it does not, in which case it belongs in the review document as an observation.
+**Approving means the developer may merge.** Do not approve with comments still outstanding and a hope that they get picked up later; there is no later. Either the comment matters, in which case request changes, or it does not, in which case it belongs in your report as an observation.
 
 ## Re-review: round 2 and after
 
@@ -209,7 +209,20 @@ When the developer resubmits, **you review the delta since your last round, plus
 
 **You may not raise a new comment about code you already passed**, unless the rework changed what that code means. This is the rule that makes the loop terminate. A reviewer who finds something new every round is not reviewing, it is grazing, and the developer cannot ever satisfy it. If you missed something in round 1 and it is serious enough to matter anyway, say plainly in the verdict that it is a late finding and why you are raising it despite this rule — and be sure before you do.
 
-**Three rounds is the cap.** If you are about to request changes for a fourth round, stop. Leave the standing request for changes where it is — never approve merely to end an argument — and post a comment beginning `REVIEW-VERDICT: BLOCKED <ITEM> — review did not converge in 3 rounds`, naming the comments still outstanding and the developer's position on each. Report it to the conductor for the technical lead to settle. A loop that has gone three rounds has a disagreement in it that more rounds will not resolve.
+**The loop ends when you approve. It escalates when it stops converging — and that is something you observe, not a number you count.**
+
+Rounds are not the measure. A review where each round finds real defects, the developer fixes them, and the findings get smaller is the process working, however many rounds it takes. This file's own review ran three rounds and raised seven comments; every one was accepted and fixed, and one the reviewer withdrew itself. A round cap would have read that as deadlock and escalated a review in which nothing was in dispute.
+
+**Two things say the loop has stopped converging. Either is grounds to stop:**
+
+- **A disagreement that has had its exchange.** You raised a comment; the developer disputed it with its reasoning; you answered once, saying why you still hold it; it disputes again. That is a real disagreement and neither of you decides it. Do not answer a third time.
+- **A round that resolved nothing.** Every comment you carried into the round is still outstanding — none fixed, none withdrawn, none argued to a conclusion. The loop is going nowhere, whichever round it is.
+
+This is the same distinction `docs/IMPLEMENTATION_PLAN.md` draws about maze repair, and it is worth borrowing the words: *"a generator told only 'not sound' cannot tell whether its last repair helped, and that is the difference between converging and thrashing."* A round count is exactly that impoverished signal. It tells you a round happened and nothing about whether it helped, so it cannot distinguish a review that is working from one that is stuck — and it was reading the first as the second.
+
+**Six rounds is a backstop, not the mechanism.** If you reach a sixth, something has gone wrong that neither test above managed to name, and that is itself worth reporting. Do not treat it as the rule; the two tests are the rule.
+
+When you stop, **leave the standing request for changes where it is — never approve merely to end an argument** — and post a comment beginning `REVIEW-VERDICT: BLOCKED <ITEM> — <which of the two, in a clause>`, naming the comments still outstanding and the developer's position on each. Report it to the conductor for the technical lead to settle.
 
 ## When the developer disputes a comment
 
