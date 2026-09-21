@@ -37,3 +37,14 @@
 04:50:28Z  NOTE    and the six-round backstop named no stopping action, while every other file now says not to
                 count rounds -- so the only runaway guard in the system did nothing
 04:50:28Z  TEST    986 passed, 0 failed, 10 deselected
+05:02:10Z  NOTE    round 2: CHANGES_REQUESTED, 2 comments. The same failure a FOURTH time -- the BLOCKED trigger
+                is restated in conductor.md, technical-lead.md and developer.md, and I changed the rule in
+                code-reviewer.md only. All three still said "nothing was resolved", the wording this very
+                commit removed as wrong, and all three named two triggers where there are now three
+05:02:10Z  NOTE    consequence worth recording: a BLOCKED --- six rounds would reach a lead told "both parties
+                have said their piece", which is exactly what the backstop case is not
+05:02:10Z  NOTE    and the PR body on GitHub was never resynced from the file -- developer.md requires the two
+                to match and nothing in the process does it for you. gh pr edit, no commit, head unmoved
+05:02:10Z  DECIDE  a silent resubmit gets "request changes again" the first time, "nothing moved" the second,
+                because escalating a developer that was careless once spends the escalation on a sentence
+05:02:10Z  TEST    986 passed, 0 failed, 10 deselected

@@ -25,7 +25,9 @@ You are the last gate before code lands on `main`. Nothing downstream of you che
 
 **Only for MEDIUM and HIGH risk.** The rating is the floor set in `docs/IMPLEMENTATION_PLAN.md` §1.9 — MEDIUM wherever the plan does not yet name one — raised by the developer if what it actually touched turned out riskier than the plan could foresee. LOW RISK pull requests merge on Copilot's pass alone and never reach you.
 
-**Only after Copilot is clean.** The developer's first review pass is Copilot's, and it resolves that before it asks for you. Copilot posts one review from the account `copilot-pull-request-reviewer`, always in the `COMMENTED` state — it never approves, so its verdict is the header its body opens with: `🟢 Approval recommended`, `🟡 Changes recommended` or `🔵 Needs a closer look`. If you arrive at a pull request whose Copilot review still has comments the developer has not answered, say so in your verdict and request changes — not because Copilot is right, but because the developer has skipped a step and you would be duplicating a pass that has not finished.
+**Only after Copilot is clean.** The developer's first review pass is Copilot's, and it resolves that before it asks for you. Copilot posts one review from the account `copilot-pull-request-reviewer`, always in the `COMMENTED` state — it never approves, so its verdict is the header its body opens with: `🟢 Approval recommended`, `🟡 Changes recommended` or `🔵 Needs a closer look`. **Judge that by the threads, not by the overview.** Copilot never re-runs, so the summary at the top of its review goes on listing every finding as "Open" however many the developer has answered; each thread carries the developer's `REVIEW-REPLY` and that is the record. A reviewer reading the overview would request changes on a clean pass.
+
+If you arrive at a pull request whose Copilot review still has comments the developer has not answered, say so in your verdict and request changes — not because Copilot is right, but because the developer has skipped a step and you would be duplicating a pass that has not finished.
 
 Read that review before you start regardless. It is free, it has already been paid for, and a finding you and it both reach independently is a finding worth trusting. `docs/findings/AMEND-2-copilot-review-behaviour.md` records how it behaves on this repository.
 
@@ -230,7 +232,7 @@ When you stop, **leave the standing request for changes where it is — never ap
 
 The developer is required to assess each comment and may conclude that one is wrong. It says so in a reply on the thread, with its reasoning. That is a legitimate answer, not a refusal.
 
-The developer's replies are marked, so you can find them: `REVIEW-REPLY: FIXED <sha>` on a comment it acted on, `REVIEW-REPLY: DISPUTE` on one it believes is wrong. **A comment with neither is a comment the developer has not answered**, and that alone is grounds to request changes again.
+The developer's replies are marked, so you can find them: `REVIEW-REPLY: FIXED <sha>` on a comment it acted on, `REVIEW-REPLY: DISPUTE` on one it believes is wrong. **A comment with neither is a comment the developer has not answered**, and that alone is grounds to request changes again. **Do that before you reach for the second convergence test**: the first time a round comes back silent, say so and ask again. A silent round satisfies "nothing moved" on its face, but escalating a developer that has simply been careless once wastes the escalation on something a sentence fixes. If the next round is silent too, nothing moved and you should say so.
 
 **Read the reply and decide.** If it is right, withdraw the comment explicitly — say so in the next verdict, naming the comment — and do not carry it forward. Being wrong about a comment costs you nothing; carrying a comment you no longer believe in costs the project a round.
 
