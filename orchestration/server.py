@@ -221,10 +221,28 @@ def date_stamped(entries, path):
     if not stamped:
         return
     try:
-        anchor = datetime.datetime.fromtimestamp(
-            path.stat().st_mtime, datetime.timezone.utc).date()
+        written = datetime.datetime.fromtimestamp(
+            path.stat().st_mtime, datetime.timezone.utc)
     except OSError:
-        anchor = datetime.datetime.now(datetime.timezone.utc).date()
+        written = datetime.datetime.now(datetime.timezone.utc)
+    anchor = written.date()
+
+    # **The mtime belongs to the last line, which need not be a stamped one.**
+    # An unstamped note appended after the final stamp carries the file's date
+    # forward with it, and if that tail crossed a midnight the anchor is a day
+    # ahead of the stamp it is being pinned to -- which would date every line
+    # in the log one day late and move the whole run window with them.
+    #
+    # The stamp cannot have been written after the file was last written, so a
+    # last stamp that lands *ahead* of the mtime is a last stamp from the day
+    # before. The minute of slack absorbs the gap between reading the clock
+    # and the write landing; a real midnight crossing is hours, not seconds.
+    hour, minute, second = stamped[-1]["stamp"]
+    candidate = datetime.datetime(
+        anchor.year, anchor.month, anchor.day, hour, minute, second,
+        tzinfo=datetime.timezone.utc)
+    if candidate - written > datetime.timedelta(minutes=1):
+        anchor -= datetime.timedelta(days=1)
 
     day = anchor
     later = None

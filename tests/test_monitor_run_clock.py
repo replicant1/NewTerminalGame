@@ -146,3 +146,90 @@ class TestWhenTheRunEnded:
         ], now)
         entries = server.parse_log(path)
         assert not [e for e in entries if e["label"] == "DONE"]
+
+
+class TestAnUnstampedTail:
+    """The mtime belongs to the last *line*, not the last *stamp*.
+
+    ``parse_log`` keeps unstamped lines — prose, a wrapped continuation, a note
+    somebody appended without reading the clock. One of those written after the
+    final stamp carries the file's date forward with it, and if the tail crossed
+    a midnight the anchor is a day ahead of the stamp it is pinning.
+    """
+
+    def test_a_tail_written_after_midnight_does_not_drag_the_log_forward(
+            self, server, tmp_path):
+        path = tmp_path / "conductor.md"
+        path.write_text(
+            "23:10:00Z  START   a run that began before midnight\n"
+            "23:55:00Z  DONE    and finished before it too\n"
+            "a note somebody appended afterwards, with no stamp on it\n"
+        )
+        # The note was written at 00:20 the next day; the last stamp was not.
+        written = datetime.datetime(2026, 9, 18, 0, 20, 0,
+                                    tzinfo=datetime.timezone.utc)
+        os.utime(path, (written.timestamp(), written.timestamp()))
+
+        days = [_utc(e["ts"]).date() for e in server.parse_log(path)
+                if e.get("stamp")]
+        assert days == [datetime.date(2026, 9, 17)] * 2, (
+            "an unstamped tail past midnight dated every stamped line a day late"
+        )
+
+    def test_an_ordinary_log_is_not_dragged_backwards_by_the_slack(
+            self, server, tmp_path):
+        """The minute of slack must not fire on a normal log."""
+        written = datetime.datetime(2026, 9, 17, 2, 38, 54,
+                                    tzinfo=datetime.timezone.utc)
+        path = _log(tmp_path, ["01:25:23Z", "02:38:54Z"], written)
+        days = [_utc(e["ts"]).date() for e in server.parse_log(path)]
+        assert days == [datetime.date(2026, 9, 17)] * 2
+
+
+class TestRunClock:
+    """``run_clock`` itself, with the panes stubbed.
+
+    The tests above parse a ``DONE`` line; none of them asks ``run_clock`` what
+    it made of one. A regression in that wiring — the field renamed, the loop
+    breaking early, ``finished`` never set — would have passed the whole suite.
+    """
+
+    def _pane(self, role, lines, live=True):
+        out = []
+        for label, ts in lines:
+            out.append({"label": label, "ts": ts, "text": label})
+        return {"role": role, "lines": out, "live": live, "title": role}
+
+    def test_a_done_freezes_the_clock(self, server, monkeypatch):
+        monkeypatch.setattr(server, "panes", lambda: [
+            self._pane("conductor", [("START", 1000.0), ("DONE", 5000.0)])])
+        clock = server.run_clock()
+        assert clock["start"] == 1000.0
+        assert clock["end"] == 5000.0
+        assert clock["finished"] is True
+
+    def test_a_run_still_going_has_no_end(self, server, monkeypatch):
+        monkeypatch.setattr(server, "panes", lambda: [
+            self._pane("conductor", [("START", 1000.0), ("REPORT", 2000.0)])])
+        clock = server.run_clock()
+        assert clock["start"] == 1000.0
+        assert clock["end"] is None
+        assert clock["finished"] is False
+
+    def test_the_last_done_wins(self, server, monkeypatch):
+        """A conductor overwrites its log each run, but a resumed one can
+        write two. The clock stops at the last."""
+        monkeypatch.setattr(server, "panes", lambda: [
+            self._pane("conductor",
+                       [("START", 1000.0), ("DONE", 4000.0), ("DONE", 6000.0)])])
+        assert server.run_clock()["end"] == 6000.0
+
+    def test_with_no_conductor_it_falls_back_and_is_not_finished(
+            self, server, monkeypatch):
+        monkeypatch.setattr(server, "panes", lambda: [
+            self._pane("developer", [("START", 3000.0), ("DONE", 9000.0)])])
+        clock = server.run_clock()
+        assert clock["start"] == 3000.0
+        assert clock["finished"] is False, (
+            "only a conductor's DONE ends a run; a developer finishing does not"
+        )

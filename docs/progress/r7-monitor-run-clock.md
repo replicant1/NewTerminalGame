@@ -36,3 +36,17 @@
                 last is WI-20's merge at 02:37:45Z, 69 seconds before DONE
 05:47:51Z  DECIDE  a conductor's DONE ends the run -> clock stops there, header reads "run took" and "finished"
 05:47:51Z  TEST    996 passed, 0 failed, 10 deselected (2 more)
+07:10:22Z  NOTE    Copilot: parse_log keeps UNSTAMPED lines, and one appended after the final stamp carries
+                the file's mtime forward with it. If that tail crossed a midnight, the anchor sits a
+                day ahead of the stamp it is pinning and every line in the log is dated a day late --
+                which moves the whole run window with them
+07:10:22Z  DECIDE  a stamp cannot have been written after the file was -> if the last stamp lands ahead of
+                the mtime by more than a minute, it is a stamp from the day before. The minute absorbs
+                the gap between reading the clock and the write landing; a real crossing is hours
+07:10:22Z  NOTE    and nothing called run_clock() at all. The tests parsed a DONE line; none asked run_clock
+                what it made of one, so a rename, an early break or an unset flag would have passed
+07:10:22Z  VERIFY  16 tests in that file now, including run_clock with panes stubbed: DONE freezes the
+                clock, a live run has no end, the last DONE wins, and a developer's DONE does not end
+                a run. Suite 1015
+07:10:22Z  VERIFY  live monitor unchanged by either fix: start 01:25:23Z, end 02:38:54Z, finished, 1:13:31
+07:10:22Z  TEST    1015 passed, 0 failed, 12 deselected

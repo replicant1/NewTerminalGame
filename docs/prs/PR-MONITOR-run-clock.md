@@ -123,7 +123,24 @@ A conductor's `DONE` is the run ending, so the clock now stops there and the hea
   `PLAN: adopt candidate 2` at 01:33:08Z, eight minutes after `START`; the last is WI-20's
   merge at 02:37:45Z, sixty-nine seconds before `DONE`.
 
+## Two more, from Copilot
+
+**An unstamped tail can drag the anchor past midnight.** `parse_log` keeps unstamped lines —
+prose, a continuation, a note appended without reading the clock — and one written after the
+final stamp carries the file's mtime forward with it. If that tail crossed a midnight, the
+anchor sits a day ahead of the stamp it is pinning, and every stamped line is dated a day late.
+
+A stamp cannot have been written after the file was, so a last stamp landing *ahead* of the
+mtime is a stamp from the day before. A minute of slack absorbs the gap between reading the
+clock and the write landing; a real crossing is hours.
+
+**And nothing called `run_clock()`.** The tests parsed a `DONE` line; none of them asked
+`run_clock` what it made of one — so a renamed field, an early `break` or an unset flag would
+have passed the entire suite while the header went back to counting to now. Four tests with the
+panes stubbed now pin it: a `DONE` freezes the clock, a live run has no end, the last `DONE`
+wins, and a *developer's* `DONE` does not end a run.
+
 ## Suite
 
-`.venv/bin/python -m pytest -q` → **996 passed, 10 deselected**, up from 986 by the 10 tests
-here. No application code is touched.
+`.venv/bin/python -m pytest -q` → **1015 passed, 12 deselected**, with 16 tests in
+`tests/test_monitor_run_clock.py`. No application code is touched.
