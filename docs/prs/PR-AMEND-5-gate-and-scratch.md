@@ -49,9 +49,11 @@ Caught for one reason: that reviewer read its own posted body back.
   `gh pr list` nor `gh pr view --comments` can answer either. An earlier draft of this summary
   claimed `--paginate` "on the conductor's query"; there was no query behind it.
 - **The verdict body is written in the reviewer's own worktree** — private, and reaped after it
-  — **and named `VERDICT-<ITEM>-<round>.md`**. The trap is the *name*: `verdict.md` is what
-  every reviewer reaches for, so a shared directory accumulates a file that is always plausible
-  and usually somebody else's.
+  — **and named `VERDICT-<ITEM>-<round>.md`**. **The directory is what makes the collision
+  impossible**; in a directory one reviewer alone can reach, even `verdict.md` cannot collide.
+  The name is belt and braces. `verdict.md` was only the reflex that walked into the shared
+  directory, and saying otherwise would leave the hazard in place for anything else written
+  there.
 - **The reviewer reads its verdict back after posting — by id.** That is the check that caught
   this, and nothing had required it. **By id specifically**: the reviews list is paginated and
   oldest-first, so on #113 an unpaginated read returns five `REQUEST-CHANGES` verdicts and no
@@ -74,4 +76,5 @@ Caught for one reason: that reviewer read its own posted body back.
 
 ## Suite
 
-`.venv/bin/python -m pytest -q` → **998 passed, 12 deselected**, unchanged. No code.
+`.venv/bin/python -m pytest -q` → **999 passed, 12 deselected**. No code here; the count moved
+from 998 when this branch merged `main` and picked up #116's added boundary test.

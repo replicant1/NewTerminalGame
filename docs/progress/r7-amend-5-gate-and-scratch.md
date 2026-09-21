@@ -30,3 +30,14 @@
 07:21:48Z  NOTE    the reviewer also caught that no REVIEW-REQUEST marker existed -- I dispatched it
                 directly and skipped the step the conductor is supposed to watch for
 07:21:48Z  TEST    999 passed, 0 failed, 12 deselected
+07:28:20Z  NOTE    round 2: 2 comments, both introduced by round 1's own fix. The "What changes" bullet still
+                asserted "the trap is the name" twenty lines above the paragraph in the same commit
+                that calls that the wrong diagnosis -- and it is the half describing what the amendment
+                DID that carried the withdrawn version
+07:28:20Z  NOTE    and the suite line still said 998 where the head runs 999; the merge of main moved it
+                inside this delta, the progress log and commit message were updated and that line was
+                not. It matters because MEDIUM tells the reviewer to take the count from that document
+07:28:20Z  VERIFY  the reviewer executed both round 1 fixes rather than reading them: the read-back by id
+                against #113's approval returned APPROVE round 6 on the one pull request where the list
+                lies, and the conductor's query returned the approval paginated and [] unpaginated
+07:28:20Z  TEST    999 passed, 0 failed, 12 deselected
