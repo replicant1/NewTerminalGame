@@ -61,10 +61,33 @@ And the reviewer is now told to read its verdict back after posting, which is th
 caught this one — **by id, never out of the reviews list**, which is paginated and oldest-first
 and would hand back an earlier round's verdict.
 
+## 3. And the query written to catch it, failing the same way
+
+The conductor's new query filtered on `$CODE_REVIEWER_LOGIN` inside the `jq`. The conductor
+mints once at startup and shell state does not survive between an agent's tool calls, so by the
+time it sweeps, that variable is unset — the filter becomes `.user.login==""`, matches nothing,
+and returns `[]` on a pull request that is approved.
+
+```
+--jq '[.[]|select(.state=="APPROVED" and .user.login=="")]|map({commit_id})'   -> []
+--jq '[.[]|select(.state=="APPROVED")|{user,commit_id}]'                       -> the approval
+```
+
+**`[]` is what a genuinely unapproved pull request returns too**, so the two are
+indistinguishable — which is what the paragraph three lines below it calls *worse than not
+asking*. It asks for the approvals and compares the login itself now, which is the shape
+`developer.md` already used.
+
+Found by a reviewer that reversed an earlier round's judgement on it, having measured rather
+than reasoned: round 2 had seen it and passed it as low-stakes, when the query was one of
+several things the conductor might do. Round 3 pointed out it had since become the only way the
+conductor can see an approval at all.
+
 ## What these have in common
 
-Both are a *reading* failure rather than a writing one, and neither would have shown up in any
-test. The first was found by re-verifying a verdict an agent had reported; the second by an
-agent verifying its own output rather than assuming the call had done what it was told. In
+All three are a *reading* failure rather than a writing one, and neither would have shown up in any
+test. The first was found by re-verifying a verdict an agent had reported; the second by an agent
+verifying its own output rather than assuming the call had done what it was told; the third by
+one running a query both ways instead of reading it. In
 both cases the system was one unchecked assumption away from acting on something false — a
 merge refused, and a verdict misrecorded.

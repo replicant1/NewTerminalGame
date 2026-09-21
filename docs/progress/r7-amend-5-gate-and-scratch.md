@@ -41,3 +41,16 @@
                 against #113's approval returned APPROVE round 6 on the one pull request where the list
                 lies, and the conductor's query returned the approval paginated and [] unpaginated
 07:28:20Z  TEST    999 passed, 0 failed, 12 deselected
+07:32:29Z  NOTE    round 3: the conductor's new query filtered on $CODE_REVIEWER_LOGIN inside the jq. It
+                mints once at startup and shell state does not survive between tool calls, so by the
+                sweep that variable is unset, the filter reads .user.login=="" and returns [] on an
+                approved PR -- indistinguishable from a true "no approval", which is what the
+                paragraph three lines below calls worse than not asking
+07:32:29Z  VERIFY  measured both: filtered-on-empty gives [], the developer.md shape gives the approval
+07:32:29Z  NOTE    round 2 saw this and passed it as low-stakes; round 3 reversed that, on the ground that
+                the query had since become the conductor's ONLY way to see an approval. It declared
+                it a late finding rather than a new one, which is the right way to reopen
+07:32:29Z  DECIDE  the mint tool's "VAR=value; export VAR" stays for now and gets its own item. Three
+                reviewers have mis-parsed it, but a 401 fails LOUDLY -- the opposite class from this
+                amendment, which is about failures that look like success
+07:32:29Z  TEST    999 passed, 0 failed, 12 deselected

@@ -43,6 +43,9 @@ Caught for one reason: that reviewer read its own posted body back.
 
 ## What changes
 
+- **The conductor asks for the approvals and compares the login itself**, rather than filtering
+  on `$CODE_REVIEWER_LOGIN` inside the `jq` — that variable is unset by the time it sweeps, and
+  the filter would return `[]` on an approved pull request, indistinguishable from a real one.
 - **`--paginate` on both gate queries** in `developer.md`, with the measurement beside them so
   nobody removes it as noise. **And the conductor gets a reviews query at all** — it is told to
   find a pull request sitting on an approval and a merged MEDIUM or HIGH with none, and neither

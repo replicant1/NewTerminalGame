@@ -146,9 +146,16 @@ Poll the open pull requests for that marker as part of watching the run — `gh 
 
 ```
 gh api --paginate repos/{owner}/{repo}/pulls/<number>/reviews \
-  --jq '[.[]|select(.state=="APPROVED" and .user.login=="'"$CODE_REVIEWER_LOGIN"'")]
-        |map({commit_id})'
+  --jq '[.[]|select(.state=="APPROVED")|{user:.user.login, commit_id}]'
 ```
+
+**Ask for the approvals and compare the login yourself**, against the one you recorded on your
+`IDENTITY` line. Do not filter on `$CODE_REVIEWER_LOGIN` inside the query: you mint once at
+startup and shell state does not survive between your tool calls, so by the time you sweep, that
+variable is unset — the filter becomes `.user.login==""`, matches nothing, and hands you `[]` on
+a pull request that *is* approved. **That empty answer is identical to a true one**, which is the
+failure this whole paragraph exists to catch, produced by the query written to catch it. This is
+the shape `developer.md` uses for the same reason.
 
 **Without `--paginate` this is worse than not asking.** The list is oldest-first and thirty to a page, so on a pull request with several rounds the approval is not on it — measured on #113, where an unpaginated read shows five `REQUEST-CHANGES` and no approval, because the approval was the thirty-first. You would file an approved, unmerged pull request as *awaiting review*, which is exactly the state this paragraph calls the one most likely to end the run. Look for those two.
 
