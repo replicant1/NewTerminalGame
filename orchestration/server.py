@@ -190,6 +190,103 @@ def fetch_remote():
     return _fetched
 
 
+def _seconds(hour, minute, second):
+    return hour * 3600 + minute * 60 + second
+
+
+#: How far a stamp must jump forwards, reading the log backwards, before it is
+#: taken to belong to the previous day. A midnight crossing is most of a day;
+#: a log written slightly out of order is seconds. Twelve hours separates the
+#: two with room to spare in both directions.
+MIDNIGHT_JUMP_S = 12 * 3600
+
+
+def date_stamped(entries, path):
+    """Give every ``HH:MM:SSZ`` stamp a date, by anchoring the log to its file.
+
+    An agent writes the time and not the date, so a stamp alone cannot say
+    which day it belongs to.  This used to fill that in with *today*, which is
+    right for a log being appended right now and wrong for every other one --
+    and it was wrong silently, because a time is still a time.
+
+    It cost the progress bar.  ``progress()`` counts a work item done when its
+    merge is reachable from the trunk *since the run began*, and ``run_clock()``
+    takes that beginning from the conductor's ``START``.  Dated to today, run
+    7's ``START`` at ``01:25:23Z`` became this morning, every one of its
+    twenty-five merges fell before the window, and a finished project reported
+    ``0 of 25`` with ``S-1`` up next.  The README already knew stamps land on
+    today -- it says so about the timeline, and calls it not worth fixing
+    there.  Nobody noticed it also zeroed the bar.
+
+    So anchor on something real: **the last stamped line was written at about
+    the file's mtime**, which is a date the filesystem remembers.  Walk
+    backwards from it, and every time a stamp runs *forwards* as you go back,
+    you have stepped over a midnight, so the date goes back a day with it.
+    A live log still lands on today, because its mtime is now -- the old
+    behaviour survives exactly where it was right.
+
+    Run 7 checks out: its last line reads ``02:38:54Z``, its mtime is 12:38
+    local, and 02:38:54Z *is* 12:38 local. The two agree to the minute.
+
+    **mtime is best-effort, and it is worth knowing where it fails.** Git
+    rewrites it on checkout, merge and clone, so in a fresh clone every
+    *tracked* log carries today's date and this falls back to the behaviour it
+    replaced. That is tolerable for the panes, and it does not reach the one
+    file the progress bar depends on: the conductor's log is git-ignored, so
+    git never rewrites it. **That is a fact about the configuration rather
+    than a guarantee** -- if the conductor's log were ever tracked, the run
+    clock would go back to reading today and nothing here would say so.
+    """
+    stamped = [e for e in entries if e.get("stamp")]
+    if not stamped:
+        return
+    try:
+        written = datetime.datetime.fromtimestamp(
+            path.stat().st_mtime, datetime.timezone.utc)
+    except OSError:
+        written = datetime.datetime.now(datetime.timezone.utc)
+    anchor = written.date()
+
+    # **The mtime belongs to the last line, which need not be a stamped one.**
+    # An unstamped note appended after the final stamp carries the file's date
+    # forward with it, and if that tail crossed a midnight the anchor is a day
+    # ahead of the stamp it is being pinned to -- which would date every line
+    # in the log one day late and move the whole run window with them.
+    #
+    # The stamp cannot have been written after the file was last written, so a
+    # last stamp that lands *ahead* of the mtime is a last stamp from the day
+    # before. The minute of slack absorbs the gap between reading the clock
+    # and the write landing; a real midnight crossing is hours, not seconds.
+    hour, minute, second = stamped[-1]["stamp"]
+    candidate = datetime.datetime(
+        anchor.year, anchor.month, anchor.day, hour, minute, second,
+        tzinfo=datetime.timezone.utc)
+    if candidate - written > datetime.timedelta(minutes=1):
+        anchor -= datetime.timedelta(days=1)
+
+    day = anchor
+    later = None
+    for entry in reversed(stamped):
+        h, mi, sec = entry["stamp"]
+        # **A forward jump is only a midnight if it is a big one.** Logs are
+        # not monotonic: ``docs/progress/r7-s-2-anchor-window.md`` in this
+        # repository runs 01:34:41, 01:35:10, 01:34:58 -- twelve seconds
+        # backwards, because two lines were written in the order they were
+        # thought of rather than the order the clock was read. Reading that as
+        # a midnight put both lines a day early and reported an eleven-minute
+        # agent as having run for 24h 11m.
+        #
+        # A real crossing is most of a day. Noise is seconds.
+        if (later is not None
+                and _seconds(h, mi, sec) - _seconds(*later) > MIDNIGHT_JUMP_S):
+            day -= datetime.timedelta(days=1)
+        entry["ts"] = datetime.datetime(
+            day.year, day.month, day.day, h, mi, sec,
+            tzinfo=datetime.timezone.utc).timestamp()
+        entry["tsSource"] = "log"
+        later = (h, mi, sec)
+
+
 def parse_log(path, pane_id=""):
     """A progress log to a list of {kind, item, text, ts, tsSource}."""
     try:
@@ -222,15 +319,9 @@ def parse_log(path, pane_id=""):
             else:
                 out.append({"kind": "note", "label": "", "item": "", "text": line.rstrip()})
     new_generation(pane_id or str(path), len(out))
-    today = datetime.datetime.now(datetime.timezone.utc).date()
+    date_stamped(out, path)
     for entry in out:
         if entry.get("stamp"):
-            # A stamp the agent wrote as it appended the line: authoritative.
-            h, mi, sec = entry["stamp"]
-            entry["ts"] = datetime.datetime(
-                today.year, today.month, today.day, h, mi, sec,
-                tzinfo=datetime.timezone.utc).timestamp()
-            entry["tsSource"] = "log"
             continue
         m = ISO_RE.search(entry["text"])
         if m:
@@ -413,12 +504,18 @@ def panes():
             logs = sorted((d / "docs" / "progress").glob("*.md")) if (d / "docs" / "progress").is_dir() else []
             if not logs:
                 continue
-            lines = []
-            for f in logs:
-                lines.extend(parse_log(f, d.name + '/' + f.name))
+            # An archived worktree carries the WHOLE of docs/progress -- every
+            # log the repository already tracks, not just the one its agent
+            # wrote. Taking all of them put thirty agents' lines in one pane
+            # and named every archived pane after the alphabetically last file,
+            # which is "technical-lead" in all of them. The agent's own log is
+            # the one it was still writing when the worktree went, so it is the
+            # newest; the rest came with the checkout.
+            own = max(logs, key=lambda f: f.stat().st_mtime)
+            lines = parse_log(own, d.name + '/' + own.name)
             # Name it after the work item it was doing, not the agent id --
             # "agent-a03b510f6bc1a4e92" identifies nothing a reader knows.
-            title = logs[-1].stem if logs else d.name[:20]
+            title = own.stem
             result.append({
                 "id": d.name, "title": title,
                 "role": "developer", "source": "archived",
@@ -517,10 +614,20 @@ def run_clock():
     for pane in all_panes:
         if pane.get("role") != "conductor":
             continue
+        start = end = None
         for line in pane["lines"]:
-            if line["label"] == "START" and line.get("ts"):
-                return {"start": line["ts"], "source": "conductor START",
-                        "now": time.time()}
+            if line["label"] == "START" and line.get("ts") and start is None:
+                start = line["ts"]
+            # A conductor's DONE is the run ending, and the clock stops there.
+            # Without it "run elapsed" counts from the start to *now*, so a run
+            # that finished in an hour and a quarter on 17 September read 100h
+            # four days later -- a number that says only how long ago it was.
+            if line["label"] == "DONE" and line.get("ts"):
+                end = line["ts"]
+        if start is not None:
+            return {"start": start, "source": "conductor START",
+                    "end": end, "finished": end is not None,
+                    "now": time.time()}
 
     earliest, source = None, ""
     for pane in all_panes:
@@ -532,7 +639,8 @@ def run_clock():
                 continue
             if earliest is None or ts < earliest:
                 earliest, source = ts, "%s %s" % (pane["title"], line["label"])
-    return {"start": earliest, "source": source, "now": time.time()}
+    return {"start": earliest, "source": source, "end": None,
+            "finished": False, "now": time.time()}
 
 
 def in_hand():
