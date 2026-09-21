@@ -83,14 +83,15 @@ GH_TOKEN="$CODE_REVIEWER_GH_TOKEN" gh api repos/{owner}/{repo}/pulls/<n>/comment
 **HIGH RISK only.** You are the only independent check on a claimed green.
 
 ```
+brew install python-tk@3.14                          # once per machine, not per worktree
 git fetch origin <branch>
 git checkout --detach FETCH_HEAD                     # the developer holds the branch
-/opt/homebrew/bin/python3.14 -m venv .venv            # your worktree has none
+/opt/homebrew/bin/python3.14 -m venv .venv           # your worktree has none
 .venv/bin/python -m pip install -q -r requirements.txt
 <the suite command the plan pins>
 ```
 
-Detach rather than checking out: git refuses two worktrees on one branch. Build the venv: `.venv/` is git-ignored so your tree arrives without one. **Never check out or touch `main`** — it is deliberately checked out nowhere, and `gh pr diff` needs it not at all.
+Detach rather than checking out: git refuses two worktrees on one branch. Build the venv: `.venv/` is git-ignored so your tree arrives without one. **`python-tk@3.14` is the prerequisite and it is per machine, not per venv** — the Homebrew python has no `_tkinter` without it, and a venv built from one that lacks it fails `tests/test_runtime.py` before a single game test runs. Already installed on this machine; the line is here so a clean one is not a mystery. **Never check out or touch `main`** — it is deliberately checked out nowhere, and `gh pr diff` needs it not at all.
 
 **On MEDIUM, do not run it.** Read the tests against the diff and take the developer's counts. If reading them makes you doubt the counts, raise to HIGH and run it. A failing suite is a request for changes whatever else you found.
 

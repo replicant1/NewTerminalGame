@@ -23,6 +23,9 @@ from terminal_game.presentation import palette
 from terminal_game.presentation.field import Cell, Field
 from terminal_game.presentation.metrics import (
     COLUMNS,
+    EXACT_GRID_CEILING,
+    FONT_FAMILY,
+    FONT_SIZE,
     MEASURED_MENLO_12,
     ROWS,
     CellMetrics,
@@ -156,6 +159,71 @@ class TestEveryGlyphTheGameDrawsSharesOneCellWidth:
         # Keeps the two tests above from passing because everything measured 0.
         font = tkinter.font.Font(root=surface.widget, family="Menlo", size=12)
         assert font.measure("M") == surface.metrics.advance > 0
+
+
+class TestTheExactCellGridIsMeasuredAndNotAsserted:
+    """S-1's assertion 3, which its section 7 asked for and nothing built.
+
+    ``GridSurface.exact_cell_grid()`` compares the size in use against
+    :data:`EXACT_GRID_CEILING` — two constants, one of which was set from the
+    other.  **It cannot fail while both are wrong**, which is exactly the
+    shape of test this project has a rule about, and it is the only thing
+    that stood behind the ceiling until now.
+
+    What makes the ceiling true is a property of the real font: a row of 40
+    drawn as one string lands where 40 placed cells land.  These measure it.
+    Raised by Copilot on PR #118, which asked for the toolkit's patch version
+    to be pinned instead; **a pinned version string would go stale on a
+    harmless patch release and still tell nobody whether the font had
+    moved.** This asks the font.
+    """
+
+    GLYPHS = sorted(ALL_WALL_GLYPHS) + ["▪", "█", "▐", "▌", "▗", "▖", "■", "M", " "]
+
+    def _font(self, surface, size):
+        return tkinter.font.Font(
+            root=surface.widget, family=FONT_FAMILY, size=size
+        )
+
+    def test_a_row_of_forty_lands_where_forty_cells_land(self, surface):
+        font = self._font(surface, FONT_SIZE)
+        drifting = {}
+        for glyph in self.GLYPHS:
+            one, forty = font.measure(glyph), font.measure(glyph * 40)
+            if forty != 40 * one:
+                drifting[glyph] = "{} != 40 x {}".format(forty, one)
+        assert drifting == {}, (
+            "at size {} a 40-character row no longer lands on the same pixels "
+            "as 40 placed cells: {}. The painter places per cell so the "
+            "picture is still right, but the size is above the exact-grid "
+            "ceiling and EXACT_GRID_CEILING no longer records where it "
+            "is".format(FONT_SIZE, drifting)
+        )
+
+    def test_the_property_fails_above_the_ceiling(self, surface):
+        """The control: the ceiling is a real edge, not a number we chose.
+
+        Without this, the test above would pass just as happily on a font
+        whose rows lined up at *every* size, and the ceiling would be
+        unfalsifiable.
+        """
+        font = self._font(surface, EXACT_GRID_CEILING + 1)
+        drifting = [
+            glyph for glyph in self.GLYPHS
+            if font.measure(glyph * 40) != 40 * font.measure(glyph)
+        ]
+        assert drifting, (
+            "size {} still gives an exact 40-cell row, so the ceiling is not "
+            "at {} — this toolkit measures differently from the one AMEND-6 "
+            "recorded and both constants need re-reading".format(
+                EXACT_GRID_CEILING + 1, EXACT_GRID_CEILING
+            )
+        )
+
+    def test_the_size_in_use_sits_exactly_on_the_ceiling(self, surface):
+        # Measured rather than restated: the size in use is exact, and one
+        # above it is not, so the ceiling is where the constant says.
+        assert FONT_SIZE == EXACT_GRID_CEILING
 
 
 class TestScrnTwoNothingButGlyphsAndFlatColour:

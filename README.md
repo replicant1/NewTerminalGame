@@ -124,7 +124,19 @@ rather than left to be discovered.
 
 ## Writing to the 3.9 language level
 
-The interpreter is 3.9, so: no `match`; no `X | Y` unions and no built-in
-generics evaluated at runtime — put `from __future__ import annotations` at the
-top of every module and keep annotations as strings; no `functools.cache`, no
-`itertools.pairwise`, and nothing else from 3.10 or later.
+**The interpreter is 3.14 and the source is 3.9.** Those came apart in AMEND-6:
+the interpreter moved for the Tk bound to it, and the code stayed where it was
+because every module is written to 3.9 and there is no reason here to spend the
+churn.
+
+So: no `match`; no `X | Y` unions and no built-in generics evaluated at runtime
+— put `from __future__ import annotations` at the top of every module and keep
+annotations as strings; no `functools.cache`, no `itertools.pairwise`, and
+nothing else from 3.10 or later.
+
+**What enforces it.** `tests/test_runtime.py` parses every module in
+`terminal_game/`, `tests/` and `tools/` with `ast.parse(..., feature_version=(3,
+9))`, so 3.10+ *syntax* fails the suite on the interpreter that would otherwise
+accept it. A 3.10+ *library call* is not syntax and no parser can see it —
+`functools.cache` is a plain attribute access. **Review owns that half**, and
+the list above is what review is reading against.
