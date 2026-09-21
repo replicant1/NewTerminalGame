@@ -18,15 +18,23 @@ from __future__ import annotations
 
 import struct
 
-import pytest
-
 from tests import pixels
 
 WALL_BLUE = (0x21, 0x21, 0xDE)
 
 
-def _bmp(pixels_rgb, width=2, height=2, depth=32):
+#: 32 only, and not a parameter. A conformant 24bpp BMP pads every row to a
+#: four-byte boundary and ``histogram`` does not skip the padding — measured:
+#: a padded 3x2 file yields two spurious black pixels. A ``depth`` argument
+#: here would let a later test certify a depth the parser cannot read. Every
+#: capture this project takes is 32bpp, which `screencapture -t bmp` emits
+#: with no padding and no trailer.
+DEPTH = 32
+
+
+def _bmp(pixels_rgb, width=2, height=2):
     """A minimal BMP carrying ``pixels_rgb``, bottom-up as the format wants."""
+    depth = DEPTH
     step = depth // 8
     body = b"".join(
         struct.pack("<BBBB", b, g, r, 255)[:step] for (r, g, b) in pixels_rgb
@@ -73,6 +81,18 @@ class TestBlank:
         assert pixels.blank({(255, 255, 255): 99, (200, 200, 200): 1})
 
     def test_ink_on_two_per_cent_of_it_is_not_blank(self):
+        assert not pixels.blank({(0, 0, 0): 97, WALL_BLUE: 3})
+
+    def test_the_threshold_is_inclusive(self):
+        """Exactly 98 % dominant is blank; a hair under is not.
+
+        **No ``threshold=`` here, deliberately.** Passing it would pin a number
+        this test supplied rather than the default the screen checks actually
+        run on, and both assertions would go on passing after the default
+        changed — while the summary claimed this guarded the boundary.
+        ``TestNear`` pins its tolerance the same way, by not naming it.
+        """
+        assert pixels.blank({(0, 0, 0): 98, WALL_BLUE: 2})
         assert not pixels.blank({(0, 0, 0): 97, WALL_BLUE: 3})
 
     def test_an_empty_count_is_not_called_blank(self):
