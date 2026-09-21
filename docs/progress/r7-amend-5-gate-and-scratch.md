@@ -14,3 +14,19 @@
 07:06:01Z  DECIDE  and tell the reviewer to read its verdict back after posting -- that is the check that
                 caught this one, and it was not required of it
 07:06:01Z  TEST    998 passed, 0 failed, 12 deselected
+07:21:48Z  NOTE    review round 1: the read-back named no command, and the obvious one is the query this
+                amendment exists to fix. Measured on #113: unpaginated, the reviews list returns five
+                of the reviewer's own REQUEST-CHANGES verdicts and ZERO approvals, because the list is
+                oldest-first and the approval was the 31st. A reviewer reading back there would find
+                round 5's line and "correct" a verdict that was right
+07:21:48Z  DECIDE  fetch the review by the id the create response returns -> one object cannot truncate
+07:21:48Z  NOTE    and the conductor is told to find a PR sitting on an approval and a merged MEDIUM/HIGH
+                with none, with no query that can answer either. My summary claimed --paginate "on the
+                conductor's query"; there was no query. It has one now
+07:21:48Z  DECIDE  the finding had the diagnosis backwards: the DIRECTORY was the defect, the name only the
+                reflex that walked into it. In a directory one reviewer alone can reach, even
+                verdict.md cannot collide. "Give it a better name" would leave the hazard for anything
+                else written into a shared directory; "stop writing into one" does not
+07:21:48Z  NOTE    the reviewer also caught that no REVIEW-REQUEST marker existed -- I dispatched it
+                directly and skipped the step the conductor is supposed to watch for
+07:21:48Z  TEST    999 passed, 0 failed, 12 deselected

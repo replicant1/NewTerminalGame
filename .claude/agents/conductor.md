@@ -140,7 +140,17 @@ Poll the open pull requests for that marker as part of watching the run — `gh 
 
 **A pull request sitting on an approval is the one state that looks like success and is not.** Nothing further will happen to it: the reviewer has finished, the developer has gone, and GitHub will hold an approved pull request open indefinitely without complaining. It is the failure this whole gate is most likely to end in, so look for it explicitly rather than waiting to notice.
 
-**A pull request awaiting a review is not stalled, and a pull request awaiting rework is.** This is the distinction your accounting turns on now. "Finished but unmerged" used to mean something was wrong; with a review gate it is the normal state of a work item for as long as a round takes. What is wrong is a pull request with a verdict on it and nobody acting on the verdict, a `REVIEW-REQUEST` with no reviewer ever spawned against it, or — worst of the three — a merged pull request rated MEDIUM or HIGH with no approval on it. Look for those two.
+**A pull request awaiting a review is not stalled, and a pull request awaiting rework is.** This is the distinction your accounting turns on now. "Finished but unmerged" used to mean something was wrong; with a review gate it is the normal state of a work item for as long as a round takes. What is wrong is a pull request with a verdict on it and nobody acting on the verdict, a `REVIEW-REQUEST` with no reviewer ever spawned against it, or — worst of the three — a merged pull request rated MEDIUM or HIGH with no approval on it.
+
+**Neither of those last two can be seen with `gh pr list` or `gh pr view --comments`.** Ask the reviews list, and ask it with `--paginate`:
+
+```
+gh api --paginate repos/{owner}/{repo}/pulls/<number>/reviews \
+  --jq '[.[]|select(.state=="APPROVED" and .user.login=="'"$CODE_REVIEWER_LOGIN"'")]
+        |map({commit_id})'
+```
+
+**Without `--paginate` this is worse than not asking.** The list is oldest-first and thirty to a page, so on a pull request with several rounds the approval is not on it — measured on #113, where an unpaginated read shows five `REQUEST-CHANGES` and no approval, because the approval was the thirty-first. You would file an approved, unmerged pull request as *awaiting review*, which is exactly the state this paragraph calls the one most likely to end the run. Look for those two.
 
 **A `REVIEW-VERDICT: BLOCKED` means the reviewer and the developer disagree about a comment** and have each had their say, with the request for changes left standing. It is a design question and it belongs to the technical lead — pass it on with the comment and the developer's position. **Do not settle it yourself.** You would be choosing between two readings of code you did not write, which is what you are told not to do about a merge conflict, for the same reason.
 

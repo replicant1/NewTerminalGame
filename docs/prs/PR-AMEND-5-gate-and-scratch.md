@@ -43,14 +43,21 @@ Caught for one reason: that reviewer read its own posted body back.
 
 ## What changes
 
-- **`--paginate` on both gate queries** in `developer.md`, and on the conductor's, with the
-  measurement beside them so nobody removes it as noise.
+- **`--paginate` on both gate queries** in `developer.md`, with the measurement beside them so
+  nobody removes it as noise. **And the conductor gets a reviews query at all** — it is told to
+  find a pull request sitting on an approval and a merged MEDIUM or HIGH with none, and neither
+  `gh pr list` nor `gh pr view --comments` can answer either. An earlier draft of this summary
+  claimed `--paginate` "on the conductor's query"; there was no query behind it.
 - **The verdict body is written in the reviewer's own worktree** — private, and reaped after it
   — **and named `VERDICT-<ITEM>-<round>.md`**. The trap is the *name*: `verdict.md` is what
   every reviewer reaches for, so a shared directory accumulates a file that is always plausible
   and usually somebody else's.
-- **The reviewer reads its verdict back after posting.** That is the check that caught this,
-  and nothing had required it.
+- **The reviewer reads its verdict back after posting — by id.** That is the check that caught
+  this, and nothing had required it. **By id specifically**: the reviews list is paginated and
+  oldest-first, so on #113 an unpaginated read returns five `REQUEST-CHANGES` verdicts and no
+  approval. A read-back there would hand an earlier round's line to a reviewer that had just
+  approved. The first defect in this amendment, reappearing inside the instruction written to
+  catch the second.
 
 ## Scrutiny
 
@@ -60,8 +67,10 @@ Caught for one reason: that reviewer read its own posted body back.
 - `.claude/agents/code-reviewer.md`, the read-back — check it says to compare the **first line**
   against what was intended, not merely that a body exists. A read-back that asserts nothing is
   the hollow assertion this project has a rule about.
-- The naming rule — `<ITEM>` and `<round>` must both be in it. Either alone still collides:
-  two rounds of one item, or round 1 of two items.
+- The naming rule — belt and braces only. **The certainty comes from the worktree**, which is
+  private and reaped; in a directory one reviewer alone can reach, even `verdict.md` cannot
+  collide. The finding says so now, because the wrong diagnosis ("give it a better name") would
+  leave the hazard in place for anything else written into a shared directory.
 
 ## Suite
 

@@ -45,12 +45,21 @@ rejection.
 It was caught for one reason: that reviewer read its own posted body back, saw the wrong first
 line, and corrected it with `PUT /pulls/113/reviews/<id>`.
 
-**The trap is the name, not the directory.** `verdict.md` is what every reviewer reaches for,
-so a shared directory accumulates a file that is always plausible and usually somebody else's.
-Two changes follow: the body is written in the reviewer's own worktree, which is private and is
-reaped after it; and it is named `VERDICT-<ITEM>-<round>.md`, which cannot be confused with
-another review's. And the reviewer is now told to read its verdict back after posting, which is
-the check that found this one.
+**The directory is the defect; the name was only the reflex that walked into it.** An earlier
+draft of this finding had that the wrong way round, and the reviewer of the amendment corrected
+it: in a directory only one reviewer can reach, even `verdict.md` cannot collide, so the
+certainty comes entirely from moving the file into the reviewer's own worktree — which is
+private, and reaped after it. The `VERDICT-<ITEM>-<round>.md` naming is belt and braces, and
+worth having for the same reason a labelled measurement beats an unlabelled one, but it is not
+what makes the collision impossible.
+
+That distinction matters because it is the lesson the next amendment will reason from. "Give the
+thing a better name" would have left the hazard in place for anything else written into a shared
+directory; "stop writing into a shared directory" does not.
+
+And the reviewer is now told to read its verdict back after posting, which is the check that
+caught this one — **by id, never out of the reviews list**, which is paginated and oldest-first
+and would hand back an earlier round's verdict.
 
 ## What these have in common
 

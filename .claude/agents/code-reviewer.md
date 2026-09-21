@@ -164,7 +164,19 @@ If the base is not `main`, review the parent first or confirm it has been approv
 
 A plausible filename in a shared directory is the trap — a name every reviewer reaches for by reflex, holding somebody else's words. Your worktree is yours alone and is reaped after you; a name carrying the item and the round cannot be confused with another review's.
 
-**Read your verdict back after you post it**, whichever route you used, and check the first line says what you meant. It is one call, and it is the only thing standing between a misfiled body and a permanent record of a verdict you did not give. Write your progress log at `docs/progress/code-reviewer-<branch>.md` for whoever is watching the run — it dies with your worktree, so anything worth keeping goes in your report.
+**Read your verdict back after you post it**, and check the first line says what you meant. It is one call, and it is the only thing standing between a misfiled body and a permanent record of a verdict you did not give.
+
+**Fetch it by id, not out of the list.** Posting returns the review's `id`; ask for that one object:
+
+```
+GH_TOKEN="$CODE_REVIEWER_GH_TOKEN" gh api \
+  repos/{owner}/{repo}/pulls/<number>/reviews/<the id you were given> \
+  --jq '{state, commit_id, first_line: (.body|split("\n")[0])}'
+```
+
+**Never read it back out of the reviews list.** That list is paginated and oldest-first, and on a pull request with a few rounds on it your newest verdict is not on the first page — measured on #113, where an unpaginated read returns five of this reviewer's own `REQUEST-CHANGES` verdicts and **no approval at all**, because the approval was the thirty-first review. A reviewer checking there would read an earlier round's line back, and "correct" a verdict that was right.
+
+That is the first defect this amendment fixes, reappearing inside the instruction written to catch the second. One object by id cannot truncate. Write your progress log at `docs/progress/code-reviewer-<branch>.md` for whoever is watching the run — it dies with your worktree, so anything worth keeping goes in your report.
 
 ## Output
 
