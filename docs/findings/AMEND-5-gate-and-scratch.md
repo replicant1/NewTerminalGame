@@ -74,8 +74,7 @@ and returns `[]` on a pull request that is approved.
 ```
 
 **`[]` is what a genuinely unapproved pull request returns too**, so the two are
-indistinguishable — which is what the paragraph three lines below it calls *worse than not
-asking*. It asks for the approvals and compares the login itself now, which is the shape
+indistinguishable — which is what `conductor.md` calls *worse than not asking*. It asks for the approvals and compares the login itself now, which is the shape
 `developer.md` already used.
 
 Found by a reviewer that reversed an earlier round's judgement on it, having measured rather
@@ -109,6 +108,14 @@ which nothing executes.
 It is a claim about the shape: an output indistinguishable from a correct one fires no
 anomaly-watcher, so only an independent check can reach it. Said of the three, it would be
 circular — they entered this document by having been found that way.
+
+**A note on how this document kept going wrong.** Four references in it drifted across seven
+review rounds, every one the same shape: *"that last sentence"*, *"the paragraph three lines
+below"*, *"this paragraph"*, *"those two"*. Each was true when written and false after the next
+insertion, and none of them announced it. **A cross-reference in durable prose should name its
+target** — a file, a heading, or the phrase it points at — rather than counting lines or
+gesturing at a neighbour. That would retire the class instead of the four instances, and is
+worth an amendment of its own rather than a rule smuggled in at this one's seventh round.
 
 An earlier draft called all three "reading failures rather than writing ones", which section 2
 of this document contradicts directly: the lesson there is *stop writing into a shared

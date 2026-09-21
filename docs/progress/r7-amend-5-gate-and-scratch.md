@@ -103,3 +103,19 @@
                 departed developer, which an APPROVED-only query cannot surface; the items-1-and-3
                 mapping was its own, and the rework half is covered earlier in the file
 07:45:35Z  TEST    999 passed, 0 failed, 12 deselected
+08:14:58Z  NOTE    round 7: asked for a third drifted reference and it found a third AND a fourth. The
+                finding said "the paragraph three lines below it" about a phrase that lives in
+                conductor.md -- a cross-FILE count, so nobody diffing conductor.md would ever see it go
+                stale. And conductor.md's "this paragraph calls the one most likely to end the run"
+                named its own paragraph, which says no such thing, four lines after the document uses
+                the same construction correctly
+08:14:58Z  NOTE    plus "Look for those two" pointing at items 1 and 3 of a list four paragraphs above,
+                past a paragraph about the middle one -- in an instruction file a conductor acts on,
+                so the wrong two is a wrong sweep
+08:14:58Z  DECIDE  all four drifts are one class: a reference that counts lines or gestures at a neighbour
+                is true when written and false after the next insertion, and announces nothing. The
+                rule is that durable prose should NAME its target -- recorded in the finding as the
+                lesson, NOT added as an instruction at this amendment's seventh round. Its own item
+08:14:58Z  VERIFY  swept all four files for counting or gesturing references; the only hits left are the
+                quoted examples inside that note
+08:14:58Z  TEST    999 passed, 0 failed, 12 deselected
