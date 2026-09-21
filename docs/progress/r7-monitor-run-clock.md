@@ -16,3 +16,14 @@
                 items merged", 96%. Was "0 of 25 ... next S-1, S-2, WI-0"
 05:34:00Z  NOTE    WI-19 is the one it still does not count, and no r7/wi-19-* branch has ever existed on the
                 remote -- so that may be true rather than a second defect. Not mine to decide
+05:41:52Z  NOTE    removing 13 stale worktrees did not reduce the tab count: the monitor archives a removed
+                worktree's docs/progress so its record survives, and the archive carries the WHOLE
+                directory -- 30 files, every log the repo already tracks
+05:41:52Z  VERIFY  every archived pane was titled "technical-lead", because the title is logs[-1].stem and
+                technical-lead.md is alphabetically last in all of them; and each pane merged all 30
+                logs, so one archived agent's tab held every other agent's lines
+05:41:52Z  DECIDE  take the newest log by mtime as the agent's own -> it is the one it was still writing when
+                the worktree went; the rest arrived with the checkout
+05:41:52Z  VERIFY  panes now read code-reviewer-r7-amend-2-code-reviewer, r7-wi-18-coverage-audit and so on,
+                with 4 to 18 lines each instead of 260
+05:41:52Z  TEST    994 passed, 0 failed, 10 deselected

@@ -3,7 +3,7 @@
 Risk: MEDIUM — no application code, but this is the instrument the run is watched through,
 and a monitor that misreports is worse than one that says nothing.
 
-One function in `orchestration/server.py`, plus tests. Tooling, not process: no work item, no
+Two functions in `orchestration/server.py`, plus tests. Tooling, not process: no work item, no
 plan amendment, nothing in `docs/IMPLEMENTATION_PLAN.md` changes.
 
 ## Why
@@ -76,6 +76,34 @@ after    run start 2026-09-17T11:25:23   "24 of 25 work items merged"   next: WI
 ever existed on the remote — so 24 of 25 may be true rather than a second defect. The
 conductor's own `DONE` line says 25 landed. Somebody who knows what WI-19 became should say
 which is right; this PR does not decide it.
+
+## A second defect, found by the first one's cleanup
+
+Removing thirteen stale agent worktrees did not reduce the monitor's tab count. The monitor
+archives a removed worktree's `docs/progress` so that its record survives the worktree — which
+is right — but it archives the **whole directory**: thirty files, every log the repository
+already tracks, not just the one that agent wrote.
+
+Two things followed, and both were visible on screen:
+
+- **Every archived pane was titled `technical-lead`**, because the title is `logs[-1].stem` and
+  `technical-lead.md` sorts last in all of them.
+- **Each pane merged all thirty logs**, so one archived agent's tab carried every other agent's
+  lines — 260 of them, for an agent that had written eight.
+
+The agent's own log is the one it was still writing when the worktree went, so it is the
+newest; the rest arrived with the checkout. Taking `max(logs, key=mtime)` fixes the title and
+the mixing together.
+
+```
+before   technical-lead  (×13)                        260 lines each
+after    code-reviewer-r7-amend-2-code-reviewer       18
+         r7-wi-18-coverage-audit                      14
+         code-reviewer-r7-amend-4-review-followups     9   …
+```
+
+One pane still reads `technical-lead`: an archived worktree that was never dirty and so wrote
+no log of its own. The heuristic has nothing better to offer there, and it is honest about it.
 
 ## Suite
 

@@ -456,12 +456,18 @@ def panes():
             logs = sorted((d / "docs" / "progress").glob("*.md")) if (d / "docs" / "progress").is_dir() else []
             if not logs:
                 continue
-            lines = []
-            for f in logs:
-                lines.extend(parse_log(f, d.name + '/' + f.name))
+            # An archived worktree carries the WHOLE of docs/progress -- every
+            # log the repository already tracks, not just the one its agent
+            # wrote. Taking all of them put thirty agents' lines in one pane
+            # and named every archived pane after the alphabetically last file,
+            # which is "technical-lead" in all of them. The agent's own log is
+            # the one it was still writing when the worktree went, so it is the
+            # newest; the rest came with the checkout.
+            own = max(logs, key=lambda f: f.stat().st_mtime)
+            lines = parse_log(own, d.name + '/' + own.name)
             # Name it after the work item it was doing, not the agent id --
             # "agent-a03b510f6bc1a4e92" identifies nothing a reader knows.
-            title = logs[-1].stem if logs else d.name[:20]
+            title = own.stem
             result.append({
                 "id": d.name, "title": title,
                 "role": "developer", "source": "archived",
