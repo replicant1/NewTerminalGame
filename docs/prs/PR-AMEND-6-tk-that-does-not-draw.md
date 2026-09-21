@@ -138,16 +138,63 @@ answered on their threads; `070af51`.
 
 Both new guards were run against the defect they exist to catch before being believed.
 
+## Review round 2 — the code reviewer, REQUEST-CHANGES, 2 comments
+
+Both valid, both mine, both about a **claim of proof** rather than about code — which is
+what this amendment is made of. `55f8d07`.
+
+- **I claimed a human verdict that was never given.** `metrics.py` said the cell "is the
+  cell a human already looked at" and P4 said "the human verdict carries over unchanged".
+  The record says otherwise: `docs/findings/WI-17-human-verification.md` lists *WIN-2
+  (comfortable type)* as **open**, and `docs/findings/WI-17-pixels-reach-the-screen.md`
+  opens *"after the user looked at the running game and said there was no maze in it"*. The
+  one time a person has looked at this window it was blank — because of the defect this
+  branch fixes — so there was never a verdict to carry. My own progress log had it right and
+  the code did not. **Corrected the right way round: AMEND-6 does not close human item 3, it
+  unblocks it.** Until the toolkit moved, anyone sent to judge the type would have been sent
+  to look at an empty rectangle. WI-19 reads that constant and must not be told the question
+  is settled.
+- **The wall's "what this cannot see" was itself incomplete.** It named the library row and
+  left two others in neither half. Measured: `X | Y` in an annotation, `X | Y` at runtime and
+  `list[int]` at runtime **all parse** at `feature_version=(3, 9)`, and none is a library
+  call. The docstring and the README now list all four rows. **The annotation row is closed
+  rather than described** — a sweep asserting `from __future__ import annotations` in every
+  module, which is what makes an `X | Y` in an annotation harmless whatever the interpreter
+  is. 60 of 61 modules already had it; `tools/code_reviewer_token.py` now does. Proved able
+  to fail by removing it from `palette.py`. The two runtime rows stay review's, said plainly
+  rather than implied away.
+
+### One unexplained flake, recorded rather than dismissed
+
+The combined run failed once — `1 failed, 1035 passed` — immediately after these edits, and
+**I did not capture which test.** Not reproduced since in 10 combined runs and 8 focused runs
+of the pixel pair. The likeliest candidate is the screen-photographing pair, which is
+sensitive to what is in front of the window at the instant it captures. It is named here
+because a flake nobody wrote down is a flake nobody can find, and it sits next to the
+reviewer's own observation below.
+
+### Raised by the reviewer for a ruling, not fixed here
+
+- **The pixel pair can skip silently.** `tests/pixels.py` treats every non-zero
+  `screencapture` exit as environmental, so on a machine or agent without Screen Recording
+  the pair reports success-by-absence — and `-m needs_window` printing "10 passed, 2 skipped"
+  reads very like "12 passed". Pre-existing and out of this PR's scope, but AMEND-6 makes
+  those two tests the project's only contact with reality. Worth an item that fails rather
+  than skips when the *whole pair* skips.
+- **Whether the project wants the annotation sweep at all**, or is content leaving that half
+  to review. It is in, because it is cheap and it makes the docstring's claim true.
+
 ## Suite
 
 ```
-.venv/bin/python -m pytest -q                       1023 passed, 12 deselected
-.venv/bin/python -m pytest -q -m needs_window       12 passed, 1023 deselected
+.venv/bin/python -m pytest -q                       1024 passed, 12 deselected
+.venv/bin/python -m pytest -q -m needs_window       12 passed, 1024 deselected
 .venv/bin/python -m pytest -q -m "needs_window or not needs_window"
-                                                    1035 passed
+                                                    1036 passed
 ```
 
 Round 1 added six tests: three for the language level, three for the exact-grid ceiling.
+Round 2 added one more, for deferred annotations.
 
 **All twelve window tests pass for the first time.** Baseline on `main` at `a4c6766` was
 1017 / 12 deselected, and 10 passed / 2 failed on the excluded marker.
