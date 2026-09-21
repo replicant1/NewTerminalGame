@@ -33,7 +33,7 @@ twice between them and double the ghost's speed.
 ## The clock is injectable, and that was measured rather than hoped for
 
 [`Scheduler`](../../terminal_game/shell/game.py#L54) is two methods — schedule
-one call, cancel it. [`GameWindow`](../../terminal_game/shell/window.py#L81)
+one call, cancel it. [`GameWindow`](../../terminal_game/shell/window.py#L88)
 satisfies it already, so production passes nothing and the window's own `after`
 is used; a test passes its own and **the game runs with no real time passing at
 all**.
@@ -80,7 +80,7 @@ the picture cannot drift from the state, because it is not kept.
 | --- | --- |
 | [`Game`](../../terminal_game/shell/game.py#L90) | The assembly. In this scenario it is **the timer's owner** — it books beats, cancels them, and repaints after each |
 | [`Scheduler`](../../terminal_game/shell/game.py#L54) | Two methods. In this scenario it is **the seam that makes the clock injectable**, and the reason a whole game fits in a unit test |
-| [`GameWindow`](../../terminal_game/shell/window.py#L81) | The window. In this scenario it is **the production scheduler**, satisfying the protocol without being told about it |
+| [`GameWindow`](../../terminal_game/shell/window.py#L88) | The window. In this scenario it is **the production scheduler**, satisfying the protocol without being told about it |
 | [`Session`](../../terminal_game/application/session.py#L85) | The game being played. In this scenario it is **what decides whether another beat is wanted**, through `accepts_play` |
 
 ```mermaid

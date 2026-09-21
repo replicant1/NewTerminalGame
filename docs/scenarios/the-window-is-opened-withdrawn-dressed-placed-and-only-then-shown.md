@@ -2,7 +2,7 @@
 
 **Priority: `HIGH`** — it is the only route by which the game becomes visible, and a fault here takes the whole process down with it. [What the priorities mean](SCENARIO_INDEX.md#what-the-priorities-mean).
 
-[`GameWindow`](../../terminal_game/shell/window.py#L81) owns the window and
+[`GameWindow`](../../terminal_game/shell/window.py#L88) owns the window and
 nothing else. WIN-1, WIN-2 and WIN-3[^codes] are here; WIN-4 is
 [`placement`](../../terminal_game/shell/placement.py)'s and is deliberately
 absent from the window class.
@@ -18,7 +18,7 @@ were about.
 
 The window is created **withdrawn**. The title, the size, the ground and the
 first frame can all be set before anybody sees it, and
-[`show`](../../terminal_game/shell/window.py#L218) is what puts it there.
+[`show`](../../terminal_game/shell/window.py#L225) is what puts it there.
 Nothing after that changes its size or its title.
 
 The order in [`run_game`](../../terminal_game/shell/game.py#L388) is exact, and
@@ -99,8 +99,8 @@ function with a test rather than as a format call at the point of use.
 
 | Participant | What it represents, and its part in this scenario |
 | --- | --- |
-| [`GameWindow`](../../terminal_game/shell/window.py#L81) | The one window. In this scenario it is **WIN-1, WIN-2 and WIN-3**, and it holds no opinion about where it goes |
-| [`GridSurface`](../../terminal_game/presentation/surface.py#L115) | The canvas. In this scenario it is **what goes in the window**, built before the window is shown |
+| [`GameWindow`](../../terminal_game/shell/window.py#L88) | The one window. In this scenario it is **WIN-1, WIN-2 and WIN-3**, and it holds no opinion about where it goes |
+| [`GridSurface`](../../terminal_game/presentation/surface.py#L123) | The canvas. In this scenario it is **what goes in the window**, built before the window is shown |
 | [`placement`](../../terminal_game/shell/placement.py) | A module and four small types. In this scenario it is **where the window goes**, and the honest admission that WIN-4 is unmet |
 | [`Rect`](../../terminal_game/shell/placement.py#L61) | A rectangle in the global display space. In this scenario it is **why nothing clamps**: origins are negative on a real desk |
 | [`Point`](../../terminal_game/shell/placement.py#L82) | A position. In this scenario it is **what the geometry string must spell correctly**, signs included |

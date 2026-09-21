@@ -16,10 +16,10 @@ calls the calculation load-bearing, and this is that calculation.
 far it moves after one line.
 
 ```
-Menlo 16  →  advance 10, linespace 19  →  40 × 30 cells is 400 × 570 pixels
+Menlo 12  →  advance 10, linespace 19  →  40 × 30 cells is 400 × 570 pixels
 ```
 
-[`CellMetrics`](../../terminal_game/presentation/metrics.py#L72) is deliberately
+[`CellMetrics`](../../terminal_game/presentation/metrics.py#L85) is deliberately
 **the part with no toolkit in it**. The arithmetic can be checked exhaustively
 in a suite that never opens a window, and only the two numbers it starts from
 have to come from a real font.
@@ -30,14 +30,14 @@ column of overprinted characters** rather than a grid.
 
 ## The recorded measurement is not a substitute for measuring
 
-[`MEASURED_MENLO_16`](../../terminal_game/presentation/metrics.py#L190) records
+[`MEASURED_MENLO_12`](../../terminal_game/presentation/metrics.py#L206) records
 what was measured. The surface does **not** use it:
-[`GridSurface`](../../terminal_game/presentation/surface.py#L115) measures the
+[`GridSurface`](../../terminal_game/presentation/surface.py#L123) measures the
 real font at construction and derives the window from what it finds.
 
 That is the important half. **A font substitution therefore changes the window
 rather than being papered over**, and
-[`metrics_match_measurement`](../../terminal_game/presentation/surface.py#L236)
+[`metrics_match_measurement`](../../terminal_game/presentation/surface.py#L244)
 is how a caller finds out that it happened. The constant exists so the pure
 tests, the window's size test and anyone reading the plan have an expected
 answer to compare against — not so that anything can skip the measurement.
@@ -47,15 +47,21 @@ window and a reportable mismatch, not an error. That is a deliberate position:
 the program prefers to run and say so over refusing to run at all, and the
 requirement it might then be missing is visible rather than hidden.
 
-## Why the size is 16 and not "whatever looks big enough"
+## Why the size is 12 and not "whatever looks big enough"
 
-[`EXACT_GRID_CEILING`](../../terminal_game/presentation/metrics.py#L69) records
+[`EXACT_GRID_CEILING`](../../terminal_game/presentation/metrics.py#L82) records
 a second measurement, and it is the reason the size is a constant with an
 argument behind it.
 
-**At 16 and below, a 40-character row drawn as one string lands on the same
-pixels as 40 characters placed one cell at a time. Above 16 it does not** —
-drifts of up to 18 px across a row were measured at 17 and above.
+**At 12 and below, a 40-character row drawn as one string lands on the same
+pixels as 40 characters placed one cell at a time. Above 12 it does not** —
+drifts of 4 to 38 px across a row were measured at every size from 13 to 36.
+
+**The nominal size is 12 and was 16, and the cell is the same cell.** S-1
+measured the font on Tcl/Tk 8.5.9, which took a point as a pixel; the project
+now runs on Tk 9.0.4, which applies the 96/72 scaling a point is owed, so the
+same 10 × 19 cell is asked for as 12 rather than 16. The window is 400 × 570
+either way. See `docs/findings/AMEND-6-the-tk-that-does-not-draw.md`.
 
 So below the ceiling a painter may place per cell, per row, or per changed cell
 and get the same picture. **Raising the font size past it would cost the painter
@@ -63,7 +69,7 @@ that freedom** and force every cell to be placed individually. The constant is
 there so that whoever raises it finds out why they should not, rather than
 discovering a 40th column that is half a character out.
 
-[`exact_cell_grid`](../../terminal_game/presentation/surface.py#L246) checks the
+[`exact_cell_grid`](../../terminal_game/presentation/surface.py#L254) checks the
 running font against that, so the freedom the painter relies on is verified
 rather than assumed.
 
@@ -82,9 +88,9 @@ answer is no, one constant changes.
 | Participant | What it represents, and its part in this scenario |
 | --- | --- |
 | [`metrics`](../../terminal_game/presentation/metrics.py) | A module and one class. In this scenario it is **WIN-2 as arithmetic**, with no toolkit in it |
-| [`CellMetrics`](../../terminal_game/presentation/metrics.py#L72) | Advance and linespace. In this scenario it is **the whole derivation** — window size, cell origins, cell bounds |
-| [`GridSurface`](../../terminal_game/presentation/surface.py#L115) | The canvas. In this scenario it is **the only thing that measures a real font**, and what reports a mismatch |
-| [`GameWindow`](../../terminal_game/shell/window.py#L81) | The window. In this scenario it is **what asks for the resulting rectangle** |
+| [`CellMetrics`](../../terminal_game/presentation/metrics.py#L85) | Advance and linespace. In this scenario it is **the whole derivation** — window size, cell origins, cell bounds |
+| [`GridSurface`](../../terminal_game/presentation/surface.py#L123) | The canvas. In this scenario it is **the only thing that measures a real font**, and what reports a mismatch |
+| [`GameWindow`](../../terminal_game/shell/window.py#L88) | The window. In this scenario it is **what asks for the resulting rectangle** |
 
 ```mermaid
 sequenceDiagram

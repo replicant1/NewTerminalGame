@@ -21,9 +21,9 @@ Session reaches ENDED  →  on_end fires  →  GameWindow.close()
                              nothing follows, the process ends
 ```
 
-[`close`](../../terminal_game/shell/window.py#L259) destroys the toplevel;
+[`close`](../../terminal_game/shell/window.py#L266) destroys the toplevel;
 destroying the toplevel is what makes
-[`run`](../../terminal_game/shell/window.py#L303) return; and when the entry
+[`run`](../../terminal_game/shell/window.py#L310) return; and when the entry
 point's call to `run` returns **there is nothing left to do.**
 
 Calling `sys.exit` in there would end the process in the middle of a test as
@@ -104,7 +104,7 @@ leave one on somebody's desk.
 
 | Participant | What it represents, and its part in this scenario |
 | --- | --- |
-| [`GameWindow`](../../terminal_game/shell/window.py#L81) | The one window. In this scenario it is **WIN-5**, and the guarantee that there is always a way out |
+| [`GameWindow`](../../terminal_game/shell/window.py#L88) | The one window. In this scenario it is **WIN-5**, and the guarantee that there is always a way out |
 | [`Session`](../../terminal_game/application/session.py#L85) | The game being played. In this scenario it is **what must learn that it is over**, and the thing a test should assert about |
 | [`Game`](../../terminal_game/shell/game.py#L90) | The assembly. In this scenario it is **what wires the two together**, and what stops the outstanding beat |
 | [`Phase`](../../terminal_game/application/session.py#L60) | Playing, Decided, Ended. In this scenario it is **the assertion that catches all three disguises** |

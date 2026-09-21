@@ -2,7 +2,7 @@
 
 **Priority: `HIGH`** — it is the only route by which anything reaches the screen, and it runs on every frame. [What the priorities mean](SCENARIO_INDEX.md#what-the-priorities-mean).
 
-[`GridSurface`](../../terminal_game/presentation/surface.py#L115) is **the only
+[`GridSurface`](../../terminal_game/presentation/surface.py#L123) is **the only
 module in the Presentation layer allowed to name the windowing toolkit**. The
 layer rule holds a single named exception for it —
 [`PAINTING_MODULE`](../../tools/layer_rule.py#L45) — and the suite pins that the
@@ -23,7 +23,7 @@ grid**, and thereafter a repaint only *reconfigures* them.
 
 The item identifiers never change for the life of the surface, so **there is no
 moment at which the picture is incomplete.**
-[`present`](../../terminal_game/presentation/surface.py#L258) does the whole
+[`present`](../../terminal_game/presentation/surface.py#L266) does the whole
 frame's worth of reconfiguration before asking the toolkit to draw anything, and
 asks exactly once. That is "composed off-screen and presented once".
 
@@ -32,11 +32,15 @@ asks exactly once. That is "composed off-screen and presented once".
 Only the cells that differ from the last frame are touched, and the numbers say
 that is not why:
 
-| | measured on this machine, Menlo 16 |
-| --- | --- |
-| reconfiguring all 1,200 cells | 7.3 ms |
-| the dozen cells an actor move really touches | 0.092 ms |
-| the tick budget | 143 ms |
+| | Tk 8.5.9 | Tk 9.0.4 (AMEND-6) |
+| --- | --- | --- |
+| reconfiguring all 1,200 cells | 7.3 ms | 6.3 ms |
+| the dozen cells an actor move really touches | 0.092 ms | 0.154 ms |
+| the tick budget | 143 ms | 143 ms |
+
+Both columns are the same 10 × 19 cell, measured on this machine before and
+after the toolkit moved. The conclusion is the one the numbers had before:
+neither figure is anywhere near the budget.
 
 Either would fit nine times over. **The diffing is there because it keeps the
 item set fixed**, and because the architect's caution C5 warned against
@@ -59,7 +63,7 @@ anywhere, and sets `takefocus=0` so the canvas is skipped by tab traversal
 altogether. Key events belong to the window, and translating them belongs to a
 module that has never heard of a canvas.
 
-[`caret_is_impossible`](../../terminal_game/presentation/surface.py#L363)
+[`caret_is_impossible`](../../terminal_game/presentation/surface.py#L371)
 reports that, so it is **checked rather than assumed** — the difference between
 "we do not show a caret" and "a caret cannot appear here".
 
@@ -74,7 +78,7 @@ and a field can hold nothing but one-character
 ever contains `text` and `rectangle` items — never `image`, `bitmap`, `line`,
 `arc`, `oval`, `polygon` or `window`.
 
-[`item_types`](../../terminal_game/presentation/surface.py#L322) reports what is
+[`item_types`](../../terminal_game/presentation/surface.py#L330) reports what is
 **actually on the canvas**, which is a different and better claim than what the
 code intended to put there. The same is true of `shown_cell`, `shown_row` and
 `descendant_widget_classes`: they let a test ask the canvas what it is
@@ -94,11 +98,11 @@ the game through a key event that arrives mid-frame.
 
 | Participant | What it represents, and its part in this scenario |
 | --- | --- |
-| [`GridSurface`](../../terminal_game/presentation/surface.py#L115) | The canvas and its 2,400 items. In this scenario it is **the only thing that turns data into light** |
+| [`GridSurface`](../../terminal_game/presentation/surface.py#L123) | The canvas and its 2,400 items. In this scenario it is **the only thing that turns data into light** |
 | [`Field`](../../terminal_game/presentation/field.py#L113) | A 40 × 30 grid of cells. In this scenario it is **the only input**, and `differences` is what makes the repaint small |
 | [`Cell`](../../terminal_game/presentation/field.py#L38) | One glyph and two colours. In this scenario it is **why SCRN-2 cannot be broken here**: there is no shape an image could arrive in |
-| [`CellMetrics`](../../terminal_game/presentation/metrics.py#L72) | Pixels per cell. In this scenario it is **where each item goes**, measured from the real font at construction |
-| [`GameWindow`](../../terminal_game/shell/window.py#L81) | The window. In this scenario it is **the thing the canvas lives in**, and the only caller of `present` |
+| [`CellMetrics`](../../terminal_game/presentation/metrics.py#L85) | Pixels per cell. In this scenario it is **where each item goes**, measured from the real font at construction |
+| [`GameWindow`](../../terminal_game/shell/window.py#L88) | The window. In this scenario it is **the thing the canvas lives in**, and the only caller of `present` |
 
 ```mermaid
 sequenceDiagram

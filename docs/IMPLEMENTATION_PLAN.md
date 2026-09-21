@@ -81,29 +81,45 @@ body.
 
 | | |
 |---|---|
-| Language | **Python**, written to the **3.9** language level |
-| Interpreter | **`/usr/bin/python3` — CPython 3.9.6**, in a project virtual environment created from it |
-| Windowing toolkit | **`tkinter`**, the standard-library binding, on **Tcl/Tk 8.5** |
-| Font | **Menlo 16** — cell 10 × 19 px, window 400 × 570 for 40 × 30 (measured by S-1, not chosen) |
+| Language | **Python**, written to the **3.9** language level — see *What 3.9 forbids* below, which AMEND-6 keeps in force on a newer interpreter |
+| Interpreter | **`/opt/homebrew/bin/python3.14` — CPython 3.14.7**, with `python-tk@3.14`, in a project virtual environment created from it (**AMEND-6**; was `/usr/bin/python3`, CPython 3.9.6) |
+| Windowing toolkit | **`tkinter`**, the standard-library binding, on **Tcl/Tk 9.0.4** (**AMEND-6**; was Tcl/Tk 8.5.9, which does not paint) |
+| Font | **Menlo 12** — cell 10 × 19 px, window 400 × 570 for 40 × 30 (measured by S-1 as Menlo 16 on Tk 8.5, re-measured by AMEND-6; **the same cell, in the new toolkit's units**) |
 | Test runner | **`pytest`** installed into that virtual environment |
 | Suite command | **`.venv/bin/python -m pytest -q`**, run from the repository root |
 
-**Why the older interpreter.** Candidate 2 needs a windowing toolkit, and on this machine
-only one interpreter has one. Measured at 01:29Z on 17 Sep 2026 from this worktree:
-`/usr/bin/python3` is 3.9.6 and reports `TkVersion 8.5, TclVersion 8.5`;
-`/opt/homebrew/bin/python3` is 3.14.7 and has no `_tkinter` at all. There is no `uv` and
-no `pyenv`. So the choice is between a modern Python with no window and an old Python with
-one, and candidate 2 settles it.
+**Why the older interpreter — and why it is no longer the one.** Candidate 2 needs a
+windowing toolkit, and when this was written only one interpreter on the machine had one.
+Measured at 01:29Z on 17 Sep 2026 from this worktree: `/usr/bin/python3` is 3.9.6 and
+reports `TkVersion 8.5, TclVersion 8.5`; `/opt/homebrew/bin/python3` is 3.14.7 and has no
+`_tkinter` at all. There is no `uv` and no `pyenv`. So the choice was between a modern
+Python with no window and an old Python with one, and candidate 2 settled it.
+
+**AMEND-6 reopened that and settled it the other way, because the old Tk does not draw.**
+Apple's Tk 8.5.9 on this macOS maps a window and paints nothing into it: a plain Tk canvas
+with a red background, raised and topmost, photographs white, with no project code
+involved. Every one of the 1017 headless tests passes on it, and so do ten of the twelve
+window tests, because they all read what Tk was *told*. Only
+`tests/test_pixels_reach_the_screen.py` reads the screen, and those two fail. The third
+option nobody had costed — `brew install python-tk@3.14`, which brings Tcl/Tk 9.0.4 to the
+3.14 that had no `_tkinter` — makes all 1029 pass. See `docs/findings/AMEND-6-the-tk-that-does-not-draw.md`.
 
 **The trade looked uncomfortable and it has come good.** Tcl/Tk 8.5 is the old Aqua build
 and I expected box-drawing metrics, font substitution and Retina scaling to disappoint.
 **S-1 measured it on day zero and it did not.** A Tk root can be built in a test and
-withdrawn so that nothing reaches the screen, and **Menlo at 16 point** gives an exact
-40-character row: cell 10 × 19 pixels, window 400 × 570 for 40 × 30. No modern Tk is
-needed and nothing has to be installed on the user's machine. **The font is therefore
-fixed, not chosen** — of 180 families on this machine only Menlo owns every glyph the game
-draws without substitution, and the row is exact only at sizes 8–16. See S-1 in section 5
-for the numbers and what still cannot be measured.
+withdrawn so that nothing reaches the screen, and **Menlo at 16 point** gave an exact
+40-character row: cell 10 × 19 pixels, window 400 × 570 for 40 × 30. **The font is
+therefore fixed, not chosen** — of 180 families on this machine only Menlo owns every
+glyph the game draws without substitution, and the row is exact only up to a ceiling. See
+S-1 in section 5 for the numbers and what still cannot be measured.
+
+**AMEND-6 re-measured all of it on Tk 9.0.4 and the cell did not move.** Tk 8.5.9 took a
+point as a pixel; Tk 9.0.4 applies the 96/72 scaling a point is owed, so the cell S-1
+found at size 16 is now asked for as **size 12** — advance 10, linespace 19, window
+400 × 570, and the same glyph bboxes `[-1, 0, 11, 19]` and `[9, 0, 21, 19]` on a canvas.
+The exact-grid ceiling moved with it, from 16 to 12. Two claims of the sentence above did
+not survive: a modern Tk **is** now needed, and something **does** have to be installed.
+That is the price, and the two pixel tests are what it buys.
 
 **What 3.9 forbids.** No structural pattern matching (`match`). No `X | Y` unions or
 built-in generics evaluated at runtime — put `from __future__ import annotations` at the
@@ -111,6 +127,14 @@ top of every module and keep annotations as strings. No `functools.cache`,
 `itertools.pairwise`, `str.removeprefix` on anything but `str`, or any 3.10+ standard
 library. WI-0 pins the interpreter so a developer finds this out from a failing suite and
 not from a user.
+
+**AMEND-6 leaves that list standing, and it is now a convention rather than a wall.** The
+interpreter is 3.14, so the suite would no longer catch a `match` statement; the language
+level stays at 3.9 because every module in the codebase is written to it and there is no
+reason in this project to spend the churn. The interpreter pin in
+`tests/test_runtime.py` now reads 3.14, so it no longer enforces the language level —
+**only review does.** Anyone who wants the wall back adds a syntax check against a 3.9
+parser; nobody has needed one.
 
 ### 1.3 The dependency rule between layers
 
@@ -777,7 +801,8 @@ are the item that maps the window, so you are the first to reach the path that h
 *Tests must establish:* WIN-1, that a window is created and owned by this process; WIN-3,
 that the title is exactly the string required, with nothing appended; WIN-2, that the
 window's pixel size is the one WI-5's metrics computed for 40 × 30 — expect 400 × 570 from
-Menlo 16 — and the ground is black;
+Menlo 16, which AMEND-6 re-measured as the same rectangle from Menlo 12 — and the ground
+is black;
 and WIN-5, that a close request ends the session and the window with it. Keep every one of
 these off the default suite's screen — assert against the toolkit's own reported state, not
 by looking.
@@ -1160,8 +1185,8 @@ instructions somebody can follow in two minutes. **Human item 9 — whether Menl
 box-drawing ink spans the full cell, so that a wall run reads as an unbroken line rather
 than a dashed one — is yours to put in front of the user**, because no agent on this
 machine can capture the pixels to judge it. **Ask it precisely.** The surface's metrics
-took S-1's Menlo 16 and its 10 × 19 cell as constants, so what the user looks at is
-exactly the configuration S-1 measured: the question is not "is the font right" but "does
+took S-1's Menlo 16 and its 10 × 19 cell as constants — AMEND-6's Menlo 12 is that same
+10 × 19 cell — so what the user looks at is exactly the configuration S-1 measured: the question is not "is the font right" but "does
 *this* read as unbroken lines".
 
 ### Iteration M4 — Seen by a human
@@ -1636,9 +1661,16 @@ them. Route them all to the conductor, which is the only path to the user.
    the permission, or accepts that **WIN-4 holds only for the case where the game is
    started from a terminal window**, which is assumption P2. The plan proceeds on P2 and
    WI-15 builds it; an answer either way costs one constant and one test.
-5. ~~**Consent to installing a modern Tk.**~~ **Closed.** S-1 measured Tcl/Tk 8.5 usable
-   and headless-testable at 01:37:42Z. Nothing needs installing. Kept here numbered so
-   that references elsewhere in this plan still resolve.
+5. ~~**Consent to installing a modern Tk.**~~ **Closed, reopened, and answered — yes.**
+   S-1 closed it at 01:37:42Z on the measurement that Tcl/Tk 8.5 was usable and
+   headless-testable, and nothing needed installing. **That measurement was true and
+   incomplete:** it was taken with the window withdrawn, and Tk 8.5.9 turns out to map a
+   window on this macOS and paint nothing into it. AMEND-6 reopened the item on
+   2026-09-21 and **the user answered it directly, in the same session that found it** —
+   `brew install python-tk@3.14`, giving Tcl/Tk 9.0.4, is now the project's runtime.
+   *This is the one human item that has been asked, closed, and asked again;* it is
+   recorded that way rather than quietly reclosed, because the reason it was closed the
+   first time is the same reason the blank window went unnoticed for so long.
 6. **Confirm the reading of the status-line literals**, if it matters to them — ruling C-4
    takes the specimen picture as normative, including its leading space, and reads the
    score as left-aligned in a field of 5. Low stakes and **now cheap to flip**: the
@@ -1686,11 +1718,11 @@ these is a ruling; each is a way of proceeding chosen deliberately.
 | **P1** | WIN-5 means *when the session ends*, not *when the outcome is decided* (the architect's A3 — see C-1 and human item 1) | WI-6, WI-11, WI-14; the WIN-5 / END-5 / END-6 trace rows |
 | **P2** | "Whatever window the player was last looking at" is the terminal window the game was started from (the architect's A2). **Promoted: this is now how WIN-4 is built, pending the user, not merely how we are proceeding** — the general case needs a permission no agent may obtain and the one route that avoided it is prohibited (section 1.5). Human item 4 is the live decision | S-2, WI-15, the WIN-4 trace row |
 | **P3** | "A little below and to the right" is a fixed pixel offset chosen by eye; +40, +40 to start. **Still fine as an offset — but S-2 measured that the thing the architect added it to, AppleScript's `position`, is wrong by the display height on a secondary display. Use `bounds`, and do the arithmetic in a global space whose origins are negative** | one constant in WI-15, one test; the anchor route in WI-15 |
-| ~~**P4**~~ | ~~"Large enough to read comfortably" is a point size chosen by eye (A4)~~ **Retired — measured, not assumed.** S-1 found Menlo 16 the only family owning every glyph without substitution, with the 40-character row exact only at sizes 8–16: cell 10 × 19, window 400 × 570. Human item 3 remains, because only a person can say whether 16 point is *comfortable* | WI-5, WI-6 |
+| ~~**P4**~~ | ~~"Large enough to read comfortably" is a point size chosen by eye (A4)~~ **Retired — measured, not assumed.** S-1 found Menlo 16 the only family owning every glyph without substitution, with the 40-character row exact only at sizes 8–16: cell 10 × 19, window 400 × 570. Human item 3 remains, because only a person can say whether that cell is *comfortable*. **AMEND-6 restates the size as Menlo 12 on Tk 9.0.4 — the same 10 × 19 cell in a toolkit that measures points differently — so the human verdict carries over unchanged** | WI-5, WI-6 |
 | **P5** | The specimen picture is normative for the grid-to-screen mapping, the three-cell actor glyphs and the status-line literals (the architect's A6, extended by rulings C-2 and C-4) | WI-4, WI-12 |
 | **P6** | "About seven times a second" is 143 ms, as a named constant | WI-14, the GHOST-1 trace row |
 | **P7** | START-2's "furthest square" may tie; the tie is broken by a deterministic rule of WI-8's choosing, pinned by a test | one test in WI-8 |
-| ~~**P8**~~ | ~~Tcl/Tk 8.5 can render the box glyphs at a consistent cell width, and a Tk root can be built in a test without a window reaching the screen~~ **Closed favourably by S-1, 01:37:42Z.** `Tk()` then `withdraw()` gives `state=withdrawn`, `ismapped=False`, `viewable=False`, frontmost application unchanged; Menlo 16 has a consistent advance across every glyph the game draws. Human item 5 does not open | — |
+| ~~**P8**~~ | ~~Tcl/Tk 8.5 can render the box glyphs at a consistent cell width, and a Tk root can be built in a test without a window reaching the screen~~ **Closed favourably by S-1, 01:37:42Z.** `Tk()` then `withdraw()` gives `state=withdrawn`, `ismapped=False`, `viewable=False`, frontmost application unchanged; Menlo 16 has a consistent advance across every glyph the game draws. Human item 5 does not open. **AMEND-6: every word of that is true and it left one question unasked — whether a Tk 8.5 window that *is* mapped paints anything. It does not.** The assumption was about testing headlessly and was tested headlessly; nothing in it was ever going to catch a toolkit that draws nothing on the screen, and human item 5 reopened | — |
 | **P9** | A "Python" Dock tile during a suite run is acceptable to the user, because it is a process indicator and not a window | WI-5 and WI-16, each of which would need a default-excluded marker if the answer is no. Human item 8 |
 | **P10** | Menlo's box-drawing ink spans the full cell, so a wall run reads as one unbroken line. **Nobody has seen it.** Advance was measurable; ink was not — no canvas-to-image path, no PyObjC, no PIL | SCRN-3, and the font choice itself if it is wrong. WI-7 gives the first sight of it; human item 9 |
 
