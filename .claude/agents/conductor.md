@@ -136,13 +136,29 @@ Poll the open pull requests for that marker as part of watching the run — `gh 
 
 **Relay the verdict only if the developer has already stopped.** The reviewer's verdict is a GitHub review on the pull request, and the developer polls the pull request's reviews list for it — that is the channel, and it works whether or not you are watching. What you must not do is let a verdict land on a pull request whose developer has finished and gone. When that happens, **dispatch a developer for the rework round**, with three things in the brief: the pull request number, the branch, and the round it is on. Its author's reasoning is in the PR comments and in `docs/progress/<branch>.md`, which is enough for a developer to take it up.
 
+**An approval needs this more often than a rejection does, and it is the case most easily missed.** A developer that has finished its work and reported is exactly the one most likely to have ended, and the approval is what arrives last — so the ordinary shape of a completed work item is an `APPROVED` review landing on a pull request with nobody left to merge it. **Dispatch a developer to merge**, with the pull request number, the branch, and the sha the approval was given against. Say in the brief that it is approved; do not say it may merge, because that is not yours to certify. It checks the gate itself — `developer.md` gives it three tests and the third is that the approval matches the head it is merging, which may have stopped being true between your dispatch and its merge.
+
+**A pull request sitting on an approval is the one state that looks like success and is not.** Nothing further will happen to it: the reviewer has finished, the developer has gone, and GitHub will hold an approved pull request open indefinitely without complaining. It is the failure this whole gate is most likely to end in, so look for it explicitly rather than waiting to notice.
+
 **A pull request awaiting a review is not stalled, and a pull request awaiting rework is.** This is the distinction your accounting turns on now. "Finished but unmerged" used to mean something was wrong; with a review gate it is the normal state of a work item for as long as a round takes. What is wrong is a pull request with a verdict on it and nobody acting on the verdict, a `REVIEW-REQUEST` with no reviewer ever spawned against it, or — worst of the three — a merged pull request rated MEDIUM or HIGH with no approval on it. Look for those two.
 
-**A review that stops converging comes to you as `REVIEW-VERDICT: BLOCKED`**, with the reviewer's request for changes left standing. That means one of three things the reviewer has observed: a disagreement that has had its exchange, a round in which nothing moved — nothing new entered the loop, rather than nothing being settled — or the six-round backstop. The marker names which.
+**A `REVIEW-VERDICT: BLOCKED` means the reviewer and the developer disagree about a comment** and have each had their say, with the request for changes left standing. It is a design question and it belongs to the technical lead — pass it on with the comment and the developer's position. **Do not settle it yourself.** You would be choosing between two readings of code you did not write, which is what you are told not to do about a merge conflict, for the same reason.
 
-**The third is not a disagreement**, so do not relay it as one. The backstop fires when neither of the other two managed to name what was wrong, and the technical lead needs to know that is what it is looking at rather than two parties who have said their piece. It is a design question, and it belongs to the technical lead — pass it on with the comments still outstanding and the developer's position on each. **Do not settle it yourself.** You would be choosing between two readings of code you did not write, which is the same thing you are told not to do about a merge conflict, for the same reason.
+**Do not count rounds or chase a review for taking several.** A round where the developer fixes what was found and the reviewer then finds something else is the process working, and it is the ordinary shape of a review doing its job.
 
-**Do not count rounds and do not chase a review for taking several.** A round where the developer fixes what was found and the reviewer then finds something else is the process working, and it is the ordinary shape of a review that is doing its job. An earlier version of this file said a fourth round *meant* the two sides held opposite positions; it does not, and the review of the change that introduced this gate is the counter-example — three rounds, seven findings, every one accepted.
+**Reap the reviewer's worktree once you have its verdict.** You spawned it, and nothing else will:
+
+```
+git worktree remove --force <the path it reported>
+git branch -D <the branch it reported>       # if it was given one
+```
+
+**Use the path from its report, never a guess.** Its first output item is the worktree it ran
+in, for this reason. `git worktree list` also holds developers who are still working, and
+`--force` does not ask twice — a wrong line there destroys somebody's uncommitted work. If the
+report did not name a worktree, reap nothing and say so.
+
+`--force` because it will be dirty — the reviewer writes a progress log there, and on a HIGH review it also builds a `.venv/` to run the suite in, and a worktree with any change in it is one the harness keeps. Nine reviews left nine worktrees on one run of this project, each showing in the monitor as a live developer that will never do anything again. Take anything worth keeping out of its report first; the log itself is not expected to survive.
 
 **The reviewer never merges and never writes code.** If you find yourself about to ask it to fix something it found, stop: the fix belongs to the developer who wrote the code, and a reviewer that repairs its own findings has left nobody to review the repair.
 
