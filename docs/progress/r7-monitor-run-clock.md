@@ -81,3 +81,15 @@
                 twelve hours", which picks the nearer of the two readings of an undated gap. Twelve
                 is the only midpoint, not a tunable
 07:27:40Z  TEST    1017 passed, 0 failed, 12 deselected
+07:33:05Z  NOTE    round 3: the reduction I adopted on the reviewer's authority states the rule BACKWARDS,
+                and the reviewer found it in its own sentence. Tested against the shipped parse_log:
+                the 12s inversion -> code says one day, stated rule says midnight; 23:50/00:05 -> code
+                says two days, stated rule says one; 01:00/14:00 -> code says one day, rule says
+                midnight. The mod-24 is what breaks it -- an ordinary 1h gap has a mod-24 backwards
+                jump of 23h, so the stated rule would fire on every normal line
+07:33:05Z  DECIDE  use the wording server.py:198 already carries -- a stamp more than twelve hours later in
+                the day than the one after it belongs to the previous day. Table and midpoint argument
+                untouched, both were right
+07:33:05Z  VERIFY  reviewer re-measured over 517 stamped pairs in 34 logs: my 4951s is the largest gap and
+                its own round-2 figure of 4136s is now second. 18 test functions, no parametrisation
+07:33:05Z  TEST    1017 passed, 0 failed, 12 deselected

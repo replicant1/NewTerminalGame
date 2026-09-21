@@ -61,10 +61,16 @@ done, two of them dispatched minutes earlier.
   any input — stepping the day back on every forward jump makes the output sorted by
   construction.
 
-  **Why twelve hours, since a bare constant explains nothing.** The rule reduces to *the mod-24
-  forward gap between consecutive lines exceeds twelve hours*, which picks the nearer of the two
-  possible readings of an undated gap. Twelve is the only midpoint; any other value is worse in
-  one direction. Measured over every log in `docs/progress`:
+  **Why twelve hours, since a bare constant explains nothing.** Reading the log backwards, a
+  stamp that runs **more than twelve hours later in the day than the one after it** belongs to
+  the previous day. That picks the nearer of the two possible readings of an undated gap, and
+  twelve is the only midpoint; any other value is worse in one direction.
+
+  An earlier draft of this paragraph said *"the mod-24 forward gap exceeds twelve hours"*, which
+  is the same rule stated backwards — it calls the twelve-second inversion this change exists to
+  fix a midnight, and a real 23:50→00:05 crossing not one. The `mod-24` is what breaks it: an
+  ordinary one-hour gap has a mod-24 backwards jump of twenty-three hours, so it would fire on
+  every normal line. Measured over every log in `docs/progress`:
 
   | | |
   | --- | --- |
