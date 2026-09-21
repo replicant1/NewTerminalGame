@@ -19,3 +19,11 @@
                 dispatch brief. A PR can edit code-reviewer.md; it must not be able to rewrite the terms
                 of its own review. Precedence now covers the stale prompt and worktree copies only
 05:15:45Z  TEST    986 passed, 0 failed, 10 deselected
+05:17:41Z  DECIDE  delete the cap machinery entirely -> nobody asked for it; I raised it as a design worry,
+                shipped it in AMEND-2, repaired it in AMEND-3, and cleaned up after the repair here
+05:17:41Z  VERIFY  code-reviewer.md 5541 -> 2210 words. Every one of the nine commits before this one added
+                words and none removed any. The recurring "stated in four places, changed in three"
+                failure needs a document long enough to say things four times
+05:17:41Z  DRAFT   escalation stated once, in code-reviewer.md; the other three say what BLOCKED means to
+                them and stop. App install steps moved to docs/AGENTS-SETUP.md
+05:17:41Z  TEST    986 passed, 0 failed, 10 deselected

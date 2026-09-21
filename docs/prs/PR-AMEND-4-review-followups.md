@@ -1,16 +1,45 @@
-# PR-AMEND-4 — the approval nobody merges, and two records that lied
+# PR-AMEND-4 — delete the cap machinery, and the approval nobody merges
 
-Risk: MEDIUM — no production code, but one of these is the state in which a completed work
-item silently fails to land, and it is the state the review gate is most likely to end in.
+Risk: MEDIUM — no production code, but it removes the rule that decides when a review is
+abandoned and fixes the state in which a completed work item silently fails to land.
 
-Amendment 4 to the agent definitions. Three files plus one corrected record. **No change to
-`docs/IMPLEMENTATION_PLAN.md`**, the work items, or the schedule.
+Amendment 4. **The first change in this sequence that makes the definitions smaller:**
 
-All three came out of AMEND-3's own review, and none was fixed there: two because correcting
-them would have moved the head and invalidated a valid approval, and one because the reviewer
-had already passed that text and its own termination rule forbids reopening what it passed.
-It put them in its report instead. That is the rule working; this is where the consequence
-gets paid.
+```
+code-reviewer.md   5541 → 2210 words   (−60%)
+conductor.md       4683 → 4545
+technical-lead.md  4279 → 4174
+developer.md       6261 → 6199
+```
+
+## 0. Why this is mostly a deletion
+
+AMEND-2 shipped a round cap. **Nobody asked for one.** The brief was always "loop until the
+reviewer approves"; the cap came from a termination-condition worry raised during design, and
+once it existed AMEND-3 was needed to repair it, and part of this amendment to clean up after
+that repair.
+
+The cost was not only the ~650 words of it. The failure that recurred five times across these
+three pull requests — *a rule stated in four places and changed in three* — **can only happen
+in a document long enough to say things four times.** A meaningful share of the findings in
+those reviews were the process reviewing damage the process had created. Every one of the nine
+commits to `code-reviewer.md` before this one added words; none removed any.
+
+So the two convergence tests, the six-round backstop, the three trigger names and their
+restatements in three other files are **gone**, replaced by what the loop always was:
+
+> Review, comment, the developer fixes, review again, approve when you have nothing left to
+> say. If you and the developer disagree about a comment and have each had your say, stop and
+> let the technical lead settle it. Nothing else ends the loop.
+
+That is the whole escalation rule, stated once, in the reviewer's file. The other three
+agents no longer restate it — they say what a `BLOCKED` verdict means to them and stop.
+
+The rest of the file was compressed the same way: the rationale paragraphs behind each rule
+became clauses, and the App installation steps left the agent's prompt entirely for
+`docs/AGENTS-SETUP.md`, since the reviewer never installs anything. **No rule was dropped in
+the compression** — the measured facts that each exist to prevent a specific failure are all
+still there, in a line each instead of a paragraph each.
 
 ## 1. The approval that nobody merges
 
@@ -73,6 +102,11 @@ record of what AMEND-2 shipped. This one was not.
 
 ## Scrutiny
 
+- **The deletion itself** — the thing to check is whether anything load-bearing went with it.
+  Every rule removed was either the cap machinery or a restatement of a rule that survives
+  elsewhere; if you find one that is now stated nowhere, that is the finding.
+- `.claude/agents/code-reviewer.md`, "When you and the developer disagree" — the entire
+  escalation rule. If a genuine deadlock can now run forever, this is where it happens.
 - `.claude/agents/developer.md`, the merge exception — the failure mode is width. If it can be
   read as licence to merge anything a conductor mentions, it has undone the rule it qualifies.
 - `.claude/agents/conductor.md`, the dispatch — check the brief cannot be read as the conductor
