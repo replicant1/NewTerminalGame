@@ -17,7 +17,7 @@ This used to say "report back to the technical-lead", which described something 
 
 The way you work should follow all normal git-related conventions e.g:
 - each work item on a new branch
-- open a PR as soon as there is a first commit to open it against; in non-local mode you merge it yourself once it is green, and in local mode the technical lead merges it for you
+- open a PR as soon as there is a first commit to open it against; in non-local mode you merge it yourself once it is green **and its review gate is satisfied**, and in local mode the technical lead merges it for you
 - write tests as you go
 - commit often, and start every commit subject with the work item code (`WI-3: ...`, `S-2: ...`)
 etc.
@@ -33,12 +33,12 @@ You normally run in your own git worktree (`isolation: worktree` in this file's 
 So, in a worktree:
 
 - Branch each work item off the baseline the technical lead names (a tag such as `start`, or `main`) and do the work there, exactly as the convention says.
-- When the work item is done, write your PR-summary markdown. **In local mode, leave the branch where it is** and report its name to the technical lead, who merges it into `main`. **In non-local mode, merge your own pull request** once its suite is green — see "Working with real pull requests" below.
+- When the work item is done, write your PR-summary markdown. **In local mode, leave the branch where it is** and report its name to the technical lead, who merges it into `main`. **In non-local mode, merge your own pull request** once its suite is green and it has been approved — see "Working with real pull requests" below.
 - **Never check out, merge into, reset, or otherwise touch `main` in your working tree.** Merging your own PR in non-local mode is not an exception to this — `gh pr merge` happens on the server and never touches your checkout. Do not create an intermediate "lane" branch to merge your work items into either, unless the technical lead explicitly asks for one — it puts an extra merge between your work item and `main` that nobody asked for.
 
 This is not a compromise; it is how a pull request already works. On GitHub the merge happens on the server, not in the developer's checkout, so a developer never needs `main` locally.
 
-What keeps you off `main` in **local mode** is policy, not git: the technical lead merges, so that every work item passes a review gate and two developers never race to land. It merges without checking `main` out — by fast-forwarding the branch directly, or in a temporary tree it makes and removes — so where it happens to be running does not matter, and neither does where you are. With **real pull requests** there is no gate in the mechanics at all: `gh pr merge` runs on the server, so you merge your own PR unless the plan says otherwise. What does not change in either mode is your working tree — one branch per work item, and you never check `main` out.
+What keeps you off `main` in **local mode** is policy, not git: the technical lead merges, so that every work item passes a review gate and two developers never race to land. It merges without checking `main` out — by fast-forwarding the branch directly, or in a temporary tree it makes and removes — so where it happens to be running does not matter, and neither does where you are. With **real pull requests** there is no gate in the mechanics at all — `gh pr merge` runs on the server — so the gate is a rule on you instead: you merge your own PR, after Copilot and, on a MEDIUM or HIGH pull request, after the code reviewer has accepted it. What does not change in either mode is your working tree — one branch per work item, and you never check `main` out.
 
 If the technical lead has told you that you are **not** in a worktree and are sharing a working directory with another developer, then say so in your report and ask how merges should be handled before you make any: two agents merging into one checked-out branch will collide.
 
@@ -86,18 +86,125 @@ gh pr edit <number> --body-file docs/prs/PR-WI-3-wall-glyphs.md
 gh pr ready <number>
 ```
 
-**Then merge it yourself:**
+## Before you merge: two review passes
+
+Your pull request does not go from ready straight to merged. **Every pull request is reviewed by Copilot, and one rated MEDIUM or HIGH is then reviewed by the code reviewer.** Both passes happen on the pull request itself, in its comments, and you drive both of them: there is no channel between you and the reviewer other than the PR.
+
+### Rate the risk, and point the reviewer at what matters
+
+The implementation plan gives each work item a **risk floor** — HIGH, MEDIUM or LOW — which the technical lead sets against how much harm would follow if bad code reached production. Your pull request carries a rating, and two rules govern it:
+
+- **You may raise it above the floor. You may never lower it.** If what you actually touched turned out riskier than the plan could foresee — you ended up in the input path, or in something everything else depends on — raise it and say why. Lowering it is not a judgement you have: it is the one decision where your interest and the project's point in opposite directions.
+- **The rating goes in the PR summary**, on its own line near the top, in exactly the form `Risk: HIGH`, `Risk: MEDIUM` or `Risk: LOW`, followed by one sentence of justification. The summary is the pull request's body, so writing it there puts it on the PR where the reviewer and the conductor can find it.
+
+On a MEDIUM or HIGH pull request the summary also carries a **Scrutiny** section: the places in the diff most worth a reviewer's attention, because they are particularly critical, have security ramifications, strongly influence maintainability, or are otherwise noteworthy. Each pointer is a `file:line` and one clause saying why. **A MEDIUM or HIGH PR with no Scrutiny section is rejected on sight**, because you have been asked for a judgement and have not made one.
+
+Write those pointers honestly rather than defensively. The reviewer reads the whole diff regardless — your list decides where it starts, not where it stops — so a list that steers it away from the awkward part buys nothing and costs you a round.
+
+### Pass one: Copilot
+
+The repository reviews every pull request automatically. Three things about it are measured rather than assumed — from all 108 pull requests this project has raised, with the method and the numbers in `docs/findings/AMEND-2-copilot-review-behaviour.md`:
+
+- **It does not review drafts.** The trigger is `gh pr ready`, not `gh pr create`. Ninety-two of those pull requests had a draft phase — one of them for seventy-three minutes — and not one was reviewed before it was marked ready. So there is nothing to poll for until you have marked yours ready.
+- **It arrives in about four minutes** from ready: median 232 seconds, ninety per cent within 384, the slowest ever seen 491. All 108 were reviewed; none was missed.
+- **It never approves.** Every review is submitted in the `COMMENTED` state whatever it thinks of the code. Do not wait for an approval — there will not be one.
+
+Poll for it:
+
+```
+gh pr view <number> --json reviews \
+  --jq '.reviews[] | select(.author.login=="copilot-pull-request-reviewer") | .body'
+```
+
+The body opens with one of three verdict headers and carries its own count of findings on a `**Comments generated:** N` line:
+
+| Header | What it means |
+| --- | --- |
+| `### 🟢 Approval recommended` | it found nothing blocking |
+| `### 🟡 Changes recommended` | it has comments for you |
+| `### 🔵 Needs a closer look` | it is not confident; read it and decide |
+
+**Copilot is clean when a review exists against your current head and either recommends approval or has no comment you have not answered.** That is the observable condition, and it is the whole of it.
+
+If it has comments, assess each one exactly as you would a human's. **A valid comment you fix**, commit and push. **A comment you believe is wrong you answer on its thread, saying why** — do not resolve it silently, and do not change correct code to make a bot stop talking. Then re-request the review so the next pass runs against your new head:
+
+```
+gh pr edit <number> --add-reviewer Copilot
+```
+
+**Note the two different names.** The reviewer you *request* is `Copilot`; the account that *posts* the review is `copilot-pull-request-reviewer`. Requesting the second one will fail.
+
+**No pull request on this project has ever received a second Copilot review**, because nobody has ever re-requested one — so this path is documented but unproven. If the re-request is refused, or nothing arrives within the window below, record an `ASK` and an `ASSUME`, say so in the PR summary, and go on to pass two. Do not retry with different flags.
+
+**If no review has appeared fifteen minutes after you marked it ready** — about twice the slowest ever measured here — treat it as absent: record the `ASK` and the `ASSUME`, note it in the PR summary, and go on. A run does not stall waiting on a bot, but nobody may be left thinking a pass happened that did not.
+
+### Pass two: the code reviewer
+
+**LOW RISK stops here.** Copilot clean and a green suite is the whole gate; go and merge.
+
+**MEDIUM and HIGH go to the code reviewer.** Ask for it by posting this comment, character for character on its first line, once Copilot is clean:
+
+```
+gh pr comment <number> --body "REVIEW-REQUEST: WI-3 round 1 risk HIGH head <sha>"
+```
+
+The conductor watches for that marker and spawns the reviewer; you cannot spawn it, message it, or be messaged by it. Everything between you and the reviewer travels on this pull request.
+
+**The reviewer has its own GitHub identity**, separate from yours, which is what lets it approve a pull request you opened — GitHub refuses both `--approve` and `--request-changes` from an author, as `docs/findings/AMEND-2-review-permissions.md` records. So its verdict is a real review, not a comment pretending to be one. Poll the reviews list for it:
+
+```
+gh api repos/{owner}/{repo}/pulls/<number>/reviews \
+  --jq '.[]|{user:.user.login,state,commit_id}'
+```
+
+**Do not use `reviewDecision` for this.** It is empty on this repository — measured, not assumed — because nothing requires a review here, so it answers a question about branch protection rather than about whether anybody approved. The reviews list is well-defined either way.
+
+There are three outcomes:
+
+- **A review with state `APPROVED`** from the code reviewer's login — you may merge. Go on to the next section.
+- **A review with state `CHANGES_REQUESTED`** — the reviewer has posted comments. Assess every one:
+  - **Valid**: fix it, commit, push, and reply on that thread with `REVIEW-REPLY: FIXED <sha>`.
+  - **Wrong**: reply with `REVIEW-REPLY: DISPUTE` and your reasoning. This is a legitimate answer and the reviewer is required to weigh it — but it must be *made*. A comment you ignore comes back next round and costs you the round.
+
+  Never change code you believe is correct merely to clear a comment. That is how a defect gets introduced by a review.
+
+  When you have answered all of them, request the next round with a fresh `REVIEW-REQUEST: <ITEM> round <n+1> risk <level> head <sha>` comment.
+- **A comment beginning `REVIEW-VERDICT: BLOCKED`** — three rounds have passed without converging, and the request for changes still stands. **Do not merge.** Report the PR number, the comments still outstanding and your position on each; the technical lead settles it.
+
+**If you run out of road before the verdict arrives** — you are interrupted, or you have been at it too long — report the PR number, the round and that it is awaiting review, and stop. The conductor will dispatch a developer to pick up the rework. What you must not do is fall silent, because a PR awaiting review and a PR abandoned look identical from outside.
+
+### Then merge it yourself
+
+Merge when, and only when, all of these hold:
+
+1. your suite is green;
+2. Copilot is clean against your current head, or you have recorded that no review arrived;
+3. the PR is rated LOW, **or** it carries an `APPROVED` review that satisfies all three of the tests below.
+
+An approval counts when, and only when:
+
+```
+gh api repos/{owner}/{repo}/pulls/<number>/reviews \
+  --jq '[.[]|select(.state=="APPROVED")|{user:.user.login,commit_id}]'
+gh pr view <number> --json headRefOid,author --jq '{head:.headRefOid,author:.author.login}'
+```
+
+1. such a review **exists**;
+2. its `user.login` is **the code reviewer's**, which the conductor names when it dispatches you. Not merely "not the author": any collaborator could satisfy that, and so could an account added to the repository for some other purpose. The gate is an approval by the agent that read the code. **If the conductor did not tell you the reviewer's login, stop and ask** rather than accepting whatever approval is on the pull request;
+3. its `commit_id` **equals** `headRefOid`.
 
 ```
 gh pr merge <number> --merge
 ```
+
+**The third test is the one that will catch you.** There is no branch protection on this repository, so **GitHub does not dismiss an approval when you push** — it keeps standing over code nobody has read. If the two shas differ, the approval covers code you are not merging, and you need another round. Do not sneak a commit past a verdict.
 
 Two things the merge alone does not settle, so do both straight after it:
 
 1. **Confirm what landed is green.** You cannot check `main` out from a worktree, so bring it to you instead — `git fetch origin && git merge origin/main` — and run the whole suite on your branch. A PR that merges cleanly can still break `main` when it lands beside something merged since it was opened; the suite is what tells you, not the merge.
 2. **Record it** with a `MERGE` line, then report the PR number, the branch and that test count.
 
-**Merge only your own PR.** Never merge, approve or close another developer's, and never merge before your suite is green.
+**Merge only your own PR.** Never merge, approve or close another developer's, and never merge before your suite is green or before its review gate is satisfied. **The code reviewer never merges either** — it reviews and nothing else, so an approved pull request is waiting for you and for nobody else.
 
 **A stacked branch targets its parent, not `main`.** If your work item builds on a branch that has not merged yet — yours or another developer's — the PR must be opened with `--base <parent-branch>`. Based on `main`, it would show the parent's commits as its own and the diff would be unreadable. Say in the PR body which branch it is stacked on and why. Once the parent merges, retarget it with `gh pr edit <number> --base main`.
 
@@ -167,6 +274,8 @@ Do not invent a name. Every document you write goes in one of four places, named
 | `docs/progress/<branch-name>.md` | branch | `docs/progress/wi-8-rules.md` |
 | `docs/findings/<ITEM>-<slug>.md` | measurement worth keeping | `docs/findings/S3-applescript-window.md` |
 
+The code reviewer's documents live at `docs/reviews/REVIEW-<ITEM>-<round>.md`. Those are its to write, not yours; you read them, and they arrive on your pull request as comments anyway.
+
 `<ITEM>` is the work item or spike code exactly as the plan writes it — `WI-3`, `WI-12a`, `S-2`. `<slug>` is two or three lowercase hyphenated words. Uppercase the fixed words, hyphenate everything, and never use underscores.
 
 The reason this is prescribed rather than left to your judgement: two developers working the same iteration from an empty `docs/` will each invent a reasonable scheme and they will not match, and by the time anyone notices, the inconsistent names are committed and referenced from other documents. If a file you need to write does not fit one of these four shapes, ask the technical lead rather than inventing a fifth.
@@ -181,9 +290,10 @@ Report in this order, so that reports from different developers can be read agai
 2. **Branches to merge**, in the order they must be merged, naming each one's base. If you had to stack a branch on another developer's work, say so here and say why.
 3. **What you built**, per work item — the files, and one sentence on each.
 4. **Suite state** — the exact command and the exact counts, per branch. Never "tests pass".
-5. **Deviations needing a ruling** — anything you added, omitted, or did differently from the plan. Additive deviations still need a ruling.
-6. **Contradictions found in the plan or the architecture** — with the measurement that shows it. These are among the most valuable things you produce; do not bury them in prose.
-7. **What needs a human** — anything you could not verify yourself, with the exact steps for them to run and what they should look for.
+5. **Review state**, per pull request — the risk rating you gave it and whether you raised it above the plan's floor; whether Copilot was clean or never arrived; how many review rounds it took, what the last verdict was, and the sha the approval was against; and any comment you disputed, with your reasoning. A PR you left awaiting a verdict must be named here, with its round, so that somebody picks it up.
+6. **Deviations needing a ruling** — anything you added, omitted, or did differently from the plan. Additive deviations still need a ruling.
+7. **Contradictions found in the plan or the architecture** — with the measurement that shows it. These are among the most valuable things you produce; do not bury them in prose.
+8. **What needs a human** — anything you could not verify yourself, with the exact steps for them to run and what they should look for.
 
 Do not report a thing as done that you did not observe. "I could not determine this without the user" is a good answer; a confident guess about something you did not run is not.
 
@@ -200,6 +310,9 @@ Write your log at `docs/progress/<branch-name>.md`. **Name it after your branch,
 - `COMMIT  <sha> <subject>` — after each commit
 - `BLOCKED <what you need, and who you need it from>` — the moment you are stuck, not after you have worked around it
 - `NOTE    <what a later reader needs to know>` — a conflict you resolved and how, or anything else the next person to touch those files would want
+- `RISK    <ITEM> <HIGH|MEDIUM|LOW>, because <one clause>` — when you rate the PR, and again if you raise it
+- `REVIEW  requested <ITEM> round <n> @<head sha>` / `REVIEW  <APPROVED|CHANGES_REQUESTED|BLOCKED> round <n> @<the sha it was submitted against>` — each side of each round
+- `DISPUTE <file>:<line> — <why you think the comment is wrong>`
 
 Your `START` line names the work item, and your `DONE` line reports `<work-item> <branch> <head sha>` rather than a document path. Prefix every line with the work item code so the file greps cleanly, and commit the log along with the work item.
 
