@@ -20,3 +20,11 @@
                 the missing "by GitHub" qualifier at 123, and this log
 04:40:30Z  VERIFY  the cap is in no part of IMPLEMENTATION_PLAN.md -> no amendment row needed, agent files only
 04:40:30Z  TEST    986 passed, 0 failed, 10 deselected
+04:40:46Z  NOTE    PR #112 opened as a draft and marked ready; Copilot's baseline pass starts from ready
+04:46:21Z  NOTE    Copilot: 2 findings, both valid. There was a FOURTH copy of the rule, in technical-lead.md,
+                which my greps for "three rounds is the cap" and "three rounds have passed" did not match
+                because it said "up to three" and "after three rounds". Changing a rule in three of its
+                four homes leaves the rule unchanged
+04:46:21Z  NOTE    and code-reviewer.md's older dispute paragraph still escalated after ONE dispute, which
+                contradicts the two-dispute sequence the new rule defines
+04:46:21Z  TEST    986 passed, 0 failed, 10 deselected

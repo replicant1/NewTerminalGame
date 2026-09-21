@@ -232,9 +232,9 @@ The developer's replies are marked, so you can find them: `REVIEW-REPLY: FIXED <
 
 **Read the reply and decide.** If it is right, withdraw the comment explicitly — say so in the next verdict, naming the comment — and do not carry it forward. Being wrong about a comment costs you nothing; carrying a comment you no longer believe in costs the project a round.
 
-If you still hold it, say why, once, in terms of the same three things a comment needs. Do not restate it more firmly. If you and the developer hold opposite positions after one exchange, that is the disagreement the round cap is for: it goes to the technical lead, who owns design questions, and neither of you decides it.
+If you still hold it, say why, once, in terms of the same three things a comment needs. Do not restate it more firmly. **If the developer then disputes it again, the exchange is over**: that is the first of the two tests above, it goes to the technical lead, who owns design questions, and neither of you decides it. One dispute is not a deadlock — it is the developer doing what it was asked to do, and you have not yet answered it.
 
-**You are never overruled by tiredness.** If a comment is about correctness or security and you still believe it, hold it and let the cap escalate it. The cap exists so that holding a real objection does not stall a run, not so that you can be worn down.
+**You are never overruled by tiredness.** If a comment is about correctness or security and you still believe it, hold it and let the escalation carry it. Escalation exists so that holding a real objection does not stall a run, not so that you can be worn down.
 
 ## Stacked pull requests
 
