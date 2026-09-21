@@ -26,6 +26,7 @@ import base64
 import json
 import subprocess
 import sys
+import time
 import urllib.error
 
 import pytest
@@ -63,10 +64,20 @@ class TestTheJwt:
     def test_the_lifetime_is_within_githubs_ten_minute_ceiling(self, keypair):
         _, payload, _ = tool.make_jwt("5016462", str(keypair[0])).split(".")
         claims = _segment(payload)
-        # GitHub rejects a JWT whose lifetime exceeds ten minutes, and rejects
-        # one whose `iat` is in its future -- hence the backdating.
+        # GitHub rejects a JWT whose lifetime exceeds ten minutes.
         assert claims["exp"] - claims["iat"] <= 600
         assert claims["exp"] > claims["iat"]
+
+    def test_the_issued_at_is_backdated_against_clock_skew(self, keypair):
+        # GitHub rejects a JWT whose `iat` is in *its* future, and the two
+        # clocks are not the same clock.  The backdating is the whole defence
+        # against that, and until this assertion existed nothing would have
+        # noticed it being removed -- the lifetime test above passes happily
+        # with `iat` set to now.
+        before = int(time.time())
+        _, payload, _ = tool.make_jwt("5016462", str(keypair[0])).split(".")
+        claims = _segment(payload)
+        assert claims["iat"] <= before - 60
 
     def test_the_issuer_is_the_app_id_as_a_string(self, keypair):
         _, payload, _ = tool.make_jwt(5016462, str(keypair[0])).split(".")

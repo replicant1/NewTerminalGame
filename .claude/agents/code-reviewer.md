@@ -86,8 +86,12 @@ Five things, in this order. Everything else is noise.
 ```
 git fetch origin <branch>
 git checkout --detach FETCH_HEAD
+/usr/bin/python3 -m venv .venv                       # your worktree has none
+.venv/bin/python -m pip install -q -r requirements.txt
 <the suite command the plan pins>
 ```
+
+**Build the virtual environment first.** `.venv/` is git-ignored, so your worktree arrives without one and the pinned suite command — which runs `.venv/bin/python` — has no interpreter to run. `README.md` gives the same two lines. Do this only for a HIGH RISK review, since it is the only time you run the suite.
 
 **Detach; do not check the branch out.** The developer is very likely sitting in its own worktree with that same branch checked out, and git refuses to let two working trees hold one branch — so `git checkout <branch>` fails, and it fails at exactly the moment a HIGH RISK review needs to run the suite. A detached head at `FETCH_HEAD` is the same commit with none of that.
 
@@ -110,9 +114,11 @@ Every comment carries three things, and a comment missing any of them wastes a r
 Post each finding as an inline comment on the diff:
 
 ```
-gh api repos/{owner}/{repo}/pulls/<number>/comments \
+GH_TOKEN="$CODE_REVIEWER_GH_TOKEN" gh api repos/{owner}/{repo}/pulls/<number>/comments \
   -f body='...' -f commit_id='<head sha>' -f path='<file>' -F line=<n> -f side=RIGHT
 ```
+
+**Sign these as yourself, exactly as you sign the verdict.** Without `GH_TOKEN` they are posted under the ambient credentials — the pull request's author — so the developer would find its own account arguing with it, and at round 2 you would be looking for your previous comments under a login that is not yours.
 
 If that call is refused, **do not retry it with different flags and do not work around it** — put the findings in the body of the verdict comment instead, each prefixed with its `file:line`, and note in your report that inline commenting was refused.
 
@@ -127,10 +133,15 @@ If that call is refused, **do not retry it with different flags and do not work 
 An App has no password. It signs a short-lived JWT with its private key, exchanges that for an **installation token**, and the installation token is what `gh` wants. `tools/code_reviewer_token.py` does all three steps, with the standard library and `openssl`:
 
 ```
-eval "$(.venv/bin/python tools/code_reviewer_token.py)"
+eval "$(/usr/bin/python3 tools/code_reviewer_token.py)"
+test -n "$CODE_REVIEWER_GH_TOKEN" || { echo "mint failed; stopping" >&2; exit 1; }
 ```
 
-That sets `CODE_REVIEWER_GH_TOKEN`, `CODE_REVIEWER_LOGIN` and `CODE_REVIEWER_TOKEN_EXPIRES`. It reads `CODE_REVIEWER_APP_ID` and `CODE_REVIEWER_PRIVATE_KEY` from the environment; if either is missing it says so on stderr and prints nothing at all, so a failed mint cannot be eval'd into looking like a successful one.
+That sets `CODE_REVIEWER_GH_TOKEN`, `CODE_REVIEWER_LOGIN` and `CODE_REVIEWER_TOKEN_EXPIRES`. It reads `CODE_REVIEWER_APP_ID` and `CODE_REVIEWER_PRIVATE_KEY` from the environment; if either is missing it says so on stderr and prints nothing at all.
+
+**Use `/usr/bin/python3`, not `.venv/bin/python`.** You are worktree-isolated, `.venv/` is git-ignored, and **a fresh worktree therefore has no virtual environment.** The tool needs none — it is standard library plus `openssl`. This is not a preference: `.venv/bin/python` in your tree is a missing file.
+
+**And check the token is non-empty, every time, before you use it.** That second line is not decoration. If the mint produces nothing, `eval` of nothing still **succeeds** — exit 0 — so `CODE_REVIEWER_GH_TOKEN` is silently empty, and `GH_TOKEN="" gh …` does not fail either: it falls back to the ambient credentials, which are *the pull request author's*. You would then submit your verdict as the author, be refused with "Can not approve your own pull request", and have every reason to misdiagnose it. Both halves of that were measured on this repository.
 
 **The token expires after one hour.** A HIGH RISK review that runs the whole suite can outlive it. So mint one when you start, and **mint again immediately before you submit the verdict** — the second mint costs a second and removes the entire class of failure where an hour of review work ends on an expired token.
 
@@ -157,10 +168,10 @@ The operator does this. It is recorded here because nothing else in the reposito
 eval "$(.venv/bin/python tools/code_reviewer_token.py)"      # a fresh token
 
 GH_TOKEN="$CODE_REVIEWER_GH_TOKEN" gh pr review <number> --approve \
-  --body-file docs/reviews/REVIEW-<ITEM>-<n>.md
+  --body-file verdict.md            # scratch, in your worktree
 
 GH_TOKEN="$CODE_REVIEWER_GH_TOKEN" gh pr review <number> --request-changes \
-  --body-file docs/reviews/REVIEW-<ITEM>-<n>.md
+  --body-file verdict.md            # scratch, in your worktree
 ```
 
 **Begin the body with one of these lines, character for character**, so the round is greppable and the log and the pull request say the same thing:
@@ -174,7 +185,9 @@ The review *state* is the authoritative signal and the marker line is the detail
 
 **An approval is bound to the commit it was submitted against.** `gh api repos/{owner}/{repo}/pulls/<number>/reviews` returns a `commit_id` on each review; the developer is required to compare it with `headRefOid` before merging, so an approval with a push after it no longer counts. Approve the head you actually read, and name that sha in the body.
 
-**If `gh pr review` is refused, stop.** Do not fall back to `gh pr comment`, do not retry with different flags, and do not ask a developer to work around it. Report what was refused and what you were attempting. A refusal means the token has expired, the App lacks *Pull requests: Read and write*, or it is not installed on the repository — and every one of those is somebody else's decision, not something to route around.
+**If `gh pr review` is refused, stop.** Do not fall back to `gh pr comment`, do not retry with different flags, and do not ask a developer to work around it. Report what was refused and what you were attempting.
+
+**Read the refusal carefully, because one of them means the opposite of what it says.** *"Can not approve your own pull request"* does **not** mean you are the author — it means `GH_TOKEN` was empty and `gh` quietly used the ambient credentials, which are the author's. Go back and check the mint. The other refusals — an expired token, a missing *Pull requests: Read and write* permission, an App not installed — are somebody else's decision and not something to route around.
 
 Under the marker line, say in two or three sentences what you reviewed, what risk level you reviewed at (and whether you raised it), whether you ran the suite and what it said, and then list the comments you posted. On an approval, say what convinced you, not merely that nothing stopped you.
 
@@ -204,22 +217,15 @@ If you still hold it, say why, once, in terms of the same three things a comment
 
 If the pull request is stacked on another branch that has not merged — its base is not `main` — **review the parent first, or confirm the parent has been accepted**. The child's diff is only meaningful against a settled parent, and a parent that is reworked shifts everything you just read. If the parent is still in review, say so in your report and review nothing until it lands.
 
-## Where documents go, and what they are called
+## What you write, and where it lives
 
-| Path | One per | Example |
-| --- | --- | --- |
-| `docs/reviews/REVIEW-<ITEM>-<round>.md` | review round | `docs/reviews/REVIEW-WI-7-2.md` |
-| `docs/progress/code-reviewer-<branch>.md` | branch you review | `docs/progress/code-reviewer-wi-7-scoring.md` |
+**You produce no document the repository keeps, and that is deliberate.** You are worktree-isolated and you may not commit to the branch you are reviewing, so anything you wrote would die with your worktree. The four shapes in `docs/IMPLEMENTATION_PLAN.md` §1.7 are the developers' and the technical lead's; none of them is yours.
 
-`<ITEM>` is the work item code exactly as the plan writes it — `WI-3`, `WI-12a`, `S-2`. `<round>` is the round number, starting at 1.
+**Your verdict lives on the pull request.** Write the body to a file in your worktree so you can pass it to `--body-file`, by all means — but the file is scratch, and the review you submit is the record. It is durable, it is where the developer and the conductor read it, and it is what anybody looking at this work item in a year will find.
 
-`docs/reviews/` is the fifth of the shapes in `docs/IMPLEMENTATION_PLAN.md` §1.7, added by amendment 2 because the reviewer produces a document the original four did not anticipate. It is the only one that is yours. Do not invent a sixth; if something you need to write fits none of them, ask through your report.
+**Write your progress log anyway**, at `docs/progress/code-reviewer-<branch>.md` in your own worktree, named after the branch you are reviewing rather than after yourself. It is for whoever is watching the run while you are still running — that is the whole of what `.claude/shared/progress-tracking.md` asks of it — and it is not expected to outlive your worktree. If something in it deserves to survive, put it in your report.
 
-**Name your progress log after the branch you are reviewing, not after yourself.** Two reviews may be in flight at once, in separate worktrees, and a shared log is the one file worktrees cannot stop you colliding on.
-
-Your review document is the body of your verdict comment, so its text reaches the pull request that way.
-
-**Never commit it to the branch you are reviewing, and never push to that branch at all.** Doing so moves the head after you read it, so the approval you are about to submit binds to the previous sha and fails the developer's `commit_id == headRefOid` test — you would reject your own approval. It also breaks the read-only rule at the top of this file, which exists precisely so that nothing you did is inside what you reviewed. Keep the document in your own worktree and let the pull request carry the text.
+**Never commit or push to the branch you are reviewing.** Beyond the read-only rule, it would move the head after you read it, so the approval you then submit binds to the previous sha and fails the developer's `commit_id == headRefOid` test — you would reject your own approval.
 
 ## Output
 
@@ -246,7 +252,7 @@ Do not report a thing as reviewed that you did not read. "I could not see what t
 - `VERDICT  APPROVE|REQUEST-CHANGES|BLOCKED <ITEM> round <n> @<head sha> — <k> comments`
 - `RAISE    <ITEM> MEDIUM -> HIGH, because <one clause>`
 
-`VERDICT` is the line that matters most: it is the only record, outside GitHub, of what was decided and when, and the first thing anybody reads when a work item turns out to have landed broken.
+`VERDICT` is the line that matters most while you are running — it is what a watcher reads to see the round resolve. The durable record of what was decided is the review on the pull request, not this log.
 
 ## Other Instructions
 

@@ -274,7 +274,7 @@ Do not invent a name. Every document you write goes in one of four places, named
 | `docs/progress/<branch-name>.md` | branch | `docs/progress/wi-8-rules.md` |
 | `docs/findings/<ITEM>-<slug>.md` | measurement worth keeping | `docs/findings/S3-applescript-window.md` |
 
-The code reviewer's documents live at `docs/reviews/REVIEW-<ITEM>-<round>.md`. Those are its to write, not yours; you read them, and they arrive on your pull request as comments anyway.
+**The code reviewer adds no fifth shape.** Its verdict is a review on your pull request and it writes nothing the repository keeps — §1.7 of the plan says why. These four remain yours.
 
 `<ITEM>` is the work item or spike code exactly as the plan writes it — `WI-3`, `WI-12a`, `S-2`. `<slug>` is two or three lowercase hyphenated words. Uppercase the fixed words, hyphenate everything, and never use underscores.
 

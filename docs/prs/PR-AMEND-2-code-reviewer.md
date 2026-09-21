@@ -5,8 +5,8 @@ reaches `main`, and a mistake in it either lets unreviewed code land or stalls e
 developer at their merge.
 
 Amendment 2. One new agent, three amended, one tool with its tests, three findings, and
-two changes to `docs/IMPLEMENTATION_PLAN.md` — a fifth document shape in §1.7 and a new
-§1.9 for risk floors. **No change to the work items, the lanes, the effort totals or the
+two changes to `docs/IMPLEMENTATION_PLAN.md` — §1.7 now says why the reviewer adds no
+document shape of its own, and a new §1.9 for risk floors. **No change to the work items, the lanes, the effort totals or the
 gantt.**
 
 ## Why

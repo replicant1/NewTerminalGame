@@ -106,12 +106,17 @@ In non-local mode nothing lands until it has been reviewed. Every pull request g
 **Check the review identity before you dispatch a single work item.** The reviewer approves pull requests that the developers opened, and GitHub refuses to let an author approve their own — so the reviewer is a **GitHub App** installed on the repository, approving as its own bot login — `newterminalgame-code-reviewer[bot]` here. Confirm at the start of a non-local run that the App is installed and that its login is not the developers':
 
 ```
-eval "$(.venv/bin/python tools/code_reviewer_token.py)"
-echo "$CODE_REVIEWER_LOGIN"      # what the reviewer signs as
-gh api user --jq .login          # what the developers act as
+eval "$(/usr/bin/python3 tools/code_reviewer_token.py)"
+test -n "$CODE_REVIEWER_GH_TOKEN" || echo "MINT FAILED"
+GH_TOKEN="$CODE_REVIEWER_GH_TOKEN" gh api /installation/repositories \
+  --jq '.repositories[].full_name'
 ```
 
 A successful mint proves three things at once: the private key signs, the App is installed on this repository, and GitHub issued a token for it. A failed one prints nothing and explains itself on stderr.
+
+**Test the token, not the two logins.** Comparing `$CODE_REVIEWER_LOGIN` with `gh api user` cannot fail — one always ends `[bot]` and the other never does — so that comparison would pass while telling you nothing. What you need to know is that the token *works*, which is what the `/installation/repositories` call above establishes: it is refused outright for an ambient token and answers only for a real installation.
+
+**Your check is not the reviewer's environment.** You have no worktree of your own, so you run this in the primary checkout where a `.venv` happens to exist; the reviewer runs worktree-isolated where one does not. That is why the command here says `/usr/bin/python3` — if you check with an interpreter the reviewer will not have, your check passes and every MEDIUM and HIGH item still dies at its verdict, which is the exact failure this check exists to prevent.
 
 If the mint fails, or the two logins match, **record `BLOCKED`, tell the user, and do not start the run**. Every MEDIUM and HIGH work item would reach the end of its review and find it cannot be approved, which is the most expensive moment to discover it — the same reason the technical lead checks that `main` is free before accepting any work.
 
@@ -126,6 +131,8 @@ REVIEW-REQUEST: WI-3 round 1 risk HIGH head <sha>
 ```
 
 Poll the open pull requests for that marker as part of watching the run — `gh pr list` and `gh pr view <n> --comments` — and spawn a code reviewer for each one you find, giving it the pull request number and the work item code and nothing else. It fetches the rest itself. Record it with a `DISPATCH` line naming the round.
+
+**Dispatch each round once.** The marker stays on the pull request while the review runs, so polling again will find it again; check your own `DISPATCH` lines for that pull request and round before spawning. Two reviewers on one round would each post a verdict, and the developer would not know which one to answer.
 
 **Relay the verdict only if the developer has already stopped.** The reviewer's verdict is a GitHub review on the pull request, and the developer polls the pull request's reviews list for it — that is the channel, and it works whether or not you are watching. What you must not do is let a verdict land on a pull request whose developer has finished and gone. When that happens, **dispatch a developer for the rework round**, with three things in the brief: the pull request number, the branch, and the round it is on. Its author's reasoning is in the PR comments and in `docs/progress/<branch>.md`, which is enough for a developer to take it up.
 
