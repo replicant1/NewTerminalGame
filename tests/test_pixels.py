@@ -84,10 +84,16 @@ class TestBlank:
         assert not pixels.blank({(0, 0, 0): 97, WALL_BLUE: 3})
 
     def test_the_threshold_is_inclusive(self):
-        """Exactly 98 % dominant is blank; a hair under is not. ``TestNear``
-        pins its tolerance at exactly 24 and 25, and this is the same job."""
-        assert pixels.blank({(0, 0, 0): 98, WALL_BLUE: 2}, threshold=0.98)
-        assert not pixels.blank({(0, 0, 0): 97, WALL_BLUE: 3}, threshold=0.98)
+        """Exactly 98 % dominant is blank; a hair under is not.
+
+        **No ``threshold=`` here, deliberately.** Passing it would pin a number
+        this test supplied rather than the default the screen checks actually
+        run on, and both assertions would go on passing after the default
+        changed — while the summary claimed this guarded the boundary.
+        ``TestNear`` pins its tolerance the same way, by not naming it.
+        """
+        assert pixels.blank({(0, 0, 0): 98, WALL_BLUE: 2})
+        assert not pixels.blank({(0, 0, 0): 97, WALL_BLUE: 3})
 
     def test_an_empty_count_is_not_called_blank(self):
         """Nothing measured is not the same as nothing drawn, and saying so

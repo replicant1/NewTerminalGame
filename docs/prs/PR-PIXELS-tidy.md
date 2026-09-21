@@ -33,7 +33,10 @@ nothing. So they land as their own change.
    catches these.
 
 4. **`TestBlank` did not pin its own boundary**, where `TestNear` pins its tolerance at exactly
-   24 and exactly 25. Now it does: 98 % dominant is blank, 97 % is not.
+   24 and exactly 25. Now it does: 98 % dominant is blank, 97 % is not — **and without naming
+   the threshold**, so it pins the default the screen checks actually run on rather than a
+   number the test supplied. Copilot caught the first version doing the latter, which would
+   have gone on passing after the default changed.
 
 ## Scrutiny
 
