@@ -54,3 +54,19 @@
                 reviewers have mis-parsed it, but a 401 fails LOUDLY -- the opposite class from this
                 amendment, which is about failures that look like success
 07:32:29Z  TEST    999 passed, 0 failed, 12 deselected
+07:37:25Z  NOTE    round 4: the closing paragraph counted three at its head and two in its body -- "all
+                three ... and neither would have shown up in any test", then "in both cases ... a merge
+                refused, and a verdict misrecorded". The omitted consequence is the third's, an
+                approved PR filed as awaiting review, which this same amendment calls the worst
+                outcome the gate has. The same failure as round 3: corrected where the new material
+                went in, left stale in the sentence that generalises it
+07:37:25Z  DECIDE  I asked to be told if the generalisation was glib and it was, in exactly one half.
+                "A reading failure rather than a writing one" is contradicted by section 2 of this
+                same document, whose lesson is stop WRITING into a shared directory. And "each caught
+                by verification" is circular -- they were selected on that property
+07:37:25Z  DECIDE  the property they actually share is that each produced a PLAUSIBLE WRONG ANSWER rather
+                than an error: BLOCKED reads as not-yet-approved, a REQUEST-CHANGES body reads as a
+                real rejection, [] reads as never-approved. Nothing anomalous is raised, logged or
+                returned, which is why no test finds them -- and the verification point is now stated
+                as a claim about the SHAPE rather than about these three
+07:37:25Z  TEST    999 passed, 0 failed, 12 deselected

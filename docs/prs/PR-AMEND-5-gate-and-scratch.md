@@ -77,6 +77,11 @@ Caught for one reason: that reviewer read its own posted body back.
   collide. The finding says so now, because the wrong diagnosis ("give it a better name") would
   leave the hazard in place for anything else written into a shared directory.
 
+- `.claude/agents/conductor.md`, the new paragraph itself — the newest and least-reviewed part
+  of this change. It is the conductor's only way to see an approval state at all, so check it
+  answers both questions it is placed under and that the sentences around it, written for the
+  query it replaced, still read correctly.
+
 ## Suite
 
 `.venv/bin/python -m pytest -q` → **999 passed, 12 deselected**. No code here; the count moved

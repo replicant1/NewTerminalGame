@@ -85,9 +85,26 @@ conductor can see an approval at all.
 
 ## What these have in common
 
-All three are a *reading* failure rather than a writing one, and neither would have shown up in any
-test. The first was found by re-verifying a verdict an agent had reported; the second by an agent
-verifying its own output rather than assuming the call had done what it was told; the third by
-one running a query both ways instead of reading it. In
-both cases the system was one unchecked assumption away from acting on something false — a
-merge refused, and a verdict misrecorded.
+**Each produced a plausible wrong answer rather than an error.** That is the property they
+actually share, and it is what made all three survivable long enough to reach a pull request:
+
+| | what it produced | what that is indistinguishable from |
+| --- | --- | --- |
+| the unpaginated gate | `BLOCKED` | a pull request nobody has approved yet |
+| the stale verdict file | a review reading `REQUEST-CHANGES` | a real rejection |
+| the empty-login query | `[]` | a merged item that was never approved |
+
+None of them raises, logs or returns anything anomalous. A wrong answer that looks exactly
+like a right one cannot be caught by watching for failures, which is why no test would have
+found any of them and why each was caught instead by somebody checking a result they had every
+reason to believe — a verdict re-verified rather than taken, an agent reading back its own
+output, a query run both ways.
+
+**That last sentence is not a claim about the three defects.** They were found that way because
+that is the only way defects of this shape *can* be found; saying so about these three would be
+circular, since they entered this document by being found. It is a claim about the shape.
+
+An earlier draft called all three "reading failures rather than writing ones", which section 2
+of this document contradicts directly: the lesson there is *stop writing into a shared
+directory*, and the hazard is located in the write. The common property is the plausible wrong
+answer, not where in the cycle it arises.
