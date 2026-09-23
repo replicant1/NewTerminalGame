@@ -26,3 +26,5 @@
 06:19:50Z  WI-13 VERIFY  C1 timed clause: <Map> of the game window to the ghost's first move 185 ms, no key posted
 06:19:50Z  WI-13 VERIFY  from_terminal at d943203: all checks passed incl. wholly on display 2's visible area (-949,-1407,2560,1407); mazes differ 222/1160; both Terminal windows closed
 06:19:50Z  WI-13 TEST    default: 558 passed, 0 failed, 1 skipped, 24 deselected; desktop (all): 24 passed, 0 failed, 559 deselected
+06:20:09Z  WI-13 REVIEW  replied REVIEW-REPLY: FIXED d943203 to both round 1 findings
+06:20:09Z  WI-13 REVIEW  requested WI-13 round 2 at the head this commit makes
