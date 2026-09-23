@@ -9,7 +9,7 @@ Lane A, Dev A. Branch `r8/wi-5-status-line`, cut from `origin/main` at `75723e7`
 
 - `terminal_game/presentation/status_line.py`: `status_text(score, outcome)` returns the 40 characters, and `status_row(score, outcome)` returns 40 `(character, role)` cells, all with the role `"status"`. `outcome` is one of `PLAYING` (`None`), `LOST` (`"lost"`) or `WON` (`"won"`).
   - The score is left-aligned in a fixed field, so the text after it always starts where the specimen's examples put it: cell 12 during play, 20 on a loss, 21 on a win.
-  - It refuses a negative or non-integer score, an unknown outcome, and a score too long for its field, instead of shifting the text.
+  - It refuses a negative or non-integer score, an unknown outcome, and a score too long for its field, instead of shifting the text. An unhashable outcome such as `[]` is refused with the same `ValueError`.
 - `terminal_game/presentation/roles.py`: the six colour-role strings (`"wall"`, `"dot"`, `"player"`, `"ghost"`, `"status"`, `"background"`). They are the same strings lane C's `terminal_game/shell/palette.py` uses on PR #123. Presentation may not import the shell, so a frame built here carries role strings the shell's frame check accepts. Lane C could import these from presentation if it wants one source; that is its call.
 
 ## Claims
@@ -24,7 +24,7 @@ Commands run from the repository root with the §1.2 environment. `-v` without `
 | **WI-5/C4** | The row contains the state word (on an ending), the score and the key hints, and no other text. | Executable: `.venv/bin/python -m pytest -v tests/test_status_line.py -k c4` | 3 PASSED lines, one per state. Each asserts that the row's words are exactly `score N arrows, q quits`, `CAUGHT score N q quits` or `CLEARED score N q quits`, for scores with 1, 2, 3 digits and 459. |
 | **WI-5/C5** | Every cell of the row is in the status colour. | Executable: `.venv/bin/python -m pytest -v tests/test_status_line.py -k c5`, and the harness | PASSED: every cell's role is `status`, in every state, for four scores. The harness prints `roles ['status']` beside each example row. |
 
-Suite at the head: `.venv/bin/python -m pytest -q` gives **147 passed, 1 skipped**. `.venv/bin/python -m tools.layer_check` passes, with `status_line` and `roles` in the presentation layer.
+Suite at the head: `.venv/bin/python -m pytest -q` gives **150 passed, 1 skipped**. `.venv/bin/python -m tools.layer_check` passes, with `status_line` and `roles` in the presentation layer.
 
 ## Diff map
 

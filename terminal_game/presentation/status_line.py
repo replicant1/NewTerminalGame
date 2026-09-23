@@ -39,7 +39,7 @@ def status_text(score: int, outcome: Optional[str] = PLAYING) -> str:
     """The 40 characters of the status row."""
     try:
         before, tail_cell, tail = _FORMS[outcome]
-    except KeyError:
+    except (KeyError, TypeError):  # TypeError: an unhashable outcome such as []
         raise ValueError("unknown outcome %r; expected PLAYING (None), %r or %r"
                          % (outcome, LOST, WON)) from None
     if isinstance(score, bool) or not isinstance(score, int) or score < 0:

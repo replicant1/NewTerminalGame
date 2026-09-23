@@ -85,6 +85,13 @@ def test_an_unknown_outcome_is_refused():
         status_text(0, "drawn")
 
 
+@pytest.mark.parametrize("outcome", [[], {}, {"lost"}])
+def test_an_unhashable_outcome_is_refused_the_same_way(outcome):
+    """Copilot, PR #125: ValueError, not a TypeError from the lookup."""
+    with pytest.raises(ValueError, match="unknown outcome"):
+        status_text(0, outcome)
+
+
 def test_a_score_too_long_for_its_field_is_refused_rather_than_shifting_the_text():
     assert status_text(9999)[12:].startswith("arrows")
     with pytest.raises(ValueError, match="does not fit"):
