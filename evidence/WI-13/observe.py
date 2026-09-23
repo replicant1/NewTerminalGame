@@ -37,6 +37,9 @@ def main() -> int:
     for scenario, picks in PICK.items():
         run = run_driver(scenario, work / scenario, driver=REPO / "tests" / "game_driver.py")
         transcript["runs"][scenario] = {"status": run.status, "result": run.result}
+        if run.status != 0 or run.stragglers or "quit_ignored" in run.result:
+            print(f"{scenario}: the run did not end cleanly (status {run.status}, stragglers {run.stragglers}); no observation")
+            return 1
         for capture, label in picks.items():
             png = OUT / f"game-{sha}-{label}.png"
             subprocess.run(["/usr/bin/sips", "-s", "format", "png", str(work / scenario / f"{capture}.bmp"),

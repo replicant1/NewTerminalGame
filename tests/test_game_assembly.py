@@ -117,3 +117,11 @@ def test_main_finds_the_anchor_before_the_window_exists_and_uses_a_fresh_random_
     assert isinstance(sessions[0], random.Random)
     game.main()
     assert sessions[0] is not sessions[1]    # a new source each run (C2 shows the mazes differ, on screen)
+
+
+def test_placement_uses_the_outer_height_drawing_area_plus_title_bar():
+    main = Rect(0, 33, 1512, 949)
+    w = StandInWindow([])
+    game.play(session(), w, Rect(100, 900, 50, 50), [main])   # anchor near the bottom: clamped up
+    assert w.placed == (100 + OFFSET, 33 + 949 - (570 + game.TITLE_BAR_POINTS))
+    assert game.TITLE_BAR_POINTS == 32

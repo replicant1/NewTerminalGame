@@ -177,11 +177,38 @@ def main() -> int:
     different = launches[0]["wall_grid"] != launches[1]["wall_grid"]
     differing_cells = sum(a != b for x, y in zip(launches[0]["wall_grid"], launches[1]["wall_grid"]) for a, b in zip(x, y))
     print(f"mazes differ between launches: {different} ({differing_cells} of 1160 maze cells differ in wall/not-wall)")
+    failures = []
+    for r in launches:
+        n = r["launch"]
+        walls = sum(row.count("#") for row in r["wall_grid"])
+        if walls < 200:
+            failures.append(f"launch {n}: only {walls} wall cells classified; the maze was not seen")
+        if r["dot_cells"] < 100:
+            failures.append(f"launch {n}: only {r['dot_cells']} dot cells classified")
+        if r["status_cells"] != r["status_expected"]:
+            failures.append(f"launch {n}: status row cells {r['status_cells']} != {r['status_expected']}")
+        if len(r["player_cells"]) != 3:
+            failures.append(f"launch {n}: player cells {r['player_cells']}")
+        if len(r["ghost_cells"][0]) != 3 or r["ghost_cells"][0] == r["ghost_cells"][1]:
+            failures.append(f"launch {n}: ghost {r['ghost_cells']} not seen moving within 0.5 s")
+        dx, dy = r["offset_from_terminal"]
+        if not (20 <= dx <= 60 and 20 <= dy <= 60):
+            failures.append(f"launch {n}: offset {r['offset_from_terminal']} not 20-60 points each way")
+        if r["game_bounds"][2:] != [400.0, 602.0]:
+            failures.append(f"launch {n}: game window {r['game_bounds'][2:]}, not 400 x 602 points")
+        if r["terminal_window_visible_after"] not in ("false", "gone"):
+            failures.append(f"launch {n}: Terminal window {r['terminal_window']} still visible")
+    if not different:
+        failures.append("the two launches showed the same maze")
     record = {"head": sha, "taken_at_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-              "launches": launches, "mazes_differ": different, "differing_cells": differing_cells}
+              "launches": launches, "mazes_differ": different, "differing_cells": differing_cells,
+              "failures": failures}
     (OUT / f"from-terminal-{sha}.json").write_text(json.dumps(record, indent=1))
     print(f"written: evidence/WI-13/from-terminal-{sha}.json")
-    return 0
+    for failure in failures:
+        print("FAILED:", failure)
+    print("all checks passed" if not failures else f"{len(failures)} check(s) FAILED")
+    return 1 if failures else 0
 
 
 if __name__ == "__main__":

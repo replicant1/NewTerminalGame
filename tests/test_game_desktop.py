@@ -41,6 +41,7 @@ def show(claim, text):
 def _run(tmp_path_factory, scenario):
     run = run_driver(scenario, tmp_path_factory.mktemp(scenario), driver=DRIVER)
     assert run.status is not None, f"{scenario}: the driver hung and was killed; terminal said {run.terminal!r}"
+    assert run.status == 0, f"{scenario}: the driver exited {run.status}; terminal said {program_output(run.terminal)!r}"
     assert not process_alive(run.pid) and not run.stragglers
     for phase in run.result.get("refocused", []):
         print(f"\n({scenario}: focus taken back before {phase})")
