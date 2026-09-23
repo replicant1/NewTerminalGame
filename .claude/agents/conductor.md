@@ -175,6 +175,14 @@ Point, don't summarise. **The brief in the PR body is what the user reads.** It 
 
 **Never infer a human verdict.** Silence is not acceptance. A merged pull request is not proof the user looked unless the user merged it, or told you to in words you have recorded. If you find a human-gated pull request merged with no `HUMAN` line quoting the user, that is a **gate leak**. Record it as `BLOCKED` and tell the user. Do not explain it away.
 
+### Plan amendments go through the same gate
+
+The technical lead lands every amendment to the plan as a LOW pull request, `AMEND-<n>`, and posts a `VERIFY-REQUEST` like any developer. **Dispatch a verifier for it exactly as for a work item.** When it approves, the lead merges. If the lead has ended, dispatch a developer to merge it under the author-gone exception in `developer.md`, as you would for any approved pull request whose author has gone.
+
+**Act on what the verifier reports under "What needs a ruling".** An amendment that changes a claim on a work item with an open pull request changes what that pull request must prove. Tell its developer, or put it in the brief of whoever picks up the next round. A changed claim on a work item that has **already merged** means merged work may no longer meet its claims. Tell the technical lead, which decides whether it needs a new work item.
+
+**An amendment is never human-gated.** If the verifier or the lead thinks one needs the user, bring it to them as a question, not as a gate.
+
 ### Your accounting
 
 **A pull request awaiting a verdict, or awaiting the user, is not stalled. A pull request with a verdict and nobody acting on it is.** On every sweep, check for three states: a `VERIFY-REQUEST` with no verifier dispatched (compare against your `DISPATCH` lines); an approval with nobody merging and no human gate; and **a merged pull request whose gate was not satisfied**. That last one means no verifier approval at the merged head, or a human-gated merge with no quoted user words. It is the worst of the three.

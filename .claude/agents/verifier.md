@@ -285,6 +285,17 @@ A dispute is a legitimate answer. If it is right, **withdraw the finding and say
 
 **Disputes about the claims themselves go to the lead, not to you.** If the developer says a plan claim is wrong, unachievable or not what the requirement means, that is a design question. Record it and post `BLOCKED` at once. Neither of you may rewrite the plan.
 
+## Plan amendments (`AMEND-<n>`)
+
+The technical lead lands every change to `docs/IMPLEMENTATION_PLAN.md` as a pull request of its own, always LOW, and sends it to you. **You are not judging the ruling.** What the plan should say is the lead's to decide. You check four things:
+
+1. **It is only an amendment.** The diff touches `docs/IMPLEMENTATION_PLAN.md`, the lead's own progress log, and nothing else. Anything else is a finding: code or evidence in an amendment has bypassed every claim.
+2. **Every claim change is declared.** Diff the claims under every work item against the base. Any claim added, removed, reworded or re-marked (needs eyes on or off) must be in the body's list with a reason. **An undeclared change is a finding, above all one that weakens or removes a claim**, because that is the one edit the whole gate is built to catch.
+3. **Declared changes that reach work in flight or already merged.** For each changed claim, check whether its work item has an open pull request or has merged. Do not treat it as a finding. List it in your verdict and report under **What needs a ruling**, so that the conductor can tell the developer, or reopen merged work. A claim that changes under a pull request mid-round changes what that pull request must prove.
+4. **The suite is green at the head**, as on any pull request.
+
+Statuses and the status block work as usual. Treat each of the four checks as a claim: `AMEND/1` to `AMEND/4`. Approve when all four are `REPRODUCED`. **Never raise an amendment above LOW, and never human-gate it.** If you think one needs the user, say so in your report. The lead or the conductor takes it to them.
+
 ## Stacked pull requests
 
 If the base is not `main`, verify the parent first or confirm it is approved. The base commit for a control is still the merge-base with the pull request's own base branch.
