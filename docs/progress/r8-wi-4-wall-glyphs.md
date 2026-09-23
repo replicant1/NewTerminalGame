@@ -4,3 +4,5 @@
 03:20:24Z  WI-4 RISK    WI-4 LOW, because it is the plan floor: an isolated pure leaf
 03:20:24Z  WI-4 CLAIM   C1-C3 executable -- pytest -v tests/test_wall_glyphs.py -k c1/c2/c3; C4 executable -- evidence/WI-4/specimen_glyphs.py
 03:20:24Z  WI-4 TEST    157 passed, 0 failed, 1 skipped
+03:20:47Z  WI-4 COMMIT  e96ab9b WI-4: wall glyphs from a square's wall neighbours, and the joining cell
+03:20:47Z  WI-4 NOTE    draft PR 124 opened; marking ready (suite green)
