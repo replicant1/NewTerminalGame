@@ -15,3 +15,13 @@
 02:43:46Z  WI-1 TEST    36 passed, 0 failed, 1 skipped (scaffold, before WI-1 tests)
 02:43:53Z  WI-1 COMMIT  75a3e6f WI-1: scaffold, pinned-runtime refusal, desktop opt-in, window guard, layer check
 02:46:55Z  WI-1 TEST    115 passed, 0 failed, 1 skipped (tests for C2-C6 added: test_runtime_pin, test_suite_guards, test_layer_check)
+02:53:12Z  WI-1 VERIFY  guards_probe at HEAD 859648c -> C5 HOLDS, C6 HOLDS; at base 8bc9496 -> C5 DOES NOT HOLD (desktop probe PASSED under default), C6 DOES NOT HOLD (window probe reached the create sentinel, no refusal)
+02:53:12Z  WI-1 VERIFY  runtime_probe at HEAD -> both runs exit 4 naming found and wanted; at base -> both runs 36 passed, 1 skipped, no message
+02:53:12Z  WI-1 VERIFY  fresh_clone at HEAD -> README 2 steps ran, default suite 115 passed 1 skipped, infra files 19 and 17 passed, 1 skip
+02:53:12Z  WI-1 VERIFY  layer_samples -> 5 of 5 sample violations named, empty presentation layer fails, real tree PASS with 1 module per layer
+02:53:12Z  WI-1 CLAIM   WI-1/C1 executable -- .venv/bin/python evidence/WI-1/fresh_clone.py
+02:53:12Z  WI-1 CLAIM   WI-1/C2 executable -- .venv/bin/python evidence/WI-1/runtime_probe.py (control --commit 8bc9496); tests/test_runtime_pin.py, tests/test_suite_guards.py
+02:53:12Z  WI-1 CLAIM   WI-1/C3 and C4 executable -- .venv/bin/python evidence/WI-1/layer_samples.py; tests/test_layer_check.py
+02:53:12Z  WI-1 CLAIM   WI-1/C5 and C6 executable -- .venv/bin/python evidence/WI-1/guards_probe.py (control --commit 8bc9496); tests/test_suite_guards.py
+02:53:12Z  WI-1 CLAIM   WI-1/A1 A2 A3 added (desktop deselected under any other -m or a node id; misspelt mark is an error; domain randomness) -- tests/test_suite_guards.py, tests/test_layer_check.py
+02:53:12Z  WI-1 RISK    WI-1 MEDIUM, because it is the plan floor and nothing here opens a window or touches game behaviour
