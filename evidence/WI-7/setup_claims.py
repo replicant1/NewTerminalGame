@@ -84,7 +84,7 @@ def main(n: int) -> int:
     results = [
         ("C1", f"players not on a nearest-to-centre square: {not_nearest}/{n}; same maze, different start: {unrepeatable}", not_nearest == 0 and unrepeatable == 0),
         ("C2", f"ghosts not at the greatest straight-line distance: {not_furthest}/{n}; hand-built maze: straight-line picks {by_line} ({steps[by_line]} steps), corridors pick {by_steps} ({steps[by_steps]} steps), ghost at {hs.ghost}", not_furthest == 0 and hs.ghost == by_line != by_steps),
-        ("C3", f"mazes with an open centre: {open_centre}; player not on it: {open_centre_missed}", open_centre > 0 and open_centre_missed == 0),
+        ("C3", f"mazes with an open centre: {open_centre}; player not on it: {open_centre_missed}", open_centre >= 100 and open_centre_missed == 0),
         ("C4", f"mazes whose dots are not exactly the corridor squares minus the player's: {dots_wrong}/{n}", dots_wrong == 0),
         ("C5", f"ghost start squares without a dot: {ghost_dotless}/{n}", ghost_dotless == 0),
         ("C6", f"starts not at score 0, undecided, no ghost heading: {not_fresh}/{n}", not_fresh == 0),

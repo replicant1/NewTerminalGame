@@ -132,7 +132,7 @@ def test_c3_when_the_centre_is_corridor_the_player_starts_on_it():
 
 def test_c3_over_generated_mazes_whose_centre_is_corridor(generated):
     with_open_centre = [(seed, state) for seed, maze, state in generated if maze.is_corridor(CENTRE)]
-    assert len(with_open_centre) > 100, "too few generated mazes had an open centre to say anything"
+    assert len(with_open_centre) >= 100, "fewer than 100 generated mazes had an open centre"
     for seed, state in with_open_centre:
         assert state.player == CENTRE, seed
 
