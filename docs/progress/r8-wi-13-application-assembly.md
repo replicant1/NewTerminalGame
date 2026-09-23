@@ -20,3 +20,5 @@
 06:01:01Z  WI-13 VERIFY  harness rerun hit 'screencapture: could not create image from rect' once at (358,-1177); the game was killed and the Terminal window 22324 closed by the finally blocks (visible=false, no game process left); a probe capture seconds later worked. Harness now retries a failed capture up to 3 times
 06:01:51Z  WI-13 VERIFY  from_terminal at 7f78b8f: all checks passed, exit 0; offset (40,40), 400x602, status row match, ghost moved, mazes differ in 214 of 1160; both Terminal windows closed (visible=false)
 06:01:51Z  WI-13 TEST    default: 558 passed, 0 failed, 1 skipped, 23 deselected
+06:02:21Z  WI-13 REVIEW  replied REVIEW-REPLY: FIXED 80f54af on Copilot thread 4079484561 and answered the overview points; Copilot clean
+06:02:21Z  WI-13 REVIEW  requested WI-13 round 1 at the head this commit makes
