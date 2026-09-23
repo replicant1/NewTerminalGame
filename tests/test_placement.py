@@ -184,3 +184,18 @@ def test_a2_a_secondary_display_that_reports_its_own_menu_bar_is_not_trimmed_twi
 def test_a1_with_no_display_at_all_place_refuses_rather_than_inventing_a_position():
     with pytest.raises(ValueError, match="at least one display"):
         place(None, WINDOW, [])
+
+
+def test_c2_fractional_display_edges_never_let_rounding_push_the_window_off():
+    # An area ending at 100.6: the window may start no later than 0.6, so at 0, never 1.
+    area = Rect(0, 0, 100.6, 100.6)
+    assert place(Rect(-50, -50, 10, 10), (100, 100), [area]) == (0, 0)
+    assert place(Rect(80, 80, 10, 10), (100, 100), [area]) == (0, 0)
+    # A fractional low edge rounds inwards too: an area starting at 10.4 allows no x below 11.
+    area = Rect(10.4, 10.4, 500, 500)
+    x, y = place(Rect(-40, -40, 10, 10), (100, 100), [area])   # offset lands at (0, 0), left of and above 10.4
+    assert (x, y) == (11, 11) and area.contains(Rect(x, y, 100, 100))
+
+
+def test_c2_a_window_bigger_than_the_display_is_pinned_to_its_top_left():
+    assert place(Rect(500, 500, 10, 10), (400, 602), [Rect(0, 33, 300, 400)]) == (0, 33)

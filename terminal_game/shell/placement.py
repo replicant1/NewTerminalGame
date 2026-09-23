@@ -13,6 +13,7 @@ The policy (IMPLEMENTATION_PLAN.md WI-9):
 * with no anchor, centred on the main display's visible area (C3).
 """
 
+import math
 from collections.abc import Sequence
 from dataclasses import dataclass
 
@@ -62,17 +63,27 @@ def display_for(anchor: Rect, displays: Sequence[Rect]) -> Rect:
     return best if anchor.overlap(best) > 0 else displays[0]
 
 
+def _clamp_axis(value: float, low: float, size: float, high_edge: float) -> int:
+    """The whole number nearest ``value`` that keeps [v, v + size] inside [low, high_edge].
+
+    The bounds are rounded inwards (ceil the low one, floor the high one), so
+    rounding can never push the window over a fractional edge. When no whole
+    number fits (the window is bigger than the area), the low edge wins, so the
+    title bar stays reachable.
+    """
+    lo, hi = math.ceil(low), math.floor(high_edge - size)
+    if hi < lo:
+        return lo
+    return min(max(round(value), lo), hi)
+
+
 def clamp(x: float, y: float, width: float, height: float, area: Rect) -> tuple[int, int]:
-    """Move (x, y) just far enough that a width x height window lies wholly in ``area``.
+    """Move (x, y) just far enough that a width x height window lies wholly in ``area``, in whole points.
 
     A window bigger than the area is pinned to the area's top-left, so its
     title bar stays reachable.
     """
-    x = min(max(x, area.x), area.right - width)
-    y = min(max(y, area.y), area.bottom - height)
-    x = max(x, area.x)
-    y = max(y, area.y)
-    return round(x), round(y)
+    return _clamp_axis(x, area.x, width, area.right), _clamp_axis(y, area.y, height, area.bottom)
 
 
 def place(anchor: Rect | None, window_size: tuple[float, float], displays: Sequence[Rect]) -> tuple[int, int]:

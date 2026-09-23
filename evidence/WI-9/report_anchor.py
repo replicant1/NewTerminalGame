@@ -39,6 +39,7 @@ def main() -> None:
     x, y = place(found, (400, 602), displays)   # the game window's outer size
     game = Rect(x, y, 400, 602)
     record = {
+        "tty": os.ttyname(0) if os.isatty(0) else None,
         "displays": [[d.x, d.y, d.width, d.height] for d in displays],
         "placed_at": [x, y],
         "anchor_display": None if found is None else displays.index(display_for(found, displays)),

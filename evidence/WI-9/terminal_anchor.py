@@ -63,8 +63,20 @@ def main() -> int:
             busy = osa(f'tell application "Terminal" to get busy of tab 1 of window id {window_id}')
         except RuntimeError:
             busy = "gone"
-        if busy == "false":
+        # Close it only if it is provably the window our report ran in: its tab's tty
+        # must be the tty the report wrote down. Anything else is left alone.
+        ours = False
+        if out.exists():
+            try:
+                tty = osa(f'tell application "Terminal" to get tty of tab 1 of window id {window_id}')
+                ours = tty == json.loads(out.read_text()).get("tty")
+            except (RuntimeError, ValueError):
+                ours = False
+        print(f"window {window_id} is the one the report ran in: {ours}")
+        if busy == "false" and ours:
             osa(f'tell application "Terminal" to close window id {window_id}')
+        elif busy == "false":
+            print(f"window {window_id} not provably ours; NOT closing it")
         elif busy == "true":
             print(f"window {window_id} still busy; NOT closing it (that would raise a sheet)")
         try:
