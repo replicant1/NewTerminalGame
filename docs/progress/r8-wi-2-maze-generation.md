@@ -43,3 +43,6 @@
 03:16:56Z  NOTE    WI-2 merged origin/main 75723e7 (WI-1, #122) as 8a6ad5e: no conflicts; the empty package markers resolved to WI-1's documented ones
 03:16:56Z  VERIFY  WI-2 venv rebuilt from requirements.txt; tools.layer_check -> domain 3 examined, PASS 0 violations; harness ALL PASS
 03:16:56Z  TEST    165 passed, 0 failed, 1 skipped (whole suite after merging main)
+03:17:36Z  COMMIT  d9a089e WI-2: brief after merging WI-1; progress log
+03:17:36Z  NOTE    WI-2 at 03:17:14Z I posted a VERIFY-REQUEST carrying a head sha that was not the branch's (a refused command left me without the real one); deleted the comment at once, and re-request below with the sha read from the PR
+03:17:36Z  REVIEW  requested WI-2 round 1 at the head commit that carries this line
