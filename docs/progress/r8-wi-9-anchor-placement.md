@@ -7,3 +7,10 @@
 03:59:18Z  WI-9 VERIFY  real window list: 29 windows in 16.9 ms; anchor = a Chrome window on the left display Rect(-3351,-1398,2248,1374) in 1.6 ms; displays: main (0,33,1512,949), left (-3509,-1440,2560,1440), middle (-949,-1440,2560,1440)
 03:59:18Z  WI-9 VERIFY  NSScreen gives the secondary displays' visible area as the whole display although Control Centre's menu-bar items sit at y=-1440 height 30; trimming the main display's 33-pt menu bar where nothing was taken off the top
 03:59:18Z  WI-9 TEST    default: 403 passed, 0 failed, 1 skipped (tests/test_placement.py 17 passed)
+03:59:48Z  WI-9 COMMIT  57082c2 WI-9: the anchor query and the placement policy
+03:59:48Z  WI-9 NOTE    draft PR #132
+04:00:43Z  WI-9 VERIFY  C6 harness run 1 (one Terminal window, id 21189, opened, process exited, closed by id, visible=false): anchor [322,-1367,597,385] in 23.4 ms owned by Terminal window 21189 = Terminal's bounds {322,-1367,919,-982}; agree True, on the middle (secondary) display
+04:00:43Z  WI-9 DECIDE  add the real placement to the C6 report (place(anchor, 400x602, visible_displays()) and which display holds it) so C4 also has a real-desktop demonstration; one more Terminal window
+04:01:55Z  WI-9 VERIFY  C6 harness run 2: agree True again; with the real displays the game window is placed at (362,-1327), wholly on display 2, the anchor's display
+04:01:55Z  WI-9 DECIDE  NSScreen flip and menu-bar trim moved into pure to_global() so it is tested with the measured numbers (A2); place() with no display raises (A1)
+04:01:55Z  WI-9 TEST    default: 406 passed, 0 failed, 1 skipped

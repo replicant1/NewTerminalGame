@@ -153,3 +153,34 @@ def test_the_real_display_list_starts_with_the_main_display():
     assert displays, "no display found"
     main = displays[0]
     assert main.x == 0 and 0 <= main.y < 100 and main.width > 0 and main.height > 0
+
+
+# -- displays (WI-9/C2, C4, A2) ------------------------------------------------------
+
+
+def test_a2_screens_are_flipped_to_top_left_points_and_a_secondary_menu_bar_is_left_out():
+    # NSScreen's own numbers, as measured on this desk: main 1512 x 982 with a
+    # 33-pt menu bar; two 2560 x 1440 displays above it, reported with nothing
+    # taken off although a menu bar is drawn across their tops.
+    screens = [
+        (Rect(0, 0, 1512, 982), Rect(0, 0, 1512, 949)),
+        (Rect(-3509, 982, 2560, 1440), Rect(-3509, 982, 2560, 1440)),
+        (Rect(-949, 982, 2560, 1440), Rect(-949, 982, 2560, 1440)),
+    ]
+    assert anchor.to_global(screens) == [MAIN, LEFT, MIDDLE]
+
+
+def test_a2_a_secondary_display_that_reports_its_own_menu_bar_is_not_trimmed_twice():
+    screens = [
+        (Rect(0, 0, 1512, 982), Rect(0, 0, 1512, 949)),
+        (Rect(1512, 0, 1920, 1080), Rect(1512, 0, 1920, 1050)),   # 30 pt already taken off the top
+    ]
+    assert anchor.to_global(screens)[1] == Rect(1512, -98 + 30, 1920, 1050)
+
+
+# -- A1 -----------------------------------------------------------------------------
+
+
+def test_a1_with_no_display_at_all_place_refuses_rather_than_inventing_a_position():
+    with pytest.raises(ValueError, match="at least one display"):
+        place(None, WINDOW, [])

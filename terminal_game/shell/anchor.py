@@ -171,11 +171,7 @@ class _NSRect(ctypes.Structure):
 
 
 def visible_displays() -> list[Rect]:
-    """Each display's visible area in global top-left-origin points, main display first.
-
-    ``NSScreen`` measures from the bottom-left of the main display with y
-    growing upwards; this flips each rectangle about the main display's height.
-    """
+    """Each display's visible area in global top-left-origin points, main display first (see :func:`to_global`)."""
     objc = ctypes.CDLL(ctypes.util.find_library("objc"))
     ctypes.CDLL("/System/Library/Frameworks/AppKit.framework/AppKit")
     objc.objc_getClass.restype = ctypes.c_void_p
@@ -196,19 +192,31 @@ def visible_displays() -> list[Rect]:
         frame = msg(_NSRect)(screen, sel("frame"))
         visible = msg(_NSRect)(screen, sel("visibleFrame"))
         rects.append((frame, visible))
-    if not rects:
+    return to_global([
+        (Rect(f.x, f.y, f.width, f.height), Rect(v.x, v.y, v.width, v.height)) for f, v in rects
+    ])
+
+
+def to_global(screens: list[tuple[Rect, Rect]]) -> list[Rect]:
+    """Turn NSScreen (frame, visibleFrame) pairs into visible areas in global top-left points. Pure.
+
+    NSScreen measures from the bottom-left of the main display (the first
+    pair) with y growing upwards; each rectangle is flipped about the main
+    display's height. NSScreen also reports a secondary display's visible area
+    as the whole display even when a menu bar is drawn across its top
+    (measured 2026-09-23: 2560 x 1440 visible, with Control Centre's menu-bar
+    items at its top edge), so wherever nothing was taken off the top, as much
+    is taken off as the main display loses to its menu bar.
+    """
+    if not screens:
         return []
-    main_frame, main_visible = rects[0]   # screens[0] is the main display, origin (0, 0)
+    main_frame, main_visible = screens[0]
     main_height = main_frame.height
-    # NSScreen reports a secondary display's visible area as the whole display even
-    # when a menu bar is drawn across its top (measured 2026-09-23: 2560 x 1440
-    # visible, with Control Centre's menu-bar items at its top edge). So wherever
-    # nothing was taken off the top, take off as much as the main display loses.
     menu_bar = (main_frame.y + main_frame.height) - (main_visible.y + main_visible.height)
     out = []
-    for frame, visible in rects:
+    for frame, visible in screens:
         top_inset = (frame.y + frame.height) - (visible.y + visible.height)
-        height = visible.height - (menu_bar if top_inset <= 0 else 0)
-        top = main_height - (visible.y + visible.height) + (menu_bar if top_inset <= 0 else 0)
-        out.append(Rect(visible.x, top, visible.width, height))
+        trim = menu_bar if top_inset <= 0 else 0
+        top = main_height - (visible.y + visible.height) + trim
+        out.append(Rect(visible.x, top, visible.width, visible.height - trim))
     return out
