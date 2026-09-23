@@ -41,3 +41,8 @@
 03:06:52Z  WI-1 COMMIT  b79d586 WI-1: answer Copilot: follow aliased import functions, fail a module that swallows the refusal
 03:06:52Z  WI-1 NOTE    Copilot threads answered: 2 DISPUTE (wantTk index), 2 FIXED at b79d586; fresh_clone at b79d586 HOLDS (130 passed, 1 skipped)
 03:07:07Z  WI-1 REVIEW  requested WI-1 round 1 (head is the commit carrying this line; see the VERIFY-REQUEST comment on PR 122)
+03:16:22Z  WI-1 REVIEW  APPROVED round 1 @4968ef82989fd6d57aa3a121b810ee7d6e3fb288 by newterminalgame-code-reviewer[bot], 03:15:29Z; no HUMAN-GATE; all 11 claims REPRODUCED
+03:16:22Z  WI-1 MERGE   PR 122 r8/wi-1-scaffold merged 03:15:52Z as 75723e7 (gate: suite green, Copilot threads answered, approval at head 4968ef8, MEDIUM)
+03:16:22Z  WI-1 TEST    130 passed, 0 failed, 1 skipped on origin/main 75723e7 after merge
+03:16:22Z  WI-1 NOTE    verifier note (not a finding): the brief's '-q -v' commands print dots, since -q and -v cancel; drop -q to see names. Left as is: editing the brief would have moved the head off the approval
+03:16:22Z  WI-1 DONE    WI-1 r8/wi-1-scaffold 4968ef82989fd6d57aa3a121b810ee7d6e3fb288
