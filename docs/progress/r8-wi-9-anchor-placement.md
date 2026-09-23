@@ -21,3 +21,5 @@
 04:10:23Z  WI-9 REVIEW  Copilot 04:08:23Z 'Changes recommended', 1 thread: rounding a clamped fractional bound can cross the display edge (valid); overview also asked for harness identity/cleanup care
 04:10:23Z  WI-9 VERIFY  C6 harness run 3 (with tty identity check): window 21451 provably ours, closed, visible=false; agree True; placed (362,-1327) wholly on display 2
 04:10:23Z  WI-9 TEST    default: 408 passed, 0 failed, 1 skipped (tests/test_placement.py 22 passed)
+04:10:39Z  WI-9 REVIEW  replied REVIEW-REPLY: FIXED 396368b on Copilot thread 4078939889; Copilot clean
+04:10:39Z  WI-9 REVIEW  requested WI-9 round 1 at the head this commit makes
