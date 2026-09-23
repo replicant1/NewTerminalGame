@@ -251,7 +251,7 @@ Colour words in claims refer to six colour roles: **wall blue, dot dim gold, pla
 - **WI-3/C4** If the preferred typeface is not available, the window uses another fixed-width typeface and still measures exactly 40 × 30 of that typeface's cells.
 - **WI-3/C5** The whole drawing area is black wherever nothing is painted, including the two right-hand columns.
 - **WI-3/C6** The window's title, as the toolkit reports it, is exactly `Terminal Game`.
-- **WI-3/C7** Any character can be painted in any of the 1,200 cells in any of the six colour roles, and a screenshot of the real window shows each painted character inside its own cell in its role's colour.
+- **WI-3/C7** Every character the game can draw (U+0020–U+007E, the space and printable ASCII; U+2500–U+259F, the box-drawing, block and shade characters; `■` U+25A0 and `▪` U+25AA) can be painted in any of the 1,200 cells in any of the six colour roles. A screenshot of the real window shows each painted character inside its own cell in its role's colour, and a painted space leaves its cell showing only the background. Double-width characters, such as CJK, are outside the game's alphabet and are not claimed.
 - **WI-3/C8** Only characters are drawn: everything on the drawing surface is text or the black background, never an image or a shape standing in for a glyph.
 - **WI-3/C9** Replacing one frame with another never shows a picture that is neither: over 5 seconds of repeated repaints, every screenshot matches, cell for cell, one of the frames that was asked for, and no text cursor or caret is visible in any of them.
 - **WI-3/C10** Keys pressed in the window reach the program as named keys (the four arrows, `q`, `Q`, and any other key as itself), and nothing typed ever appears in the window.
