@@ -74,8 +74,8 @@ def long_runs():
             jumps += d != (0, 0) and d not in DIRECTIONS
             moved += d != (0, 0)
     return [
-        ("C5", f"1000 games x 1000 (move + ghost step): score decreases {drops}; dots eaten {eaten}; ghost moves {ghost_steps}; games lost {lost}, won {won}", drops == 0 and eaten > 0),
-        ("C11", f"1000 games x 1000 random moves: squares changed {moved}; off the grid {off}; on a wall {wall}; jumps of more than one square {jumps}", off == wall == jumps == 0 and moved > 0),
+        ("C5", f"1000 games x 1000 (move + ghost step): score decreases {drops}; dots eaten {eaten}; ghost moves {ghost_steps}; games lost {lost}, won {won}", drops == 0 and eaten > 1000),
+        ("C11", f"1000 games x 1000 random moves: squares changed {moved}; off the grid {off}; on a wall {wall}; jumps of more than one square {jumps}", off == wall == jumps == 0 and moved > 100_000),
     ]
 
 

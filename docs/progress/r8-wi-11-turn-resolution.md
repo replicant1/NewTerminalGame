@@ -16,3 +16,10 @@
 03:58:00Z  TEST    442 passed, 0 failed, 1 skipped (after merging main)
 03:58:00Z  CLAIM   WI-11/C1-C11, A1-A3 executable — tests/test_turn_resolution.py -k <id>_; H evidence/WI-11/turn_claims.py for C2, C5, C8-C11
 03:58:00Z  DRAFT   WI-11 docs/prs/PR-WI-11-turn-resolution.md
+03:58:30Z  COMMIT  aa916ac WI-11: PR brief
+03:58:30Z  NOTE    WI-11 draft PR #131 opened; marked ready 03:58:23Z; waiting for Copilot
+04:04:33Z  REVIEW  Copilot on #131 at 04:03:32Z: Changes recommended; 1 thread (harness C5 floor eaten>0 weaker than the test's >1000); overview also says 'completed-state validation ordering requires correction' with no thread
+04:04:33Z  DECIDE  WI-11 harness floors -> aligned with the tests (C5 eaten > 1000, C11 moved > 100000), valid
+04:04:33Z  DECIDE  WI-11 direction validated before the decided check -> kept, because a malformed direction is a caller's programming error that should surface in any state; a well-formed move after an ending still changes nothing (A1)
+04:04:33Z  TEST    442 passed, 0 failed, 1 skipped
+04:04:33Z  REVIEW  requested WI-11 round 1 at the head commit that carries this line
