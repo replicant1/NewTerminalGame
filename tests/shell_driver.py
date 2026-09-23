@@ -215,6 +215,7 @@ class Driver:
         a, b = card.specimen_frame(), card.shifted_specimen()
         self.window.paint(card.blank())
         yield SETTLE_MS
+        self.result["facts"] = self.facts()
         yield self.capture("blank")   # the clip mask for this window
         self.window.paint(a)
         yield PAINT_MS
