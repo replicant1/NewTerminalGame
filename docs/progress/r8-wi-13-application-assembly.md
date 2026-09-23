@@ -9,3 +9,7 @@
 05:40:01Z  WI-13 VERIFY  display backing scales: main 2.0, left (-3509) 1.0, middle (-949) 2.0; the Terminal window (322,-1367) is on the middle, Retina display
 05:43:48Z  WI-13 NOTE    (FIX-1) APPROVED round 1 @7e607be (review 5287320128, MEDIUM, no HUMAN-GATE); gate checked; 'gh pr merge 135 --merge' refused by the permission tooling (server-side classifier, no reason); #135 left as it is, main stays red until someone merges it
 05:43:48Z  WI-13 TEST    WI-13 branch default: 1 failed (the FIX-1 guard failure inherited from main 53e89be), 552 passed, 1 skipped, 23 deselected; desktop tests/test_game_desktop.py: 6 passed
+05:46:25Z  WI-13 VERIFY  observations at bb85273 (three short windows via observe.py): start, before-key, after-key, loss (CAUGHT score 24), win (CLEARED 262) PNGs
+05:46:25Z  WI-13 RISK    WI-13 HIGH, because it is the whole game on the user's real desktop (plan floor; not raised)
+05:46:25Z  WI-13 DRAFT   docs/prs/PR-WI-13-application-assembly.md: C1-C13 word for word (script check 13/13), diff map, walk-throughs, C11-C13 needs-eyes scripts, findings
+05:46:25Z  WI-13 CLAIM   C1, C2, C8 executable -- evidence/WI-13/from_terminal.py; C3-C7, C9 executable -- tests/test_game_desktop.py (-m desktop -s); C10 -- default suite + tools.layer_check (count pending FIX-1); C11-C13 needs eyes

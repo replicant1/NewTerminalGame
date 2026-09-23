@@ -1,0 +1,254 @@
+{
+ "head": "bb85273",
+ "runs": {
+  "ghost-and-key": {
+   "status": 0,
+   "result": {
+    "scenario": "ghost-and-key",
+    "pid": 70354,
+    "seed": 13,
+    "dots_at_start": 262,
+    "captures": {
+     "start": {
+      "attempts": 1,
+      "player": [
+       9,
+       14
+      ],
+      "ghost": [
+       5,
+       1
+      ],
+      "score": 0,
+      "outcome": null,
+      "dots": 262,
+      "phase": "playing"
+     },
+     "before-key": {
+      "attempts": 1,
+      "player": [
+       9,
+       14
+      ],
+      "ghost": [
+       5,
+       13
+      ],
+      "score": 0,
+      "outcome": null,
+      "dots": 262,
+      "phase": "playing"
+     },
+     "after-key": {
+      "attempts": 1,
+      "player": [
+       9,
+       13
+      ],
+      "ghost": [
+       5,
+       12
+      ],
+      "score": 1,
+      "outcome": null,
+      "dots": 261,
+      "phase": "playing"
+     }
+    },
+    "facts": {
+     "size": [
+      400,
+      570
+     ],
+     "cell": [
+      10,
+      19
+     ]
+    },
+    "ghost_moves_in_5s": 35,
+    "ghost_window_s": 5.0021249579731375,
+    "key": {
+     "name": "Up",
+     "before": {
+      "player": [
+       9,
+       14
+      ],
+      "ghost": [
+       5,
+       13
+      ],
+      "score": 0,
+      "outcome": null,
+      "dots": 262,
+      "phase": "playing"
+     },
+     "after": {
+      "player": [
+       9,
+       13
+      ],
+      "ghost": [
+       5,
+       13
+      ],
+      "score": 1,
+      "outcome": null,
+      "dots": 261,
+      "phase": "playing"
+     },
+     "target": [
+      9,
+      13
+     ]
+    },
+    "quit_key": "q",
+    "quit_posted_at": 1790142269.148884
+   }
+  },
+  "loss": {
+   "status": 0,
+   "result": {
+    "scenario": "loss",
+    "pid": 70702,
+    "seed": 13,
+    "dots_at_start": 262,
+    "captures": {
+     "final": {
+      "attempts": 1,
+      "player": [
+       5,
+       1
+      ],
+      "ghost": [
+       5,
+       1
+      ],
+      "score": 24,
+      "outcome": "lost",
+      "dots": 238,
+      "phase": "decided"
+     },
+     "final-after-3s": {
+      "attempts": 1,
+      "player": [
+       5,
+       1
+      ],
+      "ghost": [
+       5,
+       1
+      ],
+      "score": 24,
+      "outcome": "lost",
+      "dots": 238,
+      "phase": "decided"
+     }
+    },
+    "decided": {
+     "player": [
+      5,
+      1
+     ],
+     "ghost": [
+      5,
+      1
+     ],
+     "score": 24,
+     "outcome": "lost",
+     "dots": 238,
+     "phase": "decided"
+    },
+    "moves_posted": 25,
+    "after_3s": {
+     "player": [
+      5,
+      1
+     ],
+     "ghost": [
+      5,
+      1
+     ],
+     "score": 24,
+     "outcome": "lost",
+     "dots": 238,
+     "phase": "decided"
+    },
+    "quit_key": "Q",
+    "quit_posted_at": 1790142273.584885
+   }
+  },
+  "win": {
+   "status": 0,
+   "result": {
+    "scenario": "win",
+    "pid": 70832,
+    "seed": 13,
+    "dots_at_start": 262,
+    "captures": {
+     "final": {
+      "attempts": 1,
+      "player": [
+       6,
+       1
+      ],
+      "ghost": [
+       3,
+       7
+      ],
+      "score": 262,
+      "outcome": "won",
+      "dots": 0,
+      "phase": "decided"
+     },
+     "final-after-keys": {
+      "attempts": 1,
+      "player": [
+       6,
+       1
+      ],
+      "ghost": [
+       3,
+       7
+      ],
+      "score": 262,
+      "outcome": "won",
+      "dots": 0,
+      "phase": "decided"
+     }
+    },
+    "decided": {
+     "player": [
+      6,
+      1
+     ],
+     "ghost": [
+      3,
+      7
+     ],
+     "score": 262,
+     "outcome": "won",
+     "dots": 0,
+     "phase": "decided"
+    },
+    "moves_posted": 416,
+    "after_keys": {
+     "player": [
+      6,
+      1
+     ],
+     "ghost": [
+      3,
+      7
+     ],
+     "score": 262,
+     "outcome": "won",
+     "dots": 0,
+     "phase": "decided"
+    },
+    "quit_key": "q",
+    "quit_posted_at": 1790142279.065619
+   }
+  }
+ }
+}
