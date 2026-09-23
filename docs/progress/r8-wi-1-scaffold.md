@@ -25,3 +25,8 @@
 02:53:12Z  WI-1 CLAIM   WI-1/C5 and C6 executable -- .venv/bin/python evidence/WI-1/guards_probe.py (control --commit 8bc9496); tests/test_suite_guards.py
 02:53:12Z  WI-1 CLAIM   WI-1/A1 A2 A3 added (desktop deselected under any other -m or a node id; misspelt mark is an error; domain randomness) -- tests/test_suite_guards.py, tests/test_layer_check.py
 02:53:12Z  WI-1 RISK    WI-1 MEDIUM, because it is the plan floor and nothing here opens a window or touches game behaviour
+02:55:47Z  WI-1 COMMIT  859648c WI-1: tests for the runtime refusal, desktop opt-in, window guard and layer check
+02:55:47Z  WI-1 COMMIT  ddf0651 WI-1: evidence harnesses for C1-C6
+02:55:47Z  WI-1 COMMIT  f3cc0a5 WI-1: evidence brief, header test (A5)
+02:55:47Z  WI-1 TEST    116 passed, 0 failed, 1 skipped at f3cc0a5
+02:55:47Z  WI-1 VERIFY  all five harnesses re-run at f3cc0a5 -> C1-C6 HOLD
