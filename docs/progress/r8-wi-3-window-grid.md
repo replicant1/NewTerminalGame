@@ -66,3 +66,7 @@
 03:41:01Z  WI-3 NOTE    round 1 fixes are to the brief only: C4 pure command now '-k "chosen or proportional or toolkits_fixed"' (4 passed, 23 deselected); base restated as 75723e7 with the n/a reason naming the six absent modules; diff map shows shell/__init__.py:6-11 as modified and drops terminal_game/__init__.py
 03:41:14Z  WI-3 COMMIT  aae1ea7 WI-3: brief round 1 fixes: C4's pure command selects its four tests; base is 75723e7
 03:41:14Z  WI-3 REVIEW  requested WI-3 round 2 at the head this commit makes
+03:49:08Z  WI-3 REVIEW  APPROVED round 2 @92d7f5dd6787cb86158c08a80f09739564fe397d (HUMAN-GATE line present)
+03:49:08Z  WI-3 REVIEW  human gate WI-3 @92d7f5d — HIGH, needs eyes: C15, C16
+03:49:08Z  WI-3 NOTE    conductor relays AMEND-1 (#128): C7 reworded to the game's alphabet incl. U+0020, a painted space shows only background; after it merges: merge origin/main, copy C7 word for word, extend evidence to the space, request round 3
+03:50:10Z  WI-3 TEST    desktop C7 with the space: 1 passed (257 characters x 5 roles; 25 painted spaces show only background)

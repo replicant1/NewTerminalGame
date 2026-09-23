@@ -20,9 +20,11 @@ VISIBLE_ROLES = tuple(r for r in ROLES if r != BACKGROUND)
 #: Every character the game draws: walls, the lone block, dots, player and ghost.
 GAME_GLYPHS = "═║╔╗╚╝╠╣╦╩╬■▪▐█▌▗▖"
 
-#: Printable ASCII, the box-drawing and block-element ranges, and the game's own glyphs.
+#: The game's alphabet as WI-3/C7 states it (AMEND-1): the space and printable ASCII
+#: (U+0020-U+007E), the box-drawing, block and shade characters (U+2500-U+259F),
+#: and the game's own ``■`` and ``▪``. 257 characters.
 ALPHABET = (
-    "".join(chr(c) for c in range(0x21, 0x7F))
+    "".join(chr(c) for c in range(0x20, 0x7F))
     + "".join(chr(c) for c in range(0x2500, 0x25A0))
     + "■▪"
 )

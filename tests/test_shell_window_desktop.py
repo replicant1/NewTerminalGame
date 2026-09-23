@@ -84,7 +84,8 @@ def _judge_frame(run, image, frame, mask):
     for r in range(ROWS):
         for c in range(COLUMNS):
             character, role = frame[r][c]
-            colour = RGB[role]
+            # A painted space, in any role, must leave its cell showing only the background.
+            colour = RGB[BACKGROUND] if character == " " else RGB[role]
             judged = judge_cell(image, mask, c, r, cw, ch, colour, inset)
             if judged["foreign"]:
                 foreign.append((c, r, character, role, judged["foreign"][:2]))
@@ -247,12 +248,15 @@ def test_c7_any_character_in_any_cell_in_any_role_lands_in_its_cell_in_its_colou
     for k in range(6):   # every cell in every one of the six roles
         foreign, missing = _judge_frame(card_run, _image(card_run, f"roles{k}"), card.role_blocks(k), mask)
         assert foreign == [] and missing == [], (f"roles{k}", foreign[:3], missing[:3])
+    assert " " in card.ALPHABET and len(card.ALPHABET) == 257
+    spaces = sum(ch == " " for k in range(5) for row in card.alphabet(k) for ch, _ in row)
+    assert spaces > 0
     for k in range(5):   # every character of the alphabet in each of the five visible roles
         foreign, missing = _judge_frame(card_run, _image(card_run, f"alphabet{k}"), card.alphabet(k), mask)
         assert foreign == [] and missing == [], (f"alphabet{k}", foreign[:3], missing[:3])
     foreign, missing = _judge_frame(card_run, _image(card_run, "specimen"), card.specimen_frame(), mask)
     assert foreign == [] and missing == []
-    show("C7", "roles0-5: 7200 cell/role pairs, alphabet0-4: " + f"{len(card.ALPHABET)} characters x 5 roles, specimen: 1200 cells; 0 cells with ink of another colour, 0 painted cells without ink")
+    show("C7", "roles0-5: 7200 cell/role pairs, alphabet0-4: " + f"{len(card.ALPHABET)} characters (the space among them) x 5 roles, specimen: 1200 cells; 0 cells with ink of another colour, 0 painted cells without ink, {spaces} painted spaces showing only background")
 
 
 # -- WI-3/C8 ---------------------------------------------------------------------
