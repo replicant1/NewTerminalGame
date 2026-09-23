@@ -6,3 +6,5 @@
 03:47:48Z  WI-10 RISK    WI-10 MEDIUM, because it is the plan floor; not raised: pure presentation
 03:47:48Z  WI-10 CLAIM   C1-C10 executable -- evidence/WI-10/compose_probe.py and pytest -v tests/test_frame_composer.py -k cN; A1 added (size refusal); controls n/a: new module
 03:47:48Z  WI-10 TEST    381 passed, 0 failed, 1 skipped
+03:48:05Z  WI-10 COMMIT  12ca990 WI-10: frame composer: maze rows, player then ghost, the status row
+03:48:05Z  WI-10 NOTE    draft PR 130 opened; marking ready; seam test against WI-7's new_game to follow once PR 127 merges
