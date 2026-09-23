@@ -19,6 +19,24 @@ suite refuses to run under it. From the repository root:
 The environment lives in `.venv/`, which is ignored. To rebuild it, delete it
 and run the two commands again.
 
+## Playing
+
+From the repository root, in a Terminal window:
+
+```sh
+.venv/bin/python -m terminal_game
+```
+
+A window titled *Terminal Game* opens a little below and to the right of the
+Terminal window, with a fresh maze. The ghost is already moving. The arrow keys
+move you one square per press; eat every dot to win, and don't meet the ghost.
+Press `q` (or `Q`) to quit at any time, including after the game has ended; the
+window closes itself.
+
+If macOS first shows *"The last time you opened Python, it unexpectedly quit
+while reopening windows…"*, click **Don't Reopen**: it follows an earlier crash
+of some Python program and asks once.
+
 ## Running the tests
 
 | | Command, from the repository root | Opens windows? |

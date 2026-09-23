@@ -3,3 +3,9 @@
 05:28:12Z  WI-13 NOTE    paused for FIX-1 (main red at 53e89be); WI-13 continues from the fixed main
 05:33:56Z  WI-13 DECIDE  entry: terminal_game/__main__.py -> shell/game.py main(): find_anchor + visible_displays before the window, Session.new(random.Random()), play(session, window, anchor, displays); play() is the loop the desktop driver also calls with a fixed-seed session
 05:33:56Z  WI-13 VERIFY  game_driver trials (seed 13, one window each): ghost-and-key 35 ghost moves in 5.002 s, Up onto a dot 0->1; loss at score 24 after 25 keys, final unchanged over 3 s, Q exit 17 ms; win 262/262 after 416 keys (first try lost at 40: dots inside the ghost's reach were allowed as targets; fixed, plus an escape step)
+05:40:01Z  WI-13 VERIFY  reopen alert no longer blocks a Tk start (probe 0.22 s, unflagged); Problem Reporter (pid 98250) still running
+05:40:01Z  WI-13 VERIFY  from_terminal run 1: first sight of the game window gave 396x596 at +2,+3: macOS's open animation; a direct trial placing at (362,-1327) read 400x602 exact. Harness now re-reads after 0.8 s
+05:40:01Z  WI-13 VERIFY  from_terminal run 2 (87cac35): both launches at exactly Terminal + (40,40), 400x602; status row cells match; ghost moved within 0.5 s; mazes differ in 191 of 1160 cells; both Terminal windows closed, visible=false
+05:40:01Z  WI-13 VERIFY  display backing scales: main 2.0, left (-3509) 1.0, middle (-949) 2.0; the Terminal window (322,-1367) is on the middle, Retina display
+05:43:48Z  WI-13 NOTE    (FIX-1) APPROVED round 1 @7e607be (review 5287320128, MEDIUM, no HUMAN-GATE); gate checked; 'gh pr merge 135 --merge' refused by the permission tooling (server-side classifier, no reason); #135 left as it is, main stays red until someone merges it
+05:43:48Z  WI-13 TEST    WI-13 branch default: 1 failed (the FIX-1 guard failure inherited from main 53e89be), 552 passed, 1 skipped, 23 deselected; desktop tests/test_game_desktop.py: 6 passed
