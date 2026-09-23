@@ -17,3 +17,7 @@
 04:03:06Z  WI-9 RISK    WI-9 MEDIUM, because it reads other windows and computes a position (plan floor; not raised)
 04:03:06Z  WI-9 DRAFT   docs/prs/PR-WI-9-anchor-placement.md: C1-C6 word for word, A1-A2, diff map, WI-13 usage, findings
 04:03:06Z  WI-9 CLAIM   C1-C5, A1, A2 executable -- tests/test_placement.py -k <claim>_; C6 executable -- evidence/WI-9/terminal_anchor.py (one Terminal window, reaped)
+04:03:24Z  WI-9 REVIEW  marked #132 ready at 04:03:13Z; waiting for Copilot (limit 04:18:13Z)
+04:10:23Z  WI-9 REVIEW  Copilot 04:08:23Z 'Changes recommended', 1 thread: rounding a clamped fractional bound can cross the display edge (valid); overview also asked for harness identity/cleanup care
+04:10:23Z  WI-9 VERIFY  C6 harness run 3 (with tty identity check): window 21451 provably ours, closed, visible=false; agree True; placed (362,-1327) wholly on display 2
+04:10:23Z  WI-9 TEST    default: 408 passed, 0 failed, 1 skipped (tests/test_placement.py 22 passed)
