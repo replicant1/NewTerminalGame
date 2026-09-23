@@ -183,6 +183,7 @@ class Driver:
         names = ["Up", "Down", "Left", "Right", "q", "Q", "Q-caps-lock", "a", "z", "1",
                  "space", "Return", "Escape", "Tab", "BackSpace", "F1"]
         self.result["posted"] = names
+        yield from self._regain_focus("naming")
         for name in names:
             appkit.post_key(name)
             yield 40
@@ -193,6 +194,7 @@ class Driver:
         yield 5000
         self.result["idle_window"][1] = time.monotonic()
         # Five seconds of keys as fast as this script can post them.
+        yield from self._regain_focus("flood")
         self.result["focus_at_flood"] = self._focus()
         flood_keys_before = len(self.keys)
         self.result["flood_window"] = [time.monotonic(), None]
@@ -205,6 +207,7 @@ class Driver:
         yield 50
         self.result["flood_keys"] = len(self.keys) - flood_keys_before
         # The program ends the session on q (WI-3/C12).
+        yield from self._regain_focus("quit")
         self.result["focus_at_quit"] = self._focus()
         self.result["quit_armed"] = True
         appkit.post_key("q")
@@ -286,6 +289,20 @@ class Driver:
         yield PAINT_MS
         yield self.capture("specimen")
         self.finish()
+
+    def _regain_focus(self, phase: str):
+        """If something else took the focus (a person at the desk, a notification), take it back.
+
+        Posted keys go to the key window of the active application, as real ones
+        do, so a phase of key posting only means something while the game has
+        the focus. Each time focus had to be taken back is recorded, not hidden.
+        """
+        if appkit.is_active() and appkit.key_window_number():
+            return
+        self.result.setdefault("refocused", []).append(phase)
+        self.root.focus_force()
+        self.window.canvas.focus_set()
+        yield 300
 
     def _focus(self) -> dict:
         return {"ns_app_active": appkit.is_active(), "ns_key_window": appkit.key_window_number(),

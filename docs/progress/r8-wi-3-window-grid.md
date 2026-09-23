@@ -51,3 +51,8 @@
 03:17:40Z  WI-3 COMMIT  e2c163f WI-3: the evidence pack in the brief
 03:18:13Z  WI-3 TEST    64 passed, 0 failed, 1 skipped, 17 deselected (-m 'not desktop')
 03:18:13Z  WI-3 REVIEW  marked #123 ready at 03:17:48Z; waiting for Copilot (15-minute limit 03:32:48Z)
+03:23:30Z  WI-3 NOTE    merged origin/main (WI-1, 75723e7) as 21190c0: add/add conflicts in terminal_game/__init__.py (took WI-1's layer docstring) and terminal_game/shell/__init__.py (WI-1's layer docstring plus my characters-only paragraph)
+03:23:30Z  WI-3 TEST    default after merge: 158 passed, 0 failed, 1 skipped, 17 deselected
+03:23:30Z  WI-3 TEST    desktop after merge, run 1: 14 passed, 3 failed (C10, C11, C12: the keys run; reasons not captured); run 2 of all 17: 17 passed; C10-12 alone: 3 passed. Second sighting of F4 (focus lost mid-run)
+03:23:30Z  WI-3 DECIDE  keys scenario takes the focus back (focus_force) before each key phase if it was lost, and records each time in 'refocused', shown in C10's output line, because key delivery is only meaningful while the game has focus
+03:23:30Z  WI-3 TEST    desktop C10-C12 after the change: 3 passed, refocused []

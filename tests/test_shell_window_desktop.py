@@ -307,7 +307,7 @@ def test_c10_keys_arrive_named_and_nothing_typed_appears(keys_run):
     scale = _geometry(keys_run, before)[0]
     assert blank_findings(after, scale)["stray"] == []
     assert blank_findings(before, scale)["stray"] == []
-    show("C10", f"posted {keys_run.result['posted']} -> received {received}; screen before and after typing: black")
+    show("C10", f"posted {keys_run.result['posted']} -> received {received}; screen before and after typing: black; focus taken back before phases: {keys_run.result.get('refocused', [])}")
 
 
 # -- WI-3/C11 --------------------------------------------------------------------
