@@ -23,3 +23,9 @@
 04:10:23Z  WI-9 TEST    default: 408 passed, 0 failed, 1 skipped (tests/test_placement.py 22 passed)
 04:10:39Z  WI-9 REVIEW  replied REVIEW-REPLY: FIXED 396368b on Copilot thread 4078939889; Copilot clean
 04:10:39Z  WI-9 REVIEW  requested WI-9 round 1 at the head this commit makes
+05:13:28Z  WI-9 BLOCKED (WI-3, #123) the permission tooling refused the final gh step on #123 after the gate checked out (approval 5287074235 at head 526448b, suite green, Copilot answered); #123 left untouched; reported to the conductor
+05:22:20Z  WI-9 REVIEW  APPROVED round 1 @c7d0884cff4254e63c34c74acf8311050cb93dec (review 5287174805, no HUMAN-GATE line)
+05:22:20Z  WI-9 VERIFY  WI-9 merge gate: approval 5287174805 by newterminalgame-code-reviewer[bot] at c7d0884 = headRefOid; default suite at head 408 passed, 1 skipped; Copilot thread answered; MEDIUM, no human gate
+05:22:20Z  WI-9 BLOCKED gh pr merge 132 --merge failed: 'GraphQL: Base branch was modified. Review and try the merge again.' main moved to b01425b (the user merged #123) in the same moment; not retried per the conductor; read-only merge-tree shows #132 merges cleanly onto b01425b
+05:46:54Z  WI-9 MERGE   #132 merged at 53e89be6b199f362398e3546dda2ad4bfed065a8 (retry the conductor authorised after the base-moved race); default suite on main then: 1 failed (WI-3 guard vs anchor.py create_string_buffer, fixed by FIX-1 #135), 545 passed, 1 skipped, 17 deselected
+05:46:54Z  WI-9 DONE    WI-9 r8/wi-9-anchor-placement c7d0884
