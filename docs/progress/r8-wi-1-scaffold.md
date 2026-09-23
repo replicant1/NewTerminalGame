@@ -13,3 +13,5 @@
 02:43:46Z  WI-1 RISK    the window guard cannot see a window opened by a subprocess the test launches (Homebrew ships its own sitecustomize, so injecting one is fragile); documented in README and the plugin; such tests must carry the desktop mark
 02:43:46Z  WI-1 VERIFY  3.9 venv (pytest 8.4.2) running the suite -> ERROR naming CPython 3.9.6 at the CLT path with Tk 8.5 and wanting 3.14 at /opt/homebrew/bin/python3.14 with Tk 9, exit 4; pinned venv -> 36 passed, 1 skipped, header names the runtime
 02:43:46Z  WI-1 TEST    36 passed, 0 failed, 1 skipped (scaffold, before WI-1 tests)
+02:43:53Z  WI-1 COMMIT  75a3e6f WI-1: scaffold, pinned-runtime refusal, desktop opt-in, window guard, layer check
+02:46:55Z  WI-1 TEST    115 passed, 0 failed, 1 skipped (tests for C2-C6 added: test_runtime_pin, test_suite_guards, test_layer_check)
