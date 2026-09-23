@@ -35,9 +35,9 @@ sys.path.insert(0, str(REPO))
 sys.path.insert(0, str(REPO / "tests"))
 
 from shell_screen import capture_command, read_bmp  # noqa: E402
-from terminal_game.shell.anchor import on_screen_windows  # noqa: E402
+from terminal_game.shell.anchor import on_screen_windows, visible_displays  # noqa: E402
 from terminal_game.shell.game import TITLE_BAR_POINTS  # noqa: E402
-from terminal_game.shell.placement import OFFSET  # noqa: E402
+from terminal_game.shell.placement import OFFSET, Rect  # noqa: E402
 
 OUT = REPO / "evidence" / "WI-13"
 STATUS = " score 0    arrows, q quits"
@@ -105,6 +105,9 @@ def launch(n: int, sha: str) -> dict:
             f'tell application "Terminal" to get bounds of window id {window_id}').split(", "))
         record["terminal_bounds"] = [left, top, right - left, bottom - top]
         record["offset_from_terminal"] = [b.x - left, b.y - top]
+        displays = visible_displays()
+        record["displays"] = [[d.x, d.y, d.width, d.height] for d in displays]
+        record["wholly_on_display"] = [i for i, d in enumerate(displays) if d.contains(Rect(b.x, b.y, b.width, b.height))]
         shots = []
         for k in range(2):
             path = OUT / f"from-terminal-{sha}-launch{n}-{k}.bmp"
@@ -176,6 +179,7 @@ def main() -> int:
               f"Terminal at {r['terminal_bounds'][:2]}, game at {r['game_bounds'][:2]} "
               f"-> offset {r['offset_from_terminal']} (expected ({OFFSET}, {OFFSET}) unless clamped); "
               f"game size {r['game_bounds'][2:]}")
+        print(f"   wholly on the visible area of display(s) {r['wholly_on_display']} of {r['displays']}")
         print(f"   status row cells {r['status_cells'] == r['status_expected'] and 'match' or 'DIFFER'} ' score 0    arrows, q quits'; "
               f"player cells {r['player_cells']}; dots {r['dot_cells']}; ghost at {r['ghost_cells'][0]} then {r['ghost_cells'][1]} "
               f"-> moved within 0.5 s: {r['ghost_cells'][0] != r['ghost_cells'][1]}; Terminal window after: visible={r['terminal_window_visible_after']}")
@@ -199,6 +203,8 @@ def main() -> int:
         dx, dy = r["offset_from_terminal"]
         if not (20 <= dx <= 60 and 20 <= dy <= 60):
             failures.append(f"launch {n}: offset {r['offset_from_terminal']} not 20-60 points each way")
+        if not r["wholly_on_display"]:
+            failures.append(f"launch {n}: game window {r['game_bounds']} is not wholly on any display's visible area")
         if r["game_bounds"][2:] != [400.0, 602.0]:
             failures.append(f"launch {n}: game window {r['game_bounds'][2:]}, not 400 x 602 points")
         if r["terminal_window_visible_after"] not in ("false", "gone"):

@@ -93,6 +93,12 @@ class Driver:
         self.result: dict = {"scenario": scenario, "pid": os.getpid(), "seed": SEED,
                              "dots_at_start": len(self.session.state.dots), "captures": {}}
         self.moves_posted = 0
+        self.mapped_at = None
+        self.root.bind("<Map>", self._mapped, add="+")
+
+    def _mapped(self, event) -> None:
+        if self.mapped_at is None and event.widget is self.root:
+            self.mapped_at = time.monotonic()
 
     def start(self, generator) -> None:
         def step():
@@ -190,7 +196,17 @@ class Driver:
     # -- scenarios ----------------------------------------------------------------------
 
     def ghost_and_key(self):
-        """C3 (ghost cadence), C4 (one key onto a dot), C9 (colours), then q during play."""
+        """C1 (the ghost moves within 0.5 s of the window opening), C3, C4, C9, then q during play."""
+        # From the very start: watch for the ghost's first move, no key pressed.
+        start_ghost = self.session.state.ghost
+        while self.session.state.ghost == start_ghost:
+            yield 1
+        first_move_at = time.monotonic()
+        self.result["first_ghost_move"] = {
+            "mapped_to_first_move_s": None if self.mapped_at is None else first_move_at - self.mapped_at,
+            "keys_posted_before": self.moves_posted,
+            "from": list(start_ghost), "to": list(self.session.state.ghost),
+        }
         yield SETTLE_MS
         yield from self.regain_focus("start")
         self.result["facts"] = {"size": list(self.window.size), "cell": list(self.window.cell_size)}

@@ -113,6 +113,18 @@ def unmasked(cells, image):
     return {(c, r) for c, r in cells if not (r >= 29 and (c <= 1 or c >= 38))}
 
 
+# -- C1 (the timed clause) ---------------------------------------------------------
+
+
+def test_c1_the_ghost_is_moving_within_half_a_second_of_the_window_opening(ghost_run):
+    first = ghost_run.result["first_ghost_move"]
+    elapsed = first["mapped_to_first_move_s"]
+    assert elapsed is not None, "the window's <Map> event was never seen"
+    assert first["keys_posted_before"] == 0
+    assert 0 < elapsed < 0.5
+    show("C1", f"window mapped -> ghost's first move {first['from']} -> {first['to']} in {elapsed * 1000:.0f} ms, no key pressed")
+
+
 # -- C3 -------------------------------------------------------------------------
 
 
