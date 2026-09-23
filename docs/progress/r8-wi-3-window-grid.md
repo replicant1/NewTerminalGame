@@ -64,3 +64,5 @@
 03:27:50Z  WI-3 REVIEW  requested WI-3 round 1 at the head this commit makes (the VERIFY-REQUEST comment names its sha)
 03:40:21Z  WI-3 REVIEW  CHANGES_REQUESTED round 1 @a724d8a807408ceca8831dd9daa68b8097712ce8: (1) C4's pure command '-k family' selects nothing (valid: no test name contains 'family'); (2) brief states base 8bc9496, but the merge-base is 75723e7 where terminal_game/ and shell/__init__.py exist (valid). 19 of 20 statuses REPRODUCED or NEEDS EYES; HUMAN-GATE line present
 03:41:01Z  WI-3 NOTE    round 1 fixes are to the brief only: C4 pure command now '-k "chosen or proportional or toolkits_fixed"' (4 passed, 23 deselected); base restated as 75723e7 with the n/a reason naming the six absent modules; diff map shows shell/__init__.py:6-11 as modified and drops terminal_game/__init__.py
+03:41:14Z  WI-3 COMMIT  aae1ea7 WI-3: brief round 1 fixes: C4's pure command selects its four tests; base is 75723e7
+03:41:14Z  WI-3 REVIEW  requested WI-3 round 2 at the head this commit makes
