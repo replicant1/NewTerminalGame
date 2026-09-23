@@ -93,6 +93,11 @@ def _judge_frame(run, image, frame, mask):
     return foreign, missing
 
 
+def show(claim, text):
+    """One line of what was measured, so ``-s`` output shows the claim, not just a pass."""
+    print(f"\nWI-3/{claim}: {text}")
+
+
 def _focus_or_fail(facts, when):
     if not (facts["ns_app_active"] and facts["ns_key_window"]):
         pytest.fail(
@@ -114,6 +119,7 @@ def test_c1_one_window_of_its_own_and_nothing_on_the_terminal(card_run, keys_run
     for run in (card_run, keys_run, flip_run):
         assert run.status == 0
         assert program_output(run.terminal) == "", f"{run.scenario} wrote {run.terminal!r}"
+    show("C1", f"window server: {len(windows)} window for pid {card_run.pid} ({windows[0]['width']:.0f}x{windows[0]['height']:.0f}); NSApp visible windows {facts['ns_visible_windows']}; terminal output after the harness echo: " + ", ".join(f"{r.scenario}={program_output(r.terminal)!r}" for r in (card_run, keys_run, flip_run)))
 
 
 # -- WI-3/C2 ---------------------------------------------------------------------
@@ -139,6 +145,7 @@ def test_c2_drawing_area_is_exactly_40_by_30_cells(card_run):
         assert image.width * 570 == image.height * 400   # the capture of the 400 x 570 rectangle
         foreign, missing = _judge_frame(card_run, image, card.role_blocks(k), mask)
         assert foreign == [] and missing == [], (k, foreign[:3], missing[:3])
+    show("C2", f"{facts['family']} cell {cw}x{ch}; root {facts['root_xywh'][2:]} canvas {facts['canvas_wh']} at {facts['canvas_xy_in_root']}; window server {window['width']:.0f}x{window['height']:.0f} = 570 + {TITLE_BAR_POINTS}-pt title bar; 6 x 1200 role cells judged on screen, 0 out of place")
 
 
 # -- WI-3/C3 ---------------------------------------------------------------------
@@ -156,6 +163,7 @@ def test_c3_resize_attempts_leave_40_by_30(card_run, resize_control_run):
     mask = clip_mask(_image(card_run, "blank"), _geometry(card_run, image)[0])
     foreign, missing = _judge_frame(card_run, image, card.border(), mask)
     assert foreign == [] and missing == []
+    show("C3", "control drag on a resizable Tk window: " + f"{control['before']} -> {control['after']}; " + "; ".join(f"{k}: root {v['root']} canvas {v['canvas']}" for k, v in card_run.result["resize"].items()) + f"; zoom button enabled={card_run.result['facts']['zoom_button_enabled']}")
 
 
 # -- WI-3/C4 ---------------------------------------------------------------------
@@ -190,6 +198,7 @@ def test_c4_without_the_preferred_face_another_fixed_face_still_measures_40_by_3
     assert none["size"] == [COLUMNS * none["cell"][0], ROWS * none["cell"][1]] == none["root_xywh"][2:]
     for run in (fallback_run, fallback_none_run):
         assert run.status == 0 and program_output(run.terminal) == ""
+    show("C4", f"preferred face missing -> {facts['family']} cell {cw}x{ch}, root {facts['root_xywh'][2:]} canvas {facts['canvas_wh']}, border ring judged on screen; no preference installed -> {none['family']} {none['size']}")
 
 
 # -- WI-3/C5 ---------------------------------------------------------------------
@@ -215,6 +224,7 @@ def test_c5_black_wherever_nothing_is_painted(card_run):
                 assert judged["foreign"] == [], (c, r, judged["foreign"][:3])
                 right_columns += c >= COLUMNS - 2
     assert right_columns == 2 * ROWS
+    show("C5", f"7 blank captures: 0 non-black pixels outside macOS's outline and rounded corners; specimen: every background cell black, {right_columns} cells in columns 38-39 checked")
 
 
 # -- WI-3/C6 ---------------------------------------------------------------------
@@ -224,6 +234,7 @@ def test_c6_title_is_exactly_terminal_game(card_run):
     assert card_run.result["facts"]["title"] == "Terminal Game"
     (window,) = json.loads((card_run.outdir / "windows.json").read_text())
     assert window["name"] == "Terminal Game"
+    show("C6", f"Tk title {card_run.result['facts']['title']!r}; window server name {window['name']!r}")
 
 
 # -- WI-3/C7 ---------------------------------------------------------------------
@@ -240,6 +251,7 @@ def test_c7_any_character_in_any_cell_in_any_role_lands_in_its_cell_in_its_colou
         assert foreign == [] and missing == [], (f"alphabet{k}", foreign[:3], missing[:3])
     foreign, missing = _judge_frame(card_run, _image(card_run, "specimen"), card.specimen_frame(), mask)
     assert foreign == [] and missing == []
+    show("C7", "roles0-5: 7200 cell/role pairs, alphabet0-4: " + f"{len(card.ALPHABET)} characters x 5 roles, specimen: 1200 cells; 0 cells with ink of another colour, 0 painted cells without ink")
 
 
 # -- WI-3/C8 ---------------------------------------------------------------------
@@ -250,6 +262,7 @@ def test_c8_only_text_on_the_drawing_surface(card_run):
     assert facts["children"] == [".!canvas"]
     assert facts["item_types"] == ["text"]
     assert facts["item_count"] == COLUMNS * ROWS
+    show("C8", f"children {facts['children']}; canvas item types {facts['item_types']}; {facts['item_count']} items")
 
 
 # -- WI-3/C9 ---------------------------------------------------------------------
@@ -276,6 +289,7 @@ def test_c9_repaints_only_ever_show_a_frame_that_was_asked_for_and_no_caret(flip
     # No caret: an empty picture looked at six times over 1.5 s is black every time (C5's test checks all six).
     for n in range(6):
         assert blank_findings(_image(card_run, f"blank-burst{n}"), scale)["stray"] == []
+    show("C9", f"{flip_run.result['paints']} repaints in 5 s; frames differ in {differing} cells; {len(names)} captures: {seen['a']} are frame A, {seen['b']} are frame B, 0 neither; 6 blank captures over 1.5 s show no caret")
 
 
 # -- WI-3/C10 --------------------------------------------------------------------
@@ -293,6 +307,7 @@ def test_c10_keys_arrive_named_and_nothing_typed_appears(keys_run):
     scale = _geometry(keys_run, before)[0]
     assert blank_findings(after, scale)["stray"] == []
     assert blank_findings(before, scale)["stray"] == []
+    show("C10", f"posted {keys_run.result['posted']} -> received {received}; screen before and after typing: black")
 
 
 # -- WI-3/C11 --------------------------------------------------------------------
@@ -307,6 +322,7 @@ def test_c11_tick_rate_with_and_without_keys(keys_run):
         rate = count / (end - start)
         assert 6.5 <= rate <= 7.5, f"{window}: {count} ticks in {end - start:.3f} s = {rate:.2f}/s"
     assert keys_run.result["flood_keys"] >= 1000
+    show("C11", "; ".join(f"{w}: {sum(1 for t in ticks if keys_run.result[w][0] <= t < keys_run.result[w][1])} ticks in {keys_run.result[w][1] - keys_run.result[w][0]:.3f} s" for w in ("idle_window", "flood_window")) + f"; keys delivered during the flood: {keys_run.result['flood_keys']}")
 
 
 # -- WI-3/C12 --------------------------------------------------------------------
@@ -320,6 +336,7 @@ def test_c12_ending_the_session_closes_the_window_and_exits_0_within_a_second(ke
         assert run.exit_record["status"] == 0
         assert run.exited_at - run.result["close_called_at"] < 1.0
         assert not process_alive(run.pid)
+    show("C12", "; ".join(f"{r.scenario}: exit {r.status} {r.exited_at - r.result['close_called_at']:.3f} s after close(), alive={process_alive(r.pid)}" for r in (keys_run, card_run)))
 
 
 # -- WI-3/C13 --------------------------------------------------------------------
@@ -344,6 +361,7 @@ def test_c13_close_button_and_quit_menu_end_the_process_the_same_way(close_butto
         assert run.exited_at - run.result["clicked_at"] < 1.0
         assert program_output(run.terminal) == ""
         assert not process_alive(run.pid)
+    show("C13", "; ".join(f"{r.scenario}: exit {r.status} {r.exited_at - r.result['clicked_at']:.3f} s after the click, alive={process_alive(r.pid)}" for r in (close_button_run, app_quit_run)) + f"; menu item {app_quit_run.result['menu_item']!r}")
 
 
 # -- WI-3/C14 --------------------------------------------------------------------
@@ -368,6 +386,7 @@ def test_c14_a_failing_handler_closes_the_window_exits_nonzero_and_prints_the_er
         assert "Traceback (most recent call last)" in output
         assert f"RuntimeError: deliberate failure in a {message} (WI-3/C14)" in output
         assert not process_alive(run.pid)
+    show("C14", "; ".join(f"{r.scenario}: exit {r.status}, last line {program_output(r.terminal).strip().splitlines()[-1]!r}" for r in (raise_key_run, raise_tick_run)))
 
 
 # -- WI-3/A1 ---------------------------------------------------------------------
@@ -381,6 +400,7 @@ def test_a1_a_malformed_frame_is_rejected_whole_and_changes_nothing(card_run):
     changed = [(c, r) for r in range(ROWS) for c in range(COLUMNS)
                if cell_distance(specimen, after, c, r, cw, ch, mask) > 0]
     assert changed == []
+    show("A1", f"rejected with {card_run.result['bad_frame_error']!r}; cells changed on screen: {len(changed)}")
 
 
 # -- WI-3/A2 ---------------------------------------------------------------------
@@ -396,6 +416,7 @@ def test_a2_system_exit_from_a_handler_ends_with_its_status_and_no_window(exit_k
     assert exit_key_run.status == 3
     assert program_output(exit_key_run.terminal) == ""
     assert not process_alive(exit_key_run.pid)
+    show("A2", f"handler raised SystemExit(3) -> process exit {exit_key_run.status}, alive={process_alive(exit_key_run.pid)}")
 
 
 # -- WI-3/A3 ---------------------------------------------------------------------
@@ -405,3 +426,6 @@ def test_a3_place_puts_the_outer_top_left_at_the_point_given(card_run):
     (window,) = json.loads((card_run.outdir / "windows.json").read_text())
     assert (window["x"], window["y"]) == (120, 140)
     assert tuple(card_run.result["facts"]["root_xywh"][:2]) == (120, 140 + TITLE_BAR_POINTS)
+    show("A3", f"place(120, 140) -> window server top-left ({window['x']:.0f}, {window['y']:.0f}), drawing area at {tuple(card_run.result['facts']['root_xywh'][:2])}")
+
+
