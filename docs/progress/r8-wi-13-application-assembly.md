@@ -1,0 +1,5 @@
+05:26:35Z  WI-13 START   WI-13 Application assembly (Dev C, lane C), branch r8/wi-13-application-assembly from origin/main 53e89be, non-local mode, HIGH, human-gated (C11-C13 needs eyes)
+05:28:12Z  WI-13 READ    plan §4 WI-13 (C1-C13); docs/prs/PR-WI-12-session-control.md interface for lane C; presentation roles, frame_composer.compose, input_translation.translate; application.session.Session; domain maze API
+05:28:12Z  WI-13 NOTE    paused for FIX-1 (main red at 53e89be); WI-13 continues from the fixed main
+05:33:56Z  WI-13 DECIDE  entry: terminal_game/__main__.py -> shell/game.py main(): find_anchor + visible_displays before the window, Session.new(random.Random()), play(session, window, anchor, displays); play() is the loop the desktop driver also calls with a fixed-seed session
+05:33:56Z  WI-13 VERIFY  game_driver trials (seed 13, one window each): ghost-and-key 35 ghost moves in 5.002 s, Up onto a dot 0->1; loss at score 24 after 25 keys, final unchanged over 3 s, Q exit 17 ms; win 262/262 after 416 keys (first try lost at 40: dots inside the ghost's reach were allowed as targets; fixed, plus an escape step)

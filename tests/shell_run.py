@@ -57,7 +57,7 @@ class Run:
                 setattr(self, attr, json.loads(path.read_text()))
 
 
-def run_driver(scenario: str, outdir: Path, *, on_ready=None, python: str = sys.executable) -> Run:
+def run_driver(scenario: str, outdir: Path, *, on_ready=None, python: str = sys.executable, driver: Path = DRIVER) -> Run:
     """Run ``scenario`` to completion under a pseudo-terminal and return what happened.
 
     ``on_ready(run)``, if given, is called once ``result.json`` first appears
@@ -66,7 +66,7 @@ def run_driver(scenario: str, outdir: Path, *, on_ready=None, python: str = sys.
     outdir.mkdir(parents=True, exist_ok=True)
     master, slave = pty.openpty()
     process = subprocess.Popen(
-        [python, str(DRIVER), scenario, str(outdir), *HARNESS_ARGS],
+        [python, str(driver), scenario, str(outdir), *HARNESS_ARGS],
         stdin=slave, stdout=slave, stderr=slave, cwd=REPO, close_fds=True,
         process_group=0,   # its own group, so its screencapture and swift children go with it
     )
