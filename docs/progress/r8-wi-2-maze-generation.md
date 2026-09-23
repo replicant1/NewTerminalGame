@@ -13,3 +13,19 @@
 02:36:20Z  DECIDE  WI-2 random source type -> a RandomSource Protocol (randrange, choice) that random.Random satisfies, because the domain module then never imports random at all
 02:37:01Z  DRAFT   WI-2 terminal_game/domain/maze.py, maze_generator.py, tests/test_maze_generator.py (C1-C7, A1 non-vacuity, A2 purity); 11 pass
 02:37:32Z  TEST    68 passed, 0 failed, 1 skipped
+02:37:56Z  COMMIT  0eff979 WI-2: maze value and lattice carve-and-braid generator, with tests over 1,000 seeds
+02:38:27Z  VERIFY  WI-2 evidence/WI-2/maze_claims.py seeds 0..999 -> ALL PASS: 265297 corridor squares, min 2 neighbours, 1000/1000 connected, 0 of 504000 blocks open, 1000 distinct, slowest 0.39 ms
+02:38:27Z  VERIFY  WI-2 same harness seeds 0..9999 -> ALL PASS, 10000 distinct, slowest 0.71 ms
+02:38:27Z  RISK    WI-2 MEDIUM, because it is the plan's floor and the maze is the base WI-7, WI-8 and WI-10 build on; it opens no window and touches no shared config
+02:39:27Z  CLAIM   WI-2/C1 executable — tests/test_maze_generator.py -k c1, and evidence/WI-2/maze_claims.py
+02:39:27Z  CLAIM   WI-2/C2 executable — tests/test_maze_generator.py -k c2, and evidence/WI-2/maze_claims.py
+02:39:27Z  CLAIM   WI-2/C3 executable — tests/test_maze_generator.py -k c3, and evidence/WI-2/maze_claims.py
+02:39:27Z  CLAIM   WI-2/C4 executable — tests/test_maze_generator.py -k c4, and evidence/WI-2/maze_claims.py
+02:39:27Z  CLAIM   WI-2/C5 executable — tests/test_maze_generator.py -k c5, and evidence/WI-2/maze_claims.py
+02:39:27Z  CLAIM   WI-2/C6 executable — tests/test_maze_generator.py -k c6, and evidence/WI-2/maze_claims.py
+02:39:27Z  CLAIM   WI-2/C7 executable — tests/test_maze_generator.py -k c7, and evidence/WI-2/maze_claims.py
+02:39:27Z  CLAIM   WI-2/A1 executable — tests/test_maze_generator.py -k a1, and evidence/WI-2/maze_claims.py
+02:39:27Z  CLAIM   WI-2/A2 executable — tests/test_maze_generator.py -k a2
+02:39:27Z  CLAIM   WI-2/A3 executable — tests/test_maze.py
+02:39:27Z  DRAFT   WI-2 docs/prs/PR-WI-2-maze-generation.md (claims, diff map, interface)
+02:39:34Z  TEST    68 passed, 0 failed, 1 skipped
