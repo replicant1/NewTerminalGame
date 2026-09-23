@@ -5,3 +5,5 @@
 03:23:15Z  WI-5 RISK    WI-5 LOW, because it is the plan floor: a pure leaf
 03:23:15Z  WI-5 CLAIM   C1-C5 executable -- evidence/WI-5/status_rows.py and pytest -v tests/test_status_line.py -k c1..c5
 03:23:15Z  WI-5 TEST    147 passed, 0 failed, 1 skipped
+03:23:31Z  WI-5 COMMIT  bba4032 WI-5: status line: 40 status-coloured cells, text columns fixed per state
+03:23:31Z  WI-5 NOTE    draft PR 125 opened; marking ready (suite green)
