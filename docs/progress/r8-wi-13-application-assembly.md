@@ -22,3 +22,7 @@
 06:01:51Z  WI-13 TEST    default: 558 passed, 0 failed, 1 skipped, 23 deselected
 06:02:21Z  WI-13 REVIEW  replied REVIEW-REPLY: FIXED 80f54af on Copilot thread 4079484561 and answered the overview points; Copilot clean
 06:02:21Z  WI-13 REVIEW  requested WI-13 round 1 at the head this commit makes
+06:15:28Z  WI-13 REVIEW  CHANGES_REQUESTED round 1 @0f5c7ba24636a680c7cb54583e9d7a6bc8a7d524: (1) C1 'moving within half a second' not shown from the window's opening; the 143 ms line is unsupported (valid); (2) C8 'wholly on the visible screen' not checked (valid); D1, D2 accepted; D2 wording slip: status cell 1 is not blank
+06:19:50Z  WI-13 VERIFY  C1 timed clause: <Map> of the game window to the ghost's first move 185 ms, no key posted
+06:19:50Z  WI-13 VERIFY  from_terminal at d943203: all checks passed incl. wholly on display 2's visible area (-949,-1407,2560,1407); mazes differ 222/1160; both Terminal windows closed
+06:19:50Z  WI-13 TEST    default: 558 passed, 0 failed, 1 skipped, 24 deselected; desktop (all): 24 passed, 0 failed, 559 deselected
