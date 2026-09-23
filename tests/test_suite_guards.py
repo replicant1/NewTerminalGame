@@ -72,6 +72,15 @@ def test_the_real_suite_loads_the_guards(request):
     assert request.config.pluginmanager.hasplugin("tools.pytest_guards")
 
 
+def test_the_header_names_the_runtime_the_suite_is_running_under(project):
+    """WI-1/A5: a passing run says which interpreter and Tk it accepted."""
+    _write(project, "test_ordinary.py", "def test_ordinary():\n    pass\n")
+    result = project.runpytest_subprocess()
+    result.assert_outcomes(passed=1)
+    result.stdout.fnmatch_lines([
+        "runtime: CPython 3.14.* at *python3.14, Tk 9.* (Tcl 9.*) (the pinned interpreter)"])
+
+
 # --------------------------------------------------------------------------
 # WI-1/C5: desktop tests run only under the desktop command
 # --------------------------------------------------------------------------
