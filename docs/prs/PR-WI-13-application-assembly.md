@@ -81,6 +81,7 @@ evidence/WI-13/from_terminal.py      -> evidence for C1, C2, C8
 evidence/WI-13/observe.py            -> observations
 evidence/WI-13/*.png, *.json         -> observations and records
 docs/progress/r8-wi-13-application-assembly.md, this file -> records
+docs/progress/r8-wi-9-anchor-placement.md, docs/completions/COMPLETION-M1-DEV-C.md -> mechanical: WI-9's held log lines and lane C's M1 completion record, carried as the conductor asked
 ```
 
 ## Walk-throughs
