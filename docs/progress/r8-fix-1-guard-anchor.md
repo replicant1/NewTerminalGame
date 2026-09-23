@@ -9,3 +9,5 @@
 05:37:01Z  FIX-1 REVIEW  Copilot 05:33:23Z 'Needs a closer look', no inline findings; overview asks for image-maker coverage (valid: BitmapImage and image_create had no control)
 05:37:01Z  FIX-1 DECIDE  add image-maker control and scan string constants for Tcl words and whole create commands (A4), because drawing through tk.call/eval would otherwise pass the guard
 05:37:01Z  FIX-1 TEST    guard 7 passed; default 550 passed, 0 failed, 1 skipped, 17 deselected
+05:37:16Z  FIX-1 COMMIT  220efa3 FIX-1: image makers and drawing through Tcl are reported too, each with a control
+05:37:16Z  FIX-1 REVIEW  requested FIX-1 round 1 at the head this commit makes
