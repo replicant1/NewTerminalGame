@@ -70,3 +70,6 @@
 03:49:08Z  WI-3 REVIEW  human gate WI-3 @92d7f5d — HIGH, needs eyes: C15, C16
 03:49:08Z  WI-3 NOTE    conductor relays AMEND-1 (#128): C7 reworded to the game's alphabet incl. U+0020, a painted space shows only background; after it merges: merge origin/main, copy C7 word for word, extend evidence to the space, request round 3
 03:50:10Z  WI-3 TEST    desktop C7 with the space: 1 passed (257 characters x 5 roles; 25 painted spaces show only background)
+03:54:41Z  WI-3 NOTE    merged origin/main b1adc97 (AMEND-1 and landed WI-2/4/5/7 work): no conflicts; plan's C7 now copied word for word (script check: 17 of 17 claims match the plan)
+03:54:41Z  WI-3 TEST    default: 416 passed, 0 failed, 1 skipped, 17 deselected; desktop: 17 passed, 0 failed, 417 deselected (C7: 257 characters, 25 spaces background only)
+03:54:41Z  WI-3 REVIEW  requested WI-3 round 3 at the head this commit makes
