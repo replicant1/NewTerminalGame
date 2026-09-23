@@ -35,3 +35,16 @@
 03:05:52Z  WI-3 DECIDE  add A claims: A1 malformed frame rejected whole (picture unchanged), A2 SystemExit from a handler exits with its status and no window, A3 place(x,y) sets the outer top-left; geometry_position moves to a pure module
 03:08:21Z  WI-3 PLAN    shell = terminal_game/shell: window.py (GameWindow), pure frame/palette/typeface/ticker/geometry; default-suite tests for the pure parts and the C8 source guard; desktop tests drive tests/shell_driver.py under a pty and judge screencaptures; evidence/WI-3 holds the test card and observations
 03:08:21Z  WI-3 TEST    64 passed, 0 failed, 1 skipped (-m 'not desktop'; WI-1 has not landed, so no marker config yet; 17 desktop deselected)
+03:08:56Z  WI-3 COMMIT  0d87ca2 WI-3: the shell's window and character grid, with desktop evidence
+03:08:56Z  WI-3 COMMIT  dba9b02 WI-3: draft PR brief
+03:08:56Z  WI-3 NOTE    draft PR #123 https://github.com/replicant1/NewTerminalGame/pull/123
+03:09:25Z  WI-3 READ    PR #122 (WI-1): layers by package in pyproject [tool.terminal_game.layers], shell = terminal_game.shell; desktop mark registered with --strict-markers; window guard patches _tkinter.create/Tk.loadtk and says plainly it cannot see subprocess windows, so subprocess tests must carry the mark (mine do). Expected merge conflicts: terminal_game/__init__.py and terminal_game/shell/__init__.py (both add)
+03:11:24Z  WI-3 TEST    desktop: 16 passed, 1 failed (C9: flip scenario recorded no facts); fixed; C9 alone: 1 passed
+03:11:24Z  WI-3 COMMIT  db7b9d9 WI-3: record the flip run's facts, which C9 reads for its geometry
+03:12:29Z  WI-3 COMMIT  da046e1 WI-3: the test card harness, with an unattended observation mode
+03:12:29Z  WI-3 CLAIM   observations: evidence/WI-3/card-da046e1-specimen.png, card-da046e1-after-keys.png, card-da046e1-transcript.json (title bar shows 'Terminal Game', specimen in six roles, marker moved Up Up Left from (10,13) to (9,11), 7 ticks in the ~1 s run)
+03:15:22Z  WI-3 TEST    desktop: 17 passed, 0 failed, 0 skipped in 87 s (tests/test_shell_window_desktop.py -m desktop -s; every test prints its measurement)
+03:15:22Z  WI-3 COMMIT  69ddff7 WI-3: each desktop test prints what it measured, so -s output shows the claim
+03:17:40Z  WI-3 RISK    WI-3 HIGH, because it opens, sizes and closes windows on the user's real desktop (plan floor; not raised)
+03:17:40Z  WI-3 DRAFT   docs/prs/PR-WI-3-window-grid.md: claims C1-C17 word for word, A1-A3, diff map, walk-throughs, C15/C16 needs-eyes scripts, findings F1-F7, interface for WI-9/WI-13
+03:17:40Z  WI-3 CLAIM   C1-C14, A1-A3 executable -- tests/test_shell_window_desktop.py::test_<claim>_* (-m desktop -s); C4, C7, C11, A1, A3 also tests/test_shell_pure.py; C8 also tests/test_shell_characters_only.py; C15, C16 needs eyes -- evidence/WI-3/card.py; C17 pending WI-1
