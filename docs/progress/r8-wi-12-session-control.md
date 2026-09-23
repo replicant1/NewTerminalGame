@@ -17,3 +17,8 @@
 04:26:55Z  DECIDE  WI-12 both valid -> validate intents against a tuple (unhashables refused with ValueError, A2 test adds [] {} and a tuple); harness C9 now also runs a different script and needs >800/1000 to differ
 04:26:55Z  TEST    494 passed, 0 failed, 1 skipped
 04:26:55Z  REVIEW  requested WI-12 round 1 at the head commit that carries this line
+04:35:02Z  COMMIT  f960472 WI-12: refuse unhashable intents with ValueError; C9 harness checks a different script too (Copilot); round 1 requested
+04:35:02Z  REVIEW  APPROVED round 1 @f9604721ae0d1c516eac1e830d22dc22cdc0bdb9 by newterminalgame-code-reviewer[bot]; no HUMAN-GATE; 13 claims REPRODUCED
+04:35:02Z  MERGE   WI-12 PR #133 merged (gh pr merge --merge) as 4fcc99b; approval sha = headRefOid f960472; landed main merged back: 494 passed, 0 failed, 1 skipped
+04:35:02Z  TEST    494 passed, 0 failed, 1 skipped (landed main 4fcc99b)
+04:35:02Z  DONE    WI-12 r8/wi-12-session-control f9604721ae0d1c516eac1e830d22dc22cdc0bdb9 (merged as 4fcc99b)
