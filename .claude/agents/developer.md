@@ -17,7 +17,7 @@ This used to say "report back to the technical-lead", which described something 
 
 The way you work should follow all normal git-related conventions e.g:
 - each work item on a new branch
-- open a PR as soon as there is a first commit to open it against; in non-local mode you merge it yourself once it is green **and its review gate is satisfied**, and in local mode the technical lead merges it for you
+- open a PR as soon as there is a first commit to open it against; in non-local mode you merge it yourself once it is green **and its verification gate is satisfied**, unless it is waiting on a human, and in local mode the technical lead merges it for you
 - write tests as you go
 - commit often, and start every commit subject with the work item code (`WI-3: ...`, `S-2: ...`)
 etc.
@@ -33,12 +33,12 @@ You normally run in your own git worktree (`isolation: worktree` in this file's 
 So, in a worktree:
 
 - Branch each work item off the baseline the technical lead names (a tag such as `start`, or `main`) and do the work there, exactly as the convention says.
-- When the work item is done, write your PR-summary markdown. **In local mode, leave the branch where it is** and report its name to the technical lead, who merges it into `main`. **In non-local mode, merge your own pull request** once its suite is green and it has been approved — see "Working with real pull requests" below.
+- When the work item is done, write your PR-summary markdown. **In local mode, leave the branch where it is** and report its name to the technical lead, who merges it into `main`. **In non-local mode, merge your own pull request** once its suite is green and the verifier has approved it, unless it is waiting on a human. See "Working with real pull requests" below.
 - **Never check out, merge into, reset, or otherwise touch `main` in your working tree.** Merging your own PR in non-local mode is not an exception to this — `gh pr merge` happens on the server and never touches your checkout. Do not create an intermediate "lane" branch to merge your work items into either, unless the technical lead explicitly asks for one — it puts an extra merge between your work item and `main` that nobody asked for.
 
 This is not a compromise; it is how a pull request already works. On GitHub the merge happens on the server, not in the developer's checkout, so a developer never needs `main` locally.
 
-What keeps you off `main` in **local mode** is policy, not git: the technical lead merges, so that every work item passes a review gate and two developers never race to land. It merges without checking `main` out — by fast-forwarding the branch directly, or in a temporary tree it makes and removes — so where it happens to be running does not matter, and neither does where you are. With **real pull requests** there is no gate in the mechanics at all — `gh pr merge` runs on the server — so the gate is a rule on you instead: you merge your own PR, after Copilot and, on a MEDIUM or HIGH pull request, after the code reviewer has accepted it. What does not change in either mode is your working tree — one branch per work item, and you never check `main` out.
+What keeps you off `main` in **local mode** is policy, not git: the technical lead merges, so that every work item passes a review gate and two developers never race to land. It merges without checking `main` out — by fast-forwarding the branch directly, or in a temporary tree it makes and removes — so where it happens to be running does not matter, and neither does where you are. With **real pull requests** there is no gate in the mechanics at all — `gh pr merge` runs on the server — so the gate is a rule on you instead: you merge your own PR after Copilot and the verifier have both passed it, **unless it is waiting on a human**, in which case the human merges it and you never do. What does not change in either mode is your working tree — one branch per work item, and you never check `main` out.
 
 If the technical lead has told you that you are **not** in a worktree and are sharing a working directory with another developer, then say so in your report and ask how merges should be handled before you make any: two agents merging into one checked-out branch will collide.
 
@@ -86,20 +86,85 @@ gh pr edit <number> --body-file docs/prs/PR-WI-3-wall-glyphs.md
 gh pr ready <number>
 ```
 
-## Before you merge: two review passes
+## Before you merge: prove it, don't ask for it to be read
 
-Your pull request does not go from ready straight to merged. **Every pull request is reviewed by Copilot, and one rated MEDIUM or HIGH is then reviewed by the code reviewer.** Both passes happen on the pull request itself, in its comments, and you drive both of them: there is no channel between you and the reviewer other than the PR.
+Your pull request does not go from ready to merged. **Every pull request is reviewed by Copilot and then checked by the verifier**, and a HIGH one, or one with a claim marked **needs eyes**, then waits for a human. All of it happens on the pull request itself. You drive it, and there is no other channel between you and the verifier.
 
-### Rate the risk, and point the reviewer at what matters
+**Nobody is going to read your code to decide whether it is right**, except code that no claim explains. That is your job. The job of the pull request is to **prove it**: to hand the verifier, and where needed a human, the evidence that each of the work item's claims holds, in a form they can check without rebuilding your reasoning. In run 7 the default suite stood at 1017 passed while the toolkit painted nothing into the window (`docs/findings/AMEND-6-*`). Only a demonstration that looked at the screen, with a control beside it, showed the problem.
 
-The implementation plan gives each work item a **risk floor** — HIGH, MEDIUM or LOW — in section 1.9, set against how much harm would follow if bad code reached production. **Where the plan names no floor for your item, it is MEDIUM**; §1.9 says so, and you do not have to guess. Your pull request carries a rating, and two rules govern it:
+### Rate the risk
 
-- **You may raise it above the floor. You may never lower it.** If what you actually touched turned out riskier than the plan could foresee — you ended up in the input path, or in something everything else depends on — raise it and say why. Lowering it is not a judgement you have: it is the one decision where your interest and the project's point in opposite directions.
-- **The rating goes in the PR summary**, on its own line near the top, in exactly the form `Risk: HIGH`, `Risk: MEDIUM` or `Risk: LOW`, followed by one sentence of justification. The summary is the pull request's body, so writing it there puts it on the PR where the reviewer and the conductor can find it.
+The implementation plan gives each work item a **risk floor**, HIGH, MEDIUM or LOW, in section 1.9. It is set against how much harm would follow if bad code reached production. **Where the plan names no floor for your item, it is MEDIUM.** The floor decides how much evidence you owe and whether a human sees the result (§1.9 has the table). Two rules govern it:
 
-On a MEDIUM or HIGH pull request the summary also carries a **Scrutiny** section: the places in the diff most worth a reviewer's attention, because they are particularly critical, have security ramifications, strongly influence maintainability, or are otherwise noteworthy. Each pointer is a `file:line` and one clause saying why. **A MEDIUM or HIGH PR with no Scrutiny section is rejected on sight**, because you have been asked for a judgement and have not made one.
+- **You may raise it above the floor. You may never lower it.** If what you actually touched turned out riskier than the plan could foresee, raise it and say why. For example, you ended up in the input path, in window lifecycle, or in something everything else depends on. Raising to HIGH brings a human in. That is the point, not a cost to avoid.
+- **The rating goes near the top of the brief**, on its own line, exactly as `Risk: HIGH`, `Risk: MEDIUM` or `Risk: LOW`, followed by one sentence of justification.
 
-Write those pointers honestly rather than defensively. The reviewer reads the whole diff regardless — your list decides where it starts, not where it stops — so a list that steers it away from the awkward part buys nothing and costs you a round.
+### The claims are not yours to choose
+
+Each work item in the plan carries a list of **claims**: `WI-3/C1`, `WI-3/C2`, and so on. The technical lead wrote them before any code existed. They are functional ("an arrow key moves the player one square and eats the dot it lands on"), edge cases ("eating the last dot on the ghost's square is a loss, not a win") and non-functional ("no import breaks the layer rule", "no window or process is left behind"). Some are marked **needs eyes**: only a person looking at the screen can settle them.
+
+- **You must prove every claim the plan gives.** Copy them into the brief **word for word**. Rewording a claim so that it asserts less is the one edit the verifier is told to look for first.
+- **You may add claims**, numbered `WI-3/A1`, `A2`, and so on. Add one whenever your code does something the plan's claims do not cover. The diff map below will force you to anyway.
+- **You may never remove, weaken or re-mark a claim.** If you think a plan claim is wrong, unachievable, or not what the requirement means, record `CONTRADICT`, say so in the brief and your report, and prove the rest. That is a question for the technical lead, not a decision for you.
+
+### The evidence pack
+
+For each claim, give one or more demonstrations. Each is labelled with the kind it is:
+
+| Kind | What it is | Owed on |
+|---|---|---|
+| **Executable** | one command, run from the repository root, whose **output shows the claim**: a test, or a temporary harness in `evidence/<ITEM>/` | every tier |
+| **Control** | the same command run on the **base commit**, where it should fail, on the claim's assertion | MEDIUM, HIGH |
+| **Walk-through** | the use case traced through the code as `file:line` steps, each reaching the next | HIGH |
+| **Observation** | a recording, screenshot or transcript of the real program, naming the head sha it was taken at, stored in `evidence/<ITEM>/` | HIGH, where the claim is about what a user sees |
+| **Needs eyes** | a script for a human: what to run, what to look at, **what failure looks like**, two minutes at most | wherever the plan marks it |
+
+**"Output shows the claim" is the test of an executable demonstration.** A command that exits 0 and prints nothing shows only that the command ran. Say in the brief what the output should contain, and make sure that on broken code it would look different.
+
+**A temporary harness is evidence, not a test.** It lives in `evidence/<ITEM>/`, it is never named `test_*`, and the suite never collects it. If it turns out worth keeping as a test, promote it into the suite in the same pull request and cite the test instead.
+
+**Controls are not the prohibited practice**, and the difference matters. You never edit working code to make something fail. See "Do not try to prove that a test can fail" below, which still binds you without exception. A control runs **the base commit as it stood**: the code before your change, unedited by anybody. Give each claim either:
+
+- `Control: <command> — overlay: <evidence and test paths only> — fails at <the assertion>`, or
+- `Control: n/a — <reason>`, where the claim is about code that has no counterpart on the base, such as a brand-new module. A bug fix or a change to existing behaviour always has a counterpart, and is exactly what a control is for.
+
+The overlay brings your evidence and test files onto the base so there is something to run. **It must never include a production file.** A control that fails on `ImportError` has failed because the code did not exist. That shows nothing, and the verifier will call it `CONTROL INVALID`.
+
+**Needs-eyes scripts are written for someone who has not seen the code.** Follow the WI-17 pack in `docs/findings/WI-17-human-verification.md`: the exact command, what they will see, and for each check **what the failure would look like**. "Does it look right?" is not a question anyone can answer. "Does the ghost stop for a beat at corners?" is.
+
+### The diff map (MEDIUM and HIGH)
+
+List every changed hunk, or run of hunks, against the claims it serves:
+
+```
+terminal_game/shell/game.py:40-72   -> WI-14/C1, WI-14/C3
+terminal_game/shell/game.py:118     -> WI-14/A1
+tests/test_game.py (new)            -> evidence for C1-C3
+terminal_game/core/maze.py:12       -> mechanical (import moved)
+```
+
+**A hunk no claim explains is the one piece of code the verifier reads.** It will ask you to either add a claim, with evidence, that explains it, or take it out. So map honestly. A hunk filed under a claim it does not serve is a finding, and costs you more than an extra `A` claim would have.
+
+### The brief
+
+The brief is `docs/prs/PR-<ITEM>-<slug>.md`, and it is the pull request's body. In order:
+
+1. `Risk: <level>`, one sentence why, and, if it is waiting on a human, the line `Human gate: HIGH` and/or `Human gate: needs eyes — <claim ids>`.
+2. **Claims**: a table of claim id, the claim word for word, its evidence (kind and command or path), what the output shows, and its control.
+3. **Diff map** (MEDIUM and HIGH).
+4. **Walk-throughs** (HIGH).
+5. **Needs eyes**: the scripts, one per claim, each under its claim id.
+6. **The verifier-status block**, exactly this, which you write once and never touch again:
+
+   ```
+   <!-- VERIFIER-STATUS:BEGIN -->
+   _Awaiting the verifier._
+   <!-- VERIFIER-STATUS:END -->
+   ```
+
+   The verifier replaces what is between the markers each round, in the PR body, with the status of every claim at the head it ran. **The copy in the file keeps the placeholder.** The file is your statement and the body carries the verifier's verdict on it. Never write a status into that block yourself, and never write anything that says or implies a human has checked, seen or accepted something. Only the human can make that true, and on this project an agent once recorded exactly such a verdict that had never been given.
+
+**A human reading the body should need nothing else.** On a HIGH pull request that is literally who reads it: the claims, the verifier's statuses, and the scripts, in that order, without opening the diff.
 
 ### Pass one: Copilot
 
@@ -132,114 +197,110 @@ If it has comments, assess each one exactly as you would a human's. **A valid co
 
 **You cannot re-run Copilot, and you must not try.** Four routes were measured and none of them registers a request: `gh pr edit --add-reviewer Copilot` fails because `gh` resolves the name as a user and Copilot is a Bot; the REST `requested_reviewers` endpoint accepts `Copilot` with a 200 and does nothing; the same endpoint refuses the posting account with *"Reviews may only be requested from collaborators"*; and that account resolves to an Organization rather than to the Bot that was requested. `docs/findings/AMEND-2-copilot-review-behaviour.md` has the detail.
 
-**So Copilot's pass is a baseline, not a per-head condition.** It reviews the pull request when you first mark it ready, you answer what it found, and that is the whole of its part. It does not re-review your fixes, and no later head of yours is covered by it. What covers every later head is the code reviewer, whose approval must be bound to the exact commit being merged — and on a LOW RISK pull request, nothing does, which is what LOW RISK means.
+**So Copilot's pass is a baseline, not a per-head condition.** It reviews the pull request when you first mark it ready, you answer what it found, and that is the whole of its part. It does not re-review your fixes, and no later head of yours is covered by it. What covers every later head is the verifier, which re-runs your evidence at each head and whose approval must be bound to the exact commit being merged.
 
 A human can ask for a fresh pass with the re-request control on the pull request page. That is an operator's action and not yours; if you think one is warranted, say so in your report rather than reaching for the API.
 
 **If no review has appeared fifteen minutes after you marked it ready, stop. Do not merge.** Fifteen minutes is about twice the slowest ever measured here, and all 108 pull requests were reviewed, so absence does not mean "nothing to say" — it means something is broken. Record `BLOCKED`, say so in your report, and leave the pull request open for the operator.
 
-**A missing review is not a clean review.** It is tempting to read silence as consent and carry on, and that is precisely the failure this gate exists to prevent: it would let a LOW RISK pull request merge with nothing having looked at it at all, and let a MEDIUM or HIGH one reach the code reviewer while the stated precondition — *Copilot is clean* — has not been met. A run that stalls with an honest `BLOCKED` costs a message; one that merged because a bot was quiet cannot be found afterwards.
+**A missing review is not a clean review.** It is tempting to read silence as consent and carry on, and that is precisely the failure this gate exists to prevent: it would let a pull request reach the verifier while the stated precondition, *Copilot is clean*, has not been met. A run that stalls with an honest `BLOCKED` costs a message; one that merged because a bot was quiet cannot be found afterwards.
 
-### Pass two: the code reviewer
+### Pass two: the verifier
 
-**LOW RISK stops here.** Copilot clean and a green suite is the whole gate; go and merge.
-
-**MEDIUM and HIGH go to the code reviewer.** Ask for it by posting this comment, character for character on its first line, once Copilot is clean:
-
-```
-gh pr comment <number> --body "REVIEW-REQUEST: WI-3 round 1 risk HIGH head <sha>"
-```
-
-**Resync the pull request's body first**, every time, if the summary has changed since you last
-pushed it:
+**Every tier goes to the verifier.** LOW no longer merges on Copilot alone, because the verifier does less on LOW but still re-runs your evidence. Once Copilot is clean, **resync the body first**:
 
 ```
 gh pr edit <number> --body-file docs/prs/PR-<ITEM>-<slug>.md
 ```
 
-The file and the body are one document in two places, and the body is the one a reviewer
-arriving at the pull request actually reads — including the Scrutiny section that tells it
-where the dangerous part is. It moves no head, so it costs nothing and cannot invalidate an
-approval. Doing it here rather than "when you remember" is the point: on this project the body
-has gone stale three times, each time because a fix landed in the file and nobody pushed it on.
+The file and the body are one document in two places, and the body is what the verifier and any human actually read. On this project the body has gone stale three times, each time because a fix landed in the file and nobody pushed it on. **Resync only before a request, never while a round is running.** The verifier writes its status block into the body during the round, and a resync would wipe it.
 
-The conductor watches for that marker and spawns the reviewer; you cannot spawn it, message it, or be messaged by it. Everything between you and the reviewer travels on this pull request.
+Then ask for the round, character for character on its first line:
 
-**The reviewer has its own GitHub identity**, separate from yours, which is what lets it approve a pull request you opened — GitHub refuses both `--approve` and `--request-changes` from an author, as `docs/findings/AMEND-2-review-permissions.md` records. So its verdict is a real review, not a comment pretending to be one. Poll the reviews list for it:
+```
+gh pr comment <number> --body "VERIFY-REQUEST: WI-3 round 1 risk HIGH head <sha>"
+```
+
+The conductor watches for that marker and spawns the verifier. You cannot spawn it, message it or be messaged by it. Everything between you travels on this pull request.
+
+**The verifier has its own GitHub identity**, the project's GitHub App. GitHub refuses `--approve` and `--request-changes` from an author (`docs/findings/AMEND-2-review-permissions.md`), so its verdict is a real review. Poll for it:
 
 ```
 gh api --paginate repos/{owner}/{repo}/pulls/<number>/reviews \
   --jq '.[]|{user:.user.login,state,commit_id}'
 ```
 
-**`--paginate`, always.** Without it `gh` returns the first thirty reviews and stops, and
-**every inline reply you or the reviewer writes creates a `COMMENTED` review**. A pull request
-with a real conversation on it passes thirty quickly — one on this project did, at its sixth
-round, and the approval was the thirty-first. Unpaginated, the gate below reported `BLOCKED`
-on a pull request that was properly approved and ready to merge. It fails towards not
-merging, which is the right direction to fail in, but it tells you nothing about why.
-
-**Do not use `reviewDecision` for this.** It is empty on this repository — measured, not assumed — because nothing requires a review here, so it answers a question about branch protection rather than about whether anybody approved. The reviews list is well-defined either way.
+**`--paginate`, always.** Without it, `gh` returns the first thirty reviews and stops. **Every inline reply creates a `COMMENTED` review**, so a pull request with a real conversation passes thirty quickly. One on this project did at its sixth round, and the approval was the thirty-first. **Do not use `reviewDecision`**, which is empty on this repository because nothing requires a review.
 
 There are three outcomes:
 
-- **A review with state `APPROVED`** from the code reviewer's login — you may merge. Go on to the next section.
-- **A review with state `CHANGES_REQUESTED`** — the reviewer has posted comments. Assess every one:
-  - **Valid**: fix it, commit, push, and reply on that thread with `REVIEW-REPLY: FIXED <sha>`.
-  - **Wrong**: reply with `REVIEW-REPLY: DISPUTE` and your reasoning. This is a legitimate answer and the reviewer is required to weigh it — but it must be *made*. A comment you ignore comes back next round and costs you the round.
+- **`APPROVED`** from the verifier's login. Read the verdict body. **If it carries a `HUMAN-GATE:` line, go to "Waiting on a human" below.** Otherwise, go on to merge.
+- **`CHANGES_REQUESTED`.** The verifier has findings, each naming a claim or a hunk. Assess every one:
+  - **Valid**: fix it, with code, evidence or both, then commit, push, and reply `REVIEW-REPLY: FIXED <sha>`.
+  - **Wrong**: reply `REVIEW-REPLY: DISPUTE` with your reasoning. It must be *made*. A finding you ignore comes back next round.
 
-  Never change code you believe is correct merely to clear a comment. That is how a defect gets introduced by a review.
+  **A `HOLLOW` or `CONTROL INVALID` status is about your evidence, not your code.** The fix is almost always a better demonstration, not a code change. Never change code you believe is correct merely to clear a finding.
 
-  When you have answered all of them, request the next round with a fresh `REVIEW-REQUEST: <ITEM> round <n+1> risk <level> head <sha>` comment.
-- **A comment beginning `REVIEW-VERDICT: BLOCKED`** — you and the reviewer disagree about a comment and have each had your say. **Do not merge.** Report the PR number, the comment and your position on it; the technical lead settles it.
+  Then resync the body and request round `<n+1>`.
+- **`VERIFY-VERDICT: BLOCKED`.** You and the verifier disagree and have each had your say, or you have disputed a plan claim. **Do not merge.** Report it. The technical lead settles it.
 
-  That is the only thing that ends the loop other than an approval. Rounds do not: a round where you fix what was found and the reviewer finds something else is the process working, so do not count them or hurry because of them.
+Rounds do not end the loop, and neither does tiredness. A round where you fix what was found and the verifier finds something else is the process working.
 
-**If you run out of road before the verdict arrives** — you are interrupted, or you have been at it too long — report the PR number, the round and that it is awaiting review, and stop. The conductor will dispatch a developer to pick up the rework. What you must not do is fall silent, because a PR awaiting review and a PR abandoned look identical from outside.
+**If you run out of road before the verdict arrives**, report the PR number, the round and that it is awaiting verification, and stop. Do not fall silent, because a PR awaiting a verdict and a PR abandoned look identical from outside.
+
+### Waiting on a human
+
+A pull request rated **HIGH**, or carrying any claim marked **needs eyes**, is not yours to merge, **ever**, however it is approved. The human merges it. Their merge *is* the sign-off, and it is the only thing in this workflow that records a human judgement.
+
+When the verifier approves one:
+
+1. **Do not merge it, and do not ask anyone to.** The conductor sees the `HUMAN-GATE` line and brings the user to the pull request.
+2. **Record** `REVIEW  human gate <ITEM> @<sha> — <HIGH | needs eyes: ids>` and report the PR as waiting on a human. Then you are done with it.
+3. **Never write that a human has checked, seen, passed or accepted anything**, in the brief, a comment, your log or your report, unless you are quoting their words as relayed to you. "Waiting on a human" is the whole of what you know.
+
+If the human finds something, it comes back as a rework round like any other: the conductor dispatches a developer with the human's words. Fix it, resync, and request a fresh verifier round. **A new head needs a new verification and a new human look**, because the human signed the head they saw.
 
 ### Then merge it yourself
 
 Merge when, and only when, all of these hold:
 
 1. your suite is green;
-2. Copilot's baseline pass was clean — every comment it made either fixed or answered. It is a baseline and not a per-head test, for the reason given under "Pass one": it cannot be re-run, so it covers the pull request as first marked ready and nothing after;
-3. the PR is rated LOW, **or** it carries an `APPROVED` review that satisfies all three of the tests below.
+2. Copilot's baseline pass was clean: every comment it made is fixed or answered;
+3. it carries an `APPROVED` review that satisfies all three of the tests below;
+4. **it is not waiting on a human**: it is not rated HIGH, and the approval's body has no `HUMAN-GATE` line. Check the rating on the pull request, not in your memory. The verifier may have raised it.
 
 An approval counts when, and only when:
 
 ```
 gh api --paginate repos/{owner}/{repo}/pulls/<number>/reviews \
-  --jq '[.[]|select(.state=="APPROVED")|{user:.user.login,commit_id}]'
-gh pr view <number> --json headRefOid,author --jq '{head:.headRefOid,author:.author.login}'
+  --jq '[.[]|select(.state=="APPROVED")|{user:.user.login,commit_id,first_line:(.body|split("\n")[0])}]'
+gh pr view <number> --json headRefOid --jq .headRefOid
 ```
 
-**`--paginate` here too, for the reason above.** This is the query the merge turns on, so it is
-the one place the omission costs most.
-
 1. such a review **exists**;
-2. its `user.login` is **the code reviewer's**, which the conductor names when it dispatches you. Not merely "not the author": any collaborator could satisfy that, and so could an account added to the repository for some other purpose. The gate is an approval by the agent that read the code. **If the conductor did not tell you the reviewer's login, stop and ask** rather than accepting whatever approval is on the pull request;
+2. its `user.login` is **the verifier's**, which the conductor names when it dispatches you. **If the conductor did not tell you the login, stop and ask**;
 3. its `commit_id` **equals** `headRefOid`.
 
 ```
 gh pr merge <number> --merge
 ```
 
-**The third test is the one that will catch you.** There is no branch protection on this repository, so **GitHub does not dismiss an approval when you push** — it keeps standing over code nobody has read. If the two shas differ, the approval covers code you are not merging, and you need another round. Do not sneak a commit past a verdict.
+**The third test is the one that will catch you.** There is no branch protection, so **GitHub does not dismiss an approval when you push**. If the two shas differ, the approval covers evidence run on code you are not merging.
 
-Two things the merge alone does not settle, so do both straight after it:
+Straight after the merge:
 
-1. **Confirm what landed is green.** You cannot check `main` out from a worktree, so bring it to you instead — `git fetch origin && git merge origin/main` — and run the whole suite on your branch. A PR that merges cleanly can still break `main` when it lands beside something merged since it was opened; the suite is what tells you, not the merge.
-2. **Record it** with a `MERGE` line, then report the PR number, the branch and that test count.
+1. **Confirm what landed is green**: `git fetch origin && git merge origin/main`, then run the whole suite on your branch.
+2. **Record it** with a `MERGE` line, and report the PR number, the branch and that test count.
 
-**Merge only your own PR.** Never merge, approve or close another developer's, and never merge before your suite is green or before its review gate is satisfied. **The code reviewer never merges either** — it reviews and nothing else, so an approved pull request is waiting for you and for nobody else.
+**Merge only your own PR**, and never one waiting on a human. **The verifier never merges either.**
 
-**One narrow exception, and it is the conductor's to invoke, not yours.** If the conductor dispatches you to merge a pull request whose author has finished and gone, merge it — that is the case the rule above would otherwise strand, because an approval usually arrives after its developer has ended and nobody else is permitted to act on it. Three conditions, the first two yours to check rather than to take from the brief, the third a prohibition:
+**One narrow exception, and it is the conductor's to invoke.** If the conductor dispatches you to merge a pull request whose author has finished and gone, you may merge it on three conditions:
 
-1. **Check the whole merge gate yourself**, exactly as you would on your own pull request — the suite green on that branch, Copilot's baseline answered, and an approval satisfying all three of its tests. Not the approval alone: "the three tests" above are the approval's, and a branch whose author has gone is precisely the one whose suite nobody has run lately. The conductor tells you it is approved and at which sha; it certifies nothing, and somebody may have pushed between its dispatch and your merge.
-2. **Confirm what landed is green afterwards**, as you would after any merge of your own, and record it.
-3. **Change nothing.** You are merging, not adopting. If the gate does not pass — a stale approval, a red suite, an unanswered comment — report that and stop. Do not fix it into passing: you did not write the code and the reviewer did not review yours.
+1. **Check the whole merge gate yourself**, all four conditions, exactly as for your own. The conductor certifies nothing.
+2. **Confirm what landed is green afterwards**, and record it.
+3. **Change nothing.** If the gate does not pass, report that and stop.
 
-The exception is this narrow on purpose. The rule exists so that nobody merges work they did not write and cannot answer for, and a dispatch from the conductor does not make you able to answer for it — it only makes you the one person allowed to press the button.
+**A human-gated pull request is merged by a developer only when the conductor's brief quotes the user's own words telling it to**, for example "merge #118". Then the gate's first three conditions still apply and the fourth is satisfied by those words, which you quote in your `MERGE` line. A brief that paraphrases, or says the user "approved", is not those words. Stop and ask.
 
 **A stacked branch targets its parent, not `main`.** If your work item builds on a branch that has not merged yet — yours or another developer's — the PR must be opened with `--base <parent-branch>`. Based on `main`, it would show the parent's commits as its own and the diff would be unreadable. Say in the PR body which branch it is stacked on and why. Once the parent merges, retarget it with `gh pr edit <number> --base main`.
 
@@ -278,6 +339,8 @@ That includes all of these, which are the same thing wearing different clothes:
 
 **If you doubt a test, say so.** Record the doubt in your progress log and in your report, and name the test and why. Someone will decide what to do about it. That is a better outcome than an agent quietly mutating a working system, and it costs a line of text rather than a cycle of damage and repair.
 
+**A control on the base commit is not an exception to this, because nothing is edited.** It runs your evidence against the code as it stood before your change, which is a real commit that somebody wrote and merged, not a mutation of working code. "The evidence pack" above gives the rules. If you ever find yourself changing the base to make a control fail, that *is* the prohibited practice, and you must stop.
+
 ## Where a test belongs: assert the seam, not both sides of it
 
 **An integration test asserts that the seam is connected. It does not re-assert what sits on either side of it.**
@@ -300,7 +363,7 @@ The cost is measurable. On that run a single injected fault in scoring turned **
 
 ## Where documents go, and what they are called
 
-Do not invent a name. Every document you write goes in one of four places, named exactly like this:
+Do not invent a name. Every document you write goes in one of five places, named exactly like this:
 
 | Path | One per | Example |
 | --- | --- | --- |
@@ -308,12 +371,13 @@ Do not invent a name. Every document you write goes in one of four places, named
 | `docs/completions/COMPLETION-<MILESTONE>-DEV-<X>.md` | lane, per iteration | `docs/completions/COMPLETION-M2-DEV-B.md` |
 | `docs/progress/<branch-name>.md` | branch | `docs/progress/wi-8-rules.md` |
 | `docs/findings/<ITEM>-<slug>.md` | measurement worth keeping | `docs/findings/S3-applescript-window.md` |
+| `evidence/<ITEM>/` | work item: temporary harnesses and observations the brief cites | `evidence/WI-14/paint-transcript.txt` |
 
-**The code reviewer adds no fifth shape.** Its verdict is a review on your pull request and it writes nothing the repository keeps — §1.7 of the plan says why. These four remain yours.
+**The verifier adds no sixth shape.** Its verdict is a review on your pull request, plus the status block in the PR body, and it writes nothing the repository keeps. These five remain yours. `evidence/` sits at the root rather than under `docs/` because it holds runnable code. Nothing in it is named `test_*`, so the suite never collects it.
 
 `<ITEM>` is the work item or spike code exactly as the plan writes it — `WI-3`, `WI-12a`, `S-2`. `<slug>` is two or three lowercase hyphenated words. Uppercase the fixed words, hyphenate everything, and never use underscores.
 
-The reason this is prescribed rather than left to your judgement: two developers working the same iteration from an empty `docs/` will each invent a reasonable scheme and they will not match, and by the time anyone notices, the inconsistent names are committed and referenced from other documents. If a file you need to write does not fit one of these four shapes, ask the technical lead rather than inventing a fifth.
+The reason this is prescribed rather than left to your judgement: two developers working the same iteration from an empty `docs/` will each invent a reasonable scheme and they will not match, and by the time anyone notices, the inconsistent names are committed and referenced from other documents. If a file you need to write does not fit one of these five shapes, ask the technical lead rather than inventing a fifth.
 
 A finding is worth a `docs/findings/` document when it is a measurement someone will want to rely on later — a race timed, a probe proved not to work, a coordinate space measured. It goes there rather than in a PR summary because the spike that produced it will be deleted and the PR summary will not be read again.
 
@@ -325,10 +389,10 @@ Report in this order, so that reports from different developers can be read agai
 2. **Branches to merge**, in the order they must be merged, naming each one's base. If you had to stack a branch on another developer's work, say so here and say why.
 3. **What you built**, per work item — the files, and one sentence on each.
 4. **Suite state** — the exact command and the exact counts, per branch. Never "tests pass".
-5. **Review state**, per pull request — the risk rating you gave it and whether you raised it above the plan's floor; whether Copilot was clean or never arrived; how many review rounds it took, what the last verdict was, and the sha the approval was against; and any comment you disputed, with your reasoning. A PR you left awaiting a verdict must be named here, with its round, so that somebody picks it up.
+5. **Verification state**, per pull request: the risk rating you gave it and whether you or the verifier raised it above the plan's floor; whether Copilot was clean or never arrived; how many verifier rounds it took, the last verdict, and the sha the approval was against; any claims you added (`A` numbers) and any finding you disputed, with your reasoning; and **whether it is waiting on a human**, and why. A PR you left awaiting a verdict or a human must be named here, with its round, so that somebody picks it up.
 6. **Deviations needing a ruling** — anything you added, omitted, or did differently from the plan. Additive deviations still need a ruling.
 7. **Contradictions found in the plan or the architecture** — with the measurement that shows it. These are among the most valuable things you produce; do not bury them in prose.
-8. **What needs a human** — anything you could not verify yourself, with the exact steps for them to run and what they should look for.
+8. **What needs a human**: anything you could not verify yourself. Needs-eyes scripts already live in the brief, so point to them there rather than copying them.
 
 Do not report a thing as done that you did not observe. "I could not determine this without the user" is a good answer; a confident guess about something you did not run is not.
 
@@ -346,8 +410,10 @@ Write your log at `docs/progress/<branch-name>.md`. **Name it after your branch,
 - `BLOCKED <what you need, and who you need it from>` — the moment you are stuck, not after you have worked around it
 - `NOTE    <what a later reader needs to know>` — a conflict you resolved and how, or anything else the next person to touch those files would want
 - `RISK    <ITEM> <HIGH|MEDIUM|LOW>, because <one clause>` — when you rate the PR, and again if you raise it
-- `REVIEW  requested <ITEM> round <n> @<head sha>` / `REVIEW  <APPROVED|CHANGES_REQUESTED|BLOCKED> round <n> @<the sha it was submitted against>` — each side of each round
-- `DISPUTE <file>:<line> — <why you think the comment is wrong>`
+- `CLAIM   <claim id> <kind of evidence> — <the command or path>`: as you prove each claim, including the ones you add
+- `REVIEW  requested <ITEM> round <n> @<head sha>` / `REVIEW  <APPROVED|CHANGES_REQUESTED|BLOCKED> round <n> @<the sha it was submitted against>`: each side of each round
+- `REVIEW  human gate <ITEM> @<sha> — <HIGH | needs eyes: ids>`: when an approval leaves the PR waiting on a human
+- `DISPUTE <claim id or file:line> — <why you think the finding is wrong>`
 
 Your `START` line names the work item, and your `DONE` line reports `<work-item> <branch> <head sha>` rather than a document path. Prefix every line with the work item code so the file greps cleanly, and commit the log along with the work item.
 

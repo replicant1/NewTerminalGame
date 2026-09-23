@@ -37,6 +37,19 @@ Two consequences worth stating plainly:
 
 `VERIFY` is the most valuable line you write. If you prototype a generator, parse a scripting dictionary, or check what a library actually does, say so on a `VERIFY` line with the number you got — the reader needs to know which parts were tested and which were reasoned.
 
+## A measurement is true of a moment, not for ever
+
+**Everything you `VERIFY` is a fact about the tree as it stood when you looked.** That is what makes the line worth writing and it is also its limit. The stamp on the front is not decoration: it says how old the fact is.
+
+Some measurements cannot go stale, because they are about arithmetic or construction — doubling both coordinates cannot change which square is nearest; the border ring is what the carve never reaches. Others are snapshots of something anybody can change without meaning to. **The test is one question: could somebody make this false without intending to?** If they could, what you have is a snapshot.
+
+This has already cost this project a rule. One agent measured that the test suite loaded neither `tkinter` nor `_tkinter`, which was true. It was relayed, and a guard rule was written on it. **Twenty-four seconds later it was false** — another agent had landed a test that imports the toolkit. A developer caught it before anything was built on it.
+
+Two things follow, and they are for different people:
+
+- **If you are passing a measurement on**, pass its age with it, and say whether you took it or somebody else did. A number with no time and no owner will be read as a standing property, because that is what a bare sentence looks like.
+- **If you want a property to hold rather than merely to have held**, it does not go in a document at all — **it goes in a test**. A sentence remembers; a test re-checks. This project already does this wherever it matters: the architecture layering, the boundaries of what may import what, the shape of a register. A rule in prose that nothing re-runs is a guard waiting to have never been exercised.
+
 ## Other instructions
 Instructions in the following shared files also apply:
 - .claude/shared/ask-a-human.md

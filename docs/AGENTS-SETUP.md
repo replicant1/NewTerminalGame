@@ -1,5 +1,10 @@
 # Setting up the code reviewer's GitHub identity
 
+> **From run 8 this identity belongs to the verifier** (`.claude/agents/verifier.md`), which
+> replaced the code reviewer. The App, its name, its slug, `tools/code_reviewer_token.py` and
+> the `CODE_REVIEWER_*` variables are unchanged. The verifier also edits the status block in a
+> pull request's body, which uses the same *Pull requests: write* permission as its reviews.
+
 This is an operator's task, done once. It is here because nothing else in the repository
 records it: the configuration lives outside the tree and cannot be committed.
 
