@@ -94,13 +94,17 @@ def launch(n: int, sha: str) -> dict:
             raise RuntimeError("the game's window never appeared")
         record["seen_after_s"] = round(time.monotonic() - t0, 2)
         record["game_pid"] = found["pid"]
-        b = found["bounds"]
+        record["bounds_while_opening"] = [found["bounds"].x, found["bounds"].y, found["bounds"].width, found["bounds"].height]
+        # macOS animates a new window open (it grows from about 99 %), so the bounds
+        # are read again once it has settled (measured: 396 x 596 at first sight).
+        time.sleep(0.8)
+        settled = [w for w in on_screen_windows() if w["pid"] == found["pid"] and w["layer"] == 0]
+        b = settled[0]["bounds"]
         record["game_bounds"] = [b.x, b.y, b.width, b.height]
         left, top, right, bottom = (int(v) for v in osa(
             f'tell application "Terminal" to get bounds of window id {window_id}').split(", "))
         record["terminal_bounds"] = [left, top, right - left, bottom - top]
         record["offset_from_terminal"] = [b.x - left, b.y - top]
-        time.sleep(0.6)   # let it paint
         shots = []
         for k in range(2):
             path = OUT / f"from-terminal-{sha}-launch{n}-{k}.bmp"
