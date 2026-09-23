@@ -38,3 +38,5 @@
 03:06:03Z  WI-1 DECIDE  Copilot swallowed import-time refusal -> fixed: refusals during collection recorded per collector, and a passing collect report is turned into a failure naming the module (C6)
 03:06:03Z  WI-1 DECIDE  Copilot overview nits (not threads) also fixed: whole-word desktop match on -m (A1), Random(None) is unseeded (A3), relative import beyond top-level package is unresolvable (A4), refusal first line no longer says 'not the interpreter' when only Tk is wrong (C2)
 03:06:03Z  WI-1 TEST    130 passed, 0 failed, 1 skipped after the Copilot fixes; runtime_probe, layer_samples, guards_probe all HOLD
+03:06:52Z  WI-1 COMMIT  b79d586 WI-1: answer Copilot: follow aliased import functions, fail a module that swallows the refusal
+03:06:52Z  WI-1 NOTE    Copilot threads answered: 2 DISPUTE (wantTk index), 2 FIXED at b79d586; fresh_clone at b79d586 HOLDS (130 passed, 1 skipped)
