@@ -10,3 +10,7 @@
 03:27:10Z  WI-4 DECIDE  specimen classification -> wall squares decided from the plan's twelve C1 characters written out, not the module's WALL_CHARACTERS; non-wall squares checked to be dots or the player; wall count checked against 551-264, because classifying with the module's own set was circular
 03:27:10Z  WI-4 TEST    159 passed, 0 failed, 1 skipped; specimen harness HOLDS
 03:27:10Z  WI-4 REVIEW  requested WI-4 round 1 (head is the commit carrying this line)
+03:34:17Z  WI-4 REVIEW  APPROVED round 1 @da5c2b08c16c6f54ef930ef641d743093e2f5108 by newterminalgame-code-reviewer[bot], 03:33:15Z; no HUMAN-GATE
+03:34:17Z  WI-4 MERGE   PR 124 r8/wi-4-wall-glyphs merged 03:33:50Z as cfe5822 (merge-tree clean against main after WI-5 landed)
+03:34:18Z  WI-4 TEST    214 passed, 0 failed, 1 skipped on an export of origin/main cfe5822; layer check PASS, presentation 4, domain 3
+03:34:18Z  WI-4 DONE    WI-4 r8/wi-4-wall-glyphs da5c2b08c16c6f54ef930ef641d743093e2f5108
