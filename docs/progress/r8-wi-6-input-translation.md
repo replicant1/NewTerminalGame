@@ -6,3 +6,6 @@
 03:25:31Z  WI-6 TEST    279 passed, 0 failed, 1 skipped
 03:25:47Z  WI-6 COMMIT  8d0a0e8 WI-6: input translation from Tk key names to move and quit intents
 03:25:47Z  WI-6 NOTE    draft PR 126 opened; marking ready (suite green)
+03:29:39Z  WI-6 REVIEW  Copilot on PR 126: Changes recommended, 1 thread (harness list missed Num_Lock and Mode_switch that the docstring claimed); valid, harness now imports the test corpus (138 names)
+03:29:39Z  WI-6 TEST    279 passed, 0 failed, 1 skipped
+03:29:39Z  WI-6 REVIEW  requested WI-6 round 1 (head is the commit carrying this line)

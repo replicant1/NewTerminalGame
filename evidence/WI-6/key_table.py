@@ -4,38 +4,37 @@ Evidence, not a test.  Usage, from the repository root:
 
     .venv/bin/python evidence/WI-6/key_table.py
 
-It prints the intent for the four arrows, ``q`` and ``Q``, and a count of how
-many of 123 other Tk key names (letters, digits, punctuation, space, Return,
-Escape, Tab, BackSpace, F1-F20, every modifier alone, keypad arrows, and
-lookalike strings such as ``up`` and ``Quit``) translate to anything but nothing.
+It prints the intent for the four arrows, ``q`` and ``Q``, then counts how many
+of the other key names translate to anything but nothing. The other names are
+the same corpus the unit tests use, imported from
+``tests/test_input_translation.py`` so the two cannot drift apart: every letter
+and digit except ``q``/``Q``, punctuation, space, Return, Escape, Tab,
+BackSpace, F1-F20, modifiers pressed alone (Shift, Control, Alt, Meta, Super,
+Caps_Lock, Num_Lock, Mode_switch), keypad arrows, and lookalike strings such as
+``up`` and ``Quit``. It prints the size of that corpus.
 """
 
 from __future__ import annotations
 
-import string
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT))
+sys.path.insert(0, str(ROOT / "tests"))
 
 from terminal_game.presentation.input_translation import NOTHING, translate  # noqa: E402
+from test_input_translation import LETTERS_AND_DIGITS, LOOKALIKES, NAMED_OTHERS  # noqa: E402
 
 MAPPED = ["Up", "Down", "Left", "Right", "q", "Q"]
-OTHERS = (
-    [c for c in string.ascii_letters + string.digits if c not in "qQ"]
-    + ["space", "Return", "KP_Enter", "Escape", "Tab", "BackSpace", "Delete"]
-    + ["F%d" % n for n in range(1, 21)]
-    + ["Shift_L", "Shift_R", "Control_L", "Control_R", "Alt_L", "Alt_R", "Meta_L", "Meta_R",
-       "Super_L", "Super_R", "Caps_Lock"]
-    + ["Home", "End", "Prior", "Next", "KP_Up", "KP_Down", "KP_Left", "KP_Right"]
-    + ["comma", "period", "slash", "minus", "equal", "semicolon", "apostrophe", "grave"]
-    + ["up", "UP", "down", "left", "right", "Quit", "quit", "qq", ""]
-)
+OTHERS = NAMED_OTHERS + LETTERS_AND_DIGITS + LOOKALIKES
 
 
 def main() -> int:
     for key in MAPPED:
         print("  %-8r -> %r" % (key, translate(key)))
+    modifiers = [k for k in NAMED_OTHERS if k.endswith(("_L", "_R")) or k in ("Caps_Lock", "Num_Lock", "Mode_switch")]
+    print("  modifiers alone among them: %s" % ", ".join(modifiers))
     leaks = [k for k in OTHERS if translate(k) is not NOTHING]
     print("  %d other key names -> %d translate to something%s"
           % (len(OTHERS), len(leaks), (": %r" % leaks) if leaks else ""))
