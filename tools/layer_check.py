@@ -27,8 +27,11 @@ a module it could not parse.
 It reads source with :mod:`ast` and imports nothing it examines, so it can judge
 a module that would open a window if it were imported.  It sees ``import``,
 ``from ... import`` and ``importlib.import_module``/``__import__`` called with a
-literal name; a dynamic import whose name it cannot read is itself reported
-outside the shell, because it cannot be checked.
+literal name, under any alias (``from importlib import import_module as im``,
+``from builtins import __import__ as load``).  A dynamic import whose name it
+cannot read, or an import function stored, passed around or fetched with
+``getattr`` instead of called, is itself reported outside the shell, because
+what it imports cannot be checked.
 
 Run it on its own with ``.venv/bin/python -m tools.layer_check``.
 """
@@ -186,7 +189,7 @@ def _rules_layer(layer: str) -> str:
 def _resolve_relative(module: str, is_package: bool, level: int, name: Optional[str]) -> str:
     parts = module.split(".")
     package_parts = parts if is_package else parts[:-1]
-    if level - 1 > len(package_parts):
+    if level - 1 >= len(package_parts):  # beyond the top-level package
         return "." * level + (name or "")
     base = package_parts[: len(package_parts) - (level - 1)]
     if name:
@@ -202,46 +205,71 @@ class _Use:
     unreadable: bool = False  # a dynamic import whose name is not a literal
 
 
+#: Where an import function can come from, and its names there.
+IMPORTERS = {"importlib": ("import_module", "__import__"), "builtins": ("__import__",)}
+
+
 def _uses(tree: ast.AST, module: str, is_package: bool) -> Iterator[_Use]:
-    import_module_names = {"__import__"}
-    importlib_aliases = set()
+    importer_names = {"__import__"}  # bare names bound to an import function
+    importer_modules = {}  # name bound to importlib or builtins -> which one
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             for alias in node.names:
-                if alias.name == "importlib":
-                    importlib_aliases.add(alias.asname or "importlib")
+                top = alias.name.split(".")[0]
+                if alias.asname is None and top in IMPORTERS:
+                    importer_modules[top] = top
+                elif alias.asname is not None and alias.name in IMPORTERS:
+                    importer_modules[alias.asname] = alias.name
                 yield _Use(alias.name, node.lineno)
         elif isinstance(node, ast.ImportFrom):
             if node.level:
                 base = _resolve_relative(module, is_package, node.level, node.module)
             else:
                 base = node.module or ""
-            if base == "importlib":
-                for alias in node.names:
-                    if alias.name == "import_module":
-                        import_module_names.add(alias.asname or "import_module")
+            for alias in node.names:
+                if alias.name in IMPORTERS.get(base, ()):
+                    importer_names.add(alias.asname or alias.name)
             for alias in node.names:
                 if alias.name == "*":
                     yield _Use(base, node.lineno)
                 else:
                     yield _Use(base, node.lineno, alternatives=(base + "." + alias.name,))
+
+    def is_importer(expr) -> bool:
+        if isinstance(expr, ast.Name):
+            return expr.id in importer_names
+        return (isinstance(expr, ast.Attribute) and isinstance(expr.value, ast.Name)
+                and expr.value.id in importer_modules
+                and expr.attr in IMPORTERS[importer_modules[expr.value.id]])
+
+    called = set()
     for node in ast.walk(tree):
         if not isinstance(node, ast.Call):
             continue
         func = node.func
-        dynamic = (
-            (isinstance(func, ast.Name) and func.id in import_module_names)
-            or (isinstance(func, ast.Attribute) and func.attr == "import_module"
-                and isinstance(func.value, ast.Name) and func.value.id in importlib_aliases)
-        )
-        if not dynamic:
-            continue
-        first = node.args[0] if node.args else None
-        if isinstance(first, ast.Constant) and isinstance(first.value, str) \
-                and not first.value.startswith("."):
-            yield _Use(first.value, node.lineno)
-        else:
+        if is_importer(func):
+            called.add(id(func))
+            first = node.args[0] if node.args else None
+            if isinstance(first, ast.Constant) and isinstance(first.value, str) \
+                    and not first.value.startswith("."):
+                yield _Use(first.value, node.lineno)
+            else:
+                yield _Use("<dynamic import>", node.lineno, unreadable=True)
+        elif isinstance(func, ast.Name) and func.id == "getattr" and node.args \
+                and isinstance(node.args[0], ast.Name) and node.args[0].id in importer_modules:
             yield _Use("<dynamic import>", node.lineno, unreadable=True)
+    # An import function passed around, stored or re-bound rather than called
+    # with a literal name: whatever it later imports cannot be read here.
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.Name, ast.Attribute)) and id(node) not in called \
+                and is_importer(node):
+            yield _Use("<dynamic import>", node.lineno, unreadable=True)
+
+
+def _no_seed(call: ast.Call) -> bool:
+    """No arguments, or only ``None``: both seed from the operating system."""
+    given = list(call.args) + [keyword.value for keyword in call.keywords]
+    return all(isinstance(arg, ast.Constant) and arg.value is None for arg in given)
 
 
 def _randomness(tree: ast.AST) -> Iterator[Tuple[int, str]]:
@@ -263,7 +291,7 @@ def _randomness(tree: ast.AST) -> Iterator[Tuple[int, str]]:
         if isinstance(node, ast.Attribute) and isinstance(node.value, ast.Name) \
                 and node.value.id in module_aliases and node.attr != RANDOM_TYPE:
             yield node.lineno, "random.%s" % node.attr
-        if isinstance(node, ast.Call) and not node.args and not node.keywords:
+        if isinstance(node, ast.Call) and _no_seed(node):
             func = node.func
             unseeded = (
                 (isinstance(func, ast.Name) and func.id in type_aliases)
@@ -295,6 +323,7 @@ def _check_module(module: str, path: Path, layer: str, packages: Dict[str, str],
             continue
         # Inside the project: the ordering rule.
         target_layer = None
+        shown = use.target
         for candidate in use.alternatives + (use.target,):
             target_layer = _layer_of(candidate, packages, root_package)
             if target_layer is not None:

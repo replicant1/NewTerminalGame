@@ -30,3 +30,11 @@
 02:55:47Z  WI-1 COMMIT  f3cc0a5 WI-1: evidence brief, header test (A5)
 02:55:47Z  WI-1 TEST    116 passed, 0 failed, 1 skipped at f3cc0a5
 02:55:47Z  WI-1 VERIFY  all five harnesses re-run at f3cc0a5 -> C1-C6 HOLD
+02:56:13Z  WI-1 NOTE    PR #122 marked ready at 02:55:56Z, head 2c6f6ed; waiting for Copilot
+03:02:58Z  WI-1 REVIEW  Copilot review on PR 122 at 03:02Z: Changes recommended, 4 threads (wantTk index x2, aliased dynamic imports, swallowed import-time refusal)
+03:02:58Z  WI-1 VERIFY  _tkinter.create text signature on 3.14.7 is (screenName, baseName, className, interactive, wantobjects, wantTk, sync, use, /); Tcl() passes (None, '-c', 'Tk', False, 1, False, False, None) -> wantTk is index 5, Copilot's index-4 finding is wrong
+03:02:58Z  WI-1 DISPUTE tests/test_suite_guards.py:34 and evidence/WI-1/guards_probe.py:46 -- index 5 is wantTk by the C signature; index 4 is wantobjects
+03:06:03Z  WI-1 DECIDE  Copilot aliased-import finding -> fixed: import functions followed under any alias, and one stored, passed or fetched by getattr is reported outside the shell (A4)
+03:06:03Z  WI-1 DECIDE  Copilot swallowed import-time refusal -> fixed: refusals during collection recorded per collector, and a passing collect report is turned into a failure naming the module (C6)
+03:06:03Z  WI-1 DECIDE  Copilot overview nits (not threads) also fixed: whole-word desktop match on -m (A1), Random(None) is unseeded (A3), relative import beyond top-level package is unresolvable (A4), refusal first line no longer says 'not the interpreter' when only Tk is wrong (C2)
+03:06:03Z  WI-1 TEST    130 passed, 0 failed, 1 skipped after the Copilot fixes; runtime_probe, layer_samples, guards_probe all HOLD

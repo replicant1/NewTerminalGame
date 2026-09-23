@@ -121,6 +121,14 @@ def test_another_mark_expression_still_leaves_desktop_tests_out(project):
     result.stdout.no_fnmatch_line("*test_on_the_desktop*")
 
 
+def test_an_expression_merely_containing_the_word_is_not_the_desktop_command(project):
+    """WI-1/A1: ``desktop_extra`` is not ``desktop``."""
+    _write(project, "test_two_kinds.py", TWO_KINDS)
+    result = project.runpytest_subprocess("-q", "-rA", "-m", "not desktop_extra")
+    result.assert_outcomes(passed=1, deselected=1)
+    result.stdout.no_fnmatch_line("*test_on_the_desktop*")
+
+
 def test_naming_a_desktop_test_directly_does_not_run_it(project):
     """WI-1/A1: a node id on the command line is not the desktop command."""
     _write(project, "test_two_kinds.py", TWO_KINDS)
@@ -208,6 +216,23 @@ def test_a_module_creating_a_window_on_import_fails_naming_the_module(project):
     result.stdout.no_fnmatch_line("*SENTINEL*")
 
 
+def test_a_module_that_swallows_the_refusal_on_import_still_fails(project):
+    """Copilot, PR #122: catching the refusal at import time does not make it pass."""
+    _write(project, "test_import_swallow.py", (
+        "import tkinter\n"
+        "try:\n"
+        "    ROOT = tkinter.Tk()\n"
+        "except BaseException:\n"
+        "    ROOT = None\n\n"
+        "def test_x():\n"
+        "    pass\n"))
+    result = project.runpytest_subprocess("-q")
+    assert result.ret != 0
+    result.assert_outcomes(errors=1)
+    result.stdout.fnmatch_lines(["*Collecting tests/test_import_swallow.py " + REFUSAL + "*"])
+    result.stdout.no_fnmatch_line("*SENTINEL*")
+
+
 def test_a_tcl_interpreter_without_tk_is_allowed(project):
     _write(project, "test_tcl.py", (
         "import tkinter\n\n"
@@ -248,7 +273,7 @@ def test_the_pinned_interpreter_without_tkinter_stops_the_suite_plainly(project,
     result = project.runpytest_subprocess("-q")
     assert result.ret == pytest.ExitCode.USAGE_ERROR
     output = result.stderr.str()
-    assert "This is not the interpreter the project is pinned to" in output
+    assert "The suite will not run: this is not the pinned interpreter with a working Tk 9" in output
     assert "no working Tk (ImportError: simulated: this interpreter has no _tkinter)" in output
     assert "  wanted: CPython 3.14 at /opt/homebrew/bin/python3.14, Tk 9" in output
     assert "passed" not in result.stdout.str()

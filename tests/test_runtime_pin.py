@@ -45,6 +45,8 @@ def test_the_refusal_names_what_it_found_and_what_it_wants():
                      tk_version="8.5", tcl_patchlevel="8.5.9")
     message = runtime_pin.refusal(found, runtime_pin.problems(found, pinned_path=PINNED_FILE))
     lines = message.splitlines()
+    assert lines[0] == ("The suite will not run: this is not the pinned interpreter with a "
+                        "working Tk 9 (IMPLEMENTATION_PLAN.md section 1.2).")
     assert lines[1] == "  found:  CPython 3.9.6 at %s, Tk 8.5 (Tcl 8.5.9)" % APPLE_39
     assert lines[2] == "  wanted: CPython 3.14 at /opt/homebrew/bin/python3.14, Tk 9"
     assert lines[-1] == "  " + runtime_pin.REBUILD_COMMAND

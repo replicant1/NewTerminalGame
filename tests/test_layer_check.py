@@ -120,6 +120,32 @@ def test_only_the_shell_may_import_the_toolkit_or_the_operating_system(tmp_path,
     assert found == [("terminal_game.%s.thing" % layer, imported, "toolkit-or-os")]
 
 
+@pytest.mark.parametrize("source, imported, rule", [
+    ("from builtins import __import__ as load\nload('terminal_game.shell.window')\n",
+     "terminal_game.shell.window", "upward"),
+    ("from importlib import import_module as im\nim('tkinter')\n", "tkinter", "toolkit-or-os"),
+    ("import importlib as il\nil.import_module('tkinter')\n", "tkinter", "toolkit-or-os"),
+    ("import builtins\nbuiltins.__import__('tkinter')\n", "tkinter", "toolkit-or-os"),
+    ("import importlib\nimportlib.__import__('terminal_game.shell')\n",
+     "terminal_game.shell", "upward"),
+])
+def test_an_aliased_import_function_is_followed(tmp_path, source, imported, rule):
+    """Copilot, PR #122: aliases of ``__import__`` and ``import_module`` must not hide an import."""
+    found = _found(tmp_path, {"terminal_game/domain/thing.py": source,
+                              "terminal_game/shell/window.py": ""})
+    assert found == [("terminal_game.domain.thing", imported, rule)]
+
+
+@pytest.mark.parametrize("source", [
+    "import importlib\nloader = importlib.import_module\n",
+    "from importlib import import_module\nLOADERS = [import_module]\n",
+    "import importlib\ngetattr(importlib, 'import_module')('tkinter')\n",
+])
+def test_an_import_function_used_other_than_by_a_literal_call_is_reported(tmp_path, source):
+    found = _found(tmp_path, {"terminal_game/domain/thing.py": source})
+    assert found == [("terminal_game.domain.thing", "<dynamic import>", "dynamic-import")]
+
+
 def test_a_dynamic_import_it_cannot_read_is_reported_outside_the_shell(tmp_path):
     found = _found(tmp_path, {
         "terminal_game/domain/thing.py": "from importlib import import_module\nimport_module(NAME)\n",
@@ -153,6 +179,8 @@ def test_the_domain_uses_the_standard_library_only(tmp_path):
     ("import random as r\nr.shuffle([])\n", "random.shuffle"),
     ("import random\nrng = random.Random()\n", "random.Random() with no seed"),
     ("from random import Random\nrng = Random()\n", "random.Random() with no seed"),
+    ("import random\nrng = random.Random(None)\n", "random.Random() with no seed"),
+    ("from random import Random\nrng = Random(x=None)\n", "random.Random() with no seed"),
     ("import secrets\n", "secrets"),
     ("import uuid\n", "uuid"),
 ])
@@ -199,9 +227,16 @@ def test_every_violation_in_a_tree_is_reported_not_just_the_first(tmp_path):
     ])
 
 
-def test_a_relative_import_climbing_out_of_the_package_is_reported(tmp_path):
-    found = _found(tmp_path, {"terminal_game/domain/maze.py": "from .... import x\n"})
-    assert [(m, rule) for m, _, rule in found] == [("terminal_game.domain.maze", "unresolvable")]
+@pytest.mark.parametrize("importer, source", [
+    ("terminal_game/domain/maze.py", "from .... import x\n"),
+    ("terminal_game/domain/maze.py", "from ... import x\n"),
+    ("terminal_game/__main__.py", "from .. import x\n"),
+])
+def test_a_relative_import_climbing_out_of_the_package_is_reported(tmp_path, importer, source):
+    """``from ... import x`` in ``terminal_game.domain.maze`` is beyond the top-level package."""
+    found = _found(tmp_path, {importer: source})
+    module = importer[:-3].replace("/", ".")
+    assert [(m, rule) for m, _, rule in found] == [(module, "unresolvable")]
 
 
 # --------------------------------------------------------------------------

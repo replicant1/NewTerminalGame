@@ -144,8 +144,8 @@ def describe_wanted() -> str:
 def refusal(found: Runtime, wrong: List[str]) -> str:
     """The message the suite stops with.  Names what it found and what it wants."""
     lines = [
-        "This is not the interpreter the project is pinned to "
-        "(IMPLEMENTATION_PLAN.md section 1.2), so the suite will not run.",
+        "The suite will not run: this is not the pinned interpreter with a "
+        "working Tk 9 (IMPLEMENTATION_PLAN.md section 1.2).",
         "  found:  " + describe_found(found),
         "  wanted: " + describe_wanted(),
     ]

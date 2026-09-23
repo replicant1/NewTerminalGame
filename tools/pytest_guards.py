@@ -36,6 +36,7 @@ Python 3.9, so that the interpreter check can refuse a 3.9 interpreter plainly.
 
 from __future__ import annotations
 
+import re
 from typing import Optional
 
 import pytest
@@ -59,6 +60,9 @@ _attempt_key = pytest.StashKey()  # type: pytest.StashKey[list]
 _current_item = None  # type: Optional[pytest.Item]
 _collecting = None  # type: Optional[str]
 _originals = {}  # type: dict
+# Refusals raised while collecting, by the node id being collected, so that a
+# module which catches the refusal still fails to collect.
+_collection_attempts = {}  # type: dict
 
 
 class WindowRefused(Exception):
@@ -79,7 +83,9 @@ def _refuse() -> None:
     item = _current_item
     if item is None:
         where = "Collecting %s" % (_collecting or "the suite")
-        raise WindowRefused(refusal_message(where))
+        message = refusal_message(where)
+        _collection_attempts.setdefault(_collecting, []).append(message)
+        raise WindowRefused(message)
     message = refusal_message(item.nodeid)
     item.stash.setdefault(_attempt_key, []).append(message)
     # Failed is a BaseException, so an ``except Exception`` in the test
@@ -163,13 +169,25 @@ def pytest_collectstart(collector):
 
 def pytest_collection_modifyitems(config, items):
     expression = config.getoption("markexpr") or ""
-    if DESKTOP in expression:
+    if re.search(r"\b%s\b" % DESKTOP, expression):
         return  # the -m expression speaks about desktop tests; let it decide
     kept = [item for item in items if item.get_closest_marker(DESKTOP) is None]
     if len(kept) != len(items):
         dropped = [item for item in items if item.get_closest_marker(DESKTOP) is not None]
         config.hook.pytest_deselected(items=dropped)
         items[:] = kept
+
+
+@pytest.hookimpl(wrapper=True)
+def pytest_make_collect_report(collector):
+    report = yield
+    attempts = _collection_attempts.pop(collector.nodeid or str(collector.path), None)
+    if attempts and report.passed:
+        # The module caught the refusal and carried on.  It still asked for a
+        # window while being imported, so it still fails to collect.
+        report.outcome = "failed"
+        report.longrepr = attempts[0]
+    return report
 
 
 @pytest.hookimpl(wrapper=True)
