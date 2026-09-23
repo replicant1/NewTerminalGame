@@ -1,0 +1,17 @@
+# Everything the project needs beyond the standard library: pytest, and nothing
+# else (IMPLEMENTATION_PLAN.md section 1.2).  A package is added here only in
+# the pull request that needs it, justified by a claim.  That is why
+# tools/code_reviewer_token.py signs with /usr/bin/openssl rather than pulling
+# in a crypto library.
+#
+# tkinter is not listed and cannot be: it is part of the interpreter.  It comes
+# from the interpreter the venv is made from, which must be the pinned one:
+#
+#   /opt/homebrew/bin/python3.14 -m venv .venv
+#   .venv/bin/python -m pip install -r requirements.txt
+#
+# The range, rather than one exact version, is deliberate: a venv built from
+# the wrong interpreter (say /usr/bin/python3, which is 3.9) can still install
+# a pytest, and then tools/pytest_guards.py tells you plainly that it is the
+# wrong interpreter, instead of pip failing with a resolver error.
+pytest>=8.4,<10
