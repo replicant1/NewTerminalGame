@@ -6,17 +6,36 @@ rectangle standing in for a glyph. So the rule is re-checked here, on every
 default run, against the shell's source: the only drawing call it may make is
 ``create_text``, and it may create no image.
 
+What it reports: any name that is a non-text canvas item call or an image
+maker (:data:`FORBIDDEN_NAMES`, matched whole, so ``ctypes.create_string_buffer``
+is not one), and the same through Tcl: a string that is one of the Tcl words
+(:data:`TCL_WORDS`) or holds a whole create command (:data:`TCL_COMMAND`).
+
 A guard needs a control: the scanner is also shown catching each forbidden
 call in a sample, and reporting how many shell modules it read, so it cannot
 pass by reading nothing.
 """
 
 import ast
+import re
 from pathlib import Path
 
 SHELL = Path(__file__).resolve().parent.parent / "terminal_game" / "shell"
 
-FORBIDDEN_NAMES = {"PhotoImage", "BitmapImage", "image_create", "create_image", "create_bitmap"}
+#: Every Tk canvas item type but text (Tk 9's canvas: arc, bitmap, image, line,
+#: oval, polygon, rectangle, window, text), and every way to make or place an image.
+#: Named one by one: a bare ``create_`` prefix also caught ``ctypes.create_string_buffer``,
+#: which draws nothing (WI-9's anchor query, found when both landed on main).
+FORBIDDEN_NAMES = {
+    "create_arc", "create_bitmap", "create_image", "create_line", "create_oval",
+    "create_polygon", "create_rectangle", "create_window",
+    "PhotoImage", "BitmapImage", "image_create",
+}
+
+#: The Tcl words for the same things, for drawing done through ``tk.call`` or ``eval``.
+#: Any string constant that is exactly one of these is reported.
+TCL_WORDS = {"create", "image", "photo", "bitmap"}
+TCL_COMMAND = re.compile(r"\bcreate\s+(arc|bitmap|image|line|oval|polygon|rectangle|window)\b|\bimage\s+create\b")
 
 
 def drawing_violations(source: str, filename: str = "<sample>") -> list[str]:
@@ -28,9 +47,19 @@ def drawing_violations(source: str, filename: str = "<sample>") -> list[str]:
             name = node.attr
         elif isinstance(node, ast.Name):
             name = node.id
+        elif isinstance(node, ast.Constant) and isinstance(node.value, str):
+            # The same drawing reached through Tcl: a word, as in tk.call(canvas, "create", "line"),
+            # or a whole command, as in tk.eval("image create photo").
+            if node.value in TCL_WORDS:
+                name = f"tcl:{node.value}"
+            elif TCL_COMMAND.search(node.value):
+                name = "tcl:" + "_".join(TCL_COMMAND.search(node.value).group(0).split())
         if name is None:
             continue
-        if (name.startswith("create_") and name != "create_text") or name in FORBIDDEN_NAMES:
+        if name.startswith("tcl:"):
+            found.append(f"{filename}:{node.lineno} {name}")
+            continue
+        if name in FORBIDDEN_NAMES:
             found.append(f"{filename}:{node.lineno} {name}")
     return found
 
@@ -69,3 +98,43 @@ def test_the_scan_catches_every_kind_of_non_text_drawing():
         "create_rectangle", "create_line", "create_oval", "create_polygon",
         "create_image", "create_window", "PhotoImage",
     ]
+
+
+def test_the_scan_catches_every_canvas_item_type_but_text_and_nothing_that_is_not_one():
+    every_item_type = ["arc", "bitmap", "image", "line", "oval", "polygon", "rectangle", "window"]
+    sample = "".join(f"canvas.create_{kind}(0, 0)\n" for kind in every_item_type)
+    sample += "canvas.create_text(0, 0, text='x')\nbuffer = ctypes.create_string_buffer(512)\n"
+    found = [f.split()[-1] for f in drawing_violations(sample)]
+    assert found == [f"create_{kind}" for kind in every_item_type]
+
+
+def test_a_real_canvas_drawing_call_in_the_window_module_would_be_caught():
+    """The guard still bites on the real drawing code: the window module's source with one
+    line of each forbidden kind added (in memory; nothing on disk changes) is reported."""
+    source = shell_sources()["terminal_game/shell/window.py"]
+    anchor_line = "        canvas.pack(padx=0, pady=0)\n"
+    assert anchor_line in source
+    for call in ("canvas.create_line(0, 0, 10, 0)", "canvas.create_rectangle(0, 0, 10, 19)",
+                 "canvas.create_image(0, 0, image=None)"):
+        tampered = source.replace(anchor_line, anchor_line + "        " + call + "\n", 1)
+        found = [f.split()[-1] for f in drawing_violations(tampered, "window.py")]
+        assert found == [call.split("(")[0].split(".")[1]], (call, found)
+
+
+def test_the_scan_catches_every_image_maker():
+    sample = (
+        "img = tk.PhotoImage(file='wall.png')\n"
+        "bmp = tkinter.BitmapImage(data=bits)\n"
+        "root.tk.call('image', 'create', 'photo')\n"      # a string, which the scan does not read
+        "name = root.image_create('photo')\n"
+        "PhotoImage\n"
+    )
+    found = sorted(f.split()[-1] for f in drawing_violations(sample))
+    assert found == sorted(["PhotoImage", "BitmapImage", "tcl:image", "tcl:create", "tcl:photo",
+                            "image_create", "tcl:photo", "PhotoImage"])
+
+
+def test_the_scan_catches_drawing_through_tcl():
+    sample = "root.tk.call(canvas, 'create', 'rectangle', 0, 0, 10, 19)\nroot.tk.eval('image create photo')\n"
+    found = sorted(f.split()[-1] for f in drawing_violations(sample))
+    assert found == ["tcl:create", "tcl:image_create"]
