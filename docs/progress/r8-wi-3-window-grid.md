@@ -49,3 +49,5 @@
 03:17:40Z  WI-3 DRAFT   docs/prs/PR-WI-3-window-grid.md: claims C1-C17 word for word, A1-A3, diff map, walk-throughs, C15/C16 needs-eyes scripts, findings F1-F7, interface for WI-9/WI-13
 03:17:40Z  WI-3 CLAIM   C1-C14, A1-A3 executable -- tests/test_shell_window_desktop.py::test_<claim>_* (-m desktop -s); C4, C7, C11, A1, A3 also tests/test_shell_pure.py; C8 also tests/test_shell_characters_only.py; C15, C16 needs eyes -- evidence/WI-3/card.py; C17 pending WI-1
 03:17:40Z  WI-3 COMMIT  e2c163f WI-3: the evidence pack in the brief
+03:18:13Z  WI-3 TEST    64 passed, 0 failed, 1 skipped, 17 deselected (-m 'not desktop')
+03:18:13Z  WI-3 REVIEW  marked #123 ready at 03:17:48Z; waiting for Copilot (15-minute limit 03:32:48Z)
