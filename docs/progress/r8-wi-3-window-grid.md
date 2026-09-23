@@ -61,3 +61,4 @@
 03:27:32Z  WI-3 COMMIT  9c3b008 WI-3: a non-sequence frame or row is a ValueError; the harness reaps the driver's whole process group
 03:27:32Z  WI-3 REVIEW  replied REVIEW-REPLY: FIXED 9c3b008 on both Copilot threads (4078763029, 4078763061); Copilot clean
 03:27:32Z  WI-3 CLAIM   C17 executable -- default: 160 passed, 1 skipped, 17 deselected; desktop: 17 passed, 161 deselected
+03:27:50Z  WI-3 REVIEW  requested WI-3 round 1 at the head this commit makes (the VERIFY-REQUEST comment names its sha)
