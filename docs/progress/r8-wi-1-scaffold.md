@@ -40,3 +40,4 @@
 03:06:03Z  WI-1 TEST    130 passed, 0 failed, 1 skipped after the Copilot fixes; runtime_probe, layer_samples, guards_probe all HOLD
 03:06:52Z  WI-1 COMMIT  b79d586 WI-1: answer Copilot: follow aliased import functions, fail a module that swallows the refusal
 03:06:52Z  WI-1 NOTE    Copilot threads answered: 2 DISPUTE (wantTk index), 2 FIXED at b79d586; fresh_clone at b79d586 HOLDS (130 passed, 1 skipped)
+03:07:07Z  WI-1 REVIEW  requested WI-1 round 1 (head is the commit carrying this line; see the VERIFY-REQUEST comment on PR 122)
