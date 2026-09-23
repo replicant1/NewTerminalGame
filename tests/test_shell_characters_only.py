@@ -16,7 +16,15 @@ from pathlib import Path
 
 SHELL = Path(__file__).resolve().parent.parent / "terminal_game" / "shell"
 
-FORBIDDEN_NAMES = {"PhotoImage", "BitmapImage", "image_create", "create_image", "create_bitmap"}
+#: Every Tk canvas item type but text (Tk 9's canvas: arc, bitmap, image, line,
+#: oval, polygon, rectangle, window, text), and every way to make or place an image.
+#: Named one by one: a bare ``create_`` prefix also caught ``ctypes.create_string_buffer``,
+#: which draws nothing (WI-9's anchor query, found when both landed on main).
+FORBIDDEN_NAMES = {
+    "create_arc", "create_bitmap", "create_image", "create_line", "create_oval",
+    "create_polygon", "create_rectangle", "create_window",
+    "PhotoImage", "BitmapImage", "image_create",
+}
 
 
 def drawing_violations(source: str, filename: str = "<sample>") -> list[str]:
@@ -30,7 +38,7 @@ def drawing_violations(source: str, filename: str = "<sample>") -> list[str]:
             name = node.id
         if name is None:
             continue
-        if (name.startswith("create_") and name != "create_text") or name in FORBIDDEN_NAMES:
+        if name in FORBIDDEN_NAMES:
             found.append(f"{filename}:{node.lineno} {name}")
     return found
 
@@ -69,3 +77,11 @@ def test_the_scan_catches_every_kind_of_non_text_drawing():
         "create_rectangle", "create_line", "create_oval", "create_polygon",
         "create_image", "create_window", "PhotoImage",
     ]
+
+
+def test_the_scan_catches_every_canvas_item_type_but_text_and_nothing_that_is_not_one():
+    every_item_type = ["arc", "bitmap", "image", "line", "oval", "polygon", "rectangle", "window"]
+    sample = "".join(f"canvas.create_{kind}(0, 0)\n" for kind in every_item_type)
+    sample += "canvas.create_text(0, 0, text='x')\nbuffer = ctypes.create_string_buffer(512)\n"
+    found = [f.split()[-1] for f in drawing_violations(sample)]
+    assert found == [f"create_{kind}" for kind in every_item_type]
