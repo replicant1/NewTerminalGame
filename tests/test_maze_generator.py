@@ -18,7 +18,8 @@ from collections import deque
 
 import pytest
 
-from terminal_game.domain.maze_generator import generate_maze
+from terminal_game.domain.maze import Maze
+from terminal_game.domain.maze_generator import ensure_connected, generate_maze
 
 SEEDS = range(1000)
 WIDTH, HEIGHT = 19, 29
@@ -163,3 +164,24 @@ def test_a2_the_maze_modules_import_no_clock_and_no_random_module():
         "maze.py": [],
         "maze_generator.py": [],
     }
+
+
+def test_a4_the_connectivity_check_refuses_a_maze_in_two_pockets():
+    two_pockets = Maze.from_rows(
+        [
+            "#######",
+            "#..#..#",
+            "#..#..#",
+            "#######",
+        ]
+    )
+    with pytest.raises(ValueError, match=r"unreachable from \(1, 1\): \[\(4, 1\), \(5, 1\), \(4, 2\), \(5, 2\)\]"):
+        ensure_connected(two_pockets)
+
+
+def test_a4_the_connectivity_check_hands_back_a_connected_maze_unchanged():
+    loop = Maze.from_rows(["#####", "#...#", "#.#.#", "#...#", "#####"])
+    assert ensure_connected(loop) is loop
+    no_corridor = Maze.from_rows(["###"])
+    assert ensure_connected(no_corridor) is no_corridor
+

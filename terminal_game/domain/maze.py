@@ -39,6 +39,9 @@ class Maze:
     corridors: frozenset[Square]
 
     def __post_init__(self) -> None:
+        # A caller may hand in a mutable set; keep our own frozen copy so the
+        # value really cannot change (and its hash stays valid).
+        object.__setattr__(self, "corridors", frozenset(self.corridors))
         if self.width < 1 or self.height < 1:
             raise ValueError(f"maze must be at least 1 x 1, got {self.width} x {self.height}")
         outside = sorted(sq for sq in self.corridors if not self.contains(sq))

@@ -29,3 +29,11 @@
 02:39:27Z  CLAIM   WI-2/A3 executable — tests/test_maze.py
 02:39:27Z  DRAFT   WI-2 docs/prs/PR-WI-2-maze-generation.md (claims, diff map, interface)
 02:39:34Z  TEST    68 passed, 0 failed, 1 skipped
+02:40:05Z  COMMIT  b7c4915 WI-2: evidence harness and PR brief
+02:40:05Z  NOTE    WI-2 pushed; draft PR #121 opened, then marked ready at 02:40:00Z (suite 68 passed, 1 skipped); waiting for Copilot
+02:40:39Z  NOTE    WI-2 origin/main still 8bc9496; WI-1 has no PR yet; VERIFY-REQUEST waits for its merge (plan §5.1)
+02:44:18Z  REVIEW  Copilot on #121 at 02:43:49Z: Changes recommended, 2 comments (freeze caller-supplied corridors; connectivity check in the generator)
+02:44:18Z  DECIDE  WI-2 Copilot comment 1 (caller set not frozen) -> valid, normalise to frozenset in __post_init__ and test it
+02:44:18Z  DECIDE  WI-2 Copilot comment 2 (no connectivity check) -> valid, reversing my earlier DECIDE: the plan's outcome says 'check connectivity', so the generator passes every maze through ensure_connected(), whose refusal is tested on a hand-built two-pocket maze, so the raise is not untested control flow
+02:45:38Z  CLAIM   WI-2/A4 executable — tests/test_maze_generator.py -k a4; walk-through maze_generator.py:117
+02:45:38Z  TEST    71 passed, 0 failed, 1 skipped

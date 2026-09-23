@@ -108,6 +108,15 @@ def test_a3_a_maze_cannot_be_changed(ring):
     assert ring.to_rows() == PLAN
 
 
+def test_a3_a_maze_does_not_share_the_set_it_was_built_from():
+    handed_in = {(1, 1)}
+    maze = Maze(3, 3, handed_in)
+    handed_in.add((0, 0))
+    assert maze.to_rows() == ("###", "#.#", "###")
+    assert isinstance(maze.corridors, frozenset)
+    assert hash(maze) == hash(Maze.from_rows(["###", "#.#", "###"]))
+
+
 @pytest.mark.parametrize(
     "rows, message",
     [

@@ -24,6 +24,10 @@ What the construction guarantees, which the tests then check over many seeds:
 * Carving visits each room once and the repair is a single pass, so generation
   always finishes, in a bounded number of steps. There is no retry loop.
 
+Before the maze is handed out, :func:`ensure_connected` floods it from one
+corridor square and refuses it unless every corridor square was reached
+(architecture caution C4: check connectivity, and only then hand it out).
+
 Pure domain code: no clock, and the only randomness is the ``rng`` passed in.
 The same ``rng`` state always gives the same maze. The module does not import
 ``random``: a ``random.Random(seed)`` is what callers pass.
@@ -64,6 +68,26 @@ def _link(a: Square, b: Square) -> Square:
     return ((a[0] + b[0]) // 2, (a[1] + b[1]) // 2)
 
 
+def ensure_connected(maze: Maze) -> Maze:
+    """Return ``maze`` if every corridor square can be reached from every other
+    by steps north, south, east and west; otherwise raise ``ValueError`` naming
+    the squares that cannot be reached."""
+    squares = maze.corridor_squares()
+    if not squares:
+        return maze
+    seen = {squares[0]}
+    frontier = [squares[0]]
+    while frontier:
+        for n in maze.open_neighbours(frontier.pop()):
+            if n not in seen:
+                seen.add(n)
+                frontier.append(n)
+    unreached = [sq for sq in squares if sq not in seen]
+    if unreached:
+        raise ValueError(f"maze is not connected: unreachable from {squares[0]}: {unreached}")
+    return maze
+
+
 def generate_maze(rng: RandomSource) -> Maze:
     """Return a new 19 x 29 maze laid out using ``rng`` and nothing else random."""
     corridors: set[Square] = set()
@@ -90,4 +114,4 @@ def generate_maze(rng: RandomSource) -> Maze:
         if len(links) - len(closed) < 2:
             corridors.add(rng.choice(closed))
 
-    return Maze(WIDTH, HEIGHT, frozenset(corridors))
+    return ensure_connected(Maze(WIDTH, HEIGHT, frozenset(corridors)))
