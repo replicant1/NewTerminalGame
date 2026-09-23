@@ -13,3 +13,6 @@
 05:46:25Z  WI-13 RISK    WI-13 HIGH, because it is the whole game on the user's real desktop (plan floor; not raised)
 05:46:25Z  WI-13 DRAFT   docs/prs/PR-WI-13-application-assembly.md: C1-C13 word for word (script check 13/13), diff map, walk-throughs, C11-C13 needs-eyes scripts, findings
 05:46:25Z  WI-13 CLAIM   C1, C2, C8 executable -- evidence/WI-13/from_terminal.py; C3-C7, C9 executable -- tests/test_game_desktop.py (-m desktop -s); C10 -- default suite + tools.layer_check (count pending FIX-1); C11-C13 needs eyes
+05:52:33Z  WI-13 NOTE    merged origin/main 043b118 (FIX-1 merged by the user): no conflicts
+05:52:33Z  WI-13 TEST    default: 557 passed, 0 failed, 1 skipped, 23 deselected; desktop (all): 23 passed, 0 failed, 558 deselected; layer check PASS (shell 10, presentation 6, application 3, domain 6, entry 2)
+05:52:33Z  WI-13 DRAFT   brief: base 043b118, C10 count, deviations D1 (SIGTERM ends the Terminal-launched game) and D2 (corner squares skipped whole), needs-eyes run in an ordinary Terminal tab

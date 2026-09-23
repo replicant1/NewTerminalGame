@@ -4,8 +4,7 @@ Risk: HIGH. This is the whole game on the user's real desktop (plan floor, not r
 Human gate: HIGH
 Human gate: needs eyes — WI-13/C11, WI-13/C12, WI-13/C13
 
-**Base:** `53e89be` (`main` with WI-3, WI-9, WI-10 and WI-12). **Lane C, Dev C.** The user merges this pull request. Nobody else does.
-**Waiting on FIX-1 (#135)**, which is approved and not yet merged. Until it lands, `main`, and this branch with it, has one failing default test: WI-3's characters-only guard flags WI-9's `ctypes.create_string_buffer`. Once #135 is on `main`, I merge `main` in here and request verification.
+**Base:** `043b118`, the merge-base with `main` (WI-3, WI-9, WI-10, WI-12 and FIX-1 #135). The branch was cut from `53e89be`, and `main` was merged in once FIX-1 landed. **Lane C, Dev C.** The user merges this pull request. Nobody else does.
 
 ## What this is
 
@@ -35,7 +34,7 @@ The scripted runs call the same `play()` with `Session.new(random.Random(13))`, 
 
 ## Claims
 
-Control for every claim: **n/a**. At the base `53e89be`, `terminal_game/shell/game.py` and `terminal_game/__main__.py` do not exist (`python -m terminal_game` there fails with "No module named terminal_game.__main__"). An ImportError proves nothing, so there is no counterpart to control against. Where a technique could pass vacuously, it carries its own check, noted in the row.
+Control for every claim: **n/a**. At the base `043b118`, `terminal_game/shell/game.py` and `terminal_game/__main__.py` do not exist (`python -m terminal_game` there fails with "No module named terminal_game.__main__"). An ImportError proves nothing, so there is no counterpart to control against. Where a technique could pass vacuously, it carries its own check, noted in the row.
 
 `D::<test>` stands for `.venv/bin/python -m pytest -q -s -m desktop tests/test_game_desktop.py::<test>`.
 
@@ -50,7 +49,7 @@ Control for every claim: **n/a**. At the base `53e89be`, `terminal_game/shell/ga
 | **WI-13/C7** | Pressing `q` or `Q`, during play and after an ending, closes the window and ends the process within one second, leaving no window, no process and no dialog. | Executable: `D::test_c7_q_and_Q_during_play_and_after_an_ending_close_it_within_a_second`. Four real key presses: `q` and `Q` during play, `Q` after a loss, `q` after a win. | `WI-13/C7: q during play: exit 0 in 0.017 s; Q during play: exit 0 in 0.017 s; Q after a loss: exit 0 in 0.022 s; q after a win: exit 0 in 0.016 s; no process left, nothing on the terminal`. A dialog would keep the process alive. | n/a (new module) |
 | **WI-13/C8** | The window opens a little below and to the right of the Terminal window it was started from, wholly on the visible screen, at the right place on a Retina display (not at half or double the intended position). | Executable: `evidence/WI-13/from_terminal.py`. It compares Terminal's own `bounds` for its window with the window server's bounds for the game window, both in points. The Terminal window was on the middle display, whose `backingScaleFactor` is **2.0** (Retina), measured 2026-09-23 (progress log). | `Terminal at [322, -1367], game at [362.0, -1327.0] -> offset [40.0, 40.0] …; game size [400.0, 602.0]`, both launches | n/a (new module). Half or double the intended position would show as an offset of 20 or 80, or a size of 200 × 301 or 800 × 1204. |
 | **WI-13/C9** | A screenshot of the real window shows walls in the wall colour, dots in the dot colour, the player in the player colour, the ghost in the ghost colour, the status line in the status colour and the background black, and the dots are dimmer than the player. | Executable: `D::test_c9_a_screenshot_shows_every_role_in_its_colour_and_dots_dimmer_than_the_player`. Observation: `evidence/WI-13/game-bb85273-start.png` | `WI-13/C9: start capture: all 1200 cells match their frame in role colour (walls, dots, player, ghost, status; blanks black); dot (183, 134, 10) luminance 135 < player (255, 255, 0) luminance 237` | n/a (new module). The pixels inside macOS's clipped bottom-corner squares are skipped (WI-3 brief, F1). |
-| **WI-13/C10** | The default suite command opens no window, and the layer check (WI-1/C3, C4) passes on the finished tree with modules examined in every layer. | Executable: `.venv/bin/python -m pytest -q` and `.venv/bin/python -m tools.layer_check` | Layer check: `examined: shell 10, presentation 6, application 3, domain 6, entry 2` / `PASS (0 violation(s), 0 problem(s))`. Default suite: *to be filled in once FIX-1 is merged in* (today: `1 failed, 552 passed, 1 skipped, 23 deselected`, the one failure being the FIX-1 guard). | n/a |
+| **WI-13/C10** | The default suite command opens no window, and the layer check (WI-1/C3, C4) passes on the finished tree with modules examined in every layer. | Executable: `.venv/bin/python -m pytest -q` and `.venv/bin/python -m tools.layer_check` | Layer check: `examined: shell 10, presentation 6, application 3, domain 6, entry 2` / `PASS (0 violation(s), 0 problem(s))`. Default suite: `557 passed, 1 skipped, 23 deselected`. The 23 deselected are exactly the desktop tests (WI-3's 17 and WI-13's 6), and `-m desktop` runs them: `23 passed, 558 deselected`. | n/a |
 | **WI-13/C11** | Seen in play, the walls join into corners, tees and crossings like the specimen picture, with no gaps or misaligned pieces between neighbouring characters, and a lone wall square shows as a single block. — **needs eyes** | Needs eyes: script below. Observations: `evidence/WI-13/from-terminal-87cac35-launch1.png`, `game-bb85273-start.png` | only a person can say | n/a |
 | **WI-13/C12** | Seen in play, the picture changes without flicker, the ghost moves at a steady pace, and no text cursor is visible. — **needs eyes** | Needs eyes: script below. Supporting: WI-3/C9 (no mixed frame in 64 captures during repaints) and WI-3/C11 (the 7 Hz tick) | only a person can say | n/a |
 | **WI-13/C13** | Started from a Terminal window, the game window appears a little below and to the right of it, and no permission or consent dialog appears at any point. — **needs eyes** | Needs eyes: script below. Supporting: C8 above | only a person can say | n/a |
@@ -70,6 +69,7 @@ terminal_game/shell/game.py:35-37    -> TITLE_BAR_POINTS (C8)
 terminal_game/shell/game.py:40-49    -> play: placement with the outer size (C8, C13)
 terminal_game/shell/game.py:51-66    -> play: the event loop, compose after every event, close on quit (C1, C3-C7, C9, C12)
 terminal_game/shell/game.py:69-74    -> main: anchor and displays first, a fresh random source (C1, C2, C8)
+terminal_game/shell/game.py:77-78    -> running the module directly does the same as the one command (C1)
 terminal_game/__main__.py            -> the README's one command (C1)
 README.md "Playing"                  -> the one command, and Don't Reopen (C1)
 tests/test_game_assembly.py (new)    -> the seams (C1, C3, C7, C8)
@@ -103,7 +103,7 @@ docs/progress/r8-wi-9-anchor-placement.md, docs/completions/COMPLETION-M1-DEV-C.
 
 ## Needs eyes
 
-Run these in an **ordinary Terminal tab**, from the repository root, at this pull request's head. They take about two minutes in all.
+Run these yourself, in an **ordinary Terminal tab** (open Terminal, `cd` to the repository), at this pull request's head, **not** through Claude Code's `!` prompt: the game is placed beside the Terminal window it is started from, and C13 is about exactly that. They take about two minutes in all.
 
 **Before you start.** If macOS shows *"The last time you opened Python, it unexpectedly quit while reopening windows…"*, click **Don't Reopen**. It comes from an earlier crash of a test process, not from the game.
 
@@ -131,6 +131,11 @@ What you will see: a window titled *Terminal Game* appears. It shows a blue doub
 - *Failure looks like:* the picture flashing, flickering or briefly going blank; the ghost stuttering, pausing, or speeding up and slowing down; a blinking text cursor (a thin vertical bar or an underscore) anywhere in the window; or a letter appearing when you press a key other than an arrow.
 
 Then press **`q`**. The window should close at once. *Failure looks like:* the window staying open, or any dialog appearing.
+
+## Deviations declared for the verifier to judge
+
+- **D1. How the C1/C2/C8 harness ends the game.** The harness types the README command into a real Terminal window, as a person would. It then ends that game with `SIGTERM` to the one process it found on that tab's tty, not by typing `q`. Typing into another application's window needs an Accessibility permission, which would raise a prompt on the user's desktop and could not be granted by an agent. So C1, C2 and C8 cover opening, the picture and placement from a real Terminal. Quitting with `q` and `Q` is C7, in the desktop tests, with real key events in the game's own window.
+- **D2. The bottom-corner squares are skipped whole in WI-13's pixel judgements.** WI-3 measured that macOS 26 rounds the window's bottom corners (WI-3 brief, F1). WI-3 masked only the clipped pixels, taken from a blank capture of its own window. The game window is never blank, so there is no such capture, and WI-13 skips both 24 × 24-point corner squares entirely (`tests/shell_pixels.py:corner_mask`). The cost is that cells (0–2, 28–29) and (37–39, 28–29) are judged only outside those squares, and the ink-presence check leaves out status cells 0, 1, 38 and 39. In the game those status cells are blank, or the status line's leading blank, and the corner wall pieces are otherwise judged. The C4 "changed in exactly these cells" comparison uses the same mask.
 
 ## Findings
 
