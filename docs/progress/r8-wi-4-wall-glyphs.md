@@ -6,3 +6,7 @@
 03:20:24Z  WI-4 TEST    157 passed, 0 failed, 1 skipped
 03:20:47Z  WI-4 COMMIT  e96ab9b WI-4: wall glyphs from a square's wall neighbours, and the joining cell
 03:20:47Z  WI-4 NOTE    draft PR 124 opened; marking ready (suite green)
+03:27:10Z  WI-4 REVIEW  Copilot on PR 124 at 03:24:51Z: Needs a closer look, Findings: None, no inline comments; its summary mentions a validation gap in the specimen evidence
+03:27:10Z  WI-4 DECIDE  specimen classification -> wall squares decided from the plan's twelve C1 characters written out, not the module's WALL_CHARACTERS; non-wall squares checked to be dots or the player; wall count checked against 551-264, because classifying with the module's own set was circular
+03:27:10Z  WI-4 TEST    159 passed, 0 failed, 1 skipped; specimen harness HOLDS
+03:27:10Z  WI-4 REVIEW  requested WI-4 round 1 (head is the commit carrying this line)

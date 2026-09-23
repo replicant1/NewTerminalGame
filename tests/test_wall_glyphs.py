@@ -82,10 +82,27 @@ def test_a_lone_wall_square_is_a_block():
 #: Characters the composer draws over the maze for the player and the ghost.
 SPRITE_PARTS = set("▐█▌▗▖")
 
+#: The wall characters, written out from the plan's WI-4/C1 table rather than
+#: taken from the module, so that deciding which specimen squares are wall does
+#: not lean on the code under test.
+PLAN_WALL_CHARACTERS = set("■═║╔╗╚╝╠╣╦╩╬")
+
+
+def test_every_non_wall_square_in_the_specimen_is_a_dot_or_the_player():
+    """So no wall character is missing from the set used to classify squares."""
+    maze = specimen.maze_rows()
+    others = {maze[r][2 * c] for r in range(specimen.MAZE_HEIGHT) for c in range(specimen.MAZE_WIDTH)
+              if maze[r][2 * c] not in PLAN_WALL_CHARACTERS}
+    assert others == {"▪", "█"}  # a dot on every corridor square but the player's
+
+
+def test_the_module_draws_exactly_the_plans_wall_characters():
+    assert wall_glyphs.WALL_CHARACTERS == PLAN_WALL_CHARACTERS
+
 
 def _specimen_walls():
     maze = specimen.maze_rows()
-    walls = [[maze[row][2 * col] in wall_glyphs.WALL_CHARACTERS
+    walls = [[maze[row][2 * col] in PLAN_WALL_CHARACTERS
               for col in range(specimen.MAZE_WIDTH)] for row in range(specimen.MAZE_HEIGHT)]
     return maze, (lambda col, row: walls[row][col])
 
