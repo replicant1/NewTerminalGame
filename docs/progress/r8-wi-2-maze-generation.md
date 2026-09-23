@@ -46,3 +46,8 @@
 03:17:36Z  COMMIT  d9a089e WI-2: brief after merging WI-1; progress log
 03:17:36Z  NOTE    WI-2 at 03:17:14Z I posted a VERIFY-REQUEST carrying a head sha that was not the branch's (a refused command left me without the real one); deleted the comment at once, and re-request below with the sha read from the PR
 03:17:36Z  REVIEW  requested WI-2 round 1 at the head commit that carries this line
+03:18:54Z  NOTE    WI-2 conductor relayed the lead's ruling on WI-1's forbidden lists (os/threading/asyncio/platform outside shell; time/datetime/sched/timeit in application and domain). The maze modules import only __future__, dataclasses, typing and each other, and tools.layer_check passed at 03:16:56Z with domain 3 examined, 0 violations; the clock use is in tests/ (C7 timing), outside terminal_game/. Nothing to amend
+03:25:56Z  REVIEW  CHANGES_REQUESTED round 1 @ba76fad98c8ff43289db21ab0a445e7b6d393750 — 1 finding: Copilot thread replies lacked the REVIEW-REPLY marker; all 11 claims REPRODUCED
+03:25:56Z  NOTE    WI-2 finding 1 valid: posted REVIEW-REPLY: FIXED 4097a86 on both Copilot threads (4078770892, 4078770989). Also took the verifier's note: brief now names 75723e7 as the control base, not 8bc9496
+03:25:56Z  TEST    165 passed, 0 failed, 1 skipped
+03:25:56Z  REVIEW  requested WI-2 round 2 at the head commit that carries this line
