@@ -1,0 +1,75 @@
+02:33:11Z  WI-3 START   WI-3 Window and character grid (Dev C, lane C), branch r8/wi-3-window-grid from 8bc9496, non-local mode
+02:33:29Z  WI-3 READ    docs/IMPLEMENTATION_PLAN.md (whole; §1 ground rules, §4 WI-3 claims C1-C17)
+02:33:34Z  WI-3 READ    docs/FUNCTIONAL_REQUIREMENTS.md (49 codes, specimen §3)
+02:33:52Z  WI-3 READ    docs/ARCHITECTURE.md §3 candidate 2, §5-§8 cautions
+02:34:20Z  WI-3 READ    archive-run7 findings: WI-17-pixels-reach-the-screen, WI-2-odd-cell-lattice, S-1-tk-headless (Tk 8.5 era, snapshots of another run)
+02:34:27Z  WI-3 READ    archive-run7 findings: WI-7-box-drawing-ink, WI-15-tk-geometry-signs
+02:36:31Z  WI-3 VERIFY  Tk 9.0.4 under 3.14.7: tk scaling 1.3335; Menlo px sizes 12-16 have Tk cell == string layout advance ('exact'), 17+ do not; Menlo 16px -> cell 10x19, window 400x570; unknown family falls back to .AppleSystemUIFont (proportional)
+02:38:42Z  WI-3 READ    archive-run7 WI-17-human-verification (needs-eyes shape) and run 7 window.py lifecycle notes (Tk 8.5: destroy-in-after returned mainloop in 629 ms)
+02:38:42Z  WI-3 DECIDE  typeface -> Menlo at 16 px em (size -16, cell 10x19, window 400x570), because it is the largest Menlo size whose Tk cell equals the font's own layout advance, so box glyphs placed per cell join as in a string; pixels not points so tk scaling cannot move it
+02:38:42Z  WI-3 DECIDE  paint -> one canvas text item per cell at (col*cw,row*ch), anchor nw, every cell reconfigured on each paint (no diff cache), because per-cell placement keeps the grid exact for any fallback face and no cache means no stale-cache hazard (plan X3)
+02:38:42Z  WI-3 DECIDE  fallback faces -> Menlo, Monaco, Courier New, Andale Mono, PT Mono, then TkFixedFont's family; first present with fixed metrics wins, because an unknown family silently becomes proportional .AppleSystemUIFont
+02:38:42Z  WI-3 DECIDE  window tests -> spawn the program as a subprocess under a hard timeout, because exit status, terminal output and leftover processes are only observable from outside
+02:41:23Z  WI-3 VERIFY  first real window (trial, Tk 9.0.4): painted 1200 coloured cells visibly (screencapture 800x1140 Retina), stdout and stderr empty, app became frontmost (lsappinfo front changed, back after), focus on canvas, run() returned 13 ms after close(), exit 0, wall 1.75 s
+02:41:23Z  WI-3 NOTE    macOS 26 rounds the window's bottom corners, clipping the outermost pixels of cells (0,29) and (39,29); both are blank in the game (status row starts with a blank, column 39 is margin). To quantify for C5/C7.
+02:42:48Z  WI-3 VERIFY  AppKit key events posted into the game's own NSApp queue (NSEvent keyEventWithType + postEvent, ctypes, no permission) reach on_key as Up Down Left Right q Q a space Escape F1 Return Tab 1 and Q-with-caps-lock; window was the key window (18667)
+02:47:16Z  WI-3 VERIFY  card scenario (one real window, 7.3 s): title 'Terminal Game'; family Menlo cell 10x19; root and canvas 400x570, canvas at (0,0); one child, 1200 items all 'text'; NSApp 1 visible window, key and active; CGWindowList shows exactly 1 window for the pid, 400x602 (32 pt title bar), name 'Terminal Game'; terminal output empty; exit 0, 30 ms after close()
+02:47:16Z  WI-3 VERIFY  resize: Tk 9 leaves NSWindowStyleMaskResizable set on a resizable(False,False) window but disables the zoom button; posted corner drag, zoom click and a Tk geometry request all left root and canvas 400x570. Control: the same posted drag on a plain resizable Tk window resized it 400x570 -> 550x720
+02:53:10Z  WI-3 VERIFY  captures preserve the palette exactly: wall (33,33,222) dot (183,134,10) player (255,255,0) ghost (255,184,255) status (3,255,255) background (0,0,0); Menlo's full block covers the cell from the bottom to about 77% of its height
+02:53:10Z  WI-3 VERIFY  blank captures: every non-black pixel is either macOS's 1-px outline (25,25,25) on left/right/bottom or inside a 24x24 pt bottom-corner square, and those form a corner-anchored staircase (the rounded corner clipping the window), 7 of 7 captures
+02:53:10Z  WI-3 VERIFY  cell judging: vertical box glyphs deliberately overshoot into the cell above by up to 2 device px (font tiling), so a 1-px inset reports foreign ink at y=74 of row 1 under a wall; a 24-pt corner mask is too coarse (hides cells 0,1,38,39 of row 29). Moving to a clip mask measured from the same run's blank capture
+02:55:16Z  WI-3 VERIFY  keys run 1: after the 5 s idle the app was no longer key/active and every later posted key was dropped (0 flood keys, q never arrived; session ended by the driver's fallback). Run 2 with focus diagnostics: app active and key throughout, 16,924 flood keys delivered, q ended the session. Cause of run 1 not established; likely focus taken by activity on the shared desktop. Tests will check focus first and say so plainly
+02:55:16Z  WI-3 VERIFY  ticks: 35 in 5.001 s idle and 35 in 5.001 s under a 16,924-key flood (7.0/s both), keys run 2
+02:58:12Z  WI-3 RISK    close-button click made synchronously via ctypes inside a Tk callback aborted the driver (PyEval_RestoreThread without GIL); macOS then opened a 'Problem Reporter' crash dialog (pid 98250) on the user's desktop. Not my window to close; reported to the conductor. Fix: queue the click with performSelector:afterDelay:
+02:58:12Z  WI-3 VERIFY  after that, two runs (close-button, card) hung until the parent killed them at 60 s; the driver's Python SIGALRM handler never ran, so it cannot be a hard deadline. Switching to the default SIGALRM action (kernel kill)
+02:59:17Z  WI-3 VERIFY  cause of the hangs: sample shows TkpInit blocked in NSPersistentUIRestorer promptToIgnorePersistentStateWithCrashHistory -> NSAlert runModal. After the crash, every new Python+Tk process puts macOS's 'Python quit unexpectedly while reopening windows' alert on screen and waits; my three runs since each showed it until killed
+02:59:17Z  WI-3 DECIDE  test only: pass -ApplePersistenceIgnoreState YES on the driver's own command line (argument domain, this process only, nothing persisted), because changing the user's defaults needs their permission; one probe to see whether it suppresses the alert
+03:01:39Z  WI-3 VERIFY  -ApplePersistence NO (and -ApplePersistenceIgnoreState YES) on the command line suppress the restore alert (Tk root in 0.22 s) but AppKit echoes the setting as one stderr line; an unflagged probe afterwards still got the alert, so the crash history persists. No saved-state directory or defaults domain for org.python.python found to explain where
+03:01:39Z  WI-3 ASK     user: dismiss the 'Python quit unexpectedly' Problem Reporter dialog (pid 98250), and the next time any Python/Tk program starts and asks to reopen windows, click Don't Reopen; I caused the crash and will not touch either window
+03:01:39Z  WI-3 ASSUME  the desktop harness passes -ApplePersistence NO to its own driver and the terminal check removes exactly that one AppKit echo line and nothing else; C1's brief says so. Pre-crash runs (card, keys x2, trial1) had completely empty terminal output unflagged. Affects C1 evidence only; flip back by deleting the flag
+03:01:39Z  WI-3 DECIDE  driver deadline -> default SIGALRM action (kernel kills the process), because a Python handler never runs while Tk is blocked in native code
+03:02:38Z  WI-3 VERIFY  close-button (queued performClick on the real title-bar button): run() returned 8 ms after the click, exit 0. app-quit ('Quit Python' menu item): exit 0, 17 ms. raise-key / raise-tick: traceback on the terminal, exit 1, 0.7 s wall. exit-key (handler raises SystemExit(3)): exit 3
+03:02:38Z  WI-3 VERIFY  Ctrl-C (SIGINT) at the driver: process exits status 1 in under 1 s with nothing printed and run() never returns, so Tk/Tcl handles SIGINT natively and exits; the window goes with the process. Not claimed; a NOTE for WI-13
+03:05:52Z  WI-3 VERIFY  fallback: families ('No Such Typeface WI-3','Courier New') -> Courier New, cell 10x18, root and canvas 400x540; families ('No Such Typeface WI-3',) -> TkFixedFont's family Menlo 400x570
+03:05:52Z  WI-3 VERIFY  flip: 242 paints alternating specimen and a picture differing in 1030 of 1200 cells over 5 s; 64 captures, 30 match A and 34 match B cell for cell with max cell distance 0.0, none neither
+03:05:52Z  WI-3 DECIDE  add A claims: A1 malformed frame rejected whole (picture unchanged), A2 SystemExit from a handler exits with its status and no window, A3 place(x,y) sets the outer top-left; geometry_position moves to a pure module
+03:08:21Z  WI-3 PLAN    shell = terminal_game/shell: window.py (GameWindow), pure frame/palette/typeface/ticker/geometry; default-suite tests for the pure parts and the C8 source guard; desktop tests drive tests/shell_driver.py under a pty and judge screencaptures; evidence/WI-3 holds the test card and observations
+03:08:21Z  WI-3 TEST    64 passed, 0 failed, 1 skipped (-m 'not desktop'; WI-1 has not landed, so no marker config yet; 17 desktop deselected)
+03:08:56Z  WI-3 COMMIT  0d87ca2 WI-3: the shell's window and character grid, with desktop evidence
+03:08:56Z  WI-3 COMMIT  dba9b02 WI-3: draft PR brief
+03:08:56Z  WI-3 NOTE    draft PR #123 https://github.com/replicant1/NewTerminalGame/pull/123
+03:09:25Z  WI-3 READ    PR #122 (WI-1): layers by package in pyproject [tool.terminal_game.layers], shell = terminal_game.shell; desktop mark registered with --strict-markers; window guard patches _tkinter.create/Tk.loadtk and says plainly it cannot see subprocess windows, so subprocess tests must carry the mark (mine do). Expected merge conflicts: terminal_game/__init__.py and terminal_game/shell/__init__.py (both add)
+03:11:24Z  WI-3 TEST    desktop: 16 passed, 1 failed (C9: flip scenario recorded no facts); fixed; C9 alone: 1 passed
+03:11:24Z  WI-3 COMMIT  db7b9d9 WI-3: record the flip run's facts, which C9 reads for its geometry
+03:12:29Z  WI-3 COMMIT  da046e1 WI-3: the test card harness, with an unattended observation mode
+03:12:29Z  WI-3 CLAIM   observations: evidence/WI-3/card-da046e1-specimen.png, card-da046e1-after-keys.png, card-da046e1-transcript.json (title bar shows 'Terminal Game', specimen in six roles, marker moved Up Up Left from (10,13) to (9,11), 7 ticks in the ~1 s run)
+03:15:22Z  WI-3 TEST    desktop: 17 passed, 0 failed, 0 skipped in 87 s (tests/test_shell_window_desktop.py -m desktop -s; every test prints its measurement)
+03:15:22Z  WI-3 COMMIT  69ddff7 WI-3: each desktop test prints what it measured, so -s output shows the claim
+03:17:40Z  WI-3 RISK    WI-3 HIGH, because it opens, sizes and closes windows on the user's real desktop (plan floor; not raised)
+03:17:40Z  WI-3 DRAFT   docs/prs/PR-WI-3-window-grid.md: claims C1-C17 word for word, A1-A3, diff map, walk-throughs, C15/C16 needs-eyes scripts, findings F1-F7, interface for WI-9/WI-13
+03:17:40Z  WI-3 CLAIM   C1-C14, A1-A3 executable -- tests/test_shell_window_desktop.py::test_<claim>_* (-m desktop -s); C4, C7, C11, A1, A3 also tests/test_shell_pure.py; C8 also tests/test_shell_characters_only.py; C15, C16 needs eyes -- evidence/WI-3/card.py; C17 pending WI-1
+03:17:40Z  WI-3 COMMIT  e2c163f WI-3: the evidence pack in the brief
+03:18:13Z  WI-3 TEST    64 passed, 0 failed, 1 skipped, 17 deselected (-m 'not desktop')
+03:18:13Z  WI-3 REVIEW  marked #123 ready at 03:17:48Z; waiting for Copilot (15-minute limit 03:32:48Z)
+03:23:30Z  WI-3 NOTE    merged origin/main (WI-1, 75723e7) as 21190c0: add/add conflicts in terminal_game/__init__.py (took WI-1's layer docstring) and terminal_game/shell/__init__.py (WI-1's layer docstring plus my characters-only paragraph)
+03:23:30Z  WI-3 TEST    default after merge: 158 passed, 0 failed, 1 skipped, 17 deselected
+03:23:30Z  WI-3 TEST    desktop after merge, run 1: 14 passed, 3 failed (C10, C11, C12: the keys run; reasons not captured); run 2 of all 17: 17 passed; C10-12 alone: 3 passed. Second sighting of F4 (focus lost mid-run)
+03:23:30Z  WI-3 DECIDE  keys scenario takes the focus back (focus_force) before each key phase if it was lost, and records each time in 'refocused', shown in C10's output line, because key delivery is only meaningful while the game has focus
+03:23:30Z  WI-3 TEST    desktop C10-C12 after the change: 3 passed, refocused []
+03:26:24Z  WI-3 REVIEW  Copilot 03:23:26Z 'Needs a closer look', 2 threads: check_frame lets TypeError escape for non-iterable frame/row (valid); run_driver timeout reaps only the driver, not its screencapture/swift children (valid)
+03:26:24Z  WI-3 TEST    default: 160 passed, 0 failed, 1 skipped, 17 deselected; desktop: 17 passed, 0 failed
+03:27:32Z  WI-3 COMMIT  9c3b008 WI-3: a non-sequence frame or row is a ValueError; the harness reaps the driver's whole process group
+03:27:32Z  WI-3 REVIEW  replied REVIEW-REPLY: FIXED 9c3b008 on both Copilot threads (4078763029, 4078763061); Copilot clean
+03:27:32Z  WI-3 CLAIM   C17 executable -- default: 160 passed, 1 skipped, 17 deselected; desktop: 17 passed, 161 deselected
+03:27:50Z  WI-3 REVIEW  requested WI-3 round 1 at the head this commit makes (the VERIFY-REQUEST comment names its sha)
+03:40:21Z  WI-3 REVIEW  CHANGES_REQUESTED round 1 @a724d8a807408ceca8831dd9daa68b8097712ce8: (1) C4's pure command '-k family' selects nothing (valid: no test name contains 'family'); (2) brief states base 8bc9496, but the merge-base is 75723e7 where terminal_game/ and shell/__init__.py exist (valid). 19 of 20 statuses REPRODUCED or NEEDS EYES; HUMAN-GATE line present
+03:41:01Z  WI-3 NOTE    round 1 fixes are to the brief only: C4 pure command now '-k "chosen or proportional or toolkits_fixed"' (4 passed, 23 deselected); base restated as 75723e7 with the n/a reason naming the six absent modules; diff map shows shell/__init__.py:6-11 as modified and drops terminal_game/__init__.py
+03:41:14Z  WI-3 COMMIT  aae1ea7 WI-3: brief round 1 fixes: C4's pure command selects its four tests; base is 75723e7
+03:41:14Z  WI-3 REVIEW  requested WI-3 round 2 at the head this commit makes
+03:49:08Z  WI-3 REVIEW  APPROVED round 2 @92d7f5dd6787cb86158c08a80f09739564fe397d (HUMAN-GATE line present)
+03:49:08Z  WI-3 REVIEW  human gate WI-3 @92d7f5d — HIGH, needs eyes: C15, C16
+03:49:08Z  WI-3 NOTE    conductor relays AMEND-1 (#128): C7 reworded to the game's alphabet incl. U+0020, a painted space shows only background; after it merges: merge origin/main, copy C7 word for word, extend evidence to the space, request round 3
+03:50:10Z  WI-3 TEST    desktop C7 with the space: 1 passed (257 characters x 5 roles; 25 painted spaces show only background)
+03:54:41Z  WI-3 NOTE    merged origin/main b1adc97 (AMEND-1 and landed WI-2/4/5/7 work): no conflicts; plan's C7 now copied word for word (script check: 17 of 17 claims match the plan)
+03:54:41Z  WI-3 TEST    default: 416 passed, 0 failed, 1 skipped, 17 deselected; desktop: 17 passed, 0 failed, 417 deselected (C7: 257 characters, 25 spaces background only)
+03:54:41Z  WI-3 REVIEW  requested WI-3 round 3 at the head this commit makes

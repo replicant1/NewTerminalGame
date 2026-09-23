@@ -1,0 +1,32 @@
+{
+ "head": "da046e1",
+ "taken_at_utc": "2026-09-23T03:12:06Z",
+ "title": "Terminal Game",
+ "family": "Menlo",
+ "cell": [
+  10,
+  19
+ ],
+ "size": [
+  400,
+  570
+ ],
+ "player_start": [
+  10,
+  13
+ ],
+ "shots": [
+  "card-da046e1-specimen.png",
+  "card-da046e1-after-keys.png"
+ ],
+ "keys": [
+  "Up",
+  "Up",
+  "Left"
+ ],
+ "player_after": [
+  9,
+  11
+ ],
+ "ticks": 7
+}
