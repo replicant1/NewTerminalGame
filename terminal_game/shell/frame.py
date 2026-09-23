@@ -24,12 +24,18 @@ def check_frame(frame: Frame) -> list[list[Cell]]:
     The whole frame is checked before anything is returned, so a caller that
     paints only what this returns can never paint part of a bad frame.
     """
-    rows = list(frame)
+    try:
+        rows = list(frame)
+    except TypeError:
+        raise ValueError(f"a frame is a sequence of {ROWS} rows, not {type(frame).__name__}") from None
     if len(rows) != ROWS:
         raise ValueError(f"a frame has {ROWS} rows, this one has {len(rows)}")
     checked: list[list[Cell]] = []
     for r, row in enumerate(rows):
-        cells = list(row)
+        try:
+            cells = list(row)
+        except TypeError:
+            raise ValueError(f"row {r} is {type(row).__name__}, not a sequence of {COLUMNS} cells") from None
         if len(cells) != COLUMNS:
             raise ValueError(f"row {r} has {len(cells)} cells, a row has {COLUMNS}")
         out: list[Cell] = []

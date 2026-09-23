@@ -114,6 +114,7 @@ def test_a_str_subclass_role_such_as_a_strenum_is_accepted():
         (lambda f: f[29].__setitem__(39, ("", "wall")), "cell (39, 29)"),
         (lambda f: f[29].__setitem__(39, ("x", "purple")), "unknown role 'purple'"),
         (lambda f: f[29].__setitem__(39, "x"), "not a (character, role) pair"),
+        (lambda f: f.__setitem__(29, None), "row 29 is NoneType"),
     ],
 )
 def test_a_malformed_frame_is_rejected_naming_the_fault_even_at_the_last_cell(mutate, words):
@@ -121,6 +122,11 @@ def test_a_malformed_frame_is_rejected_naming_the_fault_even_at_the_last_cell(mu
     mutate(frame)
     with pytest.raises(ValueError, match=words.replace("(", r"\(").replace(")", r"\)")):
         check_frame(frame)
+
+
+def test_something_that_is_not_a_frame_at_all_is_a_value_error_too():
+    with pytest.raises(ValueError, match="not NoneType"):
+        check_frame(None)
 
 
 def test_the_blank_frame_is_blanks_on_the_background():

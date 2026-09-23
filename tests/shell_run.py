@@ -11,6 +11,7 @@ import json
 import os
 import re
 import pty
+import signal
 import subprocess
 import sys
 import threading
@@ -46,6 +47,7 @@ class Run:
     exited_at: float = 0.0             # time.time() when the parent saw it exit
     pid: int = 0
     result: dict = field(default_factory=dict)
+    stragglers: bool = False           # something in its process group outlived the driver
     exit_record: dict = field(default_factory=dict)
 
     def load(self) -> None:
@@ -66,6 +68,7 @@ def run_driver(scenario: str, outdir: Path, *, on_ready=None, python: str = sys.
     process = subprocess.Popen(
         [python, str(DRIVER), scenario, str(outdir), *HARNESS_ARGS],
         stdin=slave, stdout=slave, stderr=slave, cwd=REPO, close_fds=True,
+        process_group=0,   # its own group, so its screencapture and swift children go with it
     )
     os.close(slave)
     chunks: list[bytes] = []
@@ -91,17 +94,33 @@ def run_driver(scenario: str, outdir: Path, *, on_ready=None, python: str = sys.
             on_ready(run)
         time.sleep(0.005)
     if process.poll() is None:
-        process.kill()
-        process.wait()
         run.status = None
     else:
         run.status = process.returncode
+    # Whatever happened, nothing the driver started outlives the run: kill and reap the
+    # whole process group (the driver, and any screencapture or swift it had running).
+    run.stragglers = _reap_group(process)
     run.exited_at = time.time()
     reader.join(timeout=2)
     os.close(master)
     run.terminal = b"".join(chunks).decode("utf-8", "replace")
     run.load()
     return run
+
+
+def _reap_group(process: subprocess.Popen) -> bool:
+    """SIGKILL whatever is left of the driver's process group and reap the driver.
+
+    Returns True if anything was left to kill. After a driver that exited by
+    itself, that means one of its children outlived it.
+    """
+    try:
+        os.killpg(process.pid, signal.SIGKILL)
+        anything = True
+    except ProcessLookupError:
+        anything = False
+    process.wait()
+    return anything
 
 
 def process_alive(pid: int) -> bool:

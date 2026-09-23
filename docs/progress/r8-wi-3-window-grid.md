@@ -56,3 +56,5 @@
 03:23:30Z  WI-3 TEST    desktop after merge, run 1: 14 passed, 3 failed (C10, C11, C12: the keys run; reasons not captured); run 2 of all 17: 17 passed; C10-12 alone: 3 passed. Second sighting of F4 (focus lost mid-run)
 03:23:30Z  WI-3 DECIDE  keys scenario takes the focus back (focus_force) before each key phase if it was lost, and records each time in 'refocused', shown in C10's output line, because key delivery is only meaningful while the game has focus
 03:23:30Z  WI-3 TEST    desktop C10-C12 after the change: 3 passed, refocused []
+03:26:24Z  WI-3 REVIEW  Copilot 03:23:26Z 'Needs a closer look', 2 threads: check_frame lets TypeError escape for non-iterable frame/row (valid); run_driver timeout reaps only the driver, not its screencapture/swift children (valid)
+03:26:24Z  WI-3 TEST    default: 160 passed, 0 failed, 1 skipped, 17 deselected; desktop: 17 passed, 0 failed

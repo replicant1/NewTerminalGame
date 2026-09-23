@@ -41,6 +41,7 @@ def _run(tmp_path_factory, scenario):
     run = run_driver(scenario, tmp_path_factory.mktemp(scenario))
     assert run.status is not None, f"{scenario}: the driver hung and was killed; terminal said {run.terminal!r}"
     assert not process_alive(run.pid), f"{scenario}: process {run.pid} is still alive"
+    assert not run.stragglers, f"{scenario}: a child of the driver outlived it"
     return run
 
 
