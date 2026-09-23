@@ -16,3 +16,5 @@
 05:52:33Z  WI-13 NOTE    merged origin/main 043b118 (FIX-1 merged by the user): no conflicts
 05:52:33Z  WI-13 TEST    default: 557 passed, 0 failed, 1 skipped, 23 deselected; desktop (all): 23 passed, 0 failed, 558 deselected; layer check PASS (shell 10, presentation 6, application 3, domain 6, entry 2)
 05:52:33Z  WI-13 DRAFT   brief: base 043b118, C10 count, deviations D1 (SIGTERM ends the Terminal-launched game) and D2 (corner squares skipped whole), needs-eyes run in an ordinary Terminal tab
+06:01:01Z  WI-13 REVIEW  Copilot 05:59:07Z 'Needs a closer look': inline, C2 not enforced by the harness's exit status (valid); overview: fixture should reject nonzero exits, assert 602 outer height, observe should fail on unclean runs (all taken), C4 capture timing (answered: each capture is verified against its own frame)
+06:01:01Z  WI-13 VERIFY  harness rerun hit 'screencapture: could not create image from rect' once at (358,-1177); the game was killed and the Terminal window 22324 closed by the finally blocks (visible=false, no game process left); a probe capture seconds later worked. Harness now retries a failed capture up to 3 times

@@ -108,7 +108,12 @@ def launch(n: int, sha: str) -> dict:
         shots = []
         for k in range(2):
             path = OUT / f"from-terminal-{sha}-launch{n}-{k}.bmp"
-            subprocess.run(capture_command(int(b.x), int(b.y + TITLE_BAR_POINTS), 400, 570, str(path)), check=True)
+            for attempt in range(3):   # screencapture once failed transiently ("could not create image from rect")
+                if subprocess.run(capture_command(int(b.x), int(b.y + TITLE_BAR_POINTS), 400, 570, str(path))).returncode == 0:
+                    break
+                time.sleep(0.3)
+            else:
+                raise RuntimeError("screencapture failed three times")
             shots.append(path)
             if k == 0:
                 time.sleep(0.5)
