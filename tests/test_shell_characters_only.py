@@ -85,3 +85,16 @@ def test_the_scan_catches_every_canvas_item_type_but_text_and_nothing_that_is_no
     sample += "canvas.create_text(0, 0, text='x')\nbuffer = ctypes.create_string_buffer(512)\n"
     found = [f.split()[-1] for f in drawing_violations(sample)]
     assert found == [f"create_{kind}" for kind in every_item_type]
+
+
+def test_a_real_canvas_drawing_call_in_the_window_module_would_be_caught():
+    """The guard still bites on the real drawing code: the window module's source with one
+    line of each forbidden kind added (in memory; nothing on disk changes) is reported."""
+    source = shell_sources()["terminal_game/shell/window.py"]
+    anchor_line = "        canvas.pack(padx=0, pady=0)\n"
+    assert anchor_line in source
+    for call in ("canvas.create_line(0, 0, 10, 0)", "canvas.create_rectangle(0, 0, 10, 19)",
+                 "canvas.create_image(0, 0, image=None)"):
+        tampered = source.replace(anchor_line, anchor_line + "        " + call + "\n", 1)
+        found = [f.split()[-1] for f in drawing_violations(tampered, "window.py")]
+        assert found == [call.split("(")[0].split(".")[1]], (call, found)
