@@ -6,3 +6,6 @@
 05:29:41Z  FIX-1 RISK    FIX-1 MEDIUM, because it changes WI-3/C8's guard (test only); not raised to HIGH: no window code changes
 05:29:41Z  FIX-1 CLAIM   A2 executable -- the real window.py source with a create_line/create_rectangle/create_image added in memory is reported
 05:29:41Z  FIX-1 TEST    guard 5 passed; default 548 passed, 0 failed, 1 skipped, 17 deselected
+05:37:01Z  FIX-1 REVIEW  Copilot 05:33:23Z 'Needs a closer look', no inline findings; overview asks for image-maker coverage (valid: BitmapImage and image_create had no control)
+05:37:01Z  FIX-1 DECIDE  add image-maker control and scan string constants for Tcl words and whole create commands (A4), because drawing through tk.call/eval would otherwise pass the guard
+05:37:01Z  FIX-1 TEST    guard 7 passed; default 550 passed, 0 failed, 1 skipped, 17 deselected
