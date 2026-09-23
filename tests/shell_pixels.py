@@ -79,6 +79,18 @@ def clip_mask(blank: Image, scale: float) -> set[tuple[int, int]]:
     return mask
 
 
+def corner_mask(image: Image, scale: float) -> set[tuple[int, int]]:
+    """The outline and both whole bottom-corner squares: the mask for a window with no blank capture.
+
+    Coarser than :func:`clip_mask` (it hides the corner squares entirely, not
+    just the clipped pixels), for a game window that is never blank.
+    """
+    return {
+        (x, y) for y in range(image.height) for x in range(image.width)
+        if _outline(image, x, y) or _in_corner_square(image, x, y, scale)
+    }
+
+
 def shade_error(rgb, colour) -> tuple[float, float]:
     """How far ``rgb`` is from a shade of ``colour`` (``colour`` blended with black).
 
