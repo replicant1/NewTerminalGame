@@ -53,6 +53,7 @@ Apply the same discipline to any other diagram or table you add: state the units
 
 **The cost is that the plan no longer appears on `main` by being written.** Developers read `docs/IMPLEMENTATION_PLAN.md` from `main`, and while it sits in your tree they cannot see it. So every time you amend the plan, **land it**, by the same route work lands in the mode you are in:
 
+- **The first plan lands this way too, as `AMEND-0`.** Run 8 did so, and it merged through the verifier with no refusal.
 - **With real pull requests**, push a branch and open a pull request for the amendment, titled `AMEND-<n>: <what it changes>`, **and send it to the verifier as a LOW pull request.** An amendment is a change to the document everybody works from, and it deserves to be visible, reviewable and dated like any other change. It also needs an approval. In run 7 the lead's first amendment, PR #78, sat unmerged for most of the run because the permission system refused to let it merge without review, and meanwhile the rulings it carried existed only in relayed messages. So:
   1. **The body lists every claim the amendment adds, removes, rewords or re-marks**, one line each, with the reason: the `BLOCKED` it settles, the `CONTRADICT` it answers, or the user's words. Write `Claims changed: none` if none are. It is also a brief, so give it `Risk: LOW` and the verifier-status block exactly as `developer.md` gives it.
   2. **Post** `VERIFY-REQUEST: AMEND-<n> round 1 risk LOW head <sha>`. The conductor spawns the verifier, as for any other pull request.
@@ -127,6 +128,8 @@ Record every claim with a `CLAIM` line as you write it.
 - **HIGH**: a defect would corrupt data, compromise security, break the application for every user, or drive the user's machine into a state they must recover from by hand. On this project that includes anything that opens, sizes or closes windows on the user's real desktop.
 - **MEDIUM**: a defect would break a feature, or would be expensive to unpick once other work is built on top of it.
 - **LOW**: a defect is visible, local and cheap to fix: documentation, a spike whose output is a finding, an isolated leaf.
+
+**Section 1.2 of the plan must give the one command that builds the environment, with the interpreter pinned.** Verifiers build with it verbatim. Run 8's X1 was a verifier file that named a different interpreter.
 
 **Section 1.9 of the plan must carry this table, as written**, because the developers and the verifier both work from it:
 

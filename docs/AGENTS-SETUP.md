@@ -73,3 +73,35 @@ issued to that installation — heavier, and it needs a human with admin rights.
 
 **The login is discovered, not assumed.** App names are unique across GitHub, so the slug you
 are given decides the login; nothing hardcodes it.
+
+## Where the agents get the credentials (run 8)
+
+Agents do not read your shell profile. Put both variables, and the permission rule for the posting tool, in the **git-ignored** `.claude/settings.local.json`:
+
+```json
+{
+  "env": {
+    "CODE_REVIEWER_APP_ID": "5016462",
+    "CODE_REVIEWER_PRIVATE_KEY": "/Users/<you>/.config/newterminalgame/code-reviewer.pem"
+  },
+  "permissions": {
+    "allow": [
+      "Bash(/usr/bin/python3 /Users/<you>/.config/newterminalgame/verifier_gh.py:*)"
+    ]
+  }
+}
+```
+
+**Commands you run yourself with `!` do not get this `env`.** Put the two variables on the command line when you run the tool that way.
+
+## The posting tool
+
+Verifiers run in isolated worktrees, where `eval "$(… code_reviewer_token.py)"` chained with `gh` is refused, and routing around that refusal was flagged as a bypass. They post only through `verifier_gh.py`, which the user approved during run 8. Its source is kept in the repository at `tools/verifier_gh.py`. Install it **outside** the repository, so that no pull request under review can change it:
+
+```
+mkdir -p ~/.config/newterminalgame
+cp tools/verifier_gh.py ~/.config/newterminalgame/verifier_gh.py
+chmod 700 ~/.config/newterminalgame/verifier_gh.py
+```
+
+Edit `PRIMARY` inside it if your checkout lives somewhere else. It loads the token tool from `origin/main` through `git show`, never from a working tree. It mints in memory and runs exactly one `gh` command with `GH_TOKEN` set only in that child's environment. `--login` prints the bot's login.
