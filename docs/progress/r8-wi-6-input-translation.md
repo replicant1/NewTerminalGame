@@ -4,3 +4,5 @@
 03:25:31Z  WI-6 RISK    WI-6 LOW, because it is the plan floor: a pure lookup
 03:25:31Z  WI-6 CLAIM   C1-C3 executable -- evidence/WI-6/key_table.py and pytest -v tests/test_input_translation.py -k c1/c2/c3
 03:25:31Z  WI-6 TEST    279 passed, 0 failed, 1 skipped
+03:25:47Z  WI-6 COMMIT  8d0a0e8 WI-6: input translation from Tk key names to move and quit intents
+03:25:47Z  WI-6 NOTE    draft PR 126 opened; marking ready (suite green)
