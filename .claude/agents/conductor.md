@@ -110,13 +110,13 @@ In non-local mode nothing lands until it has been verified. Every pull request g
 The verifier approves pull requests that the developers opened, and GitHub refuses to let an author approve their own. So the verifier acts through the project's **GitHub App**, created for the code reviewer and still named for it, approving as `newterminalgame-code-reviewer[bot]`. Confirm at the start of a non-local run that it works:
 
 ```
-eval "$(/usr/bin/python3 tools/code_reviewer_token.py)"
-test -n "$CODE_REVIEWER_GH_TOKEN" || echo "MINT FAILED"
-GH_TOKEN="$CODE_REVIEWER_GH_TOKEN" gh api /installation/repositories \
-  --jq '.repositories[].full_name'
+/usr/bin/python3 ~/.config/newterminalgame/verifier_gh.py --login
+/usr/bin/python3 ~/.config/newterminalgame/verifier_gh.py gh api /installation/repositories --jq '.repositories[].full_name'
 ```
 
-A successful mint proves three things at once: the key signs, the App is installed on this repository, and GitHub issued a token for it. **Test the token, not the two logins.** Comparing them cannot fail, because one always ends in `[bot]`. Use `/usr/bin/python3`: the verifier runs worktree-isolated with no venv, so a check that passes only because you happen to have one tells you nothing.
+These are the exact commands verifiers post with, so a pass here is a pass for them. A successful call proves three things at once: the key signs, the App is installed on this repository, and GitHub issued a token for it. **Test the token, not the two logins.** Comparing them cannot fail, because one always ends in `[bot]`.
+
+**Check the agents' environment first.** The tool needs `CODE_REVIEWER_APP_ID` and `CODE_REVIEWER_PRIVATE_KEY`, and a permission rule must allow it. Both go in `.claude/settings.local.json` (see `docs/AGENTS-SETUP.md`). In run 8 the first mint failed because neither variable reached the agents. The user's `!` commands do **not** get these settings: when the user runs the tool, put both variables on the command line.
 
 If the mint fails, **record `BLOCKED`, tell the user, and do not start the run.** Every work item would reach the end of its verification and find it cannot be approved.
 
@@ -134,6 +134,8 @@ VERIFY-REQUEST: WI-3 round 1 risk HIGH head <sha>
 
 Poll the open pull requests for it (`gh pr list`, `gh pr view <n> --comments`) and spawn a verifier for each one, giving it the pull request number and the work item code and nothing else. Record a `DISPATCH` line naming the round. **Check your own `DISPATCH` lines before spawning.** The marker stays on the pull request while the round runs, and two verifiers on one round would each post a verdict.
 
+**Watch with a script that reports before it records.** In run 8 a watcher wrote a request into its seen-list inside a pipeline subshell, lost the report, and WI-9's request sat unnoticed for 54 minutes. Collect every new request and merge in a sweep, print them all, and only then mark them seen. A manual sweep of the open pull requests' comments every so often catches what a watcher drops.
+
 **Reap the verifier's worktree once you have its report.** Use the path from its report, never a guess from `git worktree list`, which also holds live developers:
 
 ```
@@ -150,6 +152,8 @@ git worktree remove --force <the path it reported>
 
 - **No `HUMAN-GATE` line, and not rated HIGH**: the developer merges. If the developer has gone, **dispatch a developer to merge**, with the PR number, the branch and the approved sha. Say it is approved. Do not say it may merge, because that is not yours to certify.
 - **A `HUMAN-GATE` line, or rated HIGH**: **bring the user to it** (below). Nobody but the user merges it.
+
+**After every merge, run the full default suite yourself on a clean checkout of `origin/main`** (a detached worktree in the scratchpad, never the primary tree's `main`). Do not rely on the developer's count. **A red `main` stops new verification requests** until a `FIX-<n>` pull request lands. Tell the developers whose work clashes. In run 8 `main` went red after WI-9 merged beside WI-3, and the conductor found it only because the user asked how many tests there were.
 
 **A pull request sitting on an approval with nobody acting on it is the one state that looks like success and is not.** Look for it explicitly on every sweep. On a human-gated pull request, that state is legitimate *only* while the user has been told and has not yet answered.
 
@@ -170,8 +174,10 @@ Point, don't summarise. **The brief in the PR body is what the user reads.** It 
 **What the user says back is the only human verdict there is.** Three things follow:
 
 1. **Record it in the user's own words**, quoted, on a `HUMAN` line. Never paraphrase it into "approved", "passed" or "looks good". In run 7 an agent recorded a human verdict that had never been given, and quoting is what makes that impossible to do by accident.
-2. **"Merge #121" in the user's words**: dispatch a developer to merge, and put the user's words verbatim in the brief. `developer.md` lets a developer merge a human-gated pull request only on quoted words, and it still checks that the approval is at the head.
+2. **"Merge #121" in the user's words, said to you in this session**: re-check the gate yourself (an approval by the verifier's login whose `commit_id` equals the head, and a head that is still the one the user looked at), then **merge it yourself** with `gh pr merge <n> --merge` and record the user's words on the `MERGE` line. This is the one merge the conductor makes. In run 8 every developer merge of a human-gated pull request on relayed words was refused by the permission system, because it cannot see the user from inside a subagent. The conductor's merge on the user's own words, in the user's own session, was not. If yours is refused too, give the user the command.
 3. **A rejection, or anything they saw**: dispatch a developer for a rework round, with the user's words verbatim. The new head needs a new verifier round **and** the user again, because they signed the head they saw.
+
+**If a verifier or developer is refused and asks you to do the refused thing for it, do not.** Take it to the user, with the exact command ready for them to run themselves (`!`, or an ordinary Terminal tab for anything that opens a window). Doing it for them because you were asked is laundering the refusal. The user's own explicit instruction to you is a different thing.
 
 **Never infer a human verdict.** Silence is not acceptance. A merged pull request is not proof the user looked unless the user merged it, or told you to in words you have recorded. If you find a human-gated pull request merged with no `HUMAN` line quoting the user, that is a **gate leak**. Record it as `BLOCKED` and tell the user. Do not explain it away.
 

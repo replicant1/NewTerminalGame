@@ -130,7 +130,9 @@ For each claim, give one or more demonstrations. Each is labelled with the kind 
 
 The overlay brings your evidence and test files onto the base so there is something to run. **It must never include a production file.** A control that fails on `ImportError` has failed because the code did not exist. That shows nothing, and the verifier will call it `CONTROL INVALID`.
 
-**Needs-eyes scripts are written for someone who has not seen the code.** Follow the WI-17 pack in `docs/findings/WI-17-human-verification.md`: the exact command, what they will see, and for each check **what the failure would look like**. "Does it look right?" is not a question anyone can answer. "Does the ghost stop for a beat at corners?" is.
+**Needs-eyes scripts are written for someone who has not seen the code.** Follow the shape of run 7's WI-17 pack (`docs/findings/WI-17-human-verification.md` at the tag `archive-run7`): the exact command, what they will see, and for each check **what the failure would look like**. "Does it look right?" is not a question anyone can answer. "Does the ghost stop for a beat at corners?" is.
+
+**Tell the user to run a script that opens a window in an ordinary Terminal tab, not through Claude Code's `!` prompt.** In run 8 a test card run through `!` exited without showing anything, and the same command in a Terminal tab worked. `!` commands also lack the environment Claude Code's settings give agents.
 
 ### The diff map (MEDIUM and HIGH)
 
@@ -289,8 +291,10 @@ gh pr merge <number> --merge
 
 Straight after the merge:
 
-1. **Confirm what landed is green**: `git fetch origin && git merge origin/main`, then run the whole suite on your branch.
+1. **Confirm what landed is green**: `git fetch origin && git merge origin/main`, then run the whole suite on your branch. **If it is red, `main` is broken:** record `BLOCKED` at once, report it to the conductor before anything else, and expect to fix it as a `FIX-<n>` pull request if the clash is with your own work. In run 8, WI-9's merge turned `main` red against WI-3's guard, which neither PR's own verification could have seen.
 2. **Record it** with a `MERGE` line, and report the PR number, the branch and that test count.
+
+**A completion record written after your merge rides in your next item's pull request**, mapped as mechanical. If you have no next item, leave it pushed on a branch with no PR, and the conductor lands every lane's leftovers in one records PR at the end of the run. A PR per record needs its own record, and so on without end.
 
 **Merge only your own PR**, and never one waiting on a human. **The verifier never merges either.**
 
@@ -301,6 +305,8 @@ Straight after the merge:
 3. **Change nothing.** If the gate does not pass, report that and stop.
 
 **A human-gated pull request is merged by a developer only when the conductor's brief quotes the user's own words telling it to**, for example "merge #118". Then the gate's first three conditions still apply and the fourth is satisfied by those words, which you quote in your `MERGE` line. A brief that paraphrases, or says the user "approved", is not those words. Stop and ask.
+
+**Expect the permission system to refuse that merge anyway.** It cannot see the user's words from inside your session. In run 8 it refused every such attempt as "Merge Without Review", and once refused a plain MEDIUM merge with no reason given. When it does, stop and report without retrying. The user merges, or tells the conductor, which merges from the user's own session. A **GitHub** rejection such as "Base branch was modified" is not a refusal: it means `main` moved under you, and one retry is right.
 
 **A stacked branch targets its parent, not `main`.** If your work item builds on a branch that has not merged yet — yours or another developer's — the PR must be opened with `--base <parent-branch>`. Based on `main`, it would show the parent's commits as its own and the diff would be unreadable. Say in the PR body which branch it is stacked on and why. Once the parent merges, retarget it with `gh pr edit <number> --base main`.
 

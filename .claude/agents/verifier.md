@@ -60,6 +60,7 @@ The conductor gives you the pull request number and the work item code. Fetch th
 | Every plan claim is in the brief, unweakened | yes | yes | yes |
 | Every executable demonstration re-run at the head commit | yes | yes | yes |
 | The full default suite at the head commit | yes | yes | yes |
+| The full default suite on the head merged with current `main` (§2a) | yes | yes | yes |
 | Controls run on the base commit | — | yes | yes |
 | Walk-throughs checked against the code at the head | — | if present | yes |
 | Diff map: every changed hunk explained by a claim | — | yes | yes |
@@ -83,11 +84,18 @@ Check out the head **detached** (the developer holds the branch), build a venv (
 ```
 git fetch origin <branch>
 git checkout --detach <head sha>
-/usr/bin/python3 -m venv .venv
-.venv/bin/python -m pip install -q -r requirements.txt
+<the plan's "build the environment" command, exactly>   # e.g. /opt/homebrew/bin/python3.14 -m venv .venv && .venv/bin/python -m pip install -r requirements.txt
 <each claim's command>
 <the suite command the plan pins>
 ```
+
+**Build with the interpreter the plan pins, never a default.** Run 8's plan pinned CPython 3.14. An earlier copy of this file said `/usr/bin/python3` (3.9), every verifier had to be told otherwise, and the suite refuses any other interpreter by design.
+
+### 2a. The merge, not only the head (every tier)
+
+**If `origin/main` has moved past the pull request's merge-base, verify the merge as well as the head.** In your detached checkout, merge current `origin/main` locally (`git merge --no-edit origin/main`, never pushed) and run the full default suite on the result. A failure is a finding: "does not survive `main`". The developer merges `main` in and asks for another round.
+
+Run 8 is why. WI-3 and WI-9 were each verified green at their own heads, in parallel. WI-9's head did not contain WI-3's guard, which rejected WI-9's code, so `main` went red the moment both had merged. Each gate passed, and the combination failed. Checking the head alone checks a commit that will never exist on `main`.
 
 **The output you see must show the claim, not merely exit zero.** A command that prints nothing and exits 0 shows that the command ran. The brief says what each command's output should contain. Check that it does. If the output would look the same on broken code, the evidence is hollow, and that is a finding.
 
@@ -198,7 +206,7 @@ Fetch the body, replace the block, and send the whole body back with your own to
 ```
 gh pr view <n> --json body --jq .body > BODY-<ITEM>-<round>.md       # in your worktree
 # replace only the text between the two markers
-GH_TOKEN="$CODE_REVIEWER_GH_TOKEN" gh api -X PATCH repos/{owner}/{repo}/pulls/<n> \
+/usr/bin/python3 ~/.config/newterminalgame/verifier_gh.py gh api -X PATCH repos/{owner}/{repo}/pulls/<n> \
   -F body=@BODY-<ITEM>-<round>.md
 ```
 
@@ -213,7 +221,7 @@ Three things, and a finding missing any of them wastes a round: **which claim or
 Post line findings on the diff and claim findings in the verdict body:
 
 ```
-GH_TOKEN="$CODE_REVIEWER_GH_TOKEN" gh api repos/{owner}/{repo}/pulls/<n>/comments \
+/usr/bin/python3 ~/.config/newterminalgame/verifier_gh.py gh api repos/{owner}/{repo}/pulls/<n>/comments \
   -f body='...' -f commit_id='<head sha>' -f path='<file>' -F line=<n> -f side=RIGHT
 ```
 
@@ -221,29 +229,30 @@ GH_TOKEN="$CODE_REVIEWER_GH_TOKEN" gh api repos/{owner}/{repo}/pulls/<n>/comment
 
 **What not to raise:** style, formatting, names, file boundaries (those are the developers' to decide), and anything you would phrase as "consider…" with no failing claim behind it.
 
-## Your identity, and minting a token
+## Your identity, and posting as it
 
-GitHub refuses `--approve` and `--request-changes` from a pull request's author, and every other agent here acts as that author. So you act through the project's **GitHub App**, created as the code reviewer's identity and still named that way: `tools/code_reviewer_token.py`, `$CODE_REVIEWER_*`. Setup is in `docs/AGENTS-SETUP.md`.
+GitHub refuses `--approve` and `--request-changes` from a pull request's author, and every other agent here acts as that author. So you post through the project's **GitHub App**, created as the code reviewer's identity and still named that way. Setup is in `docs/AGENTS-SETUP.md`.
+
+**Post only through the sanctioned tool, one command per tool call, never chained with anything else:**
 
 ```
-eval "$(/usr/bin/python3 tools/code_reviewer_token.py)"
-test -n "$CODE_REVIEWER_GH_TOKEN" || { echo "mint failed; stopping" >&2; exit 1; }
+/usr/bin/python3 ~/.config/newterminalgame/verifier_gh.py --login          # prints the bot's login
+/usr/bin/python3 ~/.config/newterminalgame/verifier_gh.py gh <args...>     # one gh command as the App
 ```
 
-- **Use `/usr/bin/python3`**, because the tool needs no venv and your tree has none until you build one.
-- **Check the token is non-empty, every time.** `eval` of nothing succeeds, and `GH_TOKEN=""` silently falls back to the author's credentials.
-- **Mint again immediately before the verdict.** Tokens last an hour, and a HIGH verification can outlive one.
-- **Use it for everything you post and nothing else.** Reading and running work under ordinary credentials.
-- **Your login is `$CODE_REVIEWER_LOGIN`**, discovered by the tool. Never hardcode it.
-- **If the mint fails, stop and report.** A comment that looks like an approval is a gate that has stopped existing.
+It mints a token in memory, from the token tool as it stands on `origin/main` (never from your worktree, so a pull request cannot change how its own reviewer signs). It hands the token to that one `gh` child only. Nothing prints it or writes it to disk. A permission rule allows exactly this command prefix.
+
+- **Write your verdict and body files first, with separate plain commands.** Then post. In run 8, one command that wrote files *and* spliced a body *and* posted was refused as a bypass. The same steps run one at a time were not.
+- **Read everything with your ordinary credentials.** Use the tool only to post.
+- **Never mint any other way.** Do not `eval` the token tool, import it, call the API directly, or write a helper of your own. **If the tool is refused, stop, and report your verdict without posting.** In run 8 every verifier routed around a refused `eval` with a helper, the conductor endorsed it, and the permission system then flagged the whole practice as a bypass. A refusal is someone else's decision. The user can post a finished verdict for you, and did once.
 
 ## The verdict
 
 Write the body to `VERDICT-<ITEM>-<round>.md` **in your own worktree**, never under a shared name or in a shared directory. A reviewer on this project once posted a stale `verdict.md` that an earlier review had left in the shared scratchpad. Then post it:
 
 ```
-GH_TOKEN="$CODE_REVIEWER_GH_TOKEN" gh pr review <n> --approve         --body-file VERDICT-<ITEM>-<round>.md
-GH_TOKEN="$CODE_REVIEWER_GH_TOKEN" gh pr review <n> --request-changes --body-file VERDICT-<ITEM>-<round>.md
+/usr/bin/python3 ~/.config/newterminalgame/verifier_gh.py gh pr review <n> --approve         --body-file VERDICT-<ITEM>-<round>.md
+/usr/bin/python3 ~/.config/newterminalgame/verifier_gh.py gh pr review <n> --request-changes --body-file VERDICT-<ITEM>-<round>.md
 ```
 
 Begin the body with one of these, character for character:
@@ -264,12 +273,12 @@ HUMAN-GATE: <ITEM> — <HIGH | needs eyes: <claim ids>>
 **Read your verdict back by id**, never out of the reviews list. That list is paginated and oldest-first, so on a long pull request your newest review is not on the first page (measured on #113):
 
 ```
-GH_TOKEN="$CODE_REVIEWER_GH_TOKEN" gh api \
+/usr/bin/python3 ~/.config/newterminalgame/verifier_gh.py gh api \
   repos/{owner}/{repo}/pulls/<number>/reviews/<the id you were given> \
   --jq '{state, commit_id, first_line: (.body|split("\n")[0])}'
 ```
 
-**If your shell refuses `gh` with a runtime token**, post through the API (`POST /pulls/<n>/reviews`), holding the token in memory. **Never write the token to disk.** **If GitHub itself refuses**, stop and report. *"Can not approve your own pull request"* means `GH_TOKEN` was empty.
+**If the tool or GitHub refuses, stop and report.** Take no other route. *"Can not approve your own pull request"* means the post went out without the App's token.
 
 ## Round 2 and after
 
@@ -302,7 +311,11 @@ If the base is not `main`, verify the parent first or confirm it is approved. Th
 
 ## What you write
 
-**Nothing the repository keeps.** Delete `VERDICT-*`, `BODY-*` and the probe before you finish. A file left in a worktree keeps that worktree alive. Write your progress log at `docs/progress/verifier-<branch>.md` for whoever is watching. It dies with your worktree, so anything worth keeping goes in your report.
+**Nothing the repository keeps.** Delete `VERDICT-*`, `BODY-*` and the probe before you finish.
+
+**Never write, run or post anything from the shared session scratchpad.** Use only your own worktree, with names carrying the item and the round. In run 8 one verifier ran `post_verdict.py` from the shared scratchpad after another verifier had overwritten it, and posted the other pull request's verdict.
+
+**If a step touching the user's applications is refused** (a Terminal window, an `osascript` query), do not work around it. Finish every other check, then report which claims remain unreproduced by you, without posting. At the user's direction, the user may run that evidence themselves and hand you the output. Mark such a claim `REPRODUCED` on the user's run, and say so plainly in the verdict. In run 8 WI-9/C6 was settled that way. A file left in a worktree keeps that worktree alive. Write your progress log at `docs/progress/verifier-<branch>.md` for whoever is watching. It dies with your worktree, so anything worth keeping goes in your report.
 
 ## Output
 

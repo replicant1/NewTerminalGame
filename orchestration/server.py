@@ -741,22 +741,53 @@ def progress():
     # days; the bar chart has to lay them out on the same axis or contiguous
     # work appears to have gaps at every weekend.
     excludes_weekends = bool(re.search(r"^\s*excludes\s+weekends\b", text, re.M | re.I))
+    # A gantt line is "label :[tags,] [id,] start, duration". Mermaid lets the
+    # start be a date, a date and time, or "after <id> [<id>...]", and the
+    # duration be in hours or weeks as well as days. Run 8's plan used hours
+    # and "after" chains throughout, and a parser that understood only
+    # "YYYY-MM-DD, Nd" gave every item zero width and most of them no start,
+    # so the bar showed three segments while the header said 54%.
+    task_end = {}          # gantt task id -> end, so "after <id>" resolves
+    unit_days = {"d": 1.0, "h": 1.0 / 24, "w": 7.0, "m": 1.0 / 1440}
     for line in text.split("\n"):
         t = line.strip()
         m = re.match(r"^section\s+(.*)$", t)
         if m:
             section = m.group(1).strip()
             continue
-        m = re.match(r"^(WI-\d+[a-z]?|S-\d+|HV-\d+)\b([^:]*):(.*)$", t)
-        if m and section:
-            code = m.group(1)
-            bar_titles.setdefault(code, m.group(2).strip())
-            sections.setdefault(code, section)
-            d = re.search(r"(\d{4}-\d{2}-\d{2})", m.group(3))
-            if d:
-                starts.setdefault(code, d.group(1))
-            dur = re.search(r",\s*([\d.]+)\s*d\b", m.group(3))
-            durations.setdefault(code, float(dur.group(1)) if dur else 0.0)
+        m = re.match(r"^(.+?)\s*:\s*(.+)$", t)
+        if not (m and section) or t.startswith(("title", "dateFormat", "axisFormat")):
+            continue
+        label, meta = m.group(1).strip(), m.group(2)
+        parts = [p.strip() for p in meta.split(",")]
+        parts = [p for p in parts if p not in ("crit", "done", "active", "milestone")]
+        start_dt, days, tid = None, 0.0, None
+        for p in parts:
+            dm = re.match(r"^(\d{4}-\d{2}-\d{2})(?:[ T](\d{1,2}):(\d{2}))?$", p)
+            um = re.match(r"^([\d.]+)\s*([dhwm])$", p)
+            if dm:
+                start_dt = datetime.datetime.strptime(dm.group(1), "%Y-%m-%d") + datetime.timedelta(
+                    hours=int(dm.group(2) or 0), minutes=int(dm.group(3) or 0))
+            elif p.startswith("after "):
+                ends = [task_end[x] for x in p.split()[1:] if x in task_end]
+                start_dt = max(ends) if ends else None
+            elif um:
+                days = float(um.group(1)) * unit_days[um.group(2)]
+            elif re.match(r"^[A-Za-z_][\w-]*$", p):
+                tid = p
+        if tid and start_dt is not None:
+            task_end[tid] = start_dt + datetime.timedelta(days=days)
+        cm = re.match(r"^(WI-\d+[a-z]?|S-\d+|HV-\d+)\b(.*)$", label)
+        if not cm:
+            continue
+        code = cm.group(1)
+        bar_titles.setdefault(code, cm.group(2).strip())
+        sections.setdefault(code, section)
+        if start_dt is not None:
+            # ISO with Z, so the page's Date.parse reads every start as UTC
+            # whether or not the plan gave a time of day.
+            starts.setdefault(code, start_dt.strftime("%Y-%m-%dT%H:%M:00Z"))
+        durations.setdefault(code, days)
     # Titles, from whichever shapes the plan used. First one found wins.
     titles = {}
     for m in re.finditer(r"^###\s+(WI-\d+[a-z]?|S-\d+|HV-\d+)\s*[-—–]+\s*(.*)$", text, re.M):
@@ -794,35 +825,45 @@ def progress():
 
     tip = trunk()
     log = sh(["git", "log", tip, "--oneline"] + since).lower()
+    # Merge commits on main's own line since the run began. A GitHub merge
+    # reads "Merge pull request #129 from owner/r8/wi-8-ghost-policy", so the
+    # item code follows a slash, not the word "merge".
+    merges = sh(["git", "log", "--first-parent", "--merges", tip, "--format=%s"] + since).lower()
 
     # -a: a branch whose worktree has been removed survives only as a
-    # remote-tracking ref, and its work has still landed.
+    # remote-tracking ref, and its work has still landed. A branch counts only
+    # when its tip is the item's own commit ("WI-9: ..."): a branch cut from
+    # main with nothing on it yet is trivially "merged" and marked WI-9 done
+    # before its developer had written a line.
     merged = []
     for row in sh(["git", "branch", "-a", "--merged", tip,
-                   "--format=%(refname:short) %(committerdate:unix)"]).splitlines():
-        parts = row.split()
-        if len(parts) != 2:
+                   "--format=%(refname:short)\t%(committerdate:unix)\t%(contents:subject)"]).splitlines():
+        parts = row.split("\t")
+        if len(parts) != 3:
             continue
-        name, when = parts[0], parts[1]
+        name, when, subject = parts
         if not start or (when.isdigit() and int(when) >= start):
-            merged.append(name)
-    merged_branches = " ".join(merged).lower()
+            merged.append((name.lower(), subject.lower()))
 
     # Items a developer is holding right now: a live worktree on a branch named
     # after the item. Distinct from "next", which is scheduled but unstarted.
+    # Branches may carry a run prefix ("r8/wi-8-..."), so match after a slash.
     active = set()
     for name, path in worktrees():
         branch = sh(["git", "rev-parse", "--abbrev-ref", "HEAD"], cwd=path).lower()
-        m = re.match(r"(wi-\d+[a-z]?|s-\d+|hv-\d+)\b", branch)
+        m = re.search(r"(?:^|/)(wi-\d+[a-z]?|s-\d+|hv-\d+)-", branch)
         if m:
             active.add(m.group(1))
     for it in items:
         n = it["id"].lower()
-        stem = n.replace("wi-", "wi-")
+        stem = n
+        by_merge = re.search(r"(?:^|[\s/])" + re.escape(stem) + r"-", merges) is not None
+        by_branch = any(re.search(r"(?:^|/)" + re.escape(stem) + r"-", b)
+                        and subj.startswith(stem + ":") for b, subj in merged)
         it["active"] = n in active
-        it["done"] = (("merge " + stem + "-") in log
-                      or (stem + " complete") in log
-                      or re.search(r"\b" + re.escape(stem) + r"-\S+", merged_branches) is not None)
+        it["done"] = (by_merge or by_branch
+                      or ("merge " + stem + "-") in log
+                      or (stem + " complete") in log)
 
     done = sum(1 for i in items if i["done"])
     total = len(items)
