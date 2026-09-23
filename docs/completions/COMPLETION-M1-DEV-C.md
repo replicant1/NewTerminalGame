@@ -2,11 +2,13 @@
 
 **Work item:** WI-3, Window and character grid. Risk HIGH, human-gated (HIGH; needs eyes on C15 and C16).
 **Pull request:** #123, branch `r8/wi-3-window-grid`. **The user merges it. Nobody else does.**
-**State when this was written (2026-09-23, 05:02Z):**
+**State when this was written (2026-09-23, 05:04Z):**
 
 - Round 1: `CHANGES_REQUESTED` at `a724d8a`. Both findings were in the brief (a `-k` selector that selected nothing, and a stale base sha). Both fixed in `aae1ea7`.
 - Round 2: `APPROVED` at `92d7f5d`, carrying `HUMAN-GATE: WI-3 — HIGH, needs eyes: WI-3/C15, WI-3/C16`.
-- AMEND-1 (#128) then reworded WI-3/C7. `origin/main` `b1adc97` is merged in. C7 is copied word for word, and its evidence is extended to the space (257 characters). **Round 3 was requested at `526448b` at 03:54:56Z. No verdict had arrived by 05:01Z.**
+- AMEND-1 (#128) then reworded WI-3/C7. `origin/main` `b1adc97` is merged in. C7 is copied word for word, and its evidence is extended to the space (257 characters).
+- Round 3: **`APPROVED` at `526448b` (05:00:59Z), carrying `HUMAN-GATE: WI-3 — HIGH, needs eyes: WI-3/C15, WI-3/C16`.** `526448b` is the PR's head. **It is waiting on a human.** The branch's own progress log does not carry this line, `REVIEW  human gate WI-3 @526448b — HIGH, needs eyes: C15, C16`, because committing it would move the head away from the sha that was approved. It is recorded here instead.
+- The verifier noted, not as a finding, that in its first full desktop run `test_a2` failed with no key delivered (the focus loss described in brief F4), then passed three times. It fails safe. The `raise-key`/`exit-key` scenarios do not yet take the focus back the way the keys scenario does. That is a candidate follow-up.
 
 ## What was built
 
