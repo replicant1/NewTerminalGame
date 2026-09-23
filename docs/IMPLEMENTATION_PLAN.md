@@ -351,9 +351,9 @@ Colour words in claims refer to six colour roles: **wall blue, dot dim gold, pla
 
 **Outcome.** A pure function from the game's state (maze, dots, player and ghost squares, score, outcome) to a 40 × 30 frame of characters and colour roles, which the shell paints. It reads state and changes none.
 
-- **WI-10/C1** Given the specimen's maze, dots, player and ghost squares and a score of 0, the composed frame reproduces the specimen picture in `docs/FUNCTIONAL_REQUIREMENTS.md` §3 character for character, all 30 rows, ignoring the `← …` annotations.
+- **WI-10/C1** Given the specimen's maze, dots, player and ghost squares and a score of 0, the composed frame reproduces the specimen picture in `docs/FUNCTIONAL_REQUIREMENTS.md` §3 character for character, all 30 rows, each specimen row padded with blanks to 40 cells, ignoring the `← …` annotations.
 - **WI-10/C2** The frame is 40 cells by 30 rows. Rows 0 to 28 hold the maze, and row 29 is exactly the status line WI-5 gives for the same score and outcome. Nothing from the maze is ever drawn on row 29.
-- **WI-10/C3** Each grid square occupies two cells, its own and the joining cell to its east, so the 19 squares span cells 0 to 37 and cells 38 and 39 are blank on every maze row.
+- **WI-10/C3** Grid square *n* (counting from 0) is drawn in cell 2*n*, with its joining cell to the east in cell 2*n*+1, so the maze's characters occupy cells 0 to 36. Cell 37, the joining cell after the last square, has no square east of it, and it and cells 38 and 39 are blank on every maze row, as in the specimen, whose maze rows are 37 characters wide.
 - **WI-10/C4** A corridor square holding a dot shows `▪` in the dot colour. A corridor square without one shows blank.
 - **WI-10/C5** The player is drawn as `▐█▌` in the player colour and the ghost as `▗█▖` in the ghost colour, centred on their squares, so the two differ in colour and in outline.
 - **WI-10/C6** When the player and the ghost stand on the same square, the ghost is drawn and the player cannot be seen.

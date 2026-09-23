@@ -1,5 +1,3 @@
-# Technical lead — run 8 progress log
-
 02:05:44Z  START   technical lead, run 8: plan for candidate 2, 3 developers (lanes A-C), real pull requests
 02:05:44Z  READ    docs/FUNCTIONAL_REQUIREMENTS.md (49 codes)
 02:05:44Z  READ    docs/ARCHITECTURE.md (candidates 1 and 2, assumptions A1-A6, cautions C1-C7, section 8)
@@ -234,3 +232,7 @@
 02:16:32Z  RISK    WI-2 (maze invariants, arch C4) is first on the 7.5-day critical path; a slip there moves the finish day for day
 02:16:58Z  VERIFY  plan self-check (script): 107 claims, counts per item match the totals line; all 13 items appear as gantt bars; every claim id cited in text and in the traceability table exists
 02:16:58Z  DONE    docs/IMPLEMENTATION_PLAN.md (landing as AMEND-0 on branch r8/plan)
+02:26:18Z  NOTE    correction to 02:16:08Z VERIFY: the specimen's maze rows are 37 characters wide, so cells 37, 38 and 39 are all blank (the check tested only 38-39); WI-10/C3 reworded to say so, WI-10/C1 now says rows are padded to 40 (Copilot thread on PR #120)
+02:26:18Z  NOTE    removed the title and blank line that preceded START, per progress-tracking.md (Copilot thread on PR #120)
+02:26:30Z  CLAIM   WI-10/C1 (reworded) Given the specimen's maze, dots, player and ghost squares and a score of 0, the composed frame reproduces the specimen picture in `docs/FUNCTIONAL_REQUIREMENTS.md` §3 character for character, all 30 rows, each specimen row padded with blanks to 40 cells, ignoring the `← …` annotations.
+02:26:30Z  CLAIM   WI-10/C3 (reworded) Grid square *n* (counting from 0) is drawn in cell 2*n*, with its joining cell to the east in cell 2*n*+1, so the maze's characters occupy cells 0 to 36. Cell 37, the joining cell after the last square, has no square east of it, and it and cells 38 and 39 are blank on every maze row, as in the specimen, whose maze rows are 37 characters wide.
