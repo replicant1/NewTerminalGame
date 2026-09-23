@@ -20,7 +20,8 @@ top of the window and cell 0 its left edge.
   while it stands there and comes back when it moves off, because every frame
   is drawn afresh from the state.
 * **Row 29 is the status line** exactly as WI-5 gives it.
-* Every blank cell is in the background role.
+* Every blank cell in the maze rows is in the background role.  The status
+  row is WI-5's, blanks included: all 40 of its cells are in the status role.
 
 What it reads from the state, and nothing else: ``maze`` (with ``width``,
 ``height``, ``is_wall(square)`` and ``is_corridor(square)``), ``dots`` (the

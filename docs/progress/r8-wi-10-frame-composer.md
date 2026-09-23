@@ -8,3 +8,8 @@
 03:47:48Z  WI-10 TEST    381 passed, 0 failed, 1 skipped
 03:48:05Z  WI-10 COMMIT  12ca990 WI-10: frame composer: maze rows, player then ghost, the status row
 03:48:05Z  WI-10 NOTE    draft PR 130 opened; marking ready; seam test against WI-7's new_game to follow once PR 127 merges
+03:54:11Z  WI-10 NOTE    merged origin/main b1adc97 (WI-7 PR 127, AMEND-1 PR 128); no conflicts
+03:54:11Z  WI-10 REVIEW  Copilot on PR 130: 2 threads, both valid: A1 tested only the width branch (now height and short-maze too); docstring said every blank is background (now qualified to maze rows, status row is WI-5's)
+03:54:11Z  WI-10 CLAIM   A2 added -- seam test composing new_game(...) from WI-7
+03:54:11Z  WI-10 TEST    408 passed, 0 failed, 1 skipped; compose_probe C1, C6-C8 HOLD
+03:54:11Z  WI-10 REVIEW  requested WI-10 round 1 (head is the commit carrying this line)

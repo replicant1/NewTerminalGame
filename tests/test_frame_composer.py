@@ -235,7 +235,33 @@ def test_c10_composing_changes_nothing_and_gives_the_same_frame_twice():
     assert compose(state) == second, "frames share no rows the caller could alter"
 
 
-def test_a_maze_too_big_for_the_frame_is_refused():
-    wide = Maze.from_rows(["#" * 20] * 29)
-    with pytest.raises(ValueError, match="up to 19 x 29"):
-        compose(State(wide, (1, 1), (1, 1), frozenset()))
+@pytest.mark.parametrize("width, height", [(20, 29), (19, 30), (20, 30)])
+def test_a1_a_maze_too_big_for_the_frame_is_refused(width, height):
+    big = Maze.from_rows(["#" * width] * height)
+    with pytest.raises(ValueError, match="up to 19 x 29 squares, not %d x %d" % (width, height)):
+        compose(State(big, (1, 1), (1, 1), frozenset()))
+
+
+def test_a1_a_shorter_maze_leaves_the_rows_below_it_blank():
+    short = Maze.from_rows(["#####", "#...#", "#####"])
+    frame = compose(State(short, (1, 1), (3, 1), frozenset({(2, 1)})))
+    assert _text(frame)[:3] == ["╔═══════╗".ljust(40), "║▐█▌▪▗█▖║".ljust(40), "╚═══════╝".ljust(40)]
+    assert all(row == [BLANK] * 40 for row in frame[3:29])
+    assert frame[29] == status_row(0, PLAYING)
+
+
+# --------------------------------------------------------------------------
+# The seam with WI-7: the domain's own GameState, as new_game makes it
+# --------------------------------------------------------------------------
+
+
+def test_the_composer_reads_the_domains_game_state_as_it_reads_the_stand_in():
+    from terminal_game.domain.game_setup import new_game
+
+    for seed in range(20):
+        game = new_game(generate_maze(random.Random(seed)))
+        stand_in = State(game.maze, game.player, game.ghost, game.dots, game.score, game.outcome)
+        frame = compose(game)
+        assert frame == compose(stand_in), seed
+        col, row = game.player
+        assert frame[row][2 * col] == ("█", roles.PLAYER), seed

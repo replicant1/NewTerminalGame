@@ -3,7 +3,7 @@
 Risk: MEDIUM
 The plan's floor, not raised. Every picture the game shows comes through this function, but it is pure presentation code that opens no window and changes no state.
 
-Lane A, Dev A. Branch `r8/wi-10-frame-composer`, cut from `origin/main` at `0680c8c` (WI-2, WI-4 and WI-5 merged). Not stacked.
+Lane A, Dev A. Branch `r8/wi-10-frame-composer`, cut from `origin/main` at `0680c8c` (WI-2, WI-4 and WI-5 merged). `main` merged in at `b1adc97` to bring in WI-7 and AMEND-1, with no conflicts. Not stacked.
 
 **What it adds:** `terminal_game/presentation/frame_composer.py`. `compose(state)` returns 30 rows of 40 `(character, role)` cells, the shape lane C's frame check accepts (`terminal_game/shell/frame.py` on PR #123).
 
@@ -11,7 +11,7 @@ Lane A, Dev A. Branch `r8/wi-10-frame-composer`, cut from `origin/main` at `0680
 - The sprites are drawn over the maze: first the player `▐█▌`, then the ghost `▗█▖`.
 - Row 29 is WI-5's `status_row(score, outcome)`.
 
-**The state it reads, and the interface with Dev B.** It reads `maze` (with `width`, `height`, `is_wall(square)` and `is_corridor(square)`), `dots`, `player`, `ghost`, `score` and `outcome`, and nothing else. WI-7's `GameState` (PR #127, not merged yet) has exactly these attributes, and its `outcome` values are the status line's. I built against this narrow duck-typed interface, and did not import `GameState`, because it is not on `main` yet. The tests use a local stand-in with the same attributes. **When WI-7 lands I will merge `main` and add a seam test that composes `new_game(...)` directly.** I told Dev B on #127.
+**The state it reads, and the interface with Dev B.** It reads `maze` (with `width`, `height`, `is_wall(square)` and `is_corridor(square)`), `dots`, `player`, `ghost`, `score` and `outcome`, and nothing else. WI-7's `GameState` has exactly these attributes, and its `outcome` values are the status line's. I built against this narrow duck-typed interface while WI-7 was still open, and the unit tests use a local stand-in with the same attributes. WI-7 (#127) has since merged. I merged `main` (`b1adc97`) into this branch and added a seam test (WI-10/A2) that composes the domain's own `new_game(...)` state. The composer still imports nothing from the domain.
 
 ## Claims
 
@@ -33,20 +33,21 @@ Commands run from the repository root with the §1.2 environment. `-v` without `
 | **WI-10/C8** | When the player and the ghost stand on horizontally adjacent squares, both centre blocks `█` are drawn, each in its own colour. | Executable: `-k c8`, and the probe's `C8 … ║▐█▗█▖ WPPGGG` | 2 PASSED, with the player on the left and on the right. Each square's centre cell is `█` in its own role. | n/a: new module |
 | **WI-10/C9** | Every wall character is in the wall colour, every dot in the dot colour, the status row in the status colour, and every blank cell has the background colour. | Executable: `-k c9` | 2 PASSED. Over 50 mazes, every maze-row cell outside the sprites is a wall character in the wall role, `▪` in the dot role, or a blank in the background role. Every status-row cell is in the status role (see *How C9 is read*). | n/a: new module |
 | **WI-10/C10** | Composing a frame changes nothing: composing twice from the same state gives identical frames, and the state is unchanged. | Executable: `-k c10` | PASSED. The state here is a *mutable* dataclass with a mutable `set` of dots, so any change would show. It equals its deep copy after two compositions, and the two frames are equal. Altering a returned frame does not alter the next one. | n/a: new module |
-| **WI-10/A1** | A maze wider than 19 squares or taller than 29 is refused with `ValueError` rather than drawn over the margin or the status line. A shorter maze leaves the rows below it blank. | Executable: `-k too_big` | PASSED: a 20-wide maze raises `the frame holds a maze of up to 19 x 29 squares`. | n/a: new module |
+| **WI-10/A1** | A maze wider than 19 squares or taller than 29 is refused with `ValueError` rather than drawn over the margin or the status line. A shorter maze leaves the rows below it blank. | Executable: `-k a1` | 4 PASSED. Mazes of 20 × 29, 19 × 30 and 20 × 30 each raise `the frame holds a maze of up to 19 x 29 squares, not W x H`. A 5 × 3 maze draws its three rows exactly (`╔═══════╗`, `║▐█▌▪▗█▖║`, `╚═══════╝`), rows 3 to 28 are all blank background, and row 29 is the status line. | n/a: new module |
+| **WI-10/A2** | The composer draws the domain's own `GameState`, as WI-7's `new_game` makes it, exactly as it draws a stand-in carrying the same attribute values, with the player where the state puts it. | Executable: `-k domains_game_state` | PASSED over 20 generated mazes. `compose(new_game(maze)) == compose(stand_in)`, and the player's centre cell is `█` in the player role at `game.player`. | n/a: the seam is new (neither module existed on the base) |
 
-Suite at the head: `.venv/bin/python -m pytest -q` gives **381 passed, 1 skipped**. `.venv/bin/python -m tools.layer_check` passes. The composer imports only `presentation.roles`, `presentation.status_line` and `presentation.wall_glyphs`.
+Suite at the head: `.venv/bin/python -m pytest -q` gives **408 passed, 1 skipped**. `.venv/bin/python -m tools.layer_check` passes. The composer imports only `presentation.roles`, `presentation.status_line` and `presentation.wall_glyphs`.
 
 ## Diff map
 
 ```
-terminal_game/presentation/frame_composer.py:1-30   docstring (layout, draw order, what it reads) -> WI-10/C1-C10
-terminal_game/presentation/frame_composer.py:32-53  imports and constants -> WI-10/C2, C3 (sizes), C5 (sprites), C4 (dot)
-terminal_game/presentation/frame_composer.py:56-71  _maze_row -> WI-10/C3, C4, C9
-terminal_game/presentation/frame_composer.py:74-80  _draw_sprite -> WI-10/C5, C6, C7, C8 (and C2: nothing drawn on row 29)
-terminal_game/presentation/frame_composer.py:83-88  compose: size check -> WI-10/A1
-terminal_game/presentation/frame_composer.py:89-94  compose: maze rows, player then ghost, status row -> WI-10/C1, C2, C6, C10; A1 (blank rows below a short maze)
-tests/test_frame_composer.py (new)                  -> evidence for C1-C10, A1
+terminal_game/presentation/frame_composer.py:1-31   docstring (layout, draw order, blank roles, what it reads) -> WI-10/C1-C10
+terminal_game/presentation/frame_composer.py:33-54  imports and constants -> WI-10/C2, C3 (sizes), C5 (sprites), C4 (dot)
+terminal_game/presentation/frame_composer.py:57-72  _maze_row -> WI-10/C3, C4, C9
+terminal_game/presentation/frame_composer.py:75-81  _draw_sprite -> WI-10/C5, C6, C7, C8 (and C2: nothing drawn on row 29)
+terminal_game/presentation/frame_composer.py:84-89  compose: size check -> WI-10/A1
+terminal_game/presentation/frame_composer.py:90-95  compose: maze rows, player then ghost, status row -> WI-10/C1, C2, C6, C10, A2; A1 (blank rows below a short maze)
+tests/test_frame_composer.py (new)                  -> evidence for C1-C10, A1, A2
 evidence/WI-10/compose_probe.py (new)               -> evidence for C1, C3, C5-C8
 docs/prs/PR-WI-10-frame-composer.md                 -> this brief
 docs/progress/r8-wi-10-frame-composer.md            -> progress log
