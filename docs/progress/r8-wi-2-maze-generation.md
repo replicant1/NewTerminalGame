@@ -37,3 +37,9 @@
 02:44:18Z  DECIDE  WI-2 Copilot comment 2 (no connectivity check) -> valid, reversing my earlier DECIDE: the plan's outcome says 'check connectivity', so the generator passes every maze through ensure_connected(), whose refusal is tested on a hand-built two-pocket maze, so the raise is not untested control flow
 02:45:38Z  CLAIM   WI-2/A4 executable — tests/test_maze_generator.py -k a4; walk-through maze_generator.py:117
 02:45:38Z  TEST    71 passed, 0 failed, 1 skipped
+02:45:51Z  COMMIT  4097a86 WI-2: freeze the caller's corridor set; check connectivity before handing a maze out (Copilot)
+02:46:00Z  REVIEW  Copilot baseline clean on #121: both comments fixed in 4097a86 and answered on their threads
+02:46:29Z  NOTE    WI-2 WI-1 is PR #122 (open); it declares layers as packages terminal_game/{shell,presentation,application,domain} in pyproject.toml, which matches where the maze lives. Its __init__.py files will add/add-conflict with my empty ones; I will take WI-1's. Waiting for #122 to merge before VERIFY-REQUEST
+03:16:56Z  NOTE    WI-2 merged origin/main 75723e7 (WI-1, #122) as 8a6ad5e: no conflicts; the empty package markers resolved to WI-1's documented ones
+03:16:56Z  VERIFY  WI-2 venv rebuilt from requirements.txt; tools.layer_check -> domain 3 examined, PASS 0 violations; harness ALL PASS
+03:16:56Z  TEST    165 passed, 0 failed, 1 skipped (whole suite after merging main)

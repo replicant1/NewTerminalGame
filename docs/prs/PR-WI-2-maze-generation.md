@@ -12,7 +12,7 @@ It is the plan's floor for WI-2. It is not raised: the change is pure domain cod
 
 ## Claims
 
-The run used seeds 0 to 999 and `.venv/bin/python` built as in plan §1.2. Every command runs from the repository root. The harness `evidence/WI-2/maze_claims.py` is referred to below as **H**. It prints one line per claim, with the counts it took and `PASS` or `FAIL`, then a sample maze, then `ALL PASS` or `SOME FAIL`. It exits 0 only for `ALL PASS`.
+The run used seeds 0 to 999 and `.venv/bin/python` built from `requirements.txt` as in plan §1.2. The branch has `main` merged in at `75723e7` (WI-1), so the package markers are WI-1's and are not in this diff. WI-1's layer check `.venv/bin/python -m tools.layer_check` reports `domain 3` modules examined and `PASS (0 violation(s), 0 problem(s))` with the maze in place. Every command runs from the repository root. The harness `evidence/WI-2/maze_claims.py` is referred to below as **H**. It prints one line per claim, with the counts it took and `PASS` or `FAIL`, then a sample maze, then `ALL PASS` or `SOME FAIL`. It exits 0 only for `ALL PASS`.
 
 | Claim | Word for word | Evidence | What the output shows | Control |
 |---|---|---|---|---|
@@ -31,8 +31,6 @@ The run used seeds 0 to 999 and `.venv/bin/python` built as in plan §1.2. Every
 ## Diff map
 
 ```
-terminal_game/__init__.py (new, empty)              -> mechanical (package marker)
-terminal_game/domain/__init__.py (new, empty)       -> mechanical (package marker)
 terminal_game/domain/maze.py:1-30                   -> WI-2/A3 (square convention, off-grid rule), C1 (WIDTH 19, HEIGHT 29), A2 (imports)
 terminal_game/domain/maze.py:33-49                  -> WI-2/A3 (immutable value incl. frozen copy of the caller's set, equality, refusals), C6 (equality is what "same maze" is judged by)
 terminal_game/domain/maze.py:51-74                  -> WI-2/A3 (from_rows/to_rows), C1 (every square is '#' or '.')
