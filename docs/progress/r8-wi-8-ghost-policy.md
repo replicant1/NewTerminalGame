@@ -8,3 +8,6 @@
 03:44:00Z  WI-8 TEST    382 passed, 0 failed, 1 skipped
 03:44:14Z  WI-8 COMMIT  0cd40aa WI-8: ghost movement policy over the ghost's square and heading
 03:44:14Z  WI-8 NOTE    draft PR opened; posting the ghost-state proposal on WI-7's PR 127 for Dev B; marking ready
+03:49:16Z  WI-8 REVIEW  Copilot on PR 129: 1 thread (a single-option bend still consumed rng.choice), valid; fixed with _pick drawing only at a real choice; A2 added; brief DIRECTIONS reference made explicit
+03:49:16Z  WI-8 TEST    388 passed, 0 failed, 1 skipped; ghost_probe 8 of 8 hold
+03:49:16Z  WI-8 REVIEW  requested WI-8 round 1 (head is the commit carrying this line)

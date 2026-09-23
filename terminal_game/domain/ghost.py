@@ -73,7 +73,7 @@ def ghost_step(maze: Maze, square: Square, heading: Optional[Heading], rng: Choo
         raise GhostStuck(f"the ghost at {square} has no open neighbour to move to")
 
     if heading is None:
-        nxt = rng.choice(exits)
+        nxt = _pick(exits, rng)
     else:
         ahead = _step(square, heading)
         if maze.is_corridor(ahead):
@@ -81,5 +81,14 @@ def ghost_step(maze: Maze, square: Square, heading: Optional[Heading], rng: Choo
         else:
             came_from = _step(square, (-heading[0], -heading[1]))
             others = tuple(sq for sq in exits if sq != came_from)
-            nxt = rng.choice(others) if others else came_from
+            nxt = _pick(others, rng) if others else came_from
     return GhostMove(nxt, (nxt[0] - square[0], nxt[1] - square[1]))
+
+
+def _pick(options: Sequence[Square], rng: Chooser) -> Square:
+    """One of ``options``, drawing from ``rng`` only when there is a real choice.
+
+    A single option is taken without a draw, so the shared random sequence moves
+    on only at genuine choices, and a bend never shifts a later decision.
+    """
+    return options[0] if len(options) == 1 else rng.choice(options)

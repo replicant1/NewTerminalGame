@@ -8,7 +8,7 @@ Lane A, Dev A. Branch `r8/wi-8-ghost-policy`, cut from `origin/main` at `0680c8c
 **What it adds:** `terminal_game/domain/ghost.py`.
 
 - `ghost_step(maze, square, heading, rng)` returns `GhostMove(square, heading)`.
-- `heading` is the `(dcol, drow)` of the ghost's last move, one of `maze.DIRECTIONS`, or `None` before its first move.
+- `heading` is the `(dcol, drow)` of the ghost's last move, one of `terminal_game.domain.maze.DIRECTIONS` (the module constant), or `None` before its first move.
 - `rng` is anything with `choice`, such as `random.Random(seed)`.
 - A ghost whose square has no open neighbour raises `GhostStuck` instead of standing still.
 
@@ -21,7 +21,7 @@ move = ghost_step(state.maze, state.ghost, state.ghost_heading, rng)
 state = replace(state, ghost=move.square, ghost_heading=move.heading)
 ```
 
-The random source is whatever WI-12 hands the resolver. The policy draws from it only when it has a choice to make: on the first move, and when the square ahead is wall with more than one way on. So the same maze, state and random sequence always give the same ghost path (WI-12/C9). No new state type is introduced. If Dev B would rather have a `Ghost` value inside `GameState`, it is a small change here, and I will make it.
+The random source is whatever WI-12 hands the resolver. The policy draws from it only when it has a real choice to make: a first move with more than one open neighbour, or a blocked square with more than one way on besides back (WI-8/A2). So the same maze, state and random sequence always give the same ghost path (WI-12/C9). No new state type is introduced. If Dev B would rather have a `Ghost` value inside `GameState`, it is a small change here, and I will make it.
 
 ## Claims
 
@@ -40,8 +40,9 @@ Commands run from the repository root with the §1.2 environment. `-v` without `
 | **WI-8/C7** | A ghost move never changes the dots: every dot present before it is present after it, including the dot on the square the ghost moves onto. | Executable: same probe, and `-k c7` | The ghost made 2,000 moves over a maze with a dot on every corridor square but the start, landing on a dotted square each time: `dots before 261, after 261, identical: True`. This holds by construction: the policy is not handed the dots and returns only `GhostMove(square, heading)`. Both tests assert that. Applying the move to `GameState` without touching `dots` is WI-11's seam, which WI-11 should test. | n/a: new module |
 | **WI-8/C8** | Over 1,000 generated mazes and 1,000 moves in each, the ghost moves on every move and is never stuck. | Executable: same probe, and `-k "c5 or c8"` | `WI-8/C8 HOLDS: 1000000 moves, 0 where the ghost did not move, none raised`. | n/a: new module |
 | **WI-8/A1** | A ghost whose square has no open neighbour at all raises `GhostStuck` naming the square, instead of silently staying put, and a heading that is not one of the four single steps (or `None`) is refused with `ValueError`. | Executable: `.venv/bin/python -m pytest -v tests/test_ghost.py -k "no_open or not_a_single"` | 2 PASSED: `GhostStuck` names `(1, 1)` for a walled-in square, and heading `(1, 1)` is refused. | n/a: new module |
+| **WI-8/A2** | The policy draws from the random source only at a real choice (a first move with more than one open neighbour, or a blocked square with more than one way on besides back). Going straight on, taking the single way at a bend, turning back at a dead end, or a first move with one open neighbour leaves the source exactly as it was, so a bend never shifts a later random decision in a shared sequence. | Executable: `.venv/bin/python -m pytest -v tests/test_ghost.py -k a2` | 6 PASSED. `random.Random(11).getstate()` is identical before and after a step in each of the four no-choice situations, and it differs after a step at the T-junction and at a first move from a crossroads. | n/a: new module |
 
-Suite at the head: `.venv/bin/python -m pytest -q` gives **382 passed, 1 skipped**. The C5/C8 test takes about 2.4 s. `.venv/bin/python -m tools.layer_check` passes with `domain 4`.
+Suite at the head: `.venv/bin/python -m pytest -q` gives **388 passed, 1 skipped**. The C5/C8 test takes about 2.4 s. `.venv/bin/python -m tools.layer_check` passes with `domain 4`.
 
 ## Diff map
 
@@ -50,11 +51,12 @@ terminal_game/domain/ghost.py:1-35    docstring (the rules, and how WI-11 applie
 terminal_game/domain/ghost.py:37-60   Chooser protocol, GhostMove, GhostStuck -> WI-8/C4, C7 (what goes in and out), WI-8/A1
 terminal_game/domain/ghost.py:63-64   _step -> WI-8/C1, C3
 terminal_game/domain/ghost.py:67-73   ghost_step: heading check, no-exit refusal -> WI-8/A1
-terminal_game/domain/ghost.py:75-76   first move -> WI-8/C6
+terminal_game/domain/ghost.py:75-76   first move -> WI-8/C6, A2
 terminal_game/domain/ghost.py:78-80   straight on -> WI-8/C1
-terminal_game/domain/ghost.py:81-84   blocked: other exits at random, else back -> WI-8/C2, C3
+terminal_game/domain/ghost.py:81-84   blocked: other exits at random, else back -> WI-8/C2, C3, A2
 terminal_game/domain/ghost.py:85      the returned move and heading -> WI-8/C5
-tests/test_ghost.py (new)             -> evidence for C1-C8, A1
+terminal_game/domain/ghost.py:88-94   _pick: draw only at a real choice -> WI-8/A2 (and C2, C6)
+tests/test_ghost.py (new)             -> evidence for C1-C8, A1, A2
 evidence/WI-8/ghost_probe.py (new)    -> evidence for C1-C8
 docs/prs/PR-WI-8-ghost-policy.md      -> this brief
 docs/progress/r8-wi-8-ghost-policy.md -> progress log

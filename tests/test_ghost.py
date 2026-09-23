@@ -171,6 +171,31 @@ def test_c5_c8_over_1000_mazes_and_1000_moves_each_the_ghost_always_moves_one_op
             ghost = nxt
 
 
+@pytest.mark.parametrize("maze, square, heading", [
+    (LONG_CORRIDOR, (2, 1), EAST),        # straight on
+    (L_BEND, (3, 1), EAST),               # a bend: one way on besides back
+    (DEAD_END, (4, 1), EAST),             # a dead end: back is the only way
+    (DEAD_END, (4, 1), None),             # a first move with a single open neighbour
+])
+def test_a2_the_random_source_is_untouched_when_there_is_no_choice(maze, square, heading):
+    """Copilot, PR #129: a single option must not consume a draw from the shared source."""
+    rng = random.Random(11)
+    before = rng.getstate()
+    ghost_step(maze, square, heading, rng)
+    assert rng.getstate() == before
+
+
+@pytest.mark.parametrize("maze, square, heading", [
+    (T_JUNCTION, (2, 1), NORTH),          # wall ahead, two ways on
+    (CROSSROADS, (2, 2), None),           # first move, four open neighbours
+])
+def test_a2_the_random_source_moves_on_at_a_real_choice(maze, square, heading):
+    rng = random.Random(11)
+    before = rng.getstate()
+    ghost_step(maze, square, heading, rng)
+    assert rng.getstate() != before
+
+
 def test_a_ghost_with_no_open_neighbour_is_refused_loudly():
     walled_in = Maze.from_rows(["###", "#.#", "###"])
     with pytest.raises(GhostStuck, match=r"\(1, 1\) has no open neighbour"):
