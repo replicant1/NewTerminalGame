@@ -9,3 +9,7 @@
 03:29:39Z  WI-6 REVIEW  Copilot on PR 126: Changes recommended, 1 thread (harness list missed Num_Lock and Mode_switch that the docstring claimed); valid, harness now imports the test corpus (138 names)
 03:29:39Z  WI-6 TEST    279 passed, 0 failed, 1 skipped
 03:29:39Z  WI-6 REVIEW  requested WI-6 round 1 (head is the commit carrying this line)
+03:35:15Z  WI-6 REVIEW  APPROVED round 1 @a8ca03954869b6b30eacc1a2dbd4ca365b9a4f72 by newterminalgame-code-reviewer[bot]; no HUMAN-GATE
+03:35:15Z  WI-6 MERGE   PR 126 r8/wi-6-input-translation merged 03:34:46Z as 0680c8c
+03:35:15Z  WI-6 TEST    363 passed, 0 failed, 1 skipped on an export of origin/main 0680c8c; layer check PASS
+03:35:15Z  WI-6 DONE    WI-6 r8/wi-6-input-translation a8ca03954869b6b30eacc1a2dbd4ca365b9a4f72
