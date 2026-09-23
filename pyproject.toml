@@ -1,0 +1,28 @@
+# Configuration only.  There is no build step and no packaging on this project;
+# nothing here makes the repository installable.
+
+# The suite (IMPLEMENTATION_PLAN.md section 1.2):
+#   default   .venv/bin/python -m pytest -q             never opens a window
+#   desktop   .venv/bin/python -m pytest -q -m desktop  opens real windows
+# The guards behind both are in tools/pytest_guards.py, loaded by conftest.py.
+[tool.pytest.ini_options]
+minversion = "8.4"
+testpaths = ["tests"]
+# The repository root on sys.path, so `import terminal_game` and `import tools`
+# work without installing anything.
+pythonpath = ["."]
+# An unknown mark is an error, so a misspelt `desktop` cannot slip a window
+# test into the default suite.
+addopts = "--strict-markers"
+
+# The layer rule (IMPLEMENTATION_PLAN.md section 1.4), top to bottom.  Each
+# layer is one package; every module under it, at any depth, is in that layer.
+# tools/layer_check.py reads this table and tests/test_layer_check.py runs it
+# over the real tree.  Every module under terminal_game/ must be in one of
+# these, except terminal_game/__init__.py and terminal_game/__main__.py, which
+# are the program's entry and are held to the shell's rules.
+[tool.terminal_game.layers]
+shell = "terminal_game.shell"
+presentation = "terminal_game.presentation"
+application = "terminal_game.application"
+domain = "terminal_game.domain"

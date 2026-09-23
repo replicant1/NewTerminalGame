@@ -1,7 +1,8 @@
-"""The shell: the only layer that may import ``tkinter`` or any windowing API.
+"""Shell layer: the window, the toolkit's event loop, the tick timer, key capture,
+the character grid surface and the anchor query.
 
-It owns the window, the character grid drawn in it, key capture, the tick
-timer and closing the window (IMPLEMENTATION_PLAN.md §1.4, layer 1).
+The only layer that may import ``tkinter`` or any operating-system or windowing
+API.  It may import from every layer below it (IMPLEMENTATION_PLAN.md section 1.4).
 
 **Only characters are drawn** (SCRN-2, architecture caution C5). On a Tk
 canvas nothing stops a later change drawing an image or a rectangle standing
