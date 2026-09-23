@@ -22,9 +22,9 @@ The guard now names every Tk canvas item type except text, one by one: `create_a
 ## Diff map
 
 ```
-tests/test_shell_characters_only.py:19-28  -> A1 (the explicit forbidden set, and why)
-tests/test_shell_characters_only.py:42     -> A1 (match by name, not by prefix)
-tests/test_shell_characters_only.py:end    -> A1 (the new control test)
+tests/test_shell_characters_only.py:19-27  -> A1 (the explicit forbidden set, and why)
+tests/test_shell_characters_only.py:41     -> A1 (match by name, not by prefix)
+tests/test_shell_characters_only.py:80-87  -> A1 (the new control test)
 docs/prs/PR-WI-3-guard-fix.md, docs/progress/r8-wi-3-guard-fix.md -> records
 ```
 
