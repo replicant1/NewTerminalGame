@@ -11,3 +11,9 @@
 04:20:51Z  TEST    491 passed, 0 failed, 1 skipped
 04:20:51Z  RISK    WI-12 MEDIUM, because it is the plan's floor; pure application, and WI-13 drives the game through it
 04:20:51Z  CLAIM   WI-12/C1-C10, A1-A3 executable — tests/test_session.py -k <id>_; H evidence/WI-12/session_transcript.py for C1, C4, C5, C7, C9, C10
+04:21:10Z  COMMIT  6b5cbb9 WI-12: session state machine (playing, decided, ended), tests, harness and brief
+04:21:10Z  NOTE    WI-12 draft PR #133 opened; marked ready 04:21:00Z; waiting for Copilot
+04:26:55Z  REVIEW  Copilot on #133 at 04:25:19Z: Changes recommended; 1 thread (unhashable intent raises TypeError, not the promised ValueError); overview also: C9 harness lacks an alternate-script check
+04:26:55Z  DECIDE  WI-12 both valid -> validate intents against a tuple (unhashables refused with ValueError, A2 test adds [] {} and a tuple); harness C9 now also runs a different script and needs >800/1000 to differ
+04:26:55Z  TEST    494 passed, 0 failed, 1 skipped
+04:26:55Z  REVIEW  requested WI-12 round 1 at the head commit that carries this line

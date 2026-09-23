@@ -256,7 +256,7 @@ def test_a1_the_sessions_intents_are_wi6s_own():
     assert s.state.player == (4, 1) and s.phase == PLAYING
 
 
-@pytest.mark.parametrize("bad", ["jump", "Up", "q", "", 3])
+@pytest.mark.parametrize("bad", ["jump", "Up", "q", "", 3, [], {}, ("up",)])
 def test_a2_an_intent_that_wi6_could_not_have_produced_is_refused(bad):
     s = Session.new(random.Random(0))
     with pytest.raises(ValueError, match="an intent is one of"):

@@ -63,29 +63,29 @@ Every command runs from the repository root, with `.venv/bin/python` built from 
 | WI-12/C6 | After the game is decided, quit is the only input that has any effect. | Executable: `-k c6_` | 2 `PASSED` (lost and won). The key names Up, Down, Left, Right, a, space, Return, Escape, F1, Shift_L and 1, each through `translate` and each followed by a tick, leave phase and state identical. Then `q` ends the session. |
 | WI-12/C7 | An arrow key that arrives immediately after the tick in which the ghost catches the player does not move the player. | Executable: `-k c7_`, and H | `PASSED`: after the third tick the outcome is `LOST` with both on (4, 1). Each of the four arrows then leaves the player on (4, 1). H prints the catching `tick`, then `Right` and `Left`, with the player still on (4, 1). |
 | WI-12/C8 | Nothing leads back from an ending: no sequence of inputs starts a new game, restores the player or resumes play. | Executable: `-k c8_` | 2 `PASSED` (lost and won). Each runs 200 random sequences of 100 events (arrows, other keys, quit, ticks). After every event the phase is `DECIDED` or `ENDED`, never `PLAYING`, and the state, outcome included, equals the decided state. |
-| WI-12/C9 | Given the same maze, the same random source and the same sequence of ticks and keys, two sessions end in identical states. | Executable: `-k c9_`, and H | `PASSED`: over 300 seeds, two runs of the same 600-event script end identical. The test fails unless more than 250 runs of a different script end differently, so it is not comparing things that could never differ. H: `identical end states for the same maze, source and inputs: 1000/1000  PASS`. |
+| WI-12/C9 | Given the same maze, the same random source and the same sequence of ticks and keys, two sessions end in identical states. | Executable: `-k c9_`, and H | `PASSED`: over 300 seeds, two runs of the same 600-event script end identical. The test fails unless more than 250 runs of a different script end differently, so it is not comparing things that could never differ. H: `identical end states for the same maze, source and inputs: 1000/1000; with a different input script, different end states: 999/1000  PASS`. H needs more than 800 of those to differ, the same kind of floor the test applies. |
 | WI-12/C10 | A tick or a key that arrives after the session has ended is ignored without error. | Executable: `-k c10_`, and H | `PASSED`: after quit, given while playing, after a loss and after a win, 20 rounds of ticks and every intent (quit included) raise nothing and leave phase `ENDED` and the state unchanged. H shows `tick` and `Up` after close as `(after close: ignored)`. |
 | WI-12/A1 | The session's intents are WI-6's own: every intent `translate` can produce is accepted by `handle` with the same meaning, so the shell can pass `translate(name)` straight in. | Executable: `-k a1_` | `PASSED`: the five constants equal WI-6's. `translate("Right")` and `translate("Left")` move the player east and back, and `translate("a")` does nothing. |
-| WI-12/A2 | An intent WI-6 could not have produced is refused with `ValueError`: anything other than `None` or the five intents. | Executable: `-k a2_` | 5 `PASSED`: `"jump"`, `"Up"` (a key name, not an intent), `"q"`, `""` and `3`. |
+| WI-12/A2 | An intent WI-6 could not have produced is refused with `ValueError`: anything other than `None` or the five intents. | Executable: `-k a2_` | 8 `PASSED`: `"jump"`, `"Up"` (a key name, not an intent), `"q"`, `""`, `3`, the unhashable `[]` and `{}`, and `("up",)`. |
 | WI-12/A3 | `Session.new(rng)` lays out the maze with the source it is handed and sets up the game: it equals `new_game(generate_maze(rng))` for the same seed. | Executable: `-k a3_` | `PASSED` for 50 seeds, and two seeds give different mazes. |
 
-Also at this head: the suite `.venv/bin/python -m pytest -q` gives 491 passed, 0 failed, 1 skipped. `.venv/bin/python -m tools.layer_check` reports `application 3`, `PASS (0 violation(s), 0 problem(s))`.
+Also at this head: the suite `.venv/bin/python -m pytest -q` gives 494 passed, 0 failed, 1 skipped. `.venv/bin/python -m tools.layer_check` reports `application 3`, `PASS (0 violation(s), 0 problem(s))`.
 
 ## Diff map
 
 ```
 terminal_game/application/session.py:1-36     -> docstring: phases and the shell's wiring (C1-C10, for WI-13)
 terminal_game/application/session.py:38-46    -> mechanical (imports)
-terminal_game/application/session.py:48-56    -> WI-12/A1 (intents equal WI-6's), C3 (one square per arrow)
-terminal_game/application/session.py:58-61    -> WI-12/C1, C4, C5 (the three phases)
-terminal_game/application/session.py:64-70    -> WI-12/C1 (playing from the start), C9 (state and source handed in)
-terminal_game/application/session.py:72-75    -> WI-12/A3 (Session.new)
-terminal_game/application/session.py:77-91    -> WI-12/C4 (state to paint), C1, C5, C8 (phase: nothing leads back)
-terminal_game/application/session.py:93-96    -> WI-12/C1, C2 (one ghost step per tick while playing), C4 (none after)
-terminal_game/application/session.py:98-101   -> WI-12/A2 (intent refused)
-terminal_game/application/session.py:102-103  -> WI-12/C10 (ignored after the end)
-terminal_game/application/session.py:104-105  -> WI-12/C5 (quit ends at once, in any phase)
-terminal_game/application/session.py:106-107  -> WI-12/C3 (one move per arrow), C6, C7 (no move once decided)
+terminal_game/application/session.py:48-57    -> WI-12/A1 (intents equal WI-6's), A2 (the tuple of valid intents), C3 (one square per arrow)
+terminal_game/application/session.py:59-62    -> WI-12/C1, C4, C5 (the three phases)
+terminal_game/application/session.py:65-71    -> WI-12/C1 (playing from the start), C9 (state and source handed in)
+terminal_game/application/session.py:73-76    -> WI-12/A3 (Session.new)
+terminal_game/application/session.py:78-92    -> WI-12/C4 (state to paint), C1, C5, C8 (phase: nothing leads back)
+terminal_game/application/session.py:94-97    -> WI-12/C1, C2 (one ghost step per tick while playing), C4 (none after)
+terminal_game/application/session.py:99-103   -> WI-12/A2 (intent refused, unhashable ones included)
+terminal_game/application/session.py:104-105  -> WI-12/C10 (ignored after the end)
+terminal_game/application/session.py:106-107  -> WI-12/C5 (quit ends at once, in any phase)
+terminal_game/application/session.py:108-109  -> WI-12/C3 (one move per arrow), C6, C7 (no move once decided)
 tests/test_session.py (new)                   -> evidence for C1-C10, A1-A3
 evidence/WI-12/session_transcript.py (new)    -> evidence (harness H) for C1, C4, C5, C7, C9, C10
 docs/prs/PR-WI-12-session-control.md (new)    -> this brief

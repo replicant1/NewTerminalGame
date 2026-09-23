@@ -111,17 +111,21 @@ def main() -> int:
     results.append(("C5", "q while playing closed the window at once", win.closed and len(lines) == 4))
 
     # 4. C9: same maze, source and inputs, twice, over 1,000 seeds.
-    same = 0
+    def run(seed, script_seed):
+        session = Session(new_game(generate_maze(random.Random(seed))), random.Random(50_000 + seed))
+        script = random.Random(script_seed)
+        for _ in range(400):
+            session.tick() if script.random() < 0.5 else session.handle(script.choice(["up", "down", "left", "right", None]))
+        return (session.phase, session.state)
+
+    same = differ = 0
     for seed in range(1000):
-        ends = []
-        for _ in range(2):
-            session = Session(new_game(generate_maze(random.Random(seed))), random.Random(50_000 + seed))
-            script = random.Random(90_000 + seed)
-            for _ in range(400):
-                session.tick() if script.random() < 0.5 else session.handle(script.choice(["up", "down", "left", "right", None]))
-            ends.append((session.phase, session.state))
-        same += ends[0] == ends[1]
-    results.append(("C9", f"identical end states for the same maze, source and inputs: {same}/1000", same == 1000))
+        first = run(seed, 90_000 + seed)
+        same += run(seed, 90_000 + seed) == first
+        differ += run(seed, 1 + 90_000 + seed) != first  # a different script, as a check the comparison can tell
+    results.append(("C9", f"identical end states for the same maze, source and inputs: {same}/1000; "
+                          f"with a different input script, different end states: {differ}/1000",
+                    same == 1000 and differ > 800))
 
     print("WI-12 session control, driven as the shell will drive it")
     print("\n".join(out))

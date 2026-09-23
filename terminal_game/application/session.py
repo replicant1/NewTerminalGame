@@ -53,6 +53,7 @@ LEFT = "left"
 RIGHT = "right"
 QUIT = "quit"
 
+_INTENTS = (UP, DOWN, LEFT, RIGHT, QUIT)
 _MOVES = {UP: (0, -1), DOWN: (0, 1), LEFT: (-1, 0), RIGHT: (1, 0)}
 
 # The phases.
@@ -97,8 +98,9 @@ class Session:
 
     def handle(self, intent: Optional[str]) -> None:
         """One key press, as WI-6's intent: a move, quit, or ``None`` for any other key."""
-        if intent is not None and intent != QUIT and intent not in _MOVES:
-            raise ValueError(f"an intent is one of {sorted(_MOVES) + [QUIT]} or None, not {intent!r}")
+        # Compared against a tuple, not looked up in a dict, so an unhashable value is refused too.
+        if intent is not None and intent not in _INTENTS:
+            raise ValueError(f"an intent is one of {list(_INTENTS)} or None, not {intent!r}")
         if self._ended:
             return
         if intent == QUIT:
