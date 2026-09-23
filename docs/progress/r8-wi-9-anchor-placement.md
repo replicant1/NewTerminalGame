@@ -14,3 +14,6 @@
 04:01:55Z  WI-9 VERIFY  C6 harness run 2: agree True again; with the real displays the game window is placed at (362,-1327), wholly on display 2, the anchor's display
 04:01:55Z  WI-9 DECIDE  NSScreen flip and menu-bar trim moved into pure to_global() so it is tested with the measured numbers (A2); place() with no display raises (A1)
 04:01:55Z  WI-9 TEST    default: 406 passed, 0 failed, 1 skipped
+04:03:06Z  WI-9 RISK    WI-9 MEDIUM, because it reads other windows and computes a position (plan floor; not raised)
+04:03:06Z  WI-9 DRAFT   docs/prs/PR-WI-9-anchor-placement.md: C1-C6 word for word, A1-A2, diff map, WI-13 usage, findings
+04:03:06Z  WI-9 CLAIM   C1-C5, A1, A2 executable -- tests/test_placement.py -k <claim>_; C6 executable -- evidence/WI-9/terminal_anchor.py (one Terminal window, reaped)
