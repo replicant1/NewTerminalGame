@@ -13,3 +13,7 @@
 03:54:11Z  WI-10 CLAIM   A2 added -- seam test composing new_game(...) from WI-7
 03:54:11Z  WI-10 TEST    408 passed, 0 failed, 1 skipped; compose_probe C1, C6-C8 HOLD
 03:54:11Z  WI-10 REVIEW  requested WI-10 round 1 (head is the commit carrying this line)
+04:15:43Z  WI-10 REVIEW  APPROVED round 1 @d3f3dab67102025315b1c4ef933aa1dd4f561c79 by newterminalgame-code-reviewer[bot], 04:14:26Z; no HUMAN-GATE; C9 reading accepted (C2 makes row 29 exactly WI-5's line)
+04:15:43Z  WI-10 MERGE   PR 130 r8/wi-10-frame-composer merged 04:15:15Z as ebffe07
+04:15:43Z  WI-10 TEST    464 passed, 0 failed, 1 skipped on an export of origin/main ebffe07; layer check PASS
+04:15:43Z  WI-10 DONE    WI-10 r8/wi-10-frame-composer d3f3dab67102025315b1c4ef933aa1dd4f561c79

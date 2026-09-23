@@ -11,3 +11,7 @@
 03:49:16Z  WI-8 REVIEW  Copilot on PR 129: 1 thread (a single-option bend still consumed rng.choice), valid; fixed with _pick drawing only at a real choice; A2 added; brief DIRECTIONS reference made explicit
 03:49:16Z  WI-8 TEST    388 passed, 0 failed, 1 skipped; ghost_probe 8 of 8 hold
 03:49:16Z  WI-8 REVIEW  requested WI-8 round 1 (head is the commit carrying this line)
+03:56:09Z  WI-8 REVIEW  APPROVED round 1 @41ef09c8a38c3d0dbb3657c7458c1669ee6c049b by newterminalgame-code-reviewer[bot]; no HUMAN-GATE; controls n/a accepted
+03:56:09Z  WI-8 MERGE   PR 129 r8/wi-8-ghost-policy merged 03:55:45Z as c1d6be4 (carried the M1 completion record)
+03:56:10Z  WI-8 TEST    411 passed, 0 failed, 1 skipped on an export of origin/main c1d6be4; layer check PASS, domain 6
+03:56:10Z  WI-8 DONE    WI-8 r8/wi-8-ghost-policy 41ef09c8a38c3d0dbb3657c7458c1669ee6c049b
