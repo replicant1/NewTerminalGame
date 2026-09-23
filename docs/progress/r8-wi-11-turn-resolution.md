@@ -23,3 +23,8 @@
 04:04:33Z  DECIDE  WI-11 direction validated before the decided check -> kept, because a malformed direction is a caller's programming error that should surface in any state; a well-formed move after an ending still changes nothing (A1)
 04:04:33Z  TEST    442 passed, 0 failed, 1 skipped
 04:04:33Z  REVIEW  requested WI-11 round 1 at the head commit that carries this line
+04:15:20Z  COMMIT  97feb5f WI-11: harness floors match the tests' (Copilot); round 1 requested
+04:15:20Z  REVIEW  APPROVED round 1 @97feb5fcc92d5fc5032e8fb14100a64c69b4ff83 by newterminalgame-code-reviewer[bot]; no HUMAN-GATE; 14 claims REPRODUCED
+04:15:20Z  MERGE   WI-11 PR #131 merged (gh pr merge --merge) as 2641e5b; approval sha = headRefOid 97feb5f; landed main merged back: 442 passed, 0 failed, 1 skipped
+04:15:20Z  TEST    442 passed, 0 failed, 1 skipped (landed main 2641e5b)
+04:15:20Z  DONE    WI-11 r8/wi-11-turn-resolution 97feb5fcc92d5fc5032e8fb14100a64c69b4ff83 (merged as 2641e5b)
