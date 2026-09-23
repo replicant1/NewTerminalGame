@@ -31,3 +31,7 @@
 03:43:21Z  DECIDE  WI-7 C3 floor -> >= 100 in both the test and H, because the two should agree; test-name nits left; the canonical-constants suggestion touches WI-5's presentation file, which is lane A's, and the seam test already pins the equality
 03:43:21Z  TEST    386 passed, 0 failed, 1 skipped
 03:43:21Z  REVIEW  requested WI-7 round 1 at the head commit that carries this line
+03:51:56Z  REVIEW  APPROVED round 1 @b2944c12facb4f00e5fa746ef633985ad8d9b9d6 by newterminalgame-code-reviewer[bot]; no HUMAN-GATE; all 11 claims REPRODUCED
+03:51:56Z  MERGE   WI-7 PR #127 merged (gh pr merge --merge) as 056ea1e; approval sha = headRefOid b2944c1; landed main merged back: 386 passed, 0 failed, 1 skipped
+03:51:56Z  TEST    386 passed, 0 failed, 1 skipped (landed main 056ea1e)
+03:51:56Z  DONE    WI-7 r8/wi-7-game-setup b2944c12facb4f00e5fa746ef633985ad8d9b9d6 (merged as 056ea1e)
