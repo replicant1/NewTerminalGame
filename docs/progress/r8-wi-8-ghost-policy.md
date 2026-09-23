@@ -6,3 +6,5 @@
 03:44:00Z  WI-8 RISK    WI-8 MEDIUM, because it is the plan floor; not raised: pure domain
 03:44:00Z  WI-8 CLAIM   C1-C8 executable -- evidence/WI-8/ghost_probe.py and pytest -v tests/test_ghost.py -k cN; A1 added (GhostStuck, heading check); controls n/a: new module
 03:44:00Z  WI-8 TEST    382 passed, 0 failed, 1 skipped
+03:44:14Z  WI-8 COMMIT  0cd40aa WI-8: ghost movement policy over the ghost's square and heading
+03:44:14Z  WI-8 NOTE    draft PR opened; posting the ghost-state proposal on WI-7's PR 127 for Dev B; marking ready
