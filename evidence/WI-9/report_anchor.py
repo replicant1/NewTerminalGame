@@ -21,6 +21,7 @@ REPO = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO))
 
 from terminal_game.shell import anchor  # noqa: E402
+from terminal_game.shell.placement import Rect, display_for, place  # noqa: E402
 
 
 def main() -> None:
@@ -34,7 +35,14 @@ def main() -> None:
         ["/usr/bin/osascript", "-e", 'tell application "Terminal" to get {id, bounds} of front window'],
         capture_output=True, text=True, timeout=10,
     )
+    displays = anchor.visible_displays()
+    x, y = place(found, (400, 602), displays)   # the game window's outer size
+    game = Rect(x, y, 400, 602)
     record = {
+        "displays": [[d.x, d.y, d.width, d.height] for d in displays],
+        "placed_at": [x, y],
+        "anchor_display": None if found is None else displays.index(display_for(found, displays)),
+        "placed_wholly_on_display": [i for i, d in enumerate(displays) if d.contains(game)],
         "anchor": None if found is None else [found.x, found.y, found.width, found.height],
         "anchor_ms": round(elapsed * 1000, 1),
         "anchor_window": None if front is None else {"id": front["id"], "owner": front["owner"], "pid": front["pid"]},

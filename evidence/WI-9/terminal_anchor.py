@@ -84,6 +84,7 @@ def main() -> int:
     print(f"anchor (x, y, w, h)          : {record['anchor']}  found in {record['anchor_ms']} ms, owner {record['anchor_window']}")
     print(f"Terminal front window id {term_id}: bounds {{{left}, {top}, {right}, {bottom}}} -> (x, y, w, h) {expected}")
     print(f"agree: {record['agree']}")
+    print(f"displays: {record['displays']}; anchor on display {record['anchor_display']}; game window placed at {record['placed_at']}, wholly on display(s) {record['placed_wholly_on_display']}")
     dest = REPO / "evidence" / "WI-9" / f"terminal-anchor-{sha}.json"
     dest.write_text(json.dumps(record, indent=1))
     print(f"written: {dest.relative_to(REPO)}")
